@@ -35,11 +35,20 @@ export default function LandingPage() {
   const advertiserDestination = referral ? `${links.advertiser}?ref=${encodeURIComponent(referral)}` : links.advertiser;
   const signupDestination = referral ? `${links.advertiserSignup}?ref=${encodeURIComponent(referral)}` : links.advertiserSignup;
   const cta = (destination: string) => trackAnalyticsEvent("cta_clicked", { role: "advertiser", destination });
-  const recordPreview = () => {
-    const key = `${city}:${objective}:${screens}:${months}:${includeProduction}`;
+  const recordPreview = (patch: Partial<{
+    city: DemoCity;
+    objective: DemoObjective;
+    screens: number;
+    months: number;
+    includeProduction: boolean;
+  }> = {}) => {
+    // Read the just-committed interaction directly: React state is updated
+    // asynchronously, so the closure still contains the previous selection.
+    const snapshot = { city, objective, screens, months, includeProduction, ...patch };
+    const key = `${snapshot.city}:${snapshot.objective}:${snapshot.screens}:${snapshot.months}:${snapshot.includeProduction}`;
     if (previousPreview.current === key) return;
     previousPreview.current = key;
-    trackAnalyticsEvent("budget_demo_used", { city, objective, screens, months, includeProduction });
+    trackAnalyticsEvent("budget_demo_used", snapshot);
   };
 
   return (
@@ -57,7 +66,7 @@ export default function LandingPage() {
         <section className="landing-hero landing-wrap" aria-labelledby="hero-title">
           <div className="landing-hero-copy">
             <p className="landing-eyebrow"><span/> PUBLICIDAD QUE ACOMPAÑA TU CIUDAD</p>
-            <motion.h1 id="hero-title" initial={reduceMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.42 }}>
+            <motion.h1 id="hero-title" initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.42 }}>
               {content.headline[0]}<br/><span>{content.headline[1]}</span>
             </motion.h1>
             <p className="landing-lead">{content.lead}</p>
@@ -108,11 +117,11 @@ export default function LandingPage() {
                 <span>{CITIES[city]} ↗</span>
               </div>
               <label htmlFor="campaign-city">Ciudad del ejemplo</label>
-              <select id="campaign-city" value={city} onChange={e => { setCity(e.target.value as DemoCity); recordPreview(); }}>
+              <select id="campaign-city" value={city} onChange={e => { const nextCity = e.target.value as DemoCity; setCity(nextCity); recordPreview({ city: nextCity }); }}>
                 {Object.entries(CITIES).map(([value, title]) => <option key={value} value={value}>{title}</option>)}
               </select>
               <label htmlFor="campaign-objective">Objetivo de comunicación</label>
-              <select id="campaign-objective" value={objective} onChange={e => { setObjective(e.target.value as DemoObjective); recordPreview(); }}>
+              <select id="campaign-objective" value={objective} onChange={e => { const nextObjective = e.target.value as DemoObjective; setObjective(nextObjective); recordPreview({ objective: nextObjective }); }}>
                 {Object.entries(OBJECTIVES).map(([value, title]) => <option key={value} value={value}>{title}</option>)}
               </select>
               <label htmlFor="campaign-screens">Pantallas del ejemplo <span>{screens}</span></label>
@@ -126,7 +135,7 @@ export default function LandingPage() {
                 onBlur={recordPreview} onPointerUp={recordPreview} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
               <div className="landing-range-labels"><span>1 mes</span><span>12 meses</span></div>
               <label className="landing-production-option" htmlFor="campaign-production">
-                <input id="campaign-production" type="checkbox" checked={includeProduction} onChange={e => { setIncludeProduction(e.target.checked); recordPreview(); }}/>
+                <input id="campaign-production" type="checkbox" checked={includeProduction} onChange={e => { const checked = e.target.checked; setIncludeProduction(checked); recordPreview({ includeProduction: checked }); }}/>
                 <span>Quiero contratar producción creativa opcional</span>
               </label>
               <div className="landing-preview-summary">

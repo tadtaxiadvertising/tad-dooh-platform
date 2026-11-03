@@ -27,6 +27,8 @@ export default function LandingPage() {
   const [referral, setReferral] = useState<string | null>(null);
   useEffect(() => { setReferral(referralCodeFromSearch(window.location.search)); }, []);
   const previousPreview = useRef("");
+  const stateRef = useRef({ city, objective, screens, months, includeProduction });
+
   const reduceMotion = useReducedMotion();
   const links = landingLinks();
   const config = { screens, months, frequencySeconds: FIXED_FREQUENCY_SECONDS, includeProduction };
@@ -36,10 +38,11 @@ export default function LandingPage() {
   const signupDestination = referral ? `${links.advertiserSignup}?ref=${encodeURIComponent(referral)}` : links.advertiserSignup;
   const cta = (destination: string) => trackAnalyticsEvent("cta_clicked", { role: "advertiser", destination });
   const recordPreview = () => {
-    const key = `${city}:${objective}:${screens}:${months}:${includeProduction}`;
+    const state = stateRef.current;
+    const key = `${state.city}:${state.objective}:${state.screens}:${state.months}:${state.includeProduction}`;
     if (previousPreview.current === key) return;
     previousPreview.current = key;
-    trackAnalyticsEvent("budget_demo_used", { city, objective, screens, months, includeProduction });
+    trackAnalyticsEvent("budget_demo_used", { ...state });
   };
 
   return (
@@ -103,25 +106,48 @@ export default function LandingPage() {
                 <span>{CITIES[city]} ↗</span>
               </div>
               <label htmlFor="campaign-city">Ciudad del ejemplo</label>
-              <select id="campaign-city" value={city} onChange={e => { setCity(e.target.value as DemoCity); recordPreview(); }}>
+              <select id="campaign-city" value={city} onChange={e => {
+                const value = e.target.value as DemoCity;
+                setCity(value);
+                stateRef.current = { ...stateRef.current, city: value };
+                recordPreview();
+              }}>
                 {Object.entries(CITIES).map(([value, title]) => <option key={value} value={value}>{title}</option>)}
               </select>
               <label htmlFor="campaign-objective">Objetivo de comunicación</label>
-              <select id="campaign-objective" value={objective} onChange={e => { setObjective(e.target.value as DemoObjective); recordPreview(); }}>
+              <select id="campaign-objective" value={objective} onChange={e => {
+                const value = e.target.value as DemoObjective;
+                setObjective(value);
+                stateRef.current = { ...stateRef.current, objective: value };
+                recordPreview();
+              }}>
                 {Object.entries(OBJECTIVES).map(([value, title]) => <option key={value} value={value}>{title}</option>)}
               </select>
               <label htmlFor="campaign-screens">Pantallas del ejemplo <span>{screens}</span></label>
               <input id="campaign-screens" type="range" min={1} max={15} step={1} value={screens}
-                aria-valuetext={`${screens} pantallas`} onChange={e => setScreens(Number(e.target.value))}
+                aria-valuetext={`${screens} pantallas`} onChange={e => {
+                  const value = Number(e.target.value);
+                  setScreens(value);
+                  stateRef.current = { ...stateRef.current, screens: value };
+                }}
                 onBlur={recordPreview} onPointerUp={recordPreview} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
               <div className="landing-range-labels"><span>1 pantalla</span><span>15 pantallas</span></div>
               <label htmlFor="campaign-months">Duración <span>{months} {months === 1 ? "mes" : "meses"}</span></label>
               <input id="campaign-months" type="range" min={1} max={12} step={1} value={months}
-                aria-valuetext={`${months} meses`} onChange={e => setMonths(Number(e.target.value))}
+                aria-valuetext={`${months} meses`} onChange={e => {
+                  const value = Number(e.target.value);
+                  setMonths(value);
+                  stateRef.current = { ...stateRef.current, months: value };
+                }}
                 onBlur={recordPreview} onPointerUp={recordPreview} onKeyUp={e => { if (RANGE_KEYS.includes(e.key)) recordPreview(); }}/>
               <div className="landing-range-labels"><span>1 mes</span><span>12 meses</span></div>
               <label className="landing-production-option" htmlFor="campaign-production">
-                <input id="campaign-production" type="checkbox" checked={includeProduction} onChange={e => { setIncludeProduction(e.target.checked); recordPreview(); }}/>
+                <input id="campaign-production" type="checkbox" checked={includeProduction} onChange={e => {
+                  const value = e.target.checked;
+                  setIncludeProduction(value);
+                  stateRef.current = { ...stateRef.current, includeProduction: value };
+                  recordPreview();
+                }}/>
                 <span>Quiero contratar producción creativa opcional</span>
               </label>
               <div className="landing-preview-summary">

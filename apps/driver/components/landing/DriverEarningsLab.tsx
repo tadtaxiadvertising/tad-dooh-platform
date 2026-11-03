@@ -51,9 +51,10 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
               <div className={styles.controlHeader}>
                 <span className={styles.icon}><Icon size={20} aria-hidden="true"/></span>
                 <div className={styles.controlTitle}><label htmlFor={`driver-lab-${id}`}>{title}</label><small>{subtitle}</small></div>
-                <output htmlFor={`driver-lab-${id}`} className={styles.value}>
-                  {id === "ads" ? `${value} × RD$500` : id === "sales" ? `RD$500 × ${value}` : `RD$500 × ${value}`}
-                </output>
+                <div className={styles.valueGroup}>
+                  <output htmlFor={`driver-lab-${id}`} className={styles.value}>{value}</output>
+                  <span className={styles.unit} aria-hidden="true">× RD$500</span>
+                </div>
               </div>
               <input id={`driver-lab-${id}`} type="range" min={0} max={max} step={1}
                 value={value} onChange={e => setter(Number(e.target.value))}

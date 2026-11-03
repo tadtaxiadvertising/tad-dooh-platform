@@ -44,7 +44,11 @@ async function sendGPSBatch(deviceId) {
     trackLatency(Date.now() - start);
   } catch (e) {
     gpsFail++;
-    if (gpsFail <= 3) console.error('GPS error:', e.message?.slice(0, 80));
+    if (gpsFail <= 3) {
+      // Strict JS checking treats caught values as unknown, as it should.
+      const safeMessage = e instanceof Error ? e.message : "unavailable";
+      console.error('GPS error:', safeMessage.slice(0, 80));
+    }
   }
 }
 

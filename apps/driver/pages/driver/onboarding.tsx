@@ -13,7 +13,6 @@ import { previewDriverEarnings } from "../../lib/earningsPreview";
 
 type OnboardingStep = 1 | 2 | 3 | 4;
 
-
 export default function DriverOnboarding() {
   const router = useRouter();
   const [step, setStep] = useState<OnboardingStep>(1);
@@ -24,7 +23,11 @@ export default function DriverOnboarding() {
   const [referredDrivers, setReferredDrivers] = useState(0);
   const [approvedSales, setApprovedSales] = useState(0);
   // The wizard and landing share the same capped and distinct revenue streams.
-  const earningsPreview = previewDriverEarnings(campaigns, approvedSales, referredDrivers);
+  const earningsPreview = previewDriverEarnings(
+    campaigns,
+    approvedSales,
+    referredDrivers,
+  );
 
   // Registration fields
   const [formData, setFormData] = useState({

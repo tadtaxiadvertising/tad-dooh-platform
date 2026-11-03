@@ -42,23 +42,32 @@ export class OnboardingService {
 
     // Normalize identity consistently across Prisma and Supabase Auth.
     // This also protects internal callers that bypass DTO validation.
-    const email = typeof data.email === "string"
-      ? data.email.trim().toLowerCase()
-      : "";
+    const email =
+      typeof data.email === "string" ? data.email.trim().toLowerCase() : "";
     if (!isEmail(email)) {
       throw new BadRequestException("El correo electrónico no es válido.");
     }
 
     if (typeof password !== "string" || password.length < 8) {
-      throw new BadRequestException("La contraseña debe tener al menos 8 caracteres.");
+      throw new BadRequestException(
+        "La contraseña debe tener al menos 8 caracteres.",
+      );
     }
 
     // Also validate at the service boundary (jobs/internal callers bypass HTTP DTO validation).
     if (typeof budget !== "number" || !Number.isFinite(budget) || budget <= 0) {
-      throw new BadRequestException("El presupuesto debe ser un número positivo.");
+      throw new BadRequestException(
+        "El presupuesto debe ser un número positivo.",
+      );
     }
-    if (typeof expectedScreens !== "number" || !Number.isInteger(expectedScreens) || expectedScreens < 1) {
-      throw new BadRequestException("La cantidad de pantallas debe ser un entero positivo.");
+    if (
+      typeof expectedScreens !== "number" ||
+      !Number.isInteger(expectedScreens) ||
+      expectedScreens < 1
+    ) {
+      throw new BadRequestException(
+        "La cantidad de pantallas debe ser un entero positivo.",
+      );
     }
 
     // Check if email already exists
@@ -116,7 +125,9 @@ export class OnboardingService {
             budget: Number(budget),
             targetImpressions,
             startDate: new Date(),
-            endDate: new Date(new Date().setMonth(new Date().getMonth() + months)),
+            endDate: new Date(
+              new Date().setMonth(new Date().getMonth() + months),
+            ),
             status: BUSINESS_RULES.STATUS.CAMPAIGN.PENDING_PAYMENT,
             active: false, // Inactiva hasta que se pague
             hasSeenTutorial: true,
@@ -156,12 +167,17 @@ export class OnboardingService {
       // If cleanup fails, preserve the error for operational reconciliation.
       try {
         const { error: cleanupError } = await this.supabaseService
-          .getClient().auth.admin.deleteUser(createdAuthUserId);
+          .getClient()
+          .auth.admin.deleteUser(createdAuthUserId);
         if (cleanupError) {
-          this.logger.error("CRITICAL: orphaned advertiser Auth identity; manual reconciliation required");
+          this.logger.error(
+            "CRITICAL: orphaned advertiser Auth identity; manual reconciliation required",
+          );
         }
       } catch {
-        this.logger.error("CRITICAL: Auth cleanup unavailable; manual reconciliation required");
+        this.logger.error(
+          "CRITICAL: Auth cleanup unavailable; manual reconciliation required",
+        );
       }
       this.logger.error("Advertiser onboarding transaction failed");
       if (error instanceof ConflictException) throw error;

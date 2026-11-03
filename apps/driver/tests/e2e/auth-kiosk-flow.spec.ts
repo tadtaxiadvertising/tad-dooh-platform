@@ -18,14 +18,11 @@
  *  ⚠️  KIOSK_002: Scroll habilitado (permite al pasajero navegar fuera del player)
  */
 import { test, expect, Page } from "@playwright/test";
-import {
-  getAdminCredentials,
-  loginAsAdmin,
-} from "./helpers/auth.helper";
+import { getAdminCredentials, loginAsAdmin } from "./helpers/auth.helper";
 
 const hasAdminCredentials = Boolean(
   process.env.TEST_ADMIN_EMAIL?.trim() &&
-    process.env.TEST_ADMIN_PASSWORD?.trim(),
+  process.env.TEST_ADMIN_PASSWORD?.trim(),
 );
 
 // ──────────────────────────────────────────────────────────────────
@@ -35,7 +32,10 @@ test.describe("Autenticación Supabase — Admin Dashboard", () => {
   test("3.1 — Login exitoso con credenciales válidas y redirección al dashboard", async ({
     page,
   }) => {
-    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+    test.skip(
+      !hasAdminCredentials,
+      "Configure isolated admin E2E credentials.",
+    );
     const credentials = getAdminCredentials();
     // Capturamos hydration errors de Next.js 15
     const hydrationErrors: string[] = [];
@@ -113,10 +113,7 @@ test.describe("Autenticación Supabase — Admin Dashboard", () => {
       'input[type="email"]',
       "nobody-" + Date.now() + "@example.invalid",
     );
-    await page.fill(
-      'input[type="password"]',
-      "invalid-" + crypto.randomUUID(),
-    );
+    await page.fill('input[type="password"]', "invalid-" + crypto.randomUUID());
     await page.click('button[type="submit"]');
 
     // La página NO debe redirigir
@@ -154,7 +151,10 @@ test.describe("Autenticación Supabase — Admin Dashboard", () => {
   test("3.3 — Sesión Supabase persiste tras F5 (refresh token no expira silenciosamente)", async ({
     page,
   }) => {
-    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+    test.skip(
+      !hasAdminCredentials,
+      "Configure isolated admin E2E credentials.",
+    );
     // Login
     await loginAsAdmin(page);
     const urlAfterLogin = page.url();
@@ -317,7 +317,10 @@ test.describe("Modo Kiosco — Comportamiento FullyKiosk Android", () => {
   test("3.7 — La UI ocupa el 100% de la pantalla en viewport 1280x800", async ({
     page,
   }) => {
-    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+    test.skip(
+      !hasAdminCredentials,
+      "Configure isolated admin E2E credentials.",
+    );
     await loginAsAdmin(page);
 
     // ✅ Verificamos que body y html tienen height: 100% y overflow: hidden
@@ -358,7 +361,10 @@ test.describe("Modo Kiosco — Comportamiento FullyKiosk Android", () => {
   test("3.8 — No hay elementos fijos del browser sobreponiendo la UI (navegación, scrollbars)", async ({
     page,
   }) => {
-    test.skip(!hasAdminCredentials, "Configure isolated admin E2E credentials.");
+    test.skip(
+      !hasAdminCredentials,
+      "Configure isolated admin E2E credentials.",
+    );
     await loginAsAdmin(page);
 
     // Verificamos que no hay scrollbars visibles (kiosco debe tener overflow: hidden)

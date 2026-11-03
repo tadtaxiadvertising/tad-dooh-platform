@@ -1,5 +1,11 @@
 // apps/api/src/modules/onboarding/onboarding.controller.ts
-import { Controller, Post, Body, ForbiddenException, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Post,
+  Body,
+  ForbiddenException,
+  UseGuards,
+} from "@nestjs/common";
 import { OnboardingService } from "./onboarding.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";

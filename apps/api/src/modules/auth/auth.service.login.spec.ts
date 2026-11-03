@@ -66,11 +66,19 @@ describe("AuthService login fails closed on database outage", () => {
     Object.assign(service, {
       prisma,
       supabaseService: supabase,
-      logger: { log: jest.fn(), error: jest.fn(), debug: jest.fn(), warn: jest.fn() },
+      logger: {
+        log: jest.fn(),
+        error: jest.fn(),
+        debug: jest.fn(),
+        warn: jest.fn(),
+      },
     });
-    await expect(service.login({
-      email: "user@example.com", password: "password123",
-    })).rejects.toMatchObject({ status: 403 });
+    await expect(
+      service.login({
+        email: "user@example.com",
+        password: "password123",
+      }),
+    ).rejects.toMatchObject({ status: 403 });
     expect(supabase.getClient).not.toHaveBeenCalled();
   });
 
@@ -78,13 +86,17 @@ describe("AuthService login fails closed on database outage", () => {
     const driverPrisma = {
       driver: {
         findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({ id: "driver-1", phone: "8095550000" }),
+        create: jest
+          .fn()
+          .mockResolvedValue({ id: "driver-1", phone: "8095550000" }),
       },
     };
     const service = Object.create(AuthService.prototype) as AuthService;
     Object.assign(service, { prisma: driverPrisma });
     const result = await service.registerDriver({
-      name: "Driver", phone: "8095550000", password: "password123",
+      name: "Driver",
+      phone: "8095550000",
+      password: "password123",
     });
     expect(result).toEqual({
       success: true,
@@ -98,15 +110,19 @@ describe("AuthService login fails closed on database outage", () => {
     { name: "", phone: "8095550000", password: "password123" },
     { name: "Driver", phone: " ", password: "password123" },
     { name: "Driver", phone: "8095550000", password: "short" },
-  ])("rejects invalid driver registration before database access: %p", async (data) => {
-    const driverPrisma = {
-      driver: { findUnique: jest.fn(), create: jest.fn() },
-    };
-    const service = Object.create(AuthService.prototype) as AuthService;
-    Object.assign(service, { prisma: driverPrisma });
-    await expect(service.registerDriver(data)).rejects.toMatchObject({ status: 400 });
-    expect(driverPrisma.driver.findUnique).not.toHaveBeenCalled();
-    expect(driverPrisma.driver.create).not.toHaveBeenCalled();
-  });
-
+  ])(
+    "rejects invalid driver registration before database access: %p",
+    async (data) => {
+      const driverPrisma = {
+        driver: { findUnique: jest.fn(), create: jest.fn() },
+      };
+      const service = Object.create(AuthService.prototype) as AuthService;
+      Object.assign(service, { prisma: driverPrisma });
+      await expect(service.registerDriver(data)).rejects.toMatchObject({
+        status: 400,
+      });
+      expect(driverPrisma.driver.findUnique).not.toHaveBeenCalled();
+      expect(driverPrisma.driver.create).not.toHaveBeenCalled();
+    },
+  );
 });

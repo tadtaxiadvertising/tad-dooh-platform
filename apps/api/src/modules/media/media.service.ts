@@ -279,7 +279,11 @@ export class MediaService {
    * y actualiza filename + originalFilename en la BD.
    */
   async renameFile(id: string, newFilename: string) {
-    if (!newFilename || typeof newFilename !== "string" || newFilename.trim().length === 0) {
+    if (
+      !newFilename ||
+      typeof newFilename !== "string" ||
+      newFilename.trim().length === 0
+    ) {
       throw new BadRequestException(
         "El nombre del archivo no puede estar vacío.",
       );

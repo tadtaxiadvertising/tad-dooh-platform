@@ -33,9 +33,7 @@ export class SupabaseService {
         },
       });
 
-      this.logger.log(
-        "SupabaseService initialized (credentials configured)",
-      );
+      this.logger.log("SupabaseService initialized (credentials configured)");
     } catch (error) {
       this.logger.error(
         `Error fatal instanciando cliente Supabase: ${error.message}`,

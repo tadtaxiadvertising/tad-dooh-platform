@@ -3,7 +3,7 @@ import { getAdminCredentials } from "./helpers/auth.helper";
 
 const hasAdminCredentials = Boolean(
   process.env.TEST_ADMIN_EMAIL?.trim() &&
-    process.env.TEST_ADMIN_PASSWORD?.trim(),
+  process.env.TEST_ADMIN_PASSWORD?.trim(),
 );
 
 /**

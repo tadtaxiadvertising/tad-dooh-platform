@@ -157,11 +157,15 @@ export class SupabaseAuthGuard implements CanActivate {
           // "authenticated" role; application RBAC lives in app_metadata.
           // This prevents other locally signed JWTs from becoming sessions.
           if (
-            typeof payload.sub !== "string" || !payload.sub ||
-            typeof payload.session_id !== "string" || !payload.session_id ||
+            typeof payload.sub !== "string" ||
+            !payload.sub ||
+            typeof payload.session_id !== "string" ||
+            !payload.session_id ||
             payload.role !== "authenticated"
           ) {
-            throw new UnauthorizedException("JWT sin sesión de usuario válida.");
+            throw new UnauthorizedException(
+              "JWT sin sesión de usuario válida.",
+            );
           }
 
           if (payload) {

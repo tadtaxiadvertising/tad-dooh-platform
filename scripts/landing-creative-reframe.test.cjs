@@ -5,6 +5,7 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const read = (name) => fs.readFileSync(path.join(root, name), "utf8");
+const collapseLayout = (source) => source.replace(/\s+/g, " ");
 
 test("advertiser creative reframe preserves the live estimate and explicit production opt-in", () => {
   const landing = read("apps/advertiser/components/landing/LandingPage.tsx");
@@ -29,7 +30,7 @@ test("driver creative reframe preserves three separate income streams and approv
   }
   assert.match(landing, /signupEnabled \? "\/register" : "#como-participar"/);
   assert.match(lab, /previewDriverEarnings\(ads, sales, referrals\)/);
-  assert.match(lab, /RD\$1\.25 por play validado es un concepto distinto/);
+  assert.match(collapseLayout(lab), /RD\$1\.25 por play validado es un concepto distinto/);
   assert.match(lab, /No son pagos recurrentes/);
   assert.doesNotMatch(lab, /15 anuncios \/ día/);
   assert.match(lab, /href=\{signupEnabled \? "\/register" : "#como-participar"\}/);
@@ -71,8 +72,8 @@ test("both public landings retain mobile navigation with working anchor destinat
   for (const id of ["#calculadora", "#como-participar", "#preguntas"]) {
     assert.ok(driver.includes(`href="${id}"`), "Driver anchor absent: " + id);
   }
-  assert.match(advertiser, /closest\("details"\)\?\.removeAttribute\("open"\)/);
-  assert.match(driver, /closest\("details"\)\?\.removeAttribute\("open"\)/);
+  assert.match(collapseLayout(advertiser), /closest\("details"\)\s*\?\.\s*removeAttribute\("open"\)/);
+  assert.match(collapseLayout(driver), /closest\("details"\)\s*\?\.\s*removeAttribute\("open"\)/);
 });
 
 test("financial outputs only animate after a changed amount, never on mount", () => {
@@ -94,8 +95,8 @@ test("financial outputs only animate after a changed amount, never on mount", ()
 
 test("driver range outputs expose numeric quantities and hide decorative rates from assistive tech", () => {
   const lab = read("apps/driver/components/landing/DriverEarningsLab.tsx");
-  assert.match(lab, /className=\{styles\.value\}>\{value\}<\/output>/);
-  assert.match(lab, /className=\{styles\.unit\} aria-hidden="true">× RD\$500<\/span>/);
+  assert.match(collapseLayout(lab), /className=\{styles\.value\}\s*>\s*\{value\}\s*<\/output>/);
+  assert.match(collapseLayout(lab), /className=\{styles\.unit\} aria-hidden="true"\s*>\s*× RD\$500\s*<\/span>/);
   assert.doesNotMatch(lab, /<output[^>]+>[\s\S]{0,120}\$\{value\} × RD\$500/);
 });
 
@@ -105,7 +106,7 @@ test("driver sales and referrals distinguish simulator display limits from comme
   assert.doesNotMatch(lab, /subtitle:\s*"[^"]*sin límite"/);
   assert.match(lab, /hasta 100 en este simulador/);
   assert.match(lab, /hasta 100 simulados/);
-  assert.match(lab, /no define condiciones ni posibles límites contractuales/);
+  assert.match(collapseLayout(lab), /no define condiciones ni posibles límites contractuales/);
   assert.match(lab, /max:\s*100/);
   assert.match(css, /\.rangeNote/);
 });

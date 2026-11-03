@@ -98,3 +98,14 @@ test("driver range outputs expose numeric quantities and hide decorative rates f
   assert.match(lab, /className=\{styles\.unit\} aria-hidden="true">× RD\$500<\/span>/);
   assert.doesNotMatch(lab, /<output[^>]+>[\s\S]{0,120}\$\{value\} × RD\$500/);
 });
+
+test("driver sales and referrals distinguish simulator display limits from commercial conditions", () => {
+  const lab = read("apps/driver/components/landing/DriverEarningsLab.tsx");
+  const css = read("apps/driver/components/landing/driver-earnings-lab.module.css");
+  assert.doesNotMatch(lab, /subtitle:\s*"[^"]*sin límite"/);
+  assert.match(lab, /hasta 100 en este simulador/);
+  assert.match(lab, /hasta 100 simulados/);
+  assert.match(lab, /límite de esta demostración, no un tope de pagos/);
+  assert.match(lab, /max:\s*100/);
+  assert.match(css, /\.rangeNote/);
+});

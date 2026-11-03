@@ -107,3 +107,15 @@
 @media (max-width: 400px) {
   .valueGroup { justify-items: start; text-align: left; }
 }
+
+/* Keep the example's UI range cap distinct from commercial earning conditions. */
+.rangeNote {
+  margin: 0;
+  padding: 2px 8px 4px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: #c4c6c9;
+}
+@media (max-width: 400px) {
+  .rangeNote { font-size: 11px; padding-inline: 2px; }
+}

@@ -29,8 +29,8 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
 
   const controls = [
       { id: "ads", title: "Publicidad en mi pantalla", subtitle: "Anuncios elegibles en un mes · máximo 15", icon: MonitorPlay, value: ads, setter: setAds, max: 15 },
-      { id: "sales", title: "Venta de publicidad", subtitle: "Comisiones por ventas aprobadas · sin límite", icon: ShoppingBag, value: sales, setter: setSales, max: 100 },
-      { id: "referrals", title: "Referir conductores", subtitle: "Conductores referidos activados · bono único por hito · sin límite", icon: Users, value: referrals, setter: setReferrals, max: 100 },
+      { id: "sales", title: "Venta de publicidad", subtitle: "Ventas aprobadas · hasta 100 en este simulador", icon: ShoppingBag, value: sales, setter: setSales, max: 100 },
+      { id: "referrals", title: "Referir conductores", subtitle: "Referidos activados · bono único · hasta 100 simulados", icon: Users, value: referrals, setter: setReferrals, max: 100 },
     ];
 
   return (
@@ -66,6 +66,7 @@ export default function DriverEarningsLab({ signupEnabled }: { signupEnabled: bo
               </div>}
             </motion.div>
           ))}
+          <p className={styles.rangeNote}>Los deslizadores permiten explorar hasta 100 ventas y 100 referidos activados. Es un límite de esta demostración, no un tope de pagos establecido por TAD.</p>
         </div>
         <div className={styles.result} aria-label="Desglose ilustrativo de ganancias">
           <div className={styles.resultTop}><BadgeCheck size={19} aria-hidden="true"/><span>SIMULACIÓN EDUCATIVA</span></div>

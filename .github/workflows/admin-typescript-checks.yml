@@ -6,6 +6,8 @@ on:
       - "apps/admin/components/MapView.tsx"
       - "apps/admin/pages/api/proxy/**"
       - "apps/admin/utils/mapCoordinates.ts"
+      - "apps/advertiser/package.json"
+      - "pnpm-lock.yaml"
       - "scripts/admin-coordinate.test.cjs"
       - ".github/workflows/admin-typescript-checks.yml"
   workflow_dispatch:
@@ -33,3 +35,5 @@ jobs:
         run: node --test scripts/admin-coordinate.test.cjs
       - name: Admin TypeScript
         run: pnpm exec tsc --noEmit --project apps/admin/tsconfig.json
+      - name: Advertiser TypeScript (including E2E sources)
+        run: pnpm exec tsc --noEmit --project apps/advertiser/tsconfig.json

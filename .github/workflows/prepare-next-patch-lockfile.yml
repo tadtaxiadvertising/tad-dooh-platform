@@ -5,6 +5,7 @@ on:
       - security/next-image-optimizer-patch-20261103
     paths:
       - ".github/workflows/prepare-next-patch-lockfile.yml"
+      - "packages/ui/package.json"
   workflow_dispatch:
 permissions:
   contents: write

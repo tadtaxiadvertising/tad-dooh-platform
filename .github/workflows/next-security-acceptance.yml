@@ -1,0 +1,44 @@
+name: Next Security Patch Acceptance
+on:
+  pull_request:
+    paths:
+      - "apps/admin/package.json"
+      - "apps/advertiser/package.json"
+      - "apps/driver/package.json"
+      - "packages/ui/package.json"
+      - "pnpm-lock.yaml"
+      - "scripts/next-security-contract.test.cjs"
+      - ".github/workflows/next-security-acceptance.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-patched-next:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install deterministically
+        run: pnpm install --frozen-lockfile
+      - name: Verify manifests, lock, and absence of privileged helper
+        run: node --test scripts/next-security-contract.test.cjs
+      - name: Verify effective Next versions in portal workspaces
+        run: |
+          set -euo pipefail
+          for app in admin advertiser driver; do
+            (
+              cd "apps/$app"
+              node -e "const ver=require('next/package.json').version; if (ver !== '15.5.28') {console.error('Unexpected Next version:', ver); process.exit(1)}"
+            )
+          done
+      - name: Verify critical vulnerabilities are no longer reported
+        run: pnpm audit --audit-level=critical

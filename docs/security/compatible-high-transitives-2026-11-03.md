@@ -15,3 +15,6 @@ The version-scoped selectors avoid forcing a new major on all parents. The lockf
 
 ## Risks and rollback
 A dependency override can affect transpilation, request body parsing or CLI operations even within a major. Validate the integrated application and remove/revert the PR if verification fails. Never deploy from a draft or with unaccepted high vulnerabilities. No database changes or production secrets involved.
+
+## Evidence-driven selector refinement
+The first lock-only CI run proved that overriding by an installed version selector did not change the parent dependency edge: body-parser@1.20.4 remained in the freshly resolved lock. The updated selectors bind to the **declaring parent** (Nest platform express, Express major 4/5, Next 15.5.28, Nest CLI/Swagger/config and Angular DevKit), as documented in pnpm 10 overrides. The original test remains strict about all vulnerable locked versions. This is a root-cause correction, not a suppressed assertion.

@@ -8,35 +8,46 @@ const root = path.resolve(__dirname, "..");
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const lock = fs.readFileSync(path.join(root, "pnpm-lock.yaml"), "utf8");
 const expected = {
-  "body-parser@1.20.4": "1.20.9",
-  "body-parser@1.20.8": "1.20.9",
-  "body-parser@2.3.0": "2.4.0",
-  "postcss@8.4.31": "8.5.31",
-  "glob@10.4.5": "10.5.0",
-  "picomatch@4.0.1": "4.0.7",
-  "lodash@4.17.21": "4.18.1",
-  "js-yaml@4.1.0": "4.3.2",
+  "@nestjs/platform-express>body-parser": "1.20.9",
+  "express@4>body-parser": "1.20.9",
+  "express@5>body-parser": "2.4.0",
+  "next@15.5.28>postcss": "8.5.31",
+  "@nestjs/cli>glob": "10.5.0",
+  "@angular-devkit/core>picomatch": "4.0.7",
+  "@nestjs/config>lodash": "4.18.1",
+  "@nestjs/swagger>js-yaml": "4.3.2"
 };
 
 test("overrides affect only identified vulnerable package versions, preserving major lines", () => {
   for (const [selector, version] of Object.entries(expected)) {
     assert.equal(pkg.pnpm?.overrides?.[selector], version);
-    const [name, oldVersion] = selector.split("@");
-    assert.equal(oldVersion.split(".")[0], version.split(".")[0],
-      selector + " must not cross major versions");
+    assert.ok(selector.includes(">"), "Overrides must target a proven parent edge: " + selector);
+    const targetMajor = selector === "express@5>body-parser" ? 2
+      : selector.endsWith(">body-parser") ? 1
+      : selector.endsWith(">postcss") ? 8
+      : selector.endsWith(">glob") ? 10
+      : selector.endsWith(">picomatch") ? 4
+      : selector.endsWith(">lodash") || selector.endsWith(">js-yaml") ? 4
+      : NaN;
+    assert.equal(Number(version.split(".")[0]), targetMajor);
   }
   assert.equal(pkg.pnpm?.overrides?.multer, "2.5.0");
   assert.equal(pkg.pnpm?.overrides?.["follow-redirects"], "1.16.2");
 });
 
 test("pnpm generated lock no longer contains the targeted unsafe resolutions", () => {
-  for (const selector of Object.keys(expected)) {
-    assert.ok(!lock.includes("\n  " + selector + ":"),
-      "Vulnerable packages node remains: " + selector);
-    assert.ok(!lock.includes("\n  " + selector + "("),
-      "Vulnerable snapshot remains: " + selector);
+  const vulnerable = [
+    "body-parser@1.20.4", "body-parser@1.20.8", "body-parser@2.3.0",
+    "postcss@8.4.31", "glob@10.4.5", "picomatch@4.0.1",
+    "lodash@4.17.21", "js-yaml@4.1.0"
+  ];
+  for (const installed of vulnerable) {
+    assert.ok(!lock.includes("\n  " + installed + ":"),
+      "Vulnerable lock package remains: " + installed);
+    assert.ok(!lock.includes("\n  " + installed + "("),
+      "Vulnerable lock snapshot remains: " + installed);
   }
-  for (const patched of new Set(Object.entries(expected).map(([k,v]) => k.split("@")[0] + "@" + v))) {
+  for (const patched of new Set(Object.entries(expected).map(([k,v]) => k.slice(k.indexOf(">")+1) + "@" + v))) {
     assert.ok(lock.includes("\n  " + patched + ":"),
       "Expected fixed package resolution: " + patched);
   }

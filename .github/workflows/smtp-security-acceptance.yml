@@ -1,0 +1,41 @@
+name: SMTP Security Acceptance
+on:
+  pull_request:
+    paths:
+      - "apps/api/package.json"
+      - "apps/api/src/modules/notifications/email.service.ts"
+      - "pnpm-lock.yaml"
+      - "scripts/smtp-transport-security.test.cjs"
+      - ".github/workflows/smtp-security-acceptance.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smtp-contract-and-api:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install deterministic dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify no privileged lockfile generator remains
+        run: |
+          set -euo pipefail
+          test ! -e .github/workflows/smtp-security-lock-generator.yml
+      - name: Verify secure SMTP composition without network
+        run: node --test scripts/smtp-transport-security.test.cjs
+      - name: Verify API TypeScript compatibility
+        run: pnpm exec tsc --noEmit --project apps/api/tsconfig.json
+      - name: Run API Jest regression
+        run: pnpm --filter api test --runInBand
+      - name: Verify no critical advisories in installed dependency graph
+        run: pnpm audit --audit-level=critical

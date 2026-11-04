@@ -1,0 +1,49 @@
+name: Combined Security Candidate Acceptance
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "apps/api/package.json"
+      - "apps/api/src/modules/notifications/email.service.ts"
+      - "scripts/security-compatible-transitives.test.cjs"
+      - "scripts/smtp-transport-security.test.cjs"
+      - ".github/workflows/combined-security-acceptance.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-combined-security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install the exact combined dependency graph
+        run: pnpm install --frozen-lockfile
+      - name: Ensure all branch-only write-capable helpers are absent
+        run: |
+          set -euo pipefail
+          test ! -e .github/workflows/security-compatible-lockfile-generator.yml
+          test ! -e .github/workflows/smtp-security-lock-generator.yml
+          test ! -e .github/workflows/security-integration-lock-generator.yml
+      - name: Combined transitive and SMTP security regressions
+        run: |
+          set -euo pipefail
+          node --test scripts/security-compatible-transitives.test.cjs
+          node --test scripts/smtp-transport-security.test.cjs
+      - name: API TypeScript and unit regression
+        run: |
+          set -euo pipefail
+          pnpm exec tsc --noEmit --project apps/api/tsconfig.json
+          pnpm --filter api test --runInBand
+      - name: Global audit (critical threshold; main gate still requires high)
+        run: pnpm audit --audit-level=critical

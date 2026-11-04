@@ -85,7 +85,8 @@
   "pnpm": {
     "overrides": {
       "multer": "2.5.0",
-      "follow-redirects": "1.16.2"
+      "follow-redirects": "1.16.2",
+      "external-editor>tmp": "0.2.6"
     }
   }
 }

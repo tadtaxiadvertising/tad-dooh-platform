@@ -1,0 +1,54 @@
+name: Generate Patched SMTP Lock (temporary)
+on:
+  push:
+    branches:
+      - security/nodemailer-smtp-hardening-20261103
+    paths:
+      - "apps/api/package.json"
+      - ".github/workflows/smtp-security-lock-generator.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  generate-lock:
+    if: github.repository == 'tadtaxiadvertising/tad-dooh-platform' && github.ref == 'refs/heads/security/nodemailer-smtp-hardening-20261103'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Regenerate authoritative lock only, without lifecycle scripts
+        run: pnpm install --lockfile-only --ignore-scripts
+      - name: Inspect SMTP lock resolution
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const lock = fs.readFileSync('pnpm-lock.yaml', 'utf8');
+          const pkg = require('./apps/api/package.json');
+          if (pkg.dependencies.nodemailer !== '^10.3.1') process.exit(1);
+          if (lock.includes('\n  nodemailer@8.0.11:')) process.exit(1);
+          if (!/\n  nodemailer@10\.3\.1:/.test(lock)) process.exit(1);
+          const importer = lock.split('\n  apps/api:\n')[1]?.split('\n  apps/')[0] || '';
+          if (!/nodemailer:\s*\n\s+specifier: \^10\.3\.1\s*\n\s+version: 10\.3\.1/.test(importer)) process.exit(1);
+          NODE
+      - name: Commit generated lockfile to isolated branch only
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo "Lockfile already synchronized"
+            exit 0
+          fi
+          git commit -m "chore(security): update Nodemailer lockfile [pnpm generated]"
+          git push origin HEAD:security/nodemailer-smtp-hardening-20261103

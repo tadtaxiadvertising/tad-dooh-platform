@@ -54,6 +54,11 @@ export class EmailService implements OnModuleInit {
       auth: { user, pass },
       pool: true, // Reutiliza conexiones para eficiencia en VPS (Free Tier)
       maxConnections: 3,
+      // Never resolve attachment paths or URLs from message data. Business mail
+      // only sends approved in-memory PDF buffers; this closes an exfiltration path
+      // even if a future caller passes an untrusted attachment object.
+      disableFileAccess: true,
+      disableUrlAccess: true,
       // SRE: Timeouts para evitar que un hang de Brevo bloquee el Event Loop
       connectionTimeout: 10000, // 10s para establecer conexión
       greetingTimeout: 10000, // 10s para el handshake SMTP

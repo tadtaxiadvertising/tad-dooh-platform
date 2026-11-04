@@ -18,3 +18,9 @@ A dependency override can affect transpilation, request body parsing or CLI oper
 
 ## Evidence-driven selector refinement
 The first lock-only CI run proved that overriding by an installed version selector did not change the parent dependency edge: body-parser@1.20.4 remained in the freshly resolved lock. The updated selectors bind to the **declaring parent** (Nest platform express, Express major 4/5, Next 15.5.28, Nest CLI/Swagger/config and Angular DevKit), as documented in pnpm 10 overrides. The original test remains strict about all vulnerable locked versions. This is a root-cause correction, not a suppressed assertion.
+
+## Lockfile generation evidence
+- The first test found that installed-version selectors did not rewrite the dependency declarations. Adjusted to supported pnpm 10 `parent>dependency` edges, including the second Swagger → Lodash path verified from lock snapshots.
+- Generator job succeeded on branch SHA `7235b870`, publishing a pnpm-generated lockfile. Verified absent in that lock: body-parser 1.20.4/1.20.8/2.3.0, postcss 8.4.31, glob 10.4.5, picomatch 4.0.1, lodash 4.17.21 and js-yaml 4.1.0. Verified expected resolved patch versions present.
+- Removed the ephemeral write-permitted workflow in commit `2fde5dba`. Only readonly CI acceptance remains in the PR; no production changes were made.
+- **Pending:** complete CI for the final HEAD, audit summary and browser/Docker regressions. This document does not assert release readiness.

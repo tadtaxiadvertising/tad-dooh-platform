@@ -1,7 +1,17 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+  ForbiddenException,
+  BadRequestException,
+} from "@nestjs/common";
 import { KYCService } from "./kyc.service";
 import type { KYCSubmission } from "./kyc.service";
-import { Public } from "../auth/decorators/public.decorator";
+import type { AuthUser } from "../auth/auth.types";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 import { TenantGuard } from "../auth/guards/tenant.guard";
 
@@ -12,8 +22,35 @@ export class KYCController {
   constructor(private readonly kycService: KYCService) {}
 
   @Post("submit")
-  @Public()
-  async submit(@Body() body: KYCSubmission) {
+  async submit(
+    @Req() req: { user?: AuthUser },
+    @Body() body: KYCSubmission,
+  ) {
+    // @Roles guards the endpoint, but body.driverId has no :id route
+    // parameter for TenantGuard to compare. Always validate ownership here.
+    if (!body || typeof body.driverId !== "string" || !body.driverId.trim()) {
+      throw new BadRequestException("Se requiere un ID de conductor válido.");
+    }
+
+    const user = req.user;
+    if (
+      !user ||
+      (user.role !== UserRole.ADMIN && user.role !== UserRole.DRIVER)
+    ) {
+      throw new ForbiddenException(
+        "No tienes permisos para enviar documentos KYC.",
+      );
+    }
+
+    if (
+      user.role === UserRole.DRIVER &&
+      (!user.entityId || user.entityId !== body.driverId)
+    ) {
+      throw new ForbiddenException(
+        "Solo puedes enviar documentos KYC para tu propio perfil.",
+      );
+    }
+
     return this.kycService.submit(body);
   }
 

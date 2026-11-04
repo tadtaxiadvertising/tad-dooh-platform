@@ -1,0 +1,31 @@
+name: KYC Authorization Security Gate
+on:
+  pull_request:
+    paths:
+      - "apps/api/src/modules/kyc/kyc.controller.ts"
+      - "apps/api/src/modules/kyc/kyc.controller.spec.ts"
+      - ".github/workflows/kyc-auth-security.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-kyc-authorization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install exact dependency graph
+        run: pnpm install --frozen-lockfile
+      - name: KYC authorization regression tests
+        run: pnpm --filter api test --runInBand --runTestsByPath src/modules/kyc/kyc.controller.spec.ts
+      - name: Check API TypeScript compatibility
+        run: pnpm exec tsc --noEmit --project apps/api/tsconfig.json

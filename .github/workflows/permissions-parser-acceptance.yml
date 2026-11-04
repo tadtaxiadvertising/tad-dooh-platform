@@ -1,0 +1,36 @@
+name: Permissions Parser Security Acceptance
+on:
+  pull_request:
+    paths:
+      - "packages/permissions/package.json"
+      - "pnpm-lock.yaml"
+      - "scripts/permissions-parser-security.test.cjs"
+      - ".github/workflows/permissions-parser-acceptance.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  permissions-parser-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Verify removal and effective lint dependencies
+        run: node --test scripts/permissions-parser-security.test.cjs
+      - name: Permissions TypeScript
+        run: pnpm exec tsc --noEmit --project packages/permissions/tsconfig.json
+      - name: Permissions ESLint
+        run: pnpm --filter @tad/permissions lint
+      - name: Critical security audit (global high gate remains required)
+        run: pnpm audit --audit-level=critical

@@ -27,3 +27,8 @@ test("pnpm lock removes the obsolete parser and vulnerable semver 5.5.0", () => 
   assert.match(importer, /'@typescript-eslint\/eslint-plugin':/);
   assert.doesNotMatch(importer, /typescript-eslint-parser:/);
 });
+
+test("temporary write-enabled generator must be absent from merge candidate", () => {
+  assert.equal(fs.existsSync(path.join(root,
+    ".github/workflows/permissions-parser-lock-generator.yml")), false);
+});

@@ -16,3 +16,6 @@ The security audit's high Semver ReDoS finding travels through `packages/permiss
 - This PR is independent of #201, #202, #203 and the nonmergeable combined evidence PR #204. Changes to pnpm-lock.yaml must be reconciled by pnpm after any earlier dependency merge.
 
 Remaining high findings after all proposed dependency patches are separate issues (#195); do not lower audit thresholds.
+
+## Final lockfile evidence
+Pnpm-generated lockfile commit `27d672f7` removes `typescript-eslint-parser@22.0.0`, `typescript-estree@18.0.0` and `semver@5.5.0`; the modern scoped parser/plugin are present in the permissions importer. The write-enabled generator was deleted in `5a2de703`; final CI must use read-only permissions. No change to permission-matrix behavior.

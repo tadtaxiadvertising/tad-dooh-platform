@@ -61,3 +61,8 @@ test("blocked file and URL attachments cannot be loaded by mail composition", as
   }), /url access|disabled|rejected|not permitted/i);
   transport.close();
 });
+
+test("temporary write-capable generator must not reach the merge candidate", () => {
+  assert.equal(fs.existsSync(path.join(ROOT,
+    ".github/workflows/smtp-security-lock-generator.yml")), false);
+});

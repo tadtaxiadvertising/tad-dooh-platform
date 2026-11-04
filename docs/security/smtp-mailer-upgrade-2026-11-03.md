@@ -17,3 +17,8 @@ Nodemailer 10 is a **major version**; CJS/ESM and type compatibility, SMTP pooli
 - Frozen install, TypeScript API, Jest, security tests, four Docker builds and high audit checks.
 - Secure human-approved staging delivery test with test-only credentials; **no production test email**.
 - Remediation remains in draft until rollout safety and rollback are reviewed. Issue #195.
+
+## Lock generation checkpoint
+The restricted generator completed successfully and committed an authoritative pnpm lock on `e84b5629`. Verified that the API importer specifies `nodemailer ^10.3.1` and resolves 10.3.1, that no 8.0.11 package remains, and that the obsolete direct type package is gone. The write-enabled helper was deleted in `65b59249` before starting final acceptance. The permanent workflow is read-only.
+
+**Pending:** final CI including TypeScript, offline SMTP composition tests and unit tests; human-controlled Brevo staging delivery. No deployment is authorized by these lock checks.

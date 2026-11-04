@@ -1,0 +1,32 @@
+name: Compatible Dependency Security Acceptance
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "scripts/security-compatible-transitives.test.cjs"
+      - ".github/workflows/compatible-dependency-security.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dependency-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install frozen dependency graph without mutation
+        run: pnpm install --frozen-lockfile
+      - name: Guard scoped resolutions and privileged workflow removal
+        run: node --test scripts/security-compatible-transitives.test.cjs
+      - name: Audit critical advisories without ignoring any finding
+        run: pnpm audit --audit-level=critical

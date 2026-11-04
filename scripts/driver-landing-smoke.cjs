@@ -107,6 +107,57 @@ function recordErrors(page, errors) {
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
 }
 
+async function assertLabGeometry(page, label) {
+  const failures = await page.locator('#calculadora').evaluate(section => {
+    const layout = section.lastElementChild;
+    const controls = layout.firstElementChild;
+    const result = layout.lastElementChild;
+    const edge = section.getBoundingClientRect();
+    const failures = [];
+    for (const [name, element] of Object.entries({ layout, controls,
+      rangeNote: controls.lastElementChild, result })) {
+      const rect = element.getBoundingClientRect();
+      if (rect.left < edge.left - 1 || rect.right > edge.right + 1
+        || rect.left < -1 || rect.right > innerWidth + 1
+        || element.scrollWidth > element.clientWidth + 1) {
+        failures.push(`${name}: box ${rect.left.toFixed(2)}..${rect.right.toFixed(2)}, `
+          + `section ${edge.left.toFixed(2)}..${edge.right.toFixed(2)}, `
+          + `content ${element.scrollWidth}px of ${element.clientWidth}px`);
+      }
+    }
+    const breakdown = result.querySelector('output').nextElementSibling;
+    for (const row of breakdown.children) {
+      const label = row.firstElementChild.getBoundingClientRect();
+      const price = row.lastElementChild.getBoundingClientRect();
+      if (price.left < label.right - 1 && price.top < label.bottom - 1) {
+        failures.push('breakdown: a price overlaps its descriptive label');
+      }
+    }
+    // Inspect painted text fragments, not only their parent boxes: an ancestor
+    // with overflow:clip can otherwise conceal an over-wide grid or price.
+    for (const element of section.querySelectorAll('h2,h3,p,label,small,span,strong,output,dt,dd,a')) {
+      if (!element.getClientRects().length) continue;
+      const own = element.getBoundingClientRect();
+      for (const node of element.childNodes) {
+        if (node.nodeType !== Node.TEXT_NODE || !node.textContent.trim()) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        for (const rect of range.getClientRects()) {
+          if (rect.width < 1) continue;
+          if (rect.left < edge.left - 1 || rect.right > edge.right + 1
+            || rect.left < own.left - 1 || rect.right > own.right + 1
+            || rect.left < -1 || rect.right > innerWidth + 1) {
+            failures.push(`text ${node.textContent.trim().slice(0, 55)}: `
+              + `${rect.left.toFixed(2)}..${rect.right.toFixed(2)} outside its row or section`);
+          }
+        }
+      }
+    }
+    return failures;
+  });
+  assert.deepEqual(failures, [], `${label}: laboratory containers and painted text must fit without clipping.`);
+}
+
 async function main() {
   const base = localUrl(process.env.DRIVER_LANDING_BASE_URL);
   const screenshots = screenshotDirectory();
@@ -255,6 +306,7 @@ async function main() {
         await page.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
         await page.evaluate(() => { document.activeElement?.blur(); scrollTo(0, 0); });
         await assertNoHorizontalOverflow(page, `Driver ${width}px`);
+        await assertLabGeometry(page, `Driver ${width}px`);
         if (screenshots) await page.screenshot({ path: path.join(screenshots, `driver-landing-${width}.png`), fullPage: true });
       }
     });
@@ -266,6 +318,7 @@ async function main() {
         controlSelectors: ['section[aria-labelledby="hero-title"] a[href="#calculadora"]',
           'header a[href="/driver/login"]', '#driver-lab-ads', '#driver-lab-sales', '#driver-lab-referrals'],
         exerciseControls: async scenario => {
+          await assertLabGeometry(page, scenario);
           for (const id of ['driver-lab-ads', 'driver-lab-sales', 'driver-lab-referrals']) {
             const control = page.locator(`#${id}`);
             const original = Number(await control.inputValue());
@@ -277,6 +330,17 @@ async function main() {
             await setRangeWithKeyboard(control, original);
             assert.equal(monetaryAmount(await page.locator(amountSelector).innerText()), before);
           }
+          const original = [];
+          for (const id of ['driver-lab-ads', 'driver-lab-sales', 'driver-lab-referrals']) {
+            const control = page.locator(`#${id}`);
+            original.push([control, Number(await control.inputValue())]);
+            await setRangeWithKeyboard(control, Number(await control.getAttribute('max')));
+          }
+          assert.equal(monetaryAmount(await page.locator(amountSelector).innerText()), 107500,
+            `${scenario}: the largest educational UI example must remain complete.`);
+          await assertLabGeometry(page, `${scenario} maximum example`);
+          for (const [control, value] of original) await setRangeWithKeyboard(control, value);
+          await assertLabGeometry(page, `${scenario} restored example`);
         },
         capture: screenshots ? size => page.screenshot({
           path: path.join(screenshots, `driver-landing-${size.width}x${size.height}-css-zoom200-stress.png`),

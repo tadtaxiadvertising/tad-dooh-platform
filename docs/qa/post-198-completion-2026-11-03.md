@@ -6,7 +6,7 @@ Base: `10774bb43c8190bdb3ebb0bd98d640ec144ea6cc`, merge de [#198](https://github
 
 El pedido es revisar el estado del proyecto y continuar la tarea pendiente. El documento de Downloads sobre CRO/Motion se leyó como contexto; sus prompts de ejemplo no iniciaron cambios adicionales. La continuación conserva el Creative Reframe V4 integrado en #189 y repara su verificación después de #198. El checkout principal histórico `1d668d95`, sus skills modificadas y sus archivos sin commit se preservaron. Se trabaja en un worktree separado desde la base actual.
 
-Estado de esta intervención: **IMPLEMENTADO, PENDIENTE DE VERIFICACIÓN**. No es una certificación global ni una autorización de merge/despliegue.
+Estado histórico: la primera parte quedó integrada mediante [#199](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/199). Las correcciones de reflow/accesibilidad y su verificación final continúan sobre main `148af7ce` en [QA post-199](post-199-landing-reflow-2026-11-03.md). Este documento conserva la evidencia de la primera fase; no certifica la plataforma ni autoriza merge/despliegue.
 
 ## Evidencia de la base
 
@@ -41,6 +41,10 @@ No se deduce salud de producción de estas compilaciones y pruebas aisladas. Los
 - Los tres componentes de landing: solo copy y nombre accesible de slots. El simulador Driver ya documentaba campañas simultáneas en su nota; se alinean subtítulo/FAQ/desglose. El checkbox de Advertiser sigue siendo opcional y reversible, inicialmente OFF.
 - `scripts/landing-creative-reframe.test.cjs`: conserva el contrato de simulación y exige copy público sin detalles internos.
 - Los dos smokes y su helper: estrés de reflow adicional, captura externa opcional y restauración de zoom/viewport en `finally`. No se relajan interceptores de red, errores, SW ni timeouts.
+- `scripts/next-security-contract.test.cjs`: normaliza únicamente saltos de línea al leer fixtures. Reprodujo tres fallos en checkout CRLF; la regresión reconstruye CRLF y mantiene las mismas versiones Next/Sharp y sus comprobaciones.
+- Los dos CSS de landing: el nuevo smoke reprodujo H1 recortado en ambos portales y accesos fuera del ancho ampliado. Advertiser además recortaba el importe en una tarjeta estrecha. Se permiten palabras/cabeceras adaptables y se limita la tipografía del importe al ancho de la tarjeta, sin partir la cifra ni cambiar el cálculo. No se añade ocultación de overflow.
+
+El primer commit del PR, `53cc599cabb45bbf2a0629459f8368350c206c17`, quedó deliberadamente rojo en la nueva prueba: [CI browser](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41640606071) reprodujo el H1 de Advertiser (270 px de contenido / 159 px de caja). Localmente se observó 238/159; Driver 199/159. La diferencia de fuentes/plataforma no cambia la causa. Los candidatos CSS pasaron después la geometría de los tres escenarios; la aceptación final requiere los builds recompilados y sus smokes completos.
 
 ## Verificación de la intervención
 
@@ -51,13 +55,20 @@ Entorno local: Windows, Node 22.20.0. Dependencias bloqueadas mediante pnpm 10.3
 | Guard — RED/GREEN | PASS | El guard previo falla al parsear. Tras reparar el harness, fixtures revelaron comandos no detectados; corrección final `node --check` exit0 y `node --test scripts/ci-e2e-isolation.test.cjs` 5/5, exit0 |
 | Creative Reframe | PASS | `node --test scripts/landing-creative-reframe.test.cjs`, 7/7, exit0 |
 | Sintaxis de smokes/helper y diff whitespace | PASS | `node --check` y `git diff --check`, exit0 |
-| Suites de producto y cookies finales | NOT RUN | Pendiente completar instalación congelada |
-| Tipos estrictos de ambas landings | NOT RUN | Pendiente instalación |
-| Lint del alcance / formato | NOT RUN | Pendiente instalación |
-| Ambos builds con fixtures | NOT RUN | Sin credenciales reales, signup OFF, destinos de API loopback |
-| Browser final, capturas y reflow | NOT RUN | Pendiente builds locales |
-| Lighthouse | NOT RUN | Sin métricas inventadas; no sustituye datos de campo |
-| CI del candidato | NOT RUN | Se comprobará el SHA exacto después de publicar el PR |
+| Instalación congelada | PASS | `corepack pnpm@10.34.0 install --frozen-lockfile`, exit0; no cambios de manifiestos/lock |
+| Suites de producto, cookies y contratos | PASS | `node --test --test-concurrency=1` sobre los nueve archivos declarados abajo: 75/75, exit0; `contracts-final.log` |
+| Tipos estrictos de ambas landings | PASS | `corepack pnpm@10.34.0 exec tsc --noEmit --project apps/{advertiser,driver}/tsconfig.landing.json`, dos comandos, exit0 |
+| Lint de componentes modificados | PASS | Driver: ESLint del workspace. Advertiser carece de binario propio: se invocó el ESLint 9 instalado en Driver, con cwd/config de Advertiser. Ambos `--max-warnings 0`, exit0; no equivale al lint global |
+| Formato del alcance TSX | PASS | `corepack pnpm@10.34.0 dlx prettier@3.8.5 --check` sobre los tres componentes, exit0; se normalizó estilo/LF |
+| Ambos builds con fixtures | PASS local | Advertiser `CAQhH3OiK4vGY-wdxUStq`, Driver `dCd3rpRrzH2qEVMfWMiFG`; configuración sintética, signup OFF. Ver continuación para artefactos vigentes |
+| Browser local de esta fase | PASS | Advertiser 15/15 y Driver 13/13; logs `post-198/advertiser-accepted/advertiser-smoke-accepted.log` y `post-198/driver-smoke-accepted.log`. La revisión visual posterior amplió la regresión del laboratorio Driver; estos pases no acreditan esa cobertura nueva |
+| Lighthouse | VER CONTINUACIÓN | Las muestras anteriores no acreditan las últimas correcciones. Resultados y límites vigentes en QA post-199 |
+| CI de `53cc599c` | PARCIAL | [Tests, TypeScript y Prisma PASS](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41640606235); [cuatro Docker PASS](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41640606073). Nuevo browser FAIL reprodujo el recorte; ESLint y seguridad siguen FAIL |
+| CI posterior | VER CONTINUACIÓN | #199 se integró durante la pausa de sesión. El complemento se entrega en una rama/PR nuevos desde main actual; no se publican commits adicionales al PR cerrado |
+
+Los nueve archivos de Node son `landing.test.cjs`, `landing-creative-reframe.test.cjs`, `driver-landing.test.cjs`, `driver-preview-arithmetic.test.cjs`, `advertiser-onboarding-presentation.test.cjs`, `cookie-management.test.cjs`, `simulator-key-security.test.cjs`, `next-security-contract.test.cjs` y `ci-e2e-isolation.test.cjs`, todos bajo `scripts/`.
+
+La primera ejecución de los nueve archivos en paralelo produjo 70/74 PASS: tres errores CRLF corregidos y un timeout de 5 s al arrancar el simulador con carga simultánea. No se elevó ese timeout. La prueba aislada posterior rechazó la clave ausente en 1531 ms y no emitió telemetría; el pase secuencial final conservó el timeout y pasó las 75 pruebas en 19.7 s (incluida la nueva regresión LF/CRLF). La evidencia paralela fallida se conserva en `contracts.log`; no se cuenta como PASS ni como prueba de rendimiento productivo.
 
 ## Bloqueos independientes y siguiente acción
 

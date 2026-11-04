@@ -64,8 +64,6 @@ export default function LandingPage() {
     setReferral(referralCodeFromSearch(window.location.search));
   }, []);
   const previousPreview = useRef("");
-  const stateRef = useRef({ city, objective, screens, months, includeProduction });
-
   const reduceMotion = useReducedMotion();
   const links = landingLinks();
   const config = {
@@ -134,7 +132,7 @@ export default function LandingPage() {
         <a
           href="/"
           className="landing-brand"
-          aria-label="TAD Anunciantes, inicio"
+          aria-label="TAD Taxi Advertising, Anunciantes, inicio"
         >
           TAD<span>.</span>
           <small>TAXI ADVERTISING</small>

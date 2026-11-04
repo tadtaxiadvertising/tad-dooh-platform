@@ -10,6 +10,7 @@
 }
 .landing :global(*) { box-sizing: border-box; }
 .landing :global(a) { text-decoration: none; }
+.landing :global(a.underline) { text-decoration-line: underline; }
 .landing :global(button), .landing :global(select), .landing :global(input) { font: inherit; }
 .landing :global(button), .landing :global(a), .landing :global(summary), .landing :global(input), .landing :global(select) { -webkit-tap-highlight-color: transparent; }
 .landing :global(:focus-visible) { outline: 3px solid var(--yellow); outline-offset: 5px; }
@@ -165,7 +166,10 @@
 }
 .landing :global(.landing-wrap) { width: min(1310px, calc(100% - 104px)); }
 .landing :global(.landing-header) {
-  height: 94px;
+  height: auto;
+  min-height: 94px;
+  padding-block: 12px;
+  flex-wrap: wrap;
   position: relative;
   z-index: 4;
   border-color: #ffffff27;
@@ -208,11 +212,12 @@
   letter-spacing: -.07em;
   font-weight: 850;
   text-wrap: balance;
+  overflow-wrap: anywhere;
   margin: 25px 0 27px;
 }
 .landing :global(h1 > span) { color: #ffd400; }
 .landing :global(.landing-lead) { color: #c4c1ba; font-size: 16px; line-height: 1.75; max-width: 500px; }
-.landing :global(.landing-button) { border-radius: 999px; min-height: 52px; font-size: 13px; padding: 15px 23px; }
+.landing :global(.landing-button) { border-radius: 999px; min-height: 52px; font-size: 13px; padding: 15px 23px; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
 .landing :global(.landing-button-primary) { background: #ffd400; color: #151515; box-shadow: 0 12px 37px #ffd40025; }
 .landing :global(.landing-button-primary:hover) { background: #ffe56c; }
 .landing :global(.landing-button-light) { background: #f3f1e7; color: #111517; }
@@ -291,6 +296,7 @@
 .landing :global(.landing-panel-copy > p:not(.landing-eyebrow)), .landing :global(.landing-panel-copy li) { color: #d3d0c7; font-size: 13px; }
 .landing :global(.landing-panel-copy li svg), .landing :global(.landing-signup) { color: #ffd400; }
 .landing :global(.landing-preview) {
+  container-type: inline-size;
   color: #151616;
   background: #f7f5ef;
   border: 1px solid #efeddf;
@@ -312,8 +318,15 @@
 .landing :global(.landing-production-option span) { color: #3d330e; }
 .landing :global(.landing-preview-summary) { color: #555347; border-color: #d3cebc; font-size: 12px; }
 .landing :global(.landing-preview-summary strong) { color: #222117; font-weight: 800; }
+@container (max-width: 220px) {
+  .landing :global(.landing-preview-summary) { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .landing :global(.landing-preview-summary strong) { text-align: left; }
+  .landing :global(.landing-preview-summary strong + span) { margin-top: 8px; }
+  .landing :global(.landing-production-option) { flex-direction: column; align-items: flex-start; padding: 8px; gap: 8px; }
+  .landing :global(.landing-production-option span) { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+}
 .landing :global(.landing-total-label) { color: #555247; }
-.landing :global(.landing-large-number) { color: #645000; font-size: clamp(36px, 4vw, 54px); }
+.landing :global(.landing-large-number) { color: #645000; font-size: min(clamp(36px, 4vw, 54px), 18cqi); }
 .landing :global(.landing-estimate-detail) { color: #554c28; background: #fff3c1; border-color: #e6d079; border-radius: 13px; font-size: 12px; }
 .landing :global(.landing-disclaimer) { color: #555247; border-color: #d0cbb6; }
 .landing :global(.landing-rate-summary) { border: 1px solid #d5c98e; border-radius: 15px; background: #faf2d7; color: #51452b; padding: 20px; margin-top: 22px; }
@@ -364,7 +377,7 @@
 }
 @media (max-width: 760px) {
   .landing :global(.landing-wrap) { width: calc(100% - 36px); }
-  .landing :global(.landing-header) { height: 78px; }
+  .landing :global(.landing-header) { min-height: 78px; }
   .landing :global(.landing-brand) { font-size: 34px; }
   .landing :global(.landing-brand small) { margin-left: 10px; font-size: 8px; }
   .landing :global(.landing-hero) { grid-template-columns: 1fr; min-height: auto; gap: 30px; padding-block: 43px 58px; }
@@ -389,7 +402,7 @@
   .landing :global(.landing-screen) { width: 214px; }
   .landing :global(.landing-campaign-panel) { padding: 14px; }
   .landing :global(.landing-preview) { padding: 17px; }
-  .landing :global(.landing-large-number) { font-size: 34px; }
+  .landing :global(.landing-large-number) { font-size: min(34px, 18cqi); }
 }
 
 

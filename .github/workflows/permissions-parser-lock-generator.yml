@@ -1,0 +1,42 @@
+name: Generate Permissions Parser Lock (temporary)
+on:
+  push:
+    branches:
+      - security/permissions-eslint-parser-20261103
+    paths:
+      - "packages/permissions/package.json"
+      - ".github/workflows/permissions-parser-lock-generator.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  resolve-lock:
+    if: github.repository == 'tadtaxiadvertising/tad-dooh-platform' && github.ref == 'refs/heads/security/permissions-eslint-parser-20261103'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate lock from package manifests
+        run: pnpm install --lockfile-only --ignore-scripts
+      - name: Verify removed unused legacy parser
+        run: node --test scripts/permissions-parser-security.test.cjs
+      - name: Commit generated lockfile on this branch only
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "chore(security): prune obsolete permissions parser from lockfile"
+          git push origin HEAD:security/permissions-eslint-parser-20261103

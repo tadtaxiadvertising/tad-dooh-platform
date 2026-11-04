@@ -15,6 +15,7 @@ const expected = {
   "@nestjs/cli>glob": "10.5.0",
   "@angular-devkit/core>picomatch": "4.0.7",
   "@nestjs/config>lodash": "4.18.1",
+  "@nestjs/swagger>lodash": "4.18.1",
   "@nestjs/swagger>js-yaml": "4.3.2"
 };
 

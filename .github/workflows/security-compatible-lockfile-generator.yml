@@ -1,0 +1,47 @@
+name: Prepare Compatible Security Lockfile (temporary)
+on:
+  push:
+    branches:
+      - security/high-compatible-transitive-20261103
+    paths:
+      - "package.json"
+      - ".github/workflows/security-compatible-lockfile-generator.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  resolve-lock:
+    if: github.repository == 'tadtaxiadvertising/tad-dooh-platform' && github.ref == 'refs/heads/security/high-compatible-transitive-20261103'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate lockfile with pnpm; never synthesize integrity hashes
+        run: |
+          set -euo pipefail
+          pnpm install --lockfile-only --ignore-scripts
+      - name: Verify targeted high-severity fixes
+        run: |
+          set -euo pipefail
+          node --test scripts/security-compatible-transitives.test.cjs
+      - name: Commit only generated lockfile to isolated branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo "Lockfile already synchronized"
+            exit 0
+          fi
+          git commit -m "chore(security): regenerate compatible transitive lockfile [pnpm generated]"
+          git push origin HEAD:security/high-compatible-transitive-20261103

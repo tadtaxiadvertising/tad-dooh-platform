@@ -10,6 +10,7 @@ import { Request } from "express";
 import * as jwt from "jsonwebtoken";
 import { BUSINESS_RULES } from "../../../common/constants/business-rules";
 import { requireEnv } from "../../../utils/env.util";
+import type { AuthenticatedRequest } from "../../auth/auth.types";
 
 /**
  * SEC-03: Device Token Guard
@@ -65,7 +66,7 @@ export class DeviceTokenGuard implements CanActivate {
     }
 
     // Attach deviceId to request for downstream use
-    (request as any).authenticatedDeviceId = deviceId;
+    (request as AuthenticatedRequest).authenticatedDeviceId = deviceId;
     return true;
   }
 }

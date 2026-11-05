@@ -40,9 +40,9 @@ export class AntigravityService {
       );
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // LOG CRÍTICO PARA SHERLOG
-      if (error.response?.status === 404) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
         this.logger.error(
           `[404 NOT FOUND] La entidad no existe en ${region}. Probando fallback global...`,
         );

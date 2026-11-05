@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // TAD Simulator v2.0 — CLI stress-test tool for tablet telemetry endpoints
 
-import { generateGPSPoint, generatePlaybackEvent, generateHeartbeat, API_URLS, VIDEO_IDS, SAMPLING_INTERVAL_GPS, SAMPLING_INTERVAL_PLAYBACK, SAMPLING_INTERVAL_HEARTBEAT, CONFIG } from './generators.js';
+import { generateGPSPoint, generatePlaybackEvent, generateHeartbeat, API_URLS, SAMPLING_INTERVAL_GPS, SAMPLING_INTERVAL_PLAYBACK, SAMPLING_INTERVAL_HEARTBEAT, CONFIG } from './generators.js';
 import axios from 'axios';
 
 const { TABLET_COUNT, SIMULATION_DURATION_MINUTES, MAX_CONCURRENT, TABLET_KEY } = CONFIG;
@@ -63,7 +63,7 @@ async function sendPlayback(deviceId) {
     });
     playbackSent++;
     trackLatency(Date.now() - start);
-  } catch (e) {
+  } catch {
     playbackFail++;
   }
 }
@@ -77,7 +77,7 @@ async function sendHeartbeat(deviceId) {
       timeout: 5000,
     });
     heartbeatSent++;
-  } catch (e) {
+  } catch {
     heartbeatFail++;
   }
 }

@@ -18,9 +18,7 @@ import {
   Battery,
   HardDrive,
   MapPin,
-  Gauge,
   Search,
-  Power,
   Trash2,
   Zap,
   MonitorOff,
@@ -32,12 +30,9 @@ import {
   Bell,
   Cpu,
   Clock,
-  Copy,
   ExternalLink,
-  Link2,
   Edit2,
   AlertTriangle,
-  Check,
   RefreshCw,
   ShieldAlert,
   ShieldCheck,
@@ -57,6 +52,8 @@ const fetcher = (url: string) => api.get(url).then((res) => res.data);
 
 interface FleetDevice {
   id: string;
+  driver_id?: string;
+  subscription_status?: string;
   device_id: string;
   deviceId?: string;
   taxi_number?: string;
@@ -85,66 +82,6 @@ interface FleetDevice {
 }
 
 // Helper: obtiene la base URL del API de producción
-const getApiBase = () => {
-  if (typeof window === "undefined") return "";
-  const stored = (window as unknown as Record<string, string>).TAD_API_URL;
-  if (stored) return stored;
-  // En producción usa la URL del backend desplegado en EasyPanel
-  return (
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://proyecto-ia-tad-api.rewvid.easypanel.host/api"
-  );
-};
-
-const getTelemetryUrl = (deviceId: string, driverId?: string) => {
-  // Points to the new tad-driver.html business hub, pre-filling the deviceId and server via URL
-  const base =
-    process.env.NEXT_PUBLIC_PLAYER_URL ||
-    "https://proyecto-ia-tad-player.rewvid.easypanel.host";
-  const api = getApiBase();
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("tad_admin_token") ||
-        localStorage.getItem("tad_token") ||
-        ""
-      : "";
-  return `${base}/tad-driver.html?deviceId=${deviceId}&driverId=${driverId || ""}&server=${encodeURIComponent(api)}&token=${token}`;
-};
-
-function CopyButton({
-  value,
-  label = "URL",
-}: {
-  value: string;
-  label?: string;
-}) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // fallback
-    }
-  };
-  return (
-    <button
-      onClick={handleCopy}
-      title={`Copiar ${label}`}
-      className={clsx(
-        "flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border shrink-0",
-        copied
-          ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
-          : "bg-white/5 border-white/10 text-zinc-400 hover:bg-tad-yellow/10 hover:border-tad-yellow/30 hover:text-tad-yellow",
-      )}
-    >
-      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-      {copied ? "Copiado" : label}
-    </button>
-  );
-}
 
 export const getServerSideProps: GetServerSideProps = async () => ({
   props: {},
@@ -164,7 +101,9 @@ export default function FleetPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHubOpen, setIsHubOpen] = useState(false);
-  const [selectedDevice, setSelectedDevice] = useState<any>(null);
+  const [selectedDevice, setSelectedDevice] = useState<FleetDevice | null>(
+    null,
+  );
   const [selectedHubId, setSelectedHubId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -179,7 +118,9 @@ export default function FleetPage() {
     mutate: mutateFleet,
     isLoading: isLoadingFleet,
     error: fleetError,
-  } = useSWR("/fleet/summary", fetcher, {
+  } = useSWR<
+    FleetDevice[] | { total?: number; online?: number; offline?: number }
+  >("/fleet/summary", fetcher, {
     refreshInterval: 30000,
   });
 
@@ -197,7 +138,9 @@ export default function FleetPage() {
   const [loadingAlerts, setLoadingAlerts] = useState(false);
 
   // 🛡️ Pending Approvals
-  const [pendingDevicesList, setPendingDevicesList] = useState<any[]>([]);
+  const [pendingDevicesList, setPendingDevicesList] = useState<
+    { deviceId: string; appVersion?: string; lastSeen?: string }[]
+  >([]);
   const [loadingPending, setLoadingPending] = useState(false);
 
   const loadInventory = useCallback(async () => {
@@ -258,7 +201,7 @@ export default function FleetPage() {
       toast.success(
         `Comando ${type} enviado con éxito a la terminal ${deviceId}`,
       );
-    } catch (err) {
+    } catch {
       toast.error("FALLA DE SISTEMA: Error enviando comando de hardware.");
     } finally {
       setCommanding(null);
@@ -278,7 +221,7 @@ export default function FleetPage() {
       );
       mutateFleet();
       if (activeTab === "inventory") loadInventory();
-    } catch (err) {
+    } catch {
       toast.error("ERROR CRÍTICO: No se pudo eliminar el dispositivo.");
     }
   };
@@ -371,7 +314,7 @@ export default function FleetPage() {
           label="Pantallas en Línea"
           value={
             Array.isArray(fleetData)
-              ? fleetData.filter((d: any) => d.is_online).length
+              ? fleetData.filter((d: FleetDevice) => d.is_online).length
               : fleetData?.online || 0
           }
           icon={Wifi}
@@ -396,7 +339,7 @@ export default function FleetPage() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as typeof activeTab)}
             className={clsx(
               "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 relative",
               activeTab === tab.id
@@ -520,12 +463,12 @@ export default function FleetPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {(isLoadingFleet
-                    ? [1, 2, 3, 4, 5, 6, 7, 8]
+                    ? Array.from({ length: 8 }, () => null)
                     : Array.isArray(fleetData)
                       ? fleetData
                       : []
                   )
-                    .filter((d: any) => {
+                    .filter((d: FleetDevice) => {
                       if (isLoadingFleet) return true;
                       const matchSearch =
                         d.device_id
@@ -547,7 +490,7 @@ export default function FleetPage() {
                         (filter === "online" ? d.is_online : !d.is_online)
                       );
                     })
-                    .map((device: any, i: number) => (
+                    .map((device: FleetDevice, i: number) => (
                       <DeviceGridCard
                         key={isLoadingFleet ? i : device.id}
                         device={device}
@@ -610,49 +553,50 @@ export default function FleetPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {(loadingAlerts ? [1, 2, 3] : offlineDevices).map(
-                    (device: any, i) => (
-                      <tr
-                        key={device.device_id || i}
-                        className="hover:bg-white/[0.02] transition-colors"
-                      >
-                        <td className="px-8 py-6 whitespace-nowrap text-xs font-mono font-bold text-white uppercase tracking-wider">
-                          {loadingAlerts ? (
-                            <div className="h-4 w-24 bg-white/5 animate-pulse rounded" />
-                          ) : (
-                            device.device_id
-                          )}
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap text-xs text-zinc-400 font-bold font-mono">
-                          {loadingAlerts ? (
-                            <div className="h-4 w-40 bg-white/5 animate-pulse rounded" />
-                          ) : device.last_seen ? (
-                            new Date(device.last_seen)
-                              .toLocaleString()
-                              .toUpperCase()
-                          ) : (
-                            "SIN REGISTRO"
-                          )}
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                          {loadingAlerts ? (
-                            <div className="h-6 w-32 bg-white/5 animate-pulse rounded-full" />
-                          ) : (
-                            <div className="flex items-center gap-3">
-                              <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest bg-rose-500/10 px-4 py-1.5 rounded-full border border-rose-500/20">
-                                {device.last_seen
-                                  ? formatDistanceToNow(
-                                      new Date(device.last_seen),
-                                      { addSuffix: true },
-                                    ).toUpperCase()
-                                  : "DESCONEXIÓN TOTAL"}
-                              </span>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ),
-                  )}
+                  {(loadingAlerts
+                    ? Array.from({ length: 3 }, () => null)
+                    : offlineDevices
+                  ).map((device, i) => (
+                    <tr
+                      key={device?.device_id || i}
+                      className="hover:bg-white/[0.02] transition-colors"
+                    >
+                      <td className="px-8 py-6 whitespace-nowrap text-xs font-mono font-bold text-white uppercase tracking-wider">
+                        {loadingAlerts ? (
+                          <div className="h-4 w-24 bg-white/5 animate-pulse rounded" />
+                        ) : (
+                          device.device_id
+                        )}
+                      </td>
+                      <td className="px-8 py-6 whitespace-nowrap text-xs text-zinc-400 font-bold font-mono">
+                        {loadingAlerts ? (
+                          <div className="h-4 w-40 bg-white/5 animate-pulse rounded" />
+                        ) : device.last_seen ? (
+                          new Date(device.last_seen)
+                            .toLocaleString()
+                            .toUpperCase()
+                        ) : (
+                          "SIN REGISTRO"
+                        )}
+                      </td>
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        {loadingAlerts ? (
+                          <div className="h-6 w-32 bg-white/5 animate-pulse rounded-full" />
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest bg-rose-500/10 px-4 py-1.5 rounded-full border border-rose-500/20">
+                              {device.last_seen
+                                ? formatDistanceToNow(
+                                    new Date(device.last_seen),
+                                    { addSuffix: true },
+                                  ).toUpperCase()
+                                : "DESCONEXIÓN TOTAL"}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                   {offlineDevices.length === 0 && !loadingAlerts && (
                     <tr>
                       <td colSpan={3} className="px-8 py-32 text-center">
@@ -749,122 +693,123 @@ export default function FleetPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.03]">
-                  {(loadingInventory ? [1, 2, 3, 4, 5] : filteredInventory).map(
-                    (device: any, i: number) => {
-                      if (loadingInventory) {
-                        return (
-                          <tr key={i}>
-                            <td colSpan={5} className="px-8 py-4">
-                              <div className="h-4 w-full bg-white/5 animate-pulse rounded" />
-                            </td>
-                          </tr>
-                        );
-                      }
-                      const health = getDeviceHealth(device);
-                      const storagePct = device.storage_total
-                        ? Math.round(
-                            ((device.storage_total -
-                              (parseFloat(device.storage_free) || 0)) /
-                              device.storage_total) *
-                              100,
-                          )
-                        : 0;
+                  {(loadingInventory
+                    ? Array.from({ length: 5 }, () => null)
+                    : filteredInventory
+                  ).map((device: FleetDevice, i: number) => {
+                    if (loadingInventory) {
                       return (
-                        <tr
-                          key={device.device_id}
-                          className="hover:bg-white/[0.01] transition-all group"
-                        >
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-3">
-                              <Cpu className="w-4 h-4 text-zinc-600" />
-                              <span className="text-xs font-black text-white uppercase tracking-wider">
-                                {device.device_id}
-                              </span>
-                            </div>
-                            <p className="text-[9px] text-tad-yellow font-bold uppercase mt-1 tracking-widest">
-                              Placa: {device.taxi_number || "S/N"}
-                            </p>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div
-                              className={clsx(
-                                "inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest",
-                                health === "healthy"
-                                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                  : health === "warning"
-                                    ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                    : "bg-rose-500/10 text-rose-500 border-rose-500/20",
-                              )}
-                            >
-                              {health === "healthy"
-                                ? "Ok"
-                                : health === "warning"
-                                  ? "Alerta"
-                                  : "Crítico"}
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-2">
-                              <Terminal className="w-4 h-4 text-zinc-600" />
-                              <span className="text-[10px] font-mono font-bold text-zinc-400 whitespace-nowrap">
-                                BUILD_V{device.app_version || "2.0.1"}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="w-full max-w-[120px]">
-                              <div className="flex justify-between text-[9px] font-black text-zinc-600 mb-1.5 uppercase tracking-widest">
-                                <span>Cache: {storagePct}%</span>
-                              </div>
-                              <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                <div
-                                  className={clsx(
-                                    "h-full rounded-full transition-all",
-                                    storagePct > 90
-                                      ? "bg-rose-500"
-                                      : "bg-tad-yellow",
-                                    storagePct >= 95
-                                      ? "w-full"
-                                      : storagePct >= 90
-                                        ? "w-[90%]"
-                                        : storagePct >= 80
-                                          ? "w-[80%]"
-                                          : storagePct >= 70
-                                            ? "w-[70%]"
-                                            : storagePct >= 60
-                                              ? "w-[60%]"
-                                              : storagePct >= 50
-                                                ? "w-[50%]"
-                                                : storagePct >= 40
-                                                  ? "w-[40%]"
-                                                  : storagePct >= 30
-                                                    ? "w-[30%]"
-                                                    : storagePct >= 20
-                                                      ? "w-[20%]"
-                                                      : storagePct >= 10
-                                                        ? "w-[10%]"
-                                                        : "w-0",
-                                  )}
-                                />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-2 text-zinc-500">
-                              <Clock className="w-4 h-4" />
-                              <span className="text-[10px] font-bold uppercase tracking-widest">
-                                {device.last_seen
-                                  ? formatDistanceToNow(
-                                      new Date(device.last_seen),
-                                    ).toUpperCase()
-                                  : "N/A"}
-                              </span>
-                            </div>
+                        <tr key={i}>
+                          <td colSpan={5} className="px-8 py-4">
+                            <div className="h-4 w-full bg-white/5 animate-pulse rounded" />
                           </td>
                         </tr>
                       );
-                    },
-                  )}
+                    }
+                    const health = getDeviceHealth(device);
+                    const storagePct = device.storage_total
+                      ? Math.round(
+                          ((device.storage_total -
+                            (parseFloat(device.storage_free) || 0)) /
+                            device.storage_total) *
+                            100,
+                        )
+                      : 0;
+                    return (
+                      <tr
+                        key={device.device_id}
+                        className="hover:bg-white/[0.01] transition-all group"
+                      >
+                        <td className="px-8 py-6">
+                          <div className="flex items-center gap-3">
+                            <Cpu className="w-4 h-4 text-zinc-600" />
+                            <span className="text-xs font-black text-white uppercase tracking-wider">
+                              {device.device_id}
+                            </span>
+                          </div>
+                          <p className="text-[9px] text-tad-yellow font-bold uppercase mt-1 tracking-widest">
+                            Placa: {device.taxi_number || "S/N"}
+                          </p>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div
+                            className={clsx(
+                              "inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest",
+                              health === "healthy"
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                : health === "warning"
+                                  ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                  : "bg-rose-500/10 text-rose-500 border-rose-500/20",
+                            )}
+                          >
+                            {health === "healthy"
+                              ? "Ok"
+                              : health === "warning"
+                                ? "Alerta"
+                                : "Crítico"}
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="flex items-center gap-2">
+                            <Terminal className="w-4 h-4 text-zinc-600" />
+                            <span className="text-[10px] font-mono font-bold text-zinc-400 whitespace-nowrap">
+                              BUILD_V{device.app_version || "2.0.1"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="w-full max-w-[120px]">
+                            <div className="flex justify-between text-[9px] font-black text-zinc-600 mb-1.5 uppercase tracking-widest">
+                              <span>Cache: {storagePct}%</span>
+                            </div>
+                            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                              <div
+                                className={clsx(
+                                  "h-full rounded-full transition-all",
+                                  storagePct > 90
+                                    ? "bg-rose-500"
+                                    : "bg-tad-yellow",
+                                  storagePct >= 95
+                                    ? "w-full"
+                                    : storagePct >= 90
+                                      ? "w-[90%]"
+                                      : storagePct >= 80
+                                        ? "w-[80%]"
+                                        : storagePct >= 70
+                                          ? "w-[70%]"
+                                          : storagePct >= 60
+                                            ? "w-[60%]"
+                                            : storagePct >= 50
+                                              ? "w-[50%]"
+                                              : storagePct >= 40
+                                                ? "w-[40%]"
+                                                : storagePct >= 30
+                                                  ? "w-[30%]"
+                                                  : storagePct >= 20
+                                                    ? "w-[20%]"
+                                                    : storagePct >= 10
+                                                      ? "w-[10%]"
+                                                      : "w-0",
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="flex items-center gap-2 text-zinc-500">
+                            <Clock className="w-4 h-4" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">
+                              {device.last_seen
+                                ? formatDistanceToNow(
+                                    new Date(device.last_seen),
+                                  ).toUpperCase()
+                                : "N/A"}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -919,94 +864,95 @@ export default function FleetPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {(loadingPending ? [1, 2, 3] : pendingDevicesList).map(
-                    (device: any, i) => (
-                      <tr
-                        key={device.deviceId || i}
-                        className="hover:bg-white/[0.02] transition-colors"
-                      >
-                        <td className="px-8 py-6 whitespace-nowrap text-xs font-mono font-bold text-white uppercase tracking-wider">
-                          {loadingPending ? (
-                            <div className="h-4 w-24 bg-white/5 animate-pulse rounded" />
-                          ) : (
-                            device.deviceId
-                          )}
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap text-xs text-zinc-400 font-bold font-mono">
-                          {loadingPending ? (
-                            <div className="h-4 w-20 bg-white/5 animate-pulse rounded" />
-                          ) : (
-                            device.appVersion || "Desconocida"
-                          )}
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap text-xs text-zinc-400 font-bold font-mono">
-                          {loadingPending ? (
-                            <div className="h-4 w-40 bg-white/5 animate-pulse rounded" />
-                          ) : device.lastSeen ? (
-                            new Date(device.lastSeen)
-                              .toLocaleString()
-                              .toUpperCase()
-                          ) : (
-                            "SIN REGISTRO"
-                          )}
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                          {loadingPending ? (
-                            <div className="h-6 w-32 bg-white/5 animate-pulse rounded-full" />
-                          ) : (
-                            <div className="flex items-center gap-3">
-                              <AntigravityButton
-                                actionName="approve_pending_device"
-                                onAsyncClick={async () => {
-                                  try {
-                                    await approvePendingDevice(device.deviceId);
-                                    setStatusMessage("Dispositivo Aprobado");
-                                    toast.success(
-                                      "ACCESO CONCEDIDO: El dispositivo ya forma parte de la flota activa.",
-                                    );
-                                    loadPending();
-                                    mutateFleet();
-                                  } catch (e) {
-                                    toast.error(
-                                      "FALLA DE AUTORIZACIÓN: No se pudo aprobar el dispositivo.",
-                                    );
-                                  }
-                                }}
-                                variant="primary"
-                                className="px-4 py-1.5 h-auto text-[9px] rounded-xl"
-                              >
-                                <ShieldCheck className="w-3 h-3" />
-                                Aprobar
-                              </AntigravityButton>
-                              <AntigravityButton
-                                actionName="reject_pending_device"
-                                confirmMessage={`¿Rechazar (eliminar) dispositivo ${device.deviceId}?`}
-                                onAsyncClick={async () => {
-                                  try {
-                                    await rejectPendingDevice(device.deviceId);
-                                    setStatusMessage("Dispositivo Rechazado");
-                                    toast.warning(
-                                      "SOLICITUD RECHAZADA: El dispositivo ha sido bloqueado de la red.",
-                                    );
-                                    loadPending();
-                                  } catch (e) {
-                                    toast.error(
-                                      "ERROR: No se pudo procesar el rechazo del dispositivo.",
-                                    );
-                                  }
-                                }}
-                                variant="danger"
-                                className="px-4 py-1.5 h-auto text-[9px] rounded-xl"
-                              >
-                                <XCircle className="w-3 h-3" />
-                                Rechazar
-                              </AntigravityButton>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ),
-                  )}
+                  {(loadingPending
+                    ? Array.from({ length: 3 }, () => null)
+                    : pendingDevicesList
+                  ).map((device, i) => (
+                    <tr
+                      key={device?.deviceId || i}
+                      className="hover:bg-white/[0.02] transition-colors"
+                    >
+                      <td className="px-8 py-6 whitespace-nowrap text-xs font-mono font-bold text-white uppercase tracking-wider">
+                        {loadingPending ? (
+                          <div className="h-4 w-24 bg-white/5 animate-pulse rounded" />
+                        ) : (
+                          device.deviceId
+                        )}
+                      </td>
+                      <td className="px-8 py-6 whitespace-nowrap text-xs text-zinc-400 font-bold font-mono">
+                        {loadingPending ? (
+                          <div className="h-4 w-20 bg-white/5 animate-pulse rounded" />
+                        ) : (
+                          device.appVersion || "Desconocida"
+                        )}
+                      </td>
+                      <td className="px-8 py-6 whitespace-nowrap text-xs text-zinc-400 font-bold font-mono">
+                        {loadingPending ? (
+                          <div className="h-4 w-40 bg-white/5 animate-pulse rounded" />
+                        ) : device.lastSeen ? (
+                          new Date(device.lastSeen)
+                            .toLocaleString()
+                            .toUpperCase()
+                        ) : (
+                          "SIN REGISTRO"
+                        )}
+                      </td>
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        {loadingPending ? (
+                          <div className="h-6 w-32 bg-white/5 animate-pulse rounded-full" />
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <AntigravityButton
+                              actionName="approve_pending_device"
+                              onAsyncClick={async () => {
+                                try {
+                                  await approvePendingDevice(device.deviceId);
+                                  setStatusMessage("Dispositivo Aprobado");
+                                  toast.success(
+                                    "ACCESO CONCEDIDO: El dispositivo ya forma parte de la flota activa.",
+                                  );
+                                  loadPending();
+                                  mutateFleet();
+                                } catch {
+                                  toast.error(
+                                    "FALLA DE AUTORIZACIÓN: No se pudo aprobar el dispositivo.",
+                                  );
+                                }
+                              }}
+                              variant="primary"
+                              className="px-4 py-1.5 h-auto text-[9px] rounded-xl"
+                            >
+                              <ShieldCheck className="w-3 h-3" />
+                              Aprobar
+                            </AntigravityButton>
+                            <AntigravityButton
+                              actionName="reject_pending_device"
+                              confirmMessage={`¿Rechazar (eliminar) dispositivo ${device.deviceId}?`}
+                              onAsyncClick={async () => {
+                                try {
+                                  await rejectPendingDevice(device.deviceId);
+                                  setStatusMessage("Dispositivo Rechazado");
+                                  toast.warning(
+                                    "SOLICITUD RECHAZADA: El dispositivo ha sido bloqueado de la red.",
+                                  );
+                                  loadPending();
+                                } catch {
+                                  toast.error(
+                                    "ERROR: No se pudo procesar el rechazo del dispositivo.",
+                                  );
+                                }
+                              }}
+                              variant="danger"
+                              className="px-4 py-1.5 h-auto text-[9px] rounded-xl"
+                            >
+                              <XCircle className="w-3 h-3" />
+                              Rechazar
+                            </AntigravityButton>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                   {pendingDevicesList.length === 0 && !loadingPending && (
                     <tr>
                       <td colSpan={4} className="px-8 py-32 text-center">
@@ -1069,7 +1015,7 @@ function StatCard({
 }: {
   label: string;
   value: string | number;
-  icon: any;
+  icon: typeof Tablet;
   color: string;
   glow?: boolean;
 }) {
@@ -1114,7 +1060,15 @@ function DeviceGridCard({
   onConfigure,
   onDelete,
   isCommanding,
-}: any) {
+}: {
+  device?: FleetDevice;
+  isLoading?: boolean;
+  onCommand?: (id: string, type: string) => void;
+  onConfigure?: () => void;
+  onDelete?: () => Promise<void>;
+  isCommanding?: boolean;
+  playerLink?: string;
+}) {
   if (isLoading) {
     return (
       <div className="bg-[#111317] border border-white/[0.05] rounded-[24px] p-6 h-[340px] animate-pulse">
@@ -1141,10 +1095,6 @@ function DeviceGridCard({
 
   // SRE SEMAPHORE LOGIC
   let healthStatus: SemaphoreStatus = "optimum";
-  const lastSeenDate = device.last_seen ? new Date(device.last_seen) : null;
-  const offlineMoreThanOneHour =
-    lastSeenDate &&
-    new Date().getTime() - lastSeenDate.getTime() > 60 * 60 * 1000;
 
   if (!device.is_online || !isPaid) {
     healthStatus = "critical";
@@ -1302,8 +1252,7 @@ function DeviceGridCard({
               localStorage.getItem("tad_admin_token") ||
               localStorage.getItem("tad_token") ||
               "";
-            const driverId =
-              device.driver?.id || (device as any).driver_id || "";
+            const driverId = device.driver?.id || device.driver_id || "";
             const url = `${baseUrl}/tad-driver.html?deviceId=${device.device_id}&driverId=${driverId}&server=${apiServer}&token=${token}`;
             window.open(url, "_blank", "noopener,noreferrer");
           }}
@@ -1333,7 +1282,12 @@ function TelemetryMini({
   value,
   icon: Icon,
   color = "text-slate-400",
-}: any) {
+}: {
+  label: string;
+  value: string;
+  icon: typeof Tablet;
+  color?: string;
+}) {
   return (
     <div className="space-y-1.5 border-l-2 border-white/[0.05] pl-3">
       <div className="flex items-center gap-1.5">
@@ -1345,30 +1299,6 @@ function TelemetryMini({
       <p className={clsx("text-[10px] font-black tracking-tight", color)}>
         {value}
       </p>
-    </div>
-  );
-}
-
-function TelemetryItem({
-  icon: Icon,
-  value,
-  color,
-}: {
-  icon: any;
-  value: string;
-  color: string;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <Icon className="w-3.5 h-3.5 text-zinc-600" />
-      <span
-        className={clsx(
-          "text-[10px] font-bold uppercase tracking-widest",
-          color,
-        )}
-      >
-        {value}
-      </span>
     </div>
   );
 }

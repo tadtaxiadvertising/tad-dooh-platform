@@ -20,7 +20,6 @@ import {
   Database,
   ShieldCheck,
   Zap,
-  RefreshCw,
 } from "lucide-react";
 import {
   startTadTracking,
@@ -152,32 +151,6 @@ export default function CheckIn() {
     deviceId: null,
     error: null,
   });
-
-  const [isRetrying, setIsRetrying] = useState(false);
-  const [toastMsg, setToastMsg] = useState<{
-    title: string;
-    msg: string;
-    type: "error" | "info" | "success";
-  } | null>(null);
-
-  const handleRetry = async () => {
-    setIsRetrying(true);
-
-    // Simulate slight delay for UX (loading state visibility)
-    await new Promise((r) => setTimeout(r, 600));
-
-    if (!navigator.onLine) {
-      setToastMsg({
-        title: "Modo Offline",
-        msg: "Guardado localmente, se sincronizará luego (Sin Red)",
-        type: "info",
-      });
-      setIsRetrying(false);
-      return;
-    }
-
-    window.location.reload();
-  };
 
   const formatTime = useCallback((iso: string | null) => {
     if (!iso) return "—";

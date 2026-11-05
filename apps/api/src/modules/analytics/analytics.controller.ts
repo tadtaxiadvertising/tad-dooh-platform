@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from "../auth/auth.types";
 import {
   Controller,
   Post,
@@ -19,8 +20,8 @@ import { InvoiceService } from "../finance/invoice.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
-import { UseGuards, Req } from "@nestjs/common";
-import { RolesGuard } from "../auth/guards/roles.guard";
+import { Req } from "@nestjs/common";
+
 @Controller("analytics")
 export class AnalyticsController {
   constructor(
@@ -74,7 +75,9 @@ export class AnalyticsController {
   @Public() // Tablets send events without JWT
   @Post("event")
   @HttpCode(HttpStatus.OK)
-  async ingestEvent(@Body() dto: any) {
+  async ingestEvent(
+    @Body() dto: Parameters<AnalyticsService["ingestEvent"]>[0],
+  ) {
     await this.analyticsService.ingestEvent(dto);
     return { success: true };
   }
@@ -82,14 +85,22 @@ export class AnalyticsController {
   @Public() // Tablets batch-upload analytics without JWT
   @Post("batch")
   @HttpCode(HttpStatus.OK)
-  async ingestBatchEvents(@Body() body: any) {
+  async ingestBatchEvents(
+    @Body()
+    body:
+      | Parameters<AnalyticsService["ingestBatchEvents"]>[0]
+      | { events?: Parameters<AnalyticsService["ingestBatchEvents"]>[0] },
+  ) {
     const events = Array.isArray(body) ? body : body.events || [];
     await this.analyticsService.ingestBatchEvents(events);
     return { success: true };
   }
 
   @Get("campaign/:id")
-  async getCampaignAnalytics(@Param("id") campaignId: string, @Req() req: any) {
+  async getCampaignAnalytics(
+    @Param("id") campaignId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     const { role, entityId } = req.user;
     // If advertiser, we should check if they own the campaign, but for now we trust the ID if provided via frontend or handle it in service
     // For simplicity, we can just check ownership here if it's an advertiser
@@ -114,7 +125,7 @@ export class AnalyticsController {
 
   @Get("summary")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getAnalyticsSummary(@Req() req: any) {
+  async getAnalyticsSummary(@Req() req: AuthenticatedRequest) {
     const { role, entityId } = req.user;
     const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
     return this.analyticsService.getAnalyticsSummary(advertiserId);
@@ -122,7 +133,7 @@ export class AnalyticsController {
 
   @Get("total-impressions")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getTotalImpressions(@Req() req: any) {
+  async getTotalImpressions(@Req() req: AuthenticatedRequest) {
     const { role, entityId } = req.user;
     const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
     return this.analyticsService.getTotalImpressions(advertiserId);
@@ -130,7 +141,7 @@ export class AnalyticsController {
 
   @Get("anti-fraud")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getAntiFraudMetrics(@Req() req: any) {
+  async getAntiFraudMetrics(@Req() req: AuthenticatedRequest) {
     const { role, entityId } = req.user;
     const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
     return this.analyticsService.getAntiFraudMetrics(advertiserId);
@@ -138,7 +149,7 @@ export class AnalyticsController {
 
   @Get("top-taxis")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getTopTaxis(@Req() req: any) {
+  async getTopTaxis(@Req() req: AuthenticatedRequest) {
     const { role, entityId } = req.user;
     const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
     return this.analyticsService.getTopTaxis(advertiserId);
@@ -146,7 +157,7 @@ export class AnalyticsController {
 
   @Get("hourly")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getHourlyAnalytics(@Req() req: any) {
+  async getHourlyAnalytics(@Req() req: AuthenticatedRequest) {
     const { role, entityId } = req.user;
     const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
     return this.analyticsService.getHourlyAnalytics(advertiserId);
@@ -154,7 +165,7 @@ export class AnalyticsController {
 
   @Get("recent-plays")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getRecentPlays(@Req() req: any) {
+  async getRecentPlays(@Req() req: AuthenticatedRequest) {
     const { role, entityId } = req.user;
     const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
     return this.analyticsService.getRecentPlays(advertiserId);
@@ -163,8 +174,8 @@ export class AnalyticsController {
   @Get("heatmap")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getHeatmap(
-    @Query("advertiserId") advertiserId?: string,
-    @Req() req?: any,
+    @Query("advertiserId") advertiserId: string | undefined,
+    @Req() req: AuthenticatedRequest,
   ) {
     const finalAdvertiserId =
       req.user?.role === UserRole.ADVERTISER ? req.user.entityId : advertiserId;
@@ -175,7 +186,7 @@ export class AnalyticsController {
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getWeeklyCampaignAnalytics(
     @Param("id") campaignId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     if (req.user?.role === UserRole.ADVERTISER) {
       const campaign = await this.prisma.campaign.findUnique({

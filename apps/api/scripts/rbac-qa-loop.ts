@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+import { errorMessage } from "../src/utils/error.util";
 /**
  * TAD RBAC QA Autonomous Loop
  *
@@ -10,6 +12,17 @@
  * 6. REPORTE: Genera documento maestro con resultados
  */
 
+/**
+ * TAD RBAC QA Autonomous Loop
+ *
+ * Flujo:
+ * 1. PURGA: Elimina usuarios sin transacciones financieras (respetando RESTRICT en Wallets)
+ * 2. SEEDING: Crea 3 roles operativos (Admin, Driver,Advertiser) en Supabase Auth + DB local
+ * 3. DB RBAC VERIFY: Verifica roles en tablas locales (sin necesidad de API)
+ * 4. AUTH TEST: Login directo contra Supabase GoTrue (sin necesidad de API NestJS)
+ * 5. API RBAC TEST: Login + RBAC contra API NestJS (si está disponible)
+ * 6. REPORTE: Genera documento maestro con resultados
+ */
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import * as jwt from "jsonwebtoken";
@@ -38,14 +51,49 @@ interface TestResult {
   timestamp: string;
 }
 
-interface TestRole {
+interface TestRoleMetadata {
   label: string;
   email: string;
-  table: "users" | "advertisers" | "drivers";
   role: string;
-  dbPayload: any;
   portalUrl?: string;
   expectedHttpStatus?: number;
+}
+
+type TestRole = TestRoleMetadata &
+  (
+    | { table: "users"; dbPayload: Prisma.UserCreateInput }
+    | { table: "drivers"; dbPayload: Prisma.DriverCreateInput }
+    | { table: "advertisers"; dbPayload: Prisma.AdvertiserCreateInput }
+  );
+interface UserCounts {
+  users: number;
+  advertisers: number;
+  drivers: number;
+  devices?: number;
+  campaigns?: number;
+}
+interface AuthUserRow {
+  id: string;
+  email: string;
+  confirmed: boolean;
+}
+function apiPayload(raw: string): Record<string, unknown> {
+  const parsed: unknown = JSON.parse(raw);
+  return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+    ? (parsed as Record<string, unknown>)
+    : { raw: parsed };
+}
+function fieldString(
+  payload: Record<string, unknown>,
+  field: string,
+): string | undefined {
+  const value = payload[field];
+  return typeof value === "string" ? value : undefined;
+}
+function objectFields(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 // ═══════════════════════════════════════════════════════
@@ -58,10 +106,10 @@ function httpPost(
   body: string,
 ): Promise<{
   status: number;
-  data: any;
+  data: Record<string, unknown>;
   latencyMs: number;
 }> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, _reject) => {
     const start = Date.now();
     const urlObj = new URL(url);
     const mod = urlObj.protocol === "https:" ? https : http;
@@ -81,7 +129,7 @@ function httpPost(
           try {
             resolve({
               status: res.statusCode || 0,
-              data: JSON.parse(data),
+              data: apiPayload(data),
               latencyMs,
             });
           } catch {
@@ -98,7 +146,7 @@ function httpPost(
     req.on("error", (e) => {
       resolve({
         status: 0,
-        data: { error: e.message },
+        data: { error: errorMessage(e) },
         latencyMs: Date.now() - start,
       });
     });
@@ -121,7 +169,7 @@ function httpGet(
   headers: Record<string, string>,
 ): Promise<{
   status: number;
-  data: any;
+  data: Record<string, unknown>;
   latencyMs: number;
 }> {
   return new Promise((resolve) => {
@@ -144,7 +192,7 @@ function httpGet(
           try {
             resolve({
               status: res.statusCode || 0,
-              data: JSON.parse(data),
+              data: apiPayload(data),
               latencyMs,
             });
           } catch {
@@ -161,7 +209,7 @@ function httpGet(
     req.on("error", (e) => {
       resolve({
         status: 0,
-        data: { error: e.message },
+        data: { error: errorMessage(e) },
         latencyMs: Date.now() - start,
       });
     });
@@ -195,7 +243,9 @@ function getSupabaseAnonKey(): string {
       const envContent = fs.readFileSync(envPath, "utf-8");
       const match = envContent.match(/NEXT_PUBLIC_SUPABASE_ANON_KEY=(.+)/);
       if (match) return match[1].trim().replace(/"/g, "");
-    } catch {}
+    } catch {
+      /* Missing optional env file or malformed JWT: continue with the existing fallback. */
+    }
   }
 
   // Fallback: read from api .env
@@ -206,7 +256,9 @@ function getSupabaseAnonKey(): string {
     );
     const match = envContent.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/);
     if (match) return match[1].trim().replace(/"/g, "");
-  } catch {}
+  } catch {
+    /* Missing optional env file or malformed JWT: continue with the existing fallback. */
+  }
 
   return "";
 }
@@ -247,7 +299,7 @@ async function phasePurge(): Promise<TestResult[]> {
   }
 
   // 1b. Count before purge
-  const beforeCounts = await prisma.$queryRawUnsafe<any[]>(
+  const beforeCounts = await prisma.$queryRawUnsafe<UserCounts[]>(
     `SELECT 
       (SELECT COUNT(*)::int FROM users) as users,
       (SELECT COUNT(*)::int FROM advertisers) as advertisers,
@@ -298,7 +350,7 @@ async function phasePurge(): Promise<TestResult[]> {
       );
       if (deleted > 0)
         console.log(`  🧹 ${table}: ${deleted} registros eliminados`);
-    } catch (e: any) {
+    } catch {
       // Table may not exist or may be empty — skip silently
     }
   }
@@ -321,12 +373,12 @@ async function phasePurge(): Promise<TestResult[]> {
       );
       deletedCounts[table] = deleted;
       console.log(`  🧹 ${table}: ${deleted} registros eliminados`);
-    } catch (e: any) {
-      console.warn(`  ⚠️ ${table}: ${e.message?.substring(0, 80)}`);
+    } catch (e: unknown) {
+      console.warn(`  ⚠️ ${table}: ${errorMessage(e).substring(0, 80)}`);
     }
   }
 
-  const afterCounts = await prisma.$queryRawUnsafe<any[]>(
+  const afterCounts = await prisma.$queryRawUnsafe<UserCounts[]>(
     `SELECT 
       (SELECT COUNT(*)::int FROM users) as users,
       (SELECT COUNT(*)::int FROM advertisers) as advertisers,
@@ -356,7 +408,7 @@ async function upsertAuthUser(
 ): Promise<{ id: string; created: boolean } | null> {
   const hashedPw = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-  const existing = await prisma.$queryRawUnsafe<any[]>(
+  const existing = await prisma.$queryRawUnsafe<{ id: string }[]>(
     `SELECT id FROM auth.users WHERE email = $1`,
     email,
   );
@@ -392,8 +444,8 @@ async function upsertAuthUser(
     );
     console.log(`  ✅ Auth user creado: ${email} (${userId})`);
     return { id: userId, created: true };
-  } catch (e: any) {
-    console.error(`  ❌ Error creando auth user ${email}: ${e.message}`);
+  } catch (e: unknown) {
+    console.error(`  ❌ Error creando auth user ${email}: ${errorMessage(e)}`);
     return null;
   }
 }
@@ -473,7 +525,7 @@ async function phaseSeed(): Promise<TestResult[]> {
     });
 
     try {
-      let dbRecord: any;
+      let dbRecord: { id: string };
       if (r.table === "users") {
         dbRecord = await prisma.user.upsert({
           where: { email: r.email },
@@ -486,7 +538,7 @@ async function phaseSeed(): Promise<TestResult[]> {
           update: r.dbPayload,
           create: r.dbPayload,
         });
-      } else if (r.table === "drivers") {
+      } else {
         const existing = await prisma.driver.findFirst({
           where: { phone: r.dbPayload.phone },
         });
@@ -508,19 +560,19 @@ async function phaseSeed(): Promise<TestResult[]> {
         timestamp: ts(),
       });
       console.log(`  ✅ ${r.label} DB: ${dbRecord.id}`);
-    } catch (e: any) {
+    } catch (e: unknown) {
       results.push({
         phase: "SEED",
         action: `DB record ${r.label}`,
         status: "FAIL",
-        detail: e.message?.substring(0, 200),
+        detail: errorMessage(e).substring(0, 200),
         timestamp: ts(),
       });
-      console.error(`  ❌ ${r.label} DB Error: ${e.message}`);
+      console.error(`  ❌ ${r.label} DB Error: ${errorMessage(e)}`);
     }
   }
 
-  const postCounts = await prisma.$queryRawUnsafe<any[]>(
+  const postCounts = await prisma.$queryRawUnsafe<UserCounts[]>(
     `SELECT 
       (SELECT COUNT(*)::int FROM users) as users,
       (SELECT COUNT(*)::int FROM advertisers) as advertisers,
@@ -601,10 +653,10 @@ async function phaseDbRbacVerify(): Promise<TestResult[]> {
   );
 
   // 3d. Auth users exist in auth.users
-  const authUsers = await prisma.$queryRawUnsafe<any[]>(
+  const authUsers = await prisma.$queryRawUnsafe<AuthUserRow[]>(
     `SELECT id, email, email_confirmed_at IS NOT NULL as confirmed FROM auth.users WHERE email LIKE '%tad.do' ORDER BY email`,
   );
-  const authEmails = authUsers.map((u: any) => u.email);
+  const authEmails = authUsers.map((u) => u.email);
   const expectedAuthEmails = [
     "admin@tad.do",
     "qa-advertiser@tad.do",
@@ -616,7 +668,7 @@ async function phaseDbRbacVerify(): Promise<TestResult[]> {
     phase: "DB-RBAC",
     action: "Todos los auth users existen",
     status: allAuthExist ? "PASS" : "FAIL",
-    detail: `auth.users: [${authUsers.map((u: any) => `${u.email} confirmed=${u.confirmed}`).join(", ")}]`,
+    detail: `auth.users: [${authUsers.map((u) => `${u.email} confirmed=${u.confirmed}`).join(", ")}]`,
     timestamp: ts(),
   });
   console.log(
@@ -724,7 +776,7 @@ async function phaseAuthTest(): Promise<{
     );
 
     const success = response.status === 200 && !!response.data?.access_token;
-    const token = response.data?.access_token;
+    const token = fieldString(response.data, "access_token");
 
     // Decode JWT to verify claims
     let decodedRole: string | undefined;
@@ -733,12 +785,18 @@ async function phaseAuthTest(): Promise<{
 
     if (token) {
       try {
-        const decoded = jwt.decode(token) as any;
-        decodedRole =
-          decoded?.app_metadata?.role || decoded?.user_metadata?.role;
-        decodedEmail = decoded?.email;
-        tokenValid = !!decoded?.sub && decoded?.aud === "authenticated";
-      } catch {}
+        const decoded = jwt.decode(token);
+        if (decoded && typeof decoded === "object") {
+          decodedRole =
+            fieldString(objectFields(decoded.app_metadata), "role") ||
+            fieldString(objectFields(decoded.user_metadata), "role");
+          decodedEmail =
+            typeof decoded.email === "string" ? decoded.email : undefined;
+          tokenValid = !!decoded.sub && decoded.aud === "authenticated";
+        }
+      } catch {
+        /* Missing optional env file or malformed JWT: continue with the existing fallback. */
+      }
     }
 
     const roleMatch =
@@ -801,7 +859,7 @@ async function phaseAuthTest(): Promise<{
 // ═══════════════════════════════════════════════════════
 
 async function phaseApiRbacTest(
-  tokens: Record<string, string>,
+  _tokens: Record<string, string>,
 ): Promise<TestResult[]> {
   const results: TestResult[] = [];
   const ts = () => new Date().toISOString();
@@ -864,11 +922,12 @@ async function phaseApiRbacTest(
       loginBody,
     );
 
-    const success = loginResp.status === 200 && !!loginResp.data?.access_token;
-    const role = loginResp.data?.user?.role;
+    const accessToken = fieldString(loginResp.data, "access_token");
+    const success = loginResp.status === 200 && !!accessToken;
+    const role = fieldString(objectFields(loginResp.data.user), "role");
 
-    if (loginResp.data?.access_token) {
-      apiTokens[acct.label] = loginResp.data.access_token;
+    if (accessToken) {
+      apiTokens[acct.label] = accessToken;
     }
 
     results.push({
@@ -1105,9 +1164,9 @@ async function main() {
       `  RESULTADO: ${pass}/${allResults.length} PASS | ${fail} FAIL | ${skip} SKIP`,
     );
     console.log(`═══════════════════════════════════════════════════════`);
-  } catch (e: any) {
-    console.error(`\n💥 ERROR FATAL: ${e.message}`);
-    console.error(e.stack);
+  } catch (e: unknown) {
+    console.error(`\n💥 ERROR FATAL: ${errorMessage(e)}`);
+    console.error(e instanceof Error ? e.stack : undefined);
   } finally {
     await prisma.$disconnect();
   }

@@ -17,7 +17,6 @@ import {
   Area,
 } from "recharts";
 import {
-  BarChart3,
   Clock,
   TrendingUp,
   RefreshCcw,

@@ -1,3 +1,5 @@
+"use client";
+
 // apps/driver/components/dashboard/SettingsTab.tsx
 /**
  * SettingsTab — Vista de Ajustes y Soporte
@@ -12,7 +14,6 @@
  * Reemplaza los ActionButton del dashboard original con un layout
  * tipo "settings list" optimizado para móvil (hitboxes grandes, 48px+).
  */
-"use client";
 
 import React from "react";
 import { motion } from "framer-motion";

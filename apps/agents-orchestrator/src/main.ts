@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
-import type { AxiosRequestConfig } from "axios";
+
 import { v4 as uuidv4 } from "uuid";
 import winston from "winston";
 
@@ -34,34 +34,6 @@ interface SystemHealth {
   activeConnections: number;
   errorRate: number;
   lastCheck: Date;
-}
-
-interface FinanceOperation {
-  type:
-    | "earnings_calculation"
-    | "payout_processing"
-    | "invoice_generation"
-    | "revenue_report";
-  idempotencyKey: string;
-  payload: Record<string, unknown>;
-}
-
-interface MarketingAction {
-  type:
-    | "campaign_optimization"
-    | "advertiser_outreach"
-    | "performance_analysis"
-    | "budget_reallocation";
-  payload: Record<string, unknown>;
-}
-
-interface HRAction {
-  type:
-    | "driver_onboarding"
-    | "performance_review"
-    | "shift_optimization"
-    | "compliance_check";
-  payload: Record<string, unknown>;
 }
 
 // Configuration
@@ -548,7 +520,7 @@ class AgentOrchestrator {
     return tasks;
   }
 
-  private async processTasks(tasks: AgentTask[]) {
+  private async processTasks(_tasks: AgentTask[]) {
     const pendingTasks = taskQueue.filter((t) => t.status === "pending");
     const processingCount = taskQueue.filter(
       (t) => t.status === "processing",

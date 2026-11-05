@@ -1,3 +1,5 @@
+import type { PortalRequestRecord } from "@/types/admin-api";
+import { getErrorMessage } from "@/lib/error-message";
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import type { GetServerSideProps } from "next";
@@ -7,11 +9,8 @@ import {
   XCircle,
   Clock,
   User,
-  FileText,
-  AlertCircle,
   ExternalLink,
   Search,
-  Filter,
   Calendar,
   Layers,
   Play,
@@ -28,13 +27,14 @@ export default function RequestsPage() {
   const [portalType, setPortalType] = useState<"ADVERTISER" | "DRIVER">(
     "ADVERTISER",
   );
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<PortalRequestRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<
     "ALL" | "PENDING" | "APPROVED" | "REJECTED"
   >("PENDING");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedRequest, setSelectedRequest] =
+    useState<PortalRequestRecord | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [processing, setProcessing] = useState(false);
 
@@ -61,8 +61,8 @@ export default function RequestsPage() {
       alert(
         `Petición ${status === "APPROVED" ? "✅ Aprobada — Contenido desplegado en flota" : "❌ Rechazada"} correctamente.`,
       );
-    } catch (err: any) {
-      alert("Error: " + (err.message || "No se pudo procesar"));
+    } catch (err: unknown) {
+      alert("Error: " + (getErrorMessage(err) || "No se pudo procesar"));
     } finally {
       setProcessing(false);
     }

@@ -4,7 +4,6 @@ import { PrismaService } from "./modules/prisma/prisma.service";
 import { Logger, RequestMethod, ValidationPipe } from "@nestjs/common";
 import { GlobalExceptionFilter } from "./common/filters/global-exception.filter";
 import { PrismaClientExceptionFilter } from "./common/filters/prisma-exception.filter";
-import { requireEnv } from "./utils/env.util";
 
 // Safe BigInt serialization for Prisma
 declare global {
@@ -15,7 +14,7 @@ declare global {
 
 // Only override toJSON if not already defined (prevents duplicate definitions)
 if (!BigInt.prototype.toJSON) {
-  (BigInt.prototype as any).toJSON = function () {
+  BigInt.prototype.toJSON = function () {
     return this.toString();
   };
 }
@@ -43,7 +42,7 @@ async function bootstrap() {
     });
 
     // Prevención de fugas de conexiones (Auditoría 07)
-    const prismaService = app.get(PrismaService);
+    app.get(PrismaService);
     app.enableShutdownHooks();
 
     app.setGlobalPrefix("api/v1", {

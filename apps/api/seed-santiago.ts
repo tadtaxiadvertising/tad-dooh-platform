@@ -136,23 +136,10 @@ async function seedSantiago() {
     "Farmacia",
     "Gym",
   ];
-  const sectors = [
-    "Villa Olga",
-    "La Trinitaria",
-    "Los Jardines",
-    "Pontezuela",
-    "El Dorado",
-    "Cerros de Gurabo",
-    "Pueblo Nuevo",
-    "Santiago Oeste",
-    "Tamboril",
-    "Licey",
-  ];
 
   for (let i = 1; i <= 100; i++) {
     const bizType =
       businessTypes[Math.floor(Math.random() * businessTypes.length)];
-    const sector = sectors[Math.floor(Math.random() * sectors.length)];
     const companyName = `${bizType} ${lastNames[Math.floor(Math.random() * lastNames.length)]} Santiago`;
 
     await prisma.advertiser.upsert({

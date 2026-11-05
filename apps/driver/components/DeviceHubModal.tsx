@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@tad/services";
 import React, { useState, useEffect } from "react";
 import {
   Tablet,
@@ -43,7 +44,25 @@ export default function DeviceHubModal({
   const [activeTab, setActiveTab] = useState<
     "status" | "content" | "admin" | "logs"
   >("status");
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<{
+    device_id: string;
+    status?: string;
+    battery_level?: number;
+    storage_free?: string;
+    app_version?: string;
+    last_seen?: string;
+    player_status?: string;
+    is_online?: boolean;
+    city?: string;
+    taxi_number?: string;
+    driver?: { fullName?: string; phone?: string; subscriptionPaid?: boolean };
+    campaigns?: {
+      id: string;
+      name: string;
+      advertiser?: string;
+      assigned_at?: string;
+    }[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [commandLoading, setCommandLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,10 +75,12 @@ export default function DeviceHubModal({
 
   const loadProfile = async () => {
     setLoading(true);
+    setProfile(null);
+    setError(null);
     try {
       const data = await getDeviceProfile(deviceId);
       setProfile(data);
-    } catch (err) {
+    } catch {
       setError("Error al cargar el perfil del nodo");
     } finally {
       setLoading(false);
@@ -67,11 +88,12 @@ export default function DeviceHubModal({
   };
 
   const handleCommand = async (type: string) => {
+    if (!profile) return;
     setCommandLoading(type);
     try {
       await sendCommand(deviceId, type);
       toast.success(`COMANDO ${type} ENVIADO CON ÉXITO.`);
-    } catch (err: any) {
+    } catch {
       toast.error("FALLA DE TERMINAL: Error al enviar comando.");
     } finally {
       setTimeout(() => setCommandLoading(null), 1000);
@@ -85,21 +107,22 @@ export default function DeviceHubModal({
       toast.success("PANTALLA PURGADA CORRECTAMENTE.");
       onClose();
       window.location.reload();
-    } catch (err: any) {
-      toast.error("ERROR CRÍTICO AL PURGAR: " + err.message);
+    } catch (err: unknown) {
+      toast.error("ERROR CRÍTICO AL PURGAR: " + getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
   const handleUnlinkCampaign = async (campaignId: string) => {
+    if (!profile) return;
     try {
       const hwId = profile.device_id;
       await removeCampaignFromDevice(hwId, campaignId);
       toast.warning("CAMPAÑA REMOVIDA DE ESTE NODO.");
       loadProfile();
-    } catch (err: any) {
-      toast.error("ERROR AL DESVINCULAR CAMPAÑA: " + err.message);
+    } catch (err: unknown) {
+      toast.error("ERROR AL DESVINCULAR CAMPAÑA: " + getErrorMessage(err));
     }
   };
 
@@ -168,7 +191,7 @@ export default function DeviceHubModal({
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={clsx(
                 "py-5 px-6 flex items-center gap-2.5 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all",
                 activeTab === tab.id
@@ -190,6 +213,10 @@ export default function DeviceHubModal({
               <p className="text-xs font-black uppercase tracking-widest">
                 Sincronizando con nodo...
               </p>
+            </div>
+          ) : !profile ? (
+            <div role="alert" className="p-8 text-center text-rose-400">
+              {error || "No se pudo cargar el perfil del dispositivo."}
             </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -343,7 +370,7 @@ export default function DeviceHubModal({
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
-                    {(profile.campaigns || []).map((camp: any) => (
+                    {(profile.campaigns || []).map((camp) => (
                       <div
                         key={camp.id}
                         className="bg-zinc-900/50 border border-white/5 p-6 rounded-[24px] flex items-center justify-between group hover:border-tad-yellow/30 transition-all"
@@ -548,7 +575,13 @@ function StatusMetric({
   icon: Icon,
   sub,
   color = "text-white",
-}: any) {
+}: {
+  label: string;
+  value: React.ReactNode;
+  icon: typeof Tablet;
+  sub?: string;
+  color?: string;
+}) {
   return (
     <div className="bg-zinc-900/30 border border-white/5 p-6 rounded-3xl group hover:bg-zinc-900/50 transition-all">
       <div className="flex items-center gap-3 mb-4">
@@ -572,7 +605,17 @@ function StatusMetric({
   );
 }
 
-function CommandBtn({ label, icon: Icon, loading, onClick }: any) {
+function CommandBtn({
+  label,
+  icon: Icon,
+  loading,
+  onClick,
+}: {
+  label: string;
+  icon: typeof Tablet;
+  loading?: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
@@ -624,7 +667,7 @@ function LogEntry({
   );
 }
 
-function Trash2(props: any) {
+function Trash2(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
+import type { CampaignReports } from "../../types/portal-api";
 import { useAuth } from "@tad/ui";
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -16,17 +15,15 @@ import {
 } from "recharts";
 import {
   Download,
-  Filter,
   Calendar,
-  MapPin,
   TrendingUp,
   Users,
   Activity,
   FileText,
   ChevronDown,
 } from "lucide-react";
-import { motion } from "framer-motion";
-import clsx from "clsx";
+import "framer-motion";
+import "clsx";
 import api from "@tad/services";
 import { AdvertiserLayout } from "@/components/layout/AdvertiserLayout";
 import type { GetServerSideProps } from "next";
@@ -39,7 +36,7 @@ const COLORS = ["#fad400", "#3b82f6", "#10b981", "#a855f7", "#f43f5e"];
 
 export default function AdvertiserReports() {
   const { session } = useAuth();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<CampaignReports | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -226,7 +223,7 @@ export default function AdvertiserReports() {
                   nameKey="city"
                 >
                   {(Array.isArray(data?.geographic) ? data.geographic : []).map(
-                    (entry: any, index: number) => (
+                    (_entry, index) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={COLORS[index % COLORS.length]}
@@ -248,7 +245,7 @@ export default function AdvertiserReports() {
 
           <div className="space-y-3">
             {(Array.isArray(data?.geographic) ? data.geographic : []).map(
-              (item: any, i: number) => (
+              (item, i) => (
                 <div
                   key={item.city}
                   className="flex justify-between items-center bg-black/40 p-4 rounded-2xl border border-white/[0.02]"

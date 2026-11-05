@@ -9,7 +9,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { TelemetryService } from "./telemetry.service";
-import { Public } from "../auth/decorators/public.decorator";
+
 import { PrismaService } from "../prisma/prisma.service";
 
 @Controller("telemetry")

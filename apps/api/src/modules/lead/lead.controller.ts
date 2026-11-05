@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from "../auth/auth.types";
 import {
   Controller,
   Post,
@@ -61,7 +62,7 @@ export class LeadController {
   @Post()
   async createLead(
     @Body(new ValidationPipe()) dto: z.infer<typeof CreateLeadDto>,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.leadService.createLead(
       {
@@ -101,7 +102,7 @@ export class LeadController {
   async updateLeadStatus(
     @Param("id") id: string,
     @Body(new ValidationPipe()) dto: z.infer<typeof UpdateLeadStatusDto>,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.leadService.updateLeadStatus(
       id,
@@ -118,7 +119,7 @@ export class LeadController {
   @Roles(UserRole.ADMIN)
   async registerPaymentEvidence(
     @Body(new ValidationPipe()) dto: z.infer<typeof RegisterEvidenceDto>,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.leadService.registerPaymentEvidence({
       paymentIntentId: dto.paymentIntentId,
@@ -141,7 +142,7 @@ export class LeadController {
   @Roles(UserRole.ADMIN)
   async verifyPayment(
     @Body(new ValidationPipe()) dto: z.infer<typeof VerifyPaymentDto>,
-    @Request() req: any,
+    @Request() _req: AuthenticatedRequest,
   ) {
     return this.leadService.verifyPayment(
       dto.paymentIntentId,

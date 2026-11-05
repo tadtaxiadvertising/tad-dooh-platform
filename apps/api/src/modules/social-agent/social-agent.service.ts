@@ -4,11 +4,27 @@ import {
   BadRequestException,
   ForbiddenException,
 } from "@nestjs/common";
-import { Cron, CronExpression } from "@nestjs/schedule";
+import { Cron } from "@nestjs/schedule";
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import { firstValueFrom } from "rxjs";
+
+interface MetaInteraction {
+  sender?: { id?: string };
+  from?: { id?: string };
+  thread_id?: string;
+  message?: { text?: string };
+  text?: string;
+}
+
+interface MetaWebhook {
+  object?: string;
+  entry?: Array<{
+    messaging?: MetaInteraction[];
+    changes?: Array<{ value?: MetaInteraction }>;
+  }>;
+}
 
 @Injectable()
 export class SocialAgentService {
@@ -76,7 +92,7 @@ export class SocialAgentService {
     }
   }
 
-  async handleMetaWebhook(payload: any) {
+  async handleMetaWebhook(payload: MetaWebhook) {
     // Asynchronous processing to not block Meta's response
     this.processMetaInteraction(payload).catch((err) =>
       this.logger.error("Error processing Meta interaction:", err),
@@ -84,7 +100,7 @@ export class SocialAgentService {
     return { status: "received" };
   }
 
-  private async processMetaInteraction(payload: any) {
+  private async processMetaInteraction(payload: MetaWebhook) {
     // Extract info from Meta payload (simplified for now)
     // payload structure depends on Meta Graph API Webhook format
     const entry = payload.entry?.[0];

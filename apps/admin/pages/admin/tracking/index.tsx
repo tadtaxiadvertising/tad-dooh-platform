@@ -1,3 +1,4 @@
+import type { MapLocation } from "@/components/MapView";
 // admin-dashboard/pages/tracking/index.tsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
@@ -5,22 +6,13 @@ import {
   Navigation,
   MapPin,
   Activity,
-  Search,
   RefreshCw,
-  Battery,
   ChevronDown,
   ChevronRight,
-  Gauge as Speedometer,
-  Signal,
   AlertTriangle,
-  Smartphone,
-  Tablet,
   ExternalLink,
   Clock,
-  Filter,
-  Smartphone as Phone,
   Map as MapIcon,
-  Layers,
   ChevronUp,
   Sun,
   Moon,
@@ -104,16 +96,17 @@ const isFreshTelemetry = (timestamp?: string | null) => {
   return Number.isFinite(ts) && Date.now() - ts <= OFFLINE_THRESHOLD_MS;
 };
 
-const normalizeTelemetryPing = (payload: any): TelemetryPing | null => {
-  if (!payload) return null;
-  const driverId = typeof payload.driverId === "string" ? payload.driverId : "";
-  const deviceId = typeof payload.deviceId === "string" ? payload.deviceId : "";
-  const lat = Number(payload.lat);
-  const lng = Number(payload.lng);
-  const speed = Number(payload.speed ?? 0);
-  const bearing = Number(payload.bearing ?? 0);
+const normalizeTelemetryPing = (payload: unknown): TelemetryPing | null => {
+  if (typeof payload !== "object" || payload === null) return null;
+  const fields = payload as Record<string, unknown>;
+  const driverId = typeof fields.driverId === "string" ? fields.driverId : "";
+  const deviceId = typeof fields.deviceId === "string" ? fields.deviceId : "";
+  const lat = Number(fields.lat);
+  const lng = Number(fields.lng);
+  const speed = Number(fields.speed ?? 0);
+  const bearing = Number(fields.bearing ?? 0);
   const timestamp =
-    typeof payload.timestamp === "string" ? payload.timestamp : "";
+    typeof fields.timestamp === "string" ? fields.timestamp : "";
 
   if (
     !driverId ||
@@ -128,7 +121,7 @@ const normalizeTelemetryPing = (payload: any): TelemetryPing | null => {
   return { driverId, deviceId, lat, lng, speed, bearing, timestamp };
 };
 
-const applyFleetFreshness = (vehicles: any[]) =>
+const applyFleetFreshness = (vehicles: MapLocation[]) =>
   vehicles.map((vehicle) => ({
     ...vehicle,
     // A stale backend boolean must not keep a device green forever.
@@ -139,7 +132,7 @@ const applyFleetFreshness = (vehicles: any[]) =>
       isFreshTelemetry(vehicle._lastPingAt),
   }));
 
-const upsertTelemetryPing = (vehicles: any[], ping: TelemetryPing) => {
+const upsertTelemetryPing = (vehicles: MapLocation[], ping: TelemetryPing) => {
   const idx = vehicles.findIndex(
     (vehicle) =>
       String(vehicle.driverId || "") === ping.driverId ||
@@ -182,9 +175,17 @@ export default function TrackingPage() {
   const router = useRouter();
   const [view, setView] = useState<"summary" | "log" | "map">("map");
   const [summary, setSummary] = useState<TrackingDriver[]>([]);
-  const [locations, setLocations] = useState<any[]>([]);
-  const [fleetLocations, setFleetLocations] = useState<any[]>([]);
-  const [heatmap, setHeatmap] = useState<any[]>([]);
+  const [locations, setLocations] = useState<
+    {
+      timestamp: string;
+      taxiNumber?: string;
+      latitude: number;
+      longitude: number;
+      speed?: number;
+    }[]
+  >([]);
+  const [fleetLocations, setFleetLocations] = useState<MapLocation[]>([]);
+  const [heatmap, setHeatmap] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -242,7 +243,7 @@ export default function TrackingPage() {
         setHeatmap(heatData || []);
       }
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error loading tracking data:", err);
       setError("Error al conectar con el servidor.");
     } finally {
@@ -348,9 +349,9 @@ export default function TrackingPage() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
     null,
   );
-  const [recentPath, setRecentPath] = useState<any[]>([]);
+  const [recentPath, setRecentPath] = useState<unknown[]>([]);
 
-  const selectVehicleOnMap = async (v: any) => {
+  const selectVehicleOnMap = async (v: MapLocation) => {
     if (v.lastLat && v.lastLng) {
       setSelectedVehicleId(v.deviceId);
       setMapCenter([v.lastLat, v.lastLng]);
@@ -386,7 +387,7 @@ export default function TrackingPage() {
               setSelectedVehicleId(null);
               setRecentPath([]);
             }}
-            onViewHistory={(v: any) => selectVehicleOnMap(v)}
+            onViewHistory={(v: MapLocation) => selectVehicleOnMap(v)}
             onSyncCommand={(deviceId: string) => {
               console.log("[TAD] WAKE_UP command requested for", deviceId);
             }}
@@ -893,7 +894,17 @@ export default function TrackingPage() {
   );
 }
 
-function NavButton({ active, onClick, icon, label }: any) {
+function NavButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
   return (
     <button
       onClick={onClick}
@@ -919,7 +930,17 @@ function NavButton({ active, onClick, icon, label }: any) {
   );
 }
 
-function ModeButton({ active, onClick, label, color }: any) {
+function ModeButton({
+  active,
+  onClick,
+  label,
+  color,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  color: string;
+}) {
   return (
     <button
       onClick={onClick}

@@ -5,6 +5,12 @@ import { EmailService } from "../notifications/email.service";
 import { SupabaseService } from "../supabase/supabase.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { format } from "date-fns";
+import type {
+  Advertiser,
+  AdvertiserSubscription,
+  Invoice,
+  Prisma,
+} from "@prisma/client";
 
 @Injectable()
 export class AdvertiserBillingService {
@@ -83,7 +89,11 @@ export class AdvertiserBillingService {
    * 4. Send email to advertiser
    * 5. Update nextBillingDate (+1 month)
    */
-  async processSubscriptionBilling(sub: any) {
+  async processSubscriptionBilling(
+    sub: Prisma.AdvertiserSubscriptionGetPayload<{
+      include: { advertiser: true };
+    }>,
+  ) {
     const advertiser = sub.advertiser;
 
     // 1. Calculate amounts
@@ -159,7 +169,7 @@ export class AdvertiserBillingService {
 
     // Guardamos la URL real si hubo subida; en otro caso dejamos null (mejor
     // que un base64 truncado) y solo email con adjunto.
-    const data: any = {};
+    const data: Prisma.InvoiceUpdateInput = {};
     if (pdfUrl) data.pdfUrl = pdfUrl;
     await this.prisma.invoice.update({
       where: { id: invoice.id },
@@ -208,9 +218,9 @@ export class AdvertiserBillingService {
    * Generate professional subscription invoice PDF
    */
   private async generateSubscriptionInvoicePDF(data: {
-    invoice: any;
-    subscription: any;
-    advertiser: any;
+    invoice: Invoice;
+    subscription: AdvertiserSubscription;
+    advertiser: Advertiser & { rnc?: string };
     subtotal: number;
     taxAmount: number;
     totalAmount: number;
@@ -379,8 +389,8 @@ export class AdvertiserBillingService {
   }
 
   private buildSubscriptionEmailHtml(
-    advertiser: any,
-    invoice: any,
+    advertiser: Advertiser,
+    invoice: Invoice,
     subtotal: number,
     taxAmount: number,
     totalAmount: number,

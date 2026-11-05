@@ -8,6 +8,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcrypt";
 import * as jwt from "jsonwebtoken";
+import type { Prisma, Invoice } from "@prisma/client";
 import {
   BUSINESS_RULES,
   BCRYPT_ROUNDS,
@@ -121,7 +122,7 @@ export class AdvertisersService {
 
   // FIX A-3: DTO explícito — solo permite actualizar campos seguros. Previene mass assignment.
   async update(id: string, data: UpdateAdvertiserDto) {
-    const updateData: Record<string, any> = {};
+    const updateData: Prisma.AdvertiserUpdateInput = {};
 
     if (data.companyName !== undefined)
       updateData.companyName = data.companyName;
@@ -229,8 +230,30 @@ export class AdvertisersService {
       }),
     ]);
 
-    const contractedByDeviceId = new Map<string, any>();
-    const upsertContractedScreen = (device: any, campaignName?: string) => {
+    type ContractedDevice = Prisma.DeviceGetPayload<{
+      select: typeof contractedDeviceSelect;
+    }>;
+    type ContractedScreen = {
+      driverId: string | null;
+      deviceId: string;
+      taxiNumber: string | null;
+      city: string | null;
+      lastSeen: Date | null;
+      lastLat: number | null;
+      lastLng: number | null;
+      status: ContractedDevice["status"];
+      isOnline: boolean;
+      driverName: string | null;
+      plate: string | null;
+      subscriptionStatus: string;
+      speed: number | null;
+      campaigns: string[];
+    };
+    const contractedByDeviceId = new Map<string, ContractedScreen>();
+    const upsertContractedScreen = (
+      device: ContractedDevice,
+      campaignName?: string,
+    ) => {
       if (!device?.deviceId) return;
       const lastLocation = device.locations?.[0] || null;
       const lastLat = device.lastLat ?? lastLocation?.latitude ?? null;
@@ -660,17 +683,17 @@ export class AdvertisersService {
           orderBy: { issueDate: "desc" },
           take: 20,
         },
-        referredBy: {
+        referrer: {
           select: { id: true, fullName: true, phone: true },
         },
-      } as any,
+      },
     });
     if (!advertiser) throw new BadRequestException("Anunciante no encontrado");
 
     // Total de campañas y devices contratados (agregado ligero)
     const totalCampaigns = advertiser.campaigns?.length ?? 0;
     const activeCampaigns = (advertiser.campaigns ?? []).filter(
-      (c: any) => c.active && c.status !== "COMPLETED",
+      (c) => c.active && c.status !== "COMPLETED",
     ).length;
 
     return {
@@ -678,7 +701,7 @@ export class AdvertisersService {
       totalVerifiedPlays: totalCampaigns, // compat: total de campañas
       activeCampaigns,
       profileStatus: advertiser.status,
-    } as any;
+    };
   }
 
   async login(email: string, pass: string) {
@@ -752,11 +775,9 @@ export class AdvertisersService {
       };
     }
 
-    const resetToken = jwt.sign(
-      { sub: user.id, email: user.email, purpose: "reset" },
-      jwtSecret,
-      { expiresIn: "15m" },
-    );
+    jwt.sign({ sub: user.id, email: user.email, purpose: "reset" }, jwtSecret, {
+      expiresIn: "15m",
+    });
 
     // FIX B-1: Usar NestJS Logger en lugar de console.log
     this.logger.log(
@@ -779,8 +800,12 @@ export class AdvertisersService {
     }
 
     try {
-      const payload = jwt.verify(token, jwtSecret) as any;
-      if (payload.purpose !== "reset") {
+      const payload = jwt.verify(token, jwtSecret);
+      if (
+        typeof payload === "string" ||
+        payload.purpose !== "reset" ||
+        typeof payload.sub !== "string"
+      ) {
         throw new BadRequestException("Token inválido para esta operación");
       }
 
@@ -808,7 +833,12 @@ export class AdvertisersService {
    * TENANT ISOLATION: Solo devuelve facturas del advertiserId especificado.
    */
   async getInvoices(advertiserId: string): Promise<{
-    invoices: any[];
+    invoices: Array<
+      Pick<
+        Invoice,
+        "id" | "status" | "subtotal" | "taxAmount" | "totalAmount" | "pdfUrl"
+      > & { issueDate: string; dueDate: string; amount: number }
+    >;
     balanceRD: number;
     invoiceStatusSummary: { pending: number; paid: number; overdue: number };
   }> {

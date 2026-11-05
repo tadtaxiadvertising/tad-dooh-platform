@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@/lib/error-message";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
@@ -24,7 +25,14 @@ const AntigravityButton = ({
   disabled,
   className = "",
   variant = "primary",
-}: any) => {
+}: {
+  children: React.ReactNode;
+  isLoading?: boolean;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  disabled?: boolean;
+  className?: string;
+  variant?: "primary" | "secondary";
+}) => {
   const baseClasses =
     "relative group overflow-hidden rounded-xl font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed";
   const variants = {
@@ -75,7 +83,6 @@ export default function DriverOnboarding() {
   const router = useRouter();
   const { id } = router.query;
   const [step, setStep] = useState<number>(1);
-  const [driver, setDriver] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
@@ -89,7 +96,6 @@ export default function DriverOnboarding() {
     fetch(`/api/proxy/drivers/${id}`)
       .then((res) => res.json())
       .then((data) => {
-        setDriver(data);
         if (
           data.onboardingStatus === "PENDING_PAYMENT" ||
           data.contractAccepted
@@ -132,8 +138,8 @@ export default function DriverOnboarding() {
 
       toast.success("Acuerdo legal firmado electrónicamente");
       setStep(2);
-    } catch (err: any) {
-      toast.error(err.message || "Fallo de conexión");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || "Fallo de conexión");
     } finally {
       setAccepting(false);
     }

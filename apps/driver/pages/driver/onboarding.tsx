@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { getErrorMessage } from "@tad/services";
+
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import Head from "next/head";
+import "next/head";
 import api from "@tad/services";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import ValuePropStep from "@/components/onboarding/ValuePropStep";
@@ -16,7 +18,7 @@ type OnboardingStep = 1 | 2 | 3 | 4;
 export default function DriverOnboarding() {
   const router = useRouter();
   const [step, setStep] = useState<OnboardingStep>(1);
-  const [mounted, setMounted] = useState(false);
+  const [, setMounted] = useState(false);
 
   // Simulator states
   const [campaigns, setCampaigns] = useState(5);
@@ -130,10 +132,8 @@ export default function DriverOnboarding() {
         });
         setTimeout(() => setStep(4), 1000);
       }
-    } catch (err: any) {
-      const msg =
-        err.response?.data?.message || err.message || "Error al registrar";
-      setError(Array.isArray(msg) ? msg[0] : msg);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || "Error al registrar");
     } finally {
       setLoading(false);
     }

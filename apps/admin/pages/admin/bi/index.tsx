@@ -10,7 +10,6 @@ import {
   AlertTriangle,
   RefreshCw,
   TrendingUp,
-  TrendingDown,
   Calendar,
   BarChart3,
   Zap,
@@ -26,11 +25,7 @@ import clsx from "clsx";
 import { toast } from "sonner";
 import { AntigravityButton } from "@tad/ui";
 import { StatusSemaphore } from "@tad/ui";
-import {
-  getBiKpis,
-  getReconciliationReport,
-  getFleetHealth,
-} from "@tad/services";
+import { getBiKpis, getReconciliationReport } from "@tad/services";
 
 // ─── Dynamic Imports (SSR-safe) ───────────────────────────────────────────────
 const BiHeatmap = dynamic(
@@ -262,7 +257,14 @@ export default function BIDashboard() {
       }
       if (reconcData.status === "fulfilled") {
         const data = Array.isArray(reconcData.value) ? reconcData.value : [];
-        setDiscrepancies(data.filter((r: any) => r.hasDiscrepancy).slice(0, 6));
+        setDiscrepancies(
+          data
+            .filter(
+              (r: DiscrepancyItem & { hasDiscrepancy?: boolean }) =>
+                r.hasDiscrepancy,
+            )
+            .slice(0, 6),
+        );
       }
 
       setLastRefreshed(new Date());

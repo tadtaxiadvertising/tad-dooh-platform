@@ -1,9 +1,9 @@
+import type { AuthenticatedRequest } from "../auth/auth.types";
 import {
   Controller,
   Post,
   Get,
   Body,
-  Query,
   Param,
   HttpCode,
   HttpStatus,
@@ -80,11 +80,14 @@ export class DeviceController {
   @HttpCode(HttpStatus.OK)
   async acknowledgeCommand(
     @Param("id") commandId: string,
-    @Body() result: any,
-    @Req() req: any,
+    @Body() result: unknown,
+    @Req() req: AuthenticatedRequest,
   ) {
     // M9: validar que el comando pertenezca al dispositivo autenticado (X-Device-Token).
     // Antes cualquier tercero podía marcar comandos ajenos como EXECUTED.
+    if (!req.authenticatedDeviceId) {
+      throw new ForbiddenException("Dispositivo no autenticado");
+    }
     const command = await this.deviceService.getCommandForDevice(
       commandId,
       req.authenticatedDeviceId,

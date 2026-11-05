@@ -32,7 +32,7 @@ const withPWA = withPWAInit({
     cleanupOutdatedCaches: true,
     runtimeCaching: [
       {
-        urlPattern: ({ url, request }: { url: URL; request: any }) =>
+        urlPattern: ({ url, request }: { url: URL; request: Request }) =>
           request.method === "GET" &&
           (url.pathname.startsWith("/driver/dashboard") ||
             url.pathname.startsWith("/_next/static/") ||

@@ -1,7 +1,7 @@
+import type { AdvertiserRecord, ProductRecord } from "@/types/admin-api";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import {
-  Smartphone,
   Globe,
   Instagram,
   Facebook,
@@ -12,7 +12,7 @@ import {
   Activity,
   Sparkles,
 } from "lucide-react";
-import axios from "axios";
+
 import Head from "next/head";
 import Link from "next/link";
 import type { GetServerSideProps } from "next";
@@ -26,7 +26,7 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 export default function PublicProfilePage() {
   const router = useRouter();
   const { id } = router.query;
-  const [advertiser, setAdvertiser] = useState<any>(null);
+  const [advertiser, setAdvertiser] = useState<AdvertiserRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -249,7 +249,7 @@ export default function PublicProfilePage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              {products.map((p: any, i: number) => (
+              {products.map((p: ProductRecord, i: number) => (
                 <div
                   key={i}
                   className="bg-zinc-900/50 border border-white/5 p-4 rounded-[2.5rem] flex items-center gap-5 group hover:border-tad-yellow/30 transition-all"

@@ -2,8 +2,13 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { CreditCard, Landmark } from "lucide-react";
 
+export interface WalletSetupData {
+  bank: string;
+  accountNumber: string;
+}
+
 interface Props {
-  onComplete: (data: any) => void;
+  onComplete: (data: WalletSetupData) => void;
   onBack: () => void;
 }
 

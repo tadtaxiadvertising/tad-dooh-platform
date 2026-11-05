@@ -122,7 +122,7 @@ export class LeadService {
   async updateLeadStatus(
     id: string,
     status: "SUBMITTED" | "UNDER_REVIEW" | "CONFIRMED" | "REJECTED",
-    reviewerId?: string,
+    _reviewerId?: string,
   ) {
     const lead = await this.prisma.lead.update({
       where: { id },
@@ -370,7 +370,7 @@ export class LeadService {
     referentId?: string;
     search?: string;
   }) {
-    const where: any = {};
+    const where: import("@prisma/client").Prisma.LeadWhereInput = {};
 
     if (filters.type) {
       where.type = filters.type;

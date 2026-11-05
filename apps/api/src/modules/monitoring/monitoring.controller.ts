@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
-  UseGuards,
 } from "@nestjs/common";
 import { MonitoringService } from "./monitoring.service";
 import { GpsBatchDto } from "./monitoring.dto";

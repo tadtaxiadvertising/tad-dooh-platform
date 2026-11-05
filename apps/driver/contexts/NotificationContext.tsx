@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { createClient, RealtimeChannel } from "@supabase/supabase-js";
+import { RealtimeChannel } from "@supabase/supabase-js";
 import {
   emitNotification,
   initNotificationEngine,
@@ -147,31 +147,42 @@ export function NotificationProvider({
       const channelName = buildChannelName(driverId);
       const ch = supabase.channel(channelName);
 
-      ch.on("broadcast", { event: "*" }, ({ payload }: { payload: any }) => {
-        const raw = payload as NotificationEnvelope | undefined;
-        if (!raw || !raw.type) return;
+      ch.on(
+        "broadcast",
+        { event: "*" },
+        ({ payload }: { payload: unknown }) => {
+          if (typeof payload !== "object" || payload === null) return;
+          const raw = payload as NotificationEnvelope;
+          if (!raw || !raw.type) return;
 
-        const now = Date.now();
-        let history = pruneHistory(loadHistory(), now);
-        const key = stableKey(raw.type as NotificationType, raw.payload ?? {});
+          const now = Date.now();
+          let history = pruneHistory(loadHistory(), now);
+          const key = stableKey(
+            raw.type as NotificationType,
+            raw.payload ?? {},
+          );
 
-        // Dedup: evitar procesar la misma notificación duplicada
-        if (
-          history.some(
-            (h) => h.key === key && now - h.env.receivedAt < DEDUP_TTL_MS,
-          )
-        ) {
-          return;
-        }
+          // Dedup: evitar procesar la misma notificación duplicada
+          if (
+            history.some(
+              (h) => h.key === key && now - h.env.receivedAt < DEDUP_TTL_MS,
+            )
+          ) {
+            return;
+          }
 
-        history = pruneHistory([...history, { key, env: raw }], now);
-        saveHistory(history);
-        setLastEvent(raw);
-        listenersRef.current.forEach((fn) => fn(raw));
+          history = pruneHistory([...history, { key, env: raw }], now);
+          saveHistory(history);
+          setLastEvent(raw);
+          listenersRef.current.forEach((fn) => fn(raw));
 
-        // Emitir al NotificationEngine (non-blocking, con prioridad)
-        void emitNotification(raw.type as NotificationType, raw.payload ?? {});
-      });
+          // Emitir al NotificationEngine (non-blocking, con prioridad)
+          void emitNotification(
+            raw.type as NotificationType,
+            raw.payload ?? {},
+          );
+        },
+      );
 
       ch.subscribe();
       channelRef.current = ch;

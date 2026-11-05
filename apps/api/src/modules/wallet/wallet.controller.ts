@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from "../auth/auth.types";
 import {
   Controller,
   Get,
@@ -49,14 +50,14 @@ export class WalletController {
    * Nunca se acepta un driverId del body o query params para operaciones de escritura.
    */
   @Get("balance")
-  async getBalance(@Req() req: any) {
+  async getBalance(@Req() req: AuthenticatedRequest) {
     const driverId = this.extractDriverId(req);
     return this.walletService.getBalance(driverId);
   }
 
   @Post("withdraw")
   @UseInterceptors(IdempotencyInterceptor)
-  async withdraw(@Req() req: any, @Body() payload: any) {
+  async withdraw(@Req() req: AuthenticatedRequest, @Body() payload: unknown) {
     const driverId = this.extractDriverId(req);
 
     // Validar monto con Zod
@@ -64,7 +65,7 @@ export class WalletController {
     if (!parsed.success) {
       throw new BadRequestException({
         code: "VALIDATION_ERROR",
-        message: parsed.error.errors.map((e) => e.message).join(", "),
+        message: parsed.error.issues.map((e) => e.message).join(", "),
       });
     }
 
@@ -73,7 +74,7 @@ export class WalletController {
 
   @Put("bank")
   @UseInterceptors(IdempotencyInterceptor)
-  async updateBank(@Req() req: any, @Body() payload: any) {
+  async updateBank(@Req() req: AuthenticatedRequest, @Body() payload: unknown) {
     const driverId = this.extractDriverId(req);
 
     // Validate with Zod
@@ -81,7 +82,7 @@ export class WalletController {
     if (!parsed.success) {
       throw new BadRequestException({
         code: "VALIDATION_ERROR",
-        message: parsed.error.errors.map((e) => e.message).join(", "),
+        message: parsed.error.issues.map((e) => e.message).join(", "),
       });
     }
 
@@ -129,7 +130,7 @@ export class WalletController {
    * Extrae el driverId del token JWT validado por SupabaseAuthGuard.
    * Si el token no contiene entityId, deniega el acceso inmediatamente.
    */
-  private extractDriverId(req: any): string {
+  private extractDriverId(req: AuthenticatedRequest): string {
     const entityId = req.user?.entityId;
     if (!entityId) {
       throw new UnauthorizedException(

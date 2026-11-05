@@ -20,7 +20,6 @@ import {
   Shield,
   UserCheck,
   Database,
-  ArrowRight,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -294,30 +293,6 @@ export default function CommitmentStep({
   const [expandedDoc, setExpandedDoc] = useState<
     keyof CommitmentAgreements | null
   >(null);
-
-  const checkboxRow = (
-    key: keyof CommitmentAgreements,
-    label: React.ReactNode,
-  ) => (
-    <motion.label
-      className="flex items-start gap-3 cursor-pointer group/check p-3 -mx-3 rounded-xl hover:bg-white/[0.03] transition-colors"
-      whileHover={{ backgroundColor: "rgba(255,255,255,0.04)" }}
-    >
-      <input
-        type="checkbox"
-        checked={agreements[key]}
-        onChange={(e) =>
-          onAgreementsChange({
-            [key]: e.target.checked,
-          } as Partial<CommitmentAgreements>)
-        }
-        className="mt-0.5 w-5 h-5 shrink-0 accent-[#FDCB01]"
-      />
-      <span className="text-[11px] text-[#AAAAAA] leading-relaxed group-hover/check:text-white/80 transition-colors">
-        {label}
-      </span>
-    </motion.label>
-  );
 
   const allAgreed = Object.values(agreements).every((v) => v);
 

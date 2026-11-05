@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from "@tad/services";
 
 import { useState, FormEvent } from "react";
 import Head from "next/head";
@@ -32,10 +33,11 @@ export default function ForgotPasswordPage() {
 
       if (error) throw error;
       setStatus("sent");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setStatus("error");
       setErrorMsg(
-        err?.message || "No se pudo enviar el correo. Intenta de nuevo.",
+        getErrorMessage(err) ||
+          "No se pudo enviar el correo. Intenta de nuevo.",
       );
     }
   };

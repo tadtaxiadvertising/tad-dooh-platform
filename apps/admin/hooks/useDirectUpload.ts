@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { createHash } from "crypto";
+import { getErrorMessage } from "@/lib/error-message";
+import { calculateFileMd5 } from "@tad/services";
+
+import { useState } from "react";
 
 interface UploadProgress {
   loaded: number;
@@ -31,13 +33,6 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
   });
   const [error, setError] = useState<string | null>(null);
 
-  const calculateHash = async (file: File): Promise<string> => {
-    const buffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest("MD5", buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-  };
-
   const upload = async (file: File, campaignId?: string) => {
     if (isUploading) return;
 
@@ -47,7 +42,7 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
       const err = new Error(
         `Tipo de archivo no permitido: ${file.type}. Solo MP4, JPG, PNG.`,
       );
-      setError(err.message);
+      setError(getErrorMessage(err));
       options.onError?.(err);
       throw err;
     }
@@ -55,7 +50,7 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
     const maxSize = 100 * 1024 * 1024; // 100MB
     if (file.size > maxSize) {
       const err = new Error(`El archivo excede el límite de 100MB`);
-      setError(err.message);
+      setError(getErrorMessage(err));
       options.onError?.(err);
       throw err;
     }
@@ -86,10 +81,10 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
         );
       }
 
-      const { uploadUrl, path, publicUrl } = await uploadUrlRes.json();
+      const { uploadUrl, path } = await uploadUrlRes.json();
 
       // 2. Calcular hash MD5 localmente (para verificación)
-      const hashMd5 = await calculateHash(file);
+      const hashMd5 = await calculateFileMd5(file);
 
       // 3. Subir directamente a Supabase Storage con progress
       await uploadToSignedUrl(uploadUrl, file, (loaded) => {
@@ -141,10 +136,10 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
       options.onSuccess?.(uploadResult);
 
       return uploadResult;
-    } catch (err: any) {
-      const message = err.message || "Error desconocido en la subida";
+    } catch (err: unknown) {
+      const message = getErrorMessage(err) || "Error desconocido en la subida";
       setError(message);
-      options.onError?.(err);
+      options.onError?.(err instanceof Error ? err : new Error(message));
       throw err;
     } finally {
       setIsUploading(false);

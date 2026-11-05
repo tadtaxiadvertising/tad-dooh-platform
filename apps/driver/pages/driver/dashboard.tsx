@@ -1,12 +1,9 @@
+import { getErrorMessage } from "@tad/services";
 import { clearAuthCookies } from "@tad/services/session-cookies";
 // apps/driver/pages/driver/dashboard.tsx
 import React, { useEffect } from "react";
 import Head from "next/head";
-import api, {
-  supabase,
-  getMyAdvertiserReferrals,
-  getMyReferralCode,
-} from "@tad/services";
+import api, { supabase, getMyAdvertiserReferrals } from "@tad/services";
 import { useBackgroundTelemetry } from "../../hooks/useBackgroundTelemetry";
 import { usePaymentStore } from "../../store/usePaymentStore";
 import { useDriverHub } from "../../hooks/useDriverHub";
@@ -714,7 +711,7 @@ export default function DriverDashboard() {
     driverUrl: string;
     qrPayload: string;
   } | null>(null);
-  const [referralLoading, setReferralLoading] = React.useState(true);
+  const [, setReferralLoading] = React.useState(true);
   const [advertiserReferrals, setAdvertiserReferrals] = React.useState<{
     advertisers: Array<{
       id: string;
@@ -726,8 +723,7 @@ export default function DriverDashboard() {
     totalBonus: number;
     count: number;
   } | null>(null);
-  const [advertiserReferralsLoading, setAdvertiserReferralsLoading] =
-    React.useState(true);
+  const [, setAdvertiserReferralsLoading] = React.useState(true);
 
   // Iniciar tracking GPS al montar
   useEffect(() => {
@@ -792,7 +788,7 @@ export default function DriverDashboard() {
     let cancelled = false;
     setAdvertiserReferralsLoading(true);
     getMyAdvertiserReferrals(hubData.driverId)
-      .then((data: any) => {
+      .then((data: typeof advertiserReferrals) => {
         if (!cancelled) {
           setAdvertiserReferrals(data);
         }
@@ -821,7 +817,7 @@ export default function DriverDashboard() {
     let cancelled = false;
     setAdvertiserReferralsLoading(true);
     getMyAdvertiserReferrals(hubData.driverId)
-      .then((data: any) => {
+      .then((data: typeof advertiserReferrals) => {
         if (!cancelled) {
           setAdvertiserReferrals(data);
         }
@@ -940,12 +936,11 @@ export default function DriverDashboard() {
         sessionStorage.removeItem("tad_driver_force_onboarding");
       }
       await refreshHub();
-    } catch (error: any) {
+    } catch (error: unknown) {
       const message =
-        error?.response?.data?.message ||
-        error?.message ||
+        getErrorMessage(error) ||
         "No se pudo registrar la aceptación del contrato.";
-      alert(Array.isArray(message) ? message[0] : message);
+      alert(message);
     } finally {
       setOnboardingBusy(false);
     }

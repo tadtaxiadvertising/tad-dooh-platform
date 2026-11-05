@@ -10,6 +10,17 @@
  * Requiere: DATABASE_URL configurada en .env o env vars
  */
 
+/**
+ * TAD DOOH Platform - Fleet Seed Script
+ *
+ * Registra 10 dispositivos de prueba STI0001-STI0010 con conductores dummy
+ * para el Santiago Pilot.
+ *
+ * Ejecutar: npx ts-node scripts/seed-fleet.ts
+ * O:        npm run seed:devices
+ *
+ * Requiere: DATABASE_URL configurada en .env o env vars
+ */
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -82,7 +93,7 @@ async function main() {
       console.log(`  ✅ Conductor: ${drv.name} (${drv.phone})`);
 
       // 3. Create Device linked to Driver
-      const device = await prisma.device.upsert({
+      await prisma.device.upsert({
         where: { deviceId: dev.id },
         update: { driverId: driver.id },
         create: {

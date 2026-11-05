@@ -7,7 +7,7 @@
  *  - CI/CD en VPS con recursos limitados (Easypanel)
  *  - Reproductor de video en bucle (offline-first)
  */
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig } from "@playwright/test";
 
 const BASE_URL = process.env.PLAYER_BASE_URL || "http://localhost:3006";
 

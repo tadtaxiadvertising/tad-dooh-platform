@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
-import { CloudUpload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { CloudUpload, Loader2, AlertCircle } from "lucide-react";
 import { useDirectUpload } from "@/hooks/useDirectUpload";
 
 interface DirectUploadProps {
@@ -34,7 +34,7 @@ export function DirectUpload({
 
     try {
       await upload(file, campaignId);
-    } catch (err) {
+    } catch {
       // Error handled by hook
     }
   };

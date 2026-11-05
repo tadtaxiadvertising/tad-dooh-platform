@@ -14,7 +14,8 @@ export function isPrismaClientKnownError(
   return (
     e instanceof Error &&
     Object.prototype.hasOwnProperty.call(e, "code") &&
-    typeof (e as any).code === "string"
+    "code" in e &&
+    typeof e.code === "string"
   );
 }
 

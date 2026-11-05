@@ -1,3 +1,5 @@
+import { Test } from "@nestjs/testing";
+import { PrismaService } from "../prisma/prisma.service";
 import { Logger } from "@nestjs/common";
 import { SystemSettingsService } from "./system-settings.service";
 
@@ -19,7 +21,13 @@ describe("SystemSettingsService", () => {
     const loggerError = jest
       .spyOn(Logger.prototype, "error")
       .mockImplementation(() => undefined);
-    const service = new SystemSettingsService(prisma as any);
+    const module = await Test.createTestingModule({
+      providers: [
+        SystemSettingsService,
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
+    const service = module.get(SystemSettingsService);
 
     await expect(service.onModuleInit()).resolves.toBeUndefined();
 
@@ -40,7 +48,13 @@ describe("SystemSettingsService", () => {
     const loggerWarn = jest
       .spyOn(Logger.prototype, "warn")
       .mockImplementation(() => undefined);
-    const service = new SystemSettingsService(prisma as any);
+    const module = await Test.createTestingModule({
+      providers: [
+        SystemSettingsService,
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
+    const service = module.get(SystemSettingsService);
 
     await expect(service.onModuleInit()).resolves.toBeUndefined();
 

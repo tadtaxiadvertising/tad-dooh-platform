@@ -162,7 +162,7 @@ export default async function handler(
       return headers;
     };
 
-    const fetchOptions: RequestInit = {
+    const fetchOptions: RequestInit & { duplex?: "half" } = {
       method: req.method || "GET",
       headers: getForwardHeaders(targetUrl),
       signal: AbortSignal.timeout(60000),
@@ -181,7 +181,6 @@ export default async function handler(
       try {
         // Next.js ships raw-body as a CommonJS callable export; dynamic-import
         // namespace destructuring can yield an undefined function in production.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const getRawBody = require("next/dist/compiled/raw-body") as (
           stream: NextApiRequest,
           options: { length?: string | number; limit: string },
@@ -190,10 +189,10 @@ export default async function handler(
           length: req.headers["content-length"],
           limit: "5mb",
         });
-        fetchOptions.body = rawBody;
+        fetchOptions.body = Uint8Array.from(rawBody);
         (fetchOptions.headers as Record<string, string>)["content-length"] =
           String(rawBody.length);
-        (fetchOptions as any).duplex = "half";
+        fetchOptions.duplex = "half";
       } catch (bodyError: unknown) {
         const errMsg =
           bodyError instanceof Error ? bodyError.message : String(bodyError);
@@ -307,7 +306,9 @@ export default async function handler(
               upstreamStatusText: backendResponse.statusText,
             },
           });
-        } catch {}
+        } catch {
+          /* Malformed JSON falls through to the response fallback below. */
+        }
       }
 
       return res.status(backendResponse.status).json({
@@ -325,7 +326,9 @@ export default async function handler(
       try {
         const data = JSON.parse(buffer.toString("utf-8"));
         return res.status(backendResponse.status).json(data);
-      } catch (e) {}
+      } catch {
+        /* Malformed JSON falls through to the response fallback below. */
+      }
     }
 
     return res.status(backendResponse.status).send(buffer);

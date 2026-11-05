@@ -280,7 +280,7 @@ export class PrismaService
     activeConnections?: number;
   }> {
     try {
-      const result: any[] = await this.$queryRaw`
+      const result = await this.$queryRaw<{ active_connections: bigint }[]>`
         SELECT count(*) as active_connections FROM pg_stat_activity WHERE datname = current_database()
       `;
       return {

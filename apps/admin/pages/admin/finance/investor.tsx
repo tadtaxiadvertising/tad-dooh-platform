@@ -1,15 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import type { GetServerSideProps } from "next";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+
 import {
   Target,
   TrendingUp,
@@ -25,8 +17,12 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 });
 
 export default function InvestorDashboard() {
-  const [metrics, setMetrics] = useState<any>(null);
-  const [simulatorTaxis, setSimulatorTaxis] = useState<number>(100);
+  const [metrics, setMetrics] = useState<{
+    ebitda?: number;
+    cac?: number;
+    ltv?: number;
+    paybackPeriod?: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -139,7 +135,19 @@ export default function InvestorDashboard() {
   );
 }
 
-function MetricCard({ title, value, icon, trend, sub }: any) {
+function MetricCard({
+  title,
+  value,
+  icon,
+  trend,
+  sub,
+}: {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  trend?: string;
+  sub?: string;
+}) {
   return (
     <div className="bg-[#141414] border border-zinc-800 p-6 flex flex-col justify-between hover:border-[#FFD400] transition-colors relative overflow-hidden group">
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
@@ -157,7 +165,17 @@ function MetricCard({ title, value, icon, trend, sub }: any) {
   );
 }
 
-function UnitStatus({ number, uptime, profit, alert }: any) {
+function UnitStatus({
+  number,
+  uptime,
+  profit,
+  alert,
+}: {
+  number: string;
+  uptime: string;
+  profit: string;
+  alert?: boolean;
+}) {
   return (
     <div
       className={`p-4 border ${alert ? "bg-red-900/10 border-red-900/50" : "bg-zinc-900 border-zinc-800"} flex justify-between items-center`}

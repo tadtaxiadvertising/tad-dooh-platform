@@ -1,20 +1,11 @@
+import { getErrorResponse } from "@/lib/error-response";
 import { writeAccessTokenCookie } from "@tad/services/session-cookies";
 import React, { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
 import axios from "axios";
-import {
-  Phone,
-  Lock,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  X,
-  CheckCircle,
-  ArrowRight,
-  LogIn,
-} from "lucide-react";
+import { Eye, EyeOff, AlertCircle, X, LogIn } from "lucide-react";
 import { ErrorBoundary } from "@tad/ui";
 import { GoogleSignInButton } from "@tad/ui";
 import { PORTAL_CONFIGS } from "@tad/services";
@@ -25,7 +16,7 @@ export default function DriverLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
 
@@ -102,11 +93,12 @@ export default function DriverLoginPage() {
 
         router.replace("/driver/dashboard");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login Error:", err);
-      if (err.response?.status === 401 || err.response?.status === 403) {
+      const status = getErrorResponse(err)?.status;
+      if (status === 401 || status === 403) {
         setError("Teléfono o contraseña incorrectos.");
-      } else if (err.response?.status === 402) {
+      } else if (status === 402) {
         setError("Suscripción Pendiente. Contacta a soporte.");
       } else {
         setError("Error de conexión con el servidor. Intenta de nuevo.");

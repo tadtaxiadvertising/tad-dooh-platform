@@ -4,7 +4,6 @@ import { PrismaService } from "../../prisma/prisma.service";
 
 describe("TelemetryService Security & Rate Limit", () => {
   let service: TelemetryService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     $executeRawUnsafe: jest.fn(),
@@ -24,7 +23,6 @@ describe("TelemetryService Security & Rate Limit", () => {
     }).compile();
 
     service = module.get<TelemetryService>(TelemetryService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 

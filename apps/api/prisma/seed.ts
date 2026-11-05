@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 
@@ -30,12 +31,14 @@ async function main() {
       "driver",
       "user",
       "fleet",
-    ];
+    ] as const;
 
     console.log("🧹 Purging database tables...");
     for (const table of tablesToClear) {
       try {
-        await (prisma as any)[table].deleteMany();
+        await (
+          prisma[table] as { deleteMany(): Promise<Prisma.BatchPayload> }
+        ).deleteMany();
       } catch (e) {
         console.warn(
           `⚠️ Warning: Could not clear table ${table}. It might not exist.`,
@@ -51,7 +54,7 @@ async function main() {
   }
 
   // CREACIÓN GARANTIZADA DE DATOS DE SIMULACIÓN (Demo)
-  const demoDriver = await prisma.driver.upsert({
+  await prisma.driver.upsert({
     where: { phone: "1000000000" }, // Dummy unique phone
     update: {},
     create: {
@@ -79,7 +82,7 @@ async function main() {
   });
 
   // Ensure Demo Campaign exists
-  const demoCampaign = await prisma.campaign.upsert({
+  await prisma.campaign.upsert({
     where: { id: "demo-sim-campaign" },
     update: {},
     create: {
@@ -107,7 +110,7 @@ async function main() {
   }
 
   // 2. CREATE ADMIN
-  const admin = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: "admin@tadtaxi.do",
       password: hashedPassword,
@@ -222,8 +225,8 @@ async function main() {
 
     // 5. GENERATE PLAYLOGS & TELEMETRY (Field Test Mocks)
     // 50 logs per device in the last 24h
-    const logs = [];
-    const locations = [];
+    const logs: Prisma.PlaybackEventCreateManyInput[] = [];
+    const locations: Prisma.DriverLocationCreateManyInput[] = [];
     const baseLat =
       city === "Santo Domingo"
         ? 18.4861
@@ -261,8 +264,8 @@ async function main() {
       });
     }
 
-    await prisma.playbackEvent.createMany({ data: logs as any });
-    await prisma.driverLocation.createMany({ data: locations as any });
+    await prisma.playbackEvent.createMany({ data: logs });
+    await prisma.driverLocation.createMany({ data: locations });
   }
 
   console.log("\n======================================================");

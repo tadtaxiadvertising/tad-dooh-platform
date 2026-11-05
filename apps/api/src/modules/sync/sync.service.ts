@@ -21,6 +21,30 @@ const mediaAssetSafeSelect = {
   weight: true,
 };
 
+interface ManifestMedia {
+  id: string;
+  url: string | null;
+  hashMd5?: string | null;
+  hash?: string | null;
+  checksum?: string | null;
+  filename?: string | null;
+  name?: string | null;
+  title?: string | null;
+  cdnUrl?: string | null;
+}
+
+export interface ManifestPlaylistItem {
+  id: string;
+  campaignId: string;
+  filename: string;
+  url: string;
+  checksum: string;
+  hashMd5: string | null;
+  duration: number;
+  version: number;
+  priority: number;
+}
+
 @Injectable()
 export class SyncService {
   private readonly logger = new Logger(SyncService.name);
@@ -158,50 +182,6 @@ export class SyncService {
       `🕒 Sync [V5] Clock: ${now.toISOString()} | Device: ${deviceId}`,
     );
 
-    let campaignFilter: any = { isGlobal: true }; // Fallback playlist por defecto
-
-    if (hasValidSubscription) {
-      campaignFilter = {
-        OR: [
-          // 1. Canal Global (nacional — llega a TODOS los dispositivos con suscripción activa)
-          // BUG FIX: antes requería targetCity:'Global', lo que exluía campañas con ciudad específica.
-          { targetAll: true },
-
-          // 2. Canal Geofencing Ciudad (v1 y v2)
-          ...(device.city ? [{ targetCity: device.city }] : []),
-
-          // 3. Canal Selectivo (Cities Array - v2): JSON array contains city
-          ...(device.city
-            ? [
-                {
-                  targetCities: { array_contains: [device.city] },
-                },
-              ]
-            : []),
-
-          // 4. Canal de Flota (v2)
-          ...(device.fleet
-            ? [
-                {
-                  targetFleets: { array_contains: [device.fleet] },
-                },
-              ]
-            : []),
-
-          // 5. Canal Directo (v2 UUID - asignación explícita por DeviceCampaign)
-          { devices: { some: { device_id: device.id } } },
-
-          // 6. Canal Legacy (v1 Hardware ID)
-          { targets: { some: { deviceId } } },
-
-          // 7. Canal Segmentado (v2 Segmentación por Conductor)
-          ...(isDriverActive
-            ? [{ targetDrivers: { some: { id: driver.id } } }]
-            : []),
-        ],
-      };
-    }
-
     // 3. Obtener campañas activas via MASTER SYNC (Materialized View)
     // SRE Optimization: Pre-calculated targeting avoids complex joins in heartbeats.
     const city = device.city || "Santiago";
@@ -209,7 +189,7 @@ export class SyncService {
     // SRE Anti-OOM: LIMIT 15 en SQL — trae solo los campaign_ids necesarios desde Postgres,
     // evitando cargar registros excesivos a la RAM del contenedor (512MB cap en EasyPanel).
     // El .slice(0, 15) en JS (línea 232) queda como defensa en profundidad.
-    const results: any[] = await this.prisma.$queryRaw`
+    const results = await this.prisma.$queryRaw<{ campaign_id: string }[]>`
       SELECT campaign_id FROM mv_active_campaigns
       WHERE active = true 
         AND start_date <= NOW() 
@@ -243,7 +223,7 @@ export class SyncService {
       const assetsCount =
         (c.media?.length || 0) +
         (c.mediaAssets?.length || 0) +
-        ((c as any).videos?.length || 0);
+        (c.videos?.length || 0);
       this.logger.log(
         `   📂 Campaign "${c.name}" [${c.id}] | assets=${assetsCount} | dates: ${c.startDate.toISOString()} to ${c.endDate.toISOString()}`,
       );
@@ -252,16 +232,16 @@ export class SyncService {
     // 3.5 Ordenar por prioridad (Revenue focus)
     activeCampaigns.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
-    const playlistMap = new Map<string, any>();
+    const playlistMap = new Map<string | null, ManifestPlaylistItem>();
     activeCampaigns.forEach((c) => {
       // Unificar Media, MediaAssets y Videos (v1, v2 y Hub)
-      const mediaList = [
+      const mediaList: ManifestMedia[] = [
         ...(c.media || []),
         ...(c.mediaAssets || []),
-        ...((c as any).videos || []),
+        ...(c.videos || []),
       ];
 
-      mediaList.forEach((m: any) => {
+      mediaList.forEach((m) => {
         const key = m.hashMd5 || m.hash || m.checksum || m.url;
         if (!playlistMap.has(key)) {
           playlistMap.set(key, {
@@ -289,7 +269,7 @@ export class SyncService {
     playlist = playlist.map((item) => {
       if (item.url && item.url.includes("supabase.co")) {
         item.url = item.url.replace(
-          /https:\/\/[^\/]+\/storage\/v1\/object\/public/,
+          /https:\/\/[^/]+\/storage\/v1\/object\/public/,
           "https://media.tad.do",
         );
       }

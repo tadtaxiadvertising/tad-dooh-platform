@@ -6,7 +6,7 @@ import "leaflet/dist/leaflet.css";
 import { getBiHotspots } from "@tad/services";
 
 // Plugin component to handle the heat layer
-const HeatLayer = ({ points }: { points: any[] }) => {
+const HeatLayer = ({ points }: { points: [number, number, number][] }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -34,7 +34,7 @@ const HeatLayer = ({ points }: { points: any[] }) => {
 };
 
 export const BiHeatmap = () => {
-  const [points, setPoints] = useState<any[]>([]);
+  const [points, setPoints] = useState<[number, number, number][]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from "./auth.types";
 import {
   Controller,
   Post,
@@ -15,6 +16,7 @@ import { LoginDto } from "./dto/login.dto";
 import { OAuthExchangeDto } from "./dto/oauth-exchange.dto";
 import { Public } from "./decorators/public.decorator";
 import { Roles, UserRole } from "./decorators/roles.decorator";
+import type { Response, CookieOptions } from "express";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -25,7 +27,10 @@ export class AuthController {
   @Post("login")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Admin login – returns JWT token" })
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: any) {
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const result = await this.authService.login(dto);
 
     // A7-HTTPONLY: Enviar access_token en cookie HttpOnly + Secure para producción
@@ -40,7 +45,7 @@ export class AuthController {
 
     // Configurar la cookie HttpOnly (solo el access_token personalizado)
     // Para el refresh_token (también de Supabase), GoTrue lo maneja en su cookie 'sb-refresh-token'
-    res.cookie("tad_access_token", accessToken, {
+    const options: CookieOptions & { partitionable: boolean } = {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
@@ -48,11 +53,14 @@ export class AuthController {
       path: cookiePath,
       maxAge: 1000 * 60 * 60 * 24 * 7, // Express maxAge is milliseconds (7 days)
       partitionable: true,
-    });
+    };
+    res.cookie("tad_access_token", accessToken, options);
 
     // Retornar solo datos de usuario (sin tokens, ya en cookie HttpOnly)
-    const { access_token, refresh_token, ...user } = result;
-    return user;
+    const user = { ...result };
+    Reflect.deleteProperty(user, "access_token");
+    Reflect.deleteProperty(user, "refresh_token");
+    return user as Omit<typeof result, "access_token" | "refresh_token">;
   }
 
   @Public()
@@ -69,7 +77,7 @@ export class AuthController {
   @Get("profile")
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get current user profile" })
-  async getProfile(@Request() req: any) {
+  async getProfile(@Request() req: AuthenticatedRequest) {
     return this.authService.getProfile(req.user.id);
   }
 
@@ -77,7 +85,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Update current user profile" })
   async updateProfile(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Body() dto: { name?: string; password?: string; currentPassword?: string },
   ) {
     return this.authService.updateProfile(req.user.id, dto);
@@ -89,7 +97,7 @@ export class AuthController {
   @ApiOperation({
     summary: "Generate a 5-minute JWT token for hardware pairing QR",
   })
-  async generatePairingToken(@Request() req: any) {
+  async generatePairingToken(@Request() req: AuthenticatedRequest) {
     return this.authService.generatePairingToken(req.user.id);
   }
 

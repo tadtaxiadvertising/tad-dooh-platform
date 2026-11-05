@@ -119,7 +119,7 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
     // Zod Validation — API-managed portals accept any email domain (public registration)
     const result = (apiLogin ? PublicCredentialsSchema : LoginSchema).safeParse({ email, password });
     if (!result.success) {
-      setError(result.error.errors[0].message);
+      setError(result.error.issues[0].message);
       return;
     }
 
@@ -244,7 +244,7 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
     // Public registration accepts any email domain (businesses use their own)
     const result = (apiLogin ? PublicCredentialsSchema : LoginSchema).safeParse({ email, password });
     if (!result.success) {
-      setError(result.error.errors[0].message);
+      setError(result.error.issues[0].message);
       return;
     }
 
@@ -309,7 +309,7 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
     // Zod Validation
     const result = RecoverySchema.safeParse({ email });
     if (!result.success) {
-      setError(result.error.errors[0].message);
+      setError(result.error.issues[0].message);
       return;
     }
 

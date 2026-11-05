@@ -1,9 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  normalizeUploadedMedia,
+  type MediaAsset,
+  type MediaUploadSource,
+} from "@/lib/media-asset";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@tad/ui";
 import {
   CloudUpload,
   FileVideo,
-  FileImage,
   CheckCircle2,
   AlertCircle,
   Trash2,
@@ -24,12 +28,12 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 
 export default function AdvertiserMedia() {
   const { session } = useAuth();
-  const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
+  const [mediaLibrary, setMediaLibrary] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [renameModal, setRenameModal] = useState<{
     open: boolean;
-    media: any;
+    media: MediaAsset | null;
     newName: string;
   }>({
     open: false,
@@ -37,14 +41,17 @@ export default function AdvertiserMedia() {
     newName: "",
   });
   const [saving, setSaving] = useState(false);
-  const [linkModal, setLinkModal] = useState<{ open: boolean; media: any }>({
+  const [linkModal, setLinkModal] = useState<{
+    open: boolean;
+    media: MediaAsset | null;
+  }>({
     open: false,
     media: null,
   });
-  const [unlinkModal, setUnlinkModal] = useState<{ open: boolean; media: any }>(
-    { open: false, media: null },
-  );
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [unlinkModal, setUnlinkModal] = useState<{
+    open: boolean;
+    media: MediaAsset | null;
+  }>({ open: false, media: null });
 
   const fetchMedia = useCallback(async () => {
     if (!session?.access_token) return;
@@ -68,31 +75,11 @@ export default function AdvertiserMedia() {
     if (session?.access_token) fetchMedia();
   }, [session, fetchMedia]);
 
-  const handleUploadComplete = (newMedia: any) => {
-    setMediaLibrary((prev) => {
-      if (prev.some((m: any) => m.id === newMedia.id)) return prev;
-      return [
-        {
-          id: newMedia.id,
-          filename: newMedia.filename || newMedia.name,
-          originalFilename: newMedia.originalFilename,
-          url: newMedia.url || newMedia.cdnUrl,
-          cdnUrl: newMedia.cdnUrl,
-          size: newMedia.size || newMedia.fileSize || 0,
-          mimeType: newMedia.mimeType,
-          mime_type: newMedia.mime_type,
-          durationSeconds: newMedia.durationSeconds,
-          width: newMedia.width,
-          height: newMedia.height,
-          status: newMedia.status || "READY",
-          createdAt: new Date().toISOString(),
-          qrUrl: newMedia.qrUrl,
-          campaign_id: newMedia.campaign_id,
-          campaign: newMedia.campaign || null,
-        },
-        ...prev,
-      ];
-    });
+  const handleUploadComplete = (newMedia: MediaUploadSource) => {
+    const media = normalizeUploadedMedia(newMedia);
+    setMediaLibrary((prev) =>
+      prev.some((item) => item.id === media.id) ? prev : [media, ...prev],
+    );
   };
 
   const handleRename = async () => {
@@ -113,7 +100,7 @@ export default function AdvertiserMedia() {
         throw new Error(err.message || "No se pudo renombrar el archivo");
       }
       setMediaLibrary((prev) =>
-        prev.map((m: any) =>
+        prev.map((m: MediaAsset) =>
           m.id === media.id
             ? {
                 ...m,
@@ -131,7 +118,7 @@ export default function AdvertiserMedia() {
     }
   };
 
-  const handleDelete = async (media: any) => {
+  const handleDelete = async (media: MediaAsset) => {
     if (!session?.access_token) return;
     if (!confirm(`¿Eliminar "${media.filename}" permanentemente?`)) return;
     try {
@@ -143,13 +130,15 @@ export default function AdvertiserMedia() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || "No se pudo eliminar el archivo");
       }
-      setMediaLibrary((prev) => prev.filter((m: any) => m.id !== media.id));
+      setMediaLibrary((prev) =>
+        prev.filter((m: MediaAsset) => m.id !== media.id),
+      );
     } catch (e) {
       alert(e instanceof Error ? e.message : "Error al eliminar");
     }
   };
 
-  const handleUnlink = async (media: any) => {
+  const handleUnlink = async (media: MediaAsset) => {
     if (!session?.access_token) return;
     try {
       const res = await fetch(`/api/proxy/media/${media.id}/unlink`, {
@@ -164,7 +153,7 @@ export default function AdvertiserMedia() {
         throw new Error(err.message || "No se pudo desvincular el archivo");
       }
       setMediaLibrary((prev) =>
-        prev.map((m: any) =>
+        prev.map((m: MediaAsset) =>
           m.id === media.id
             ? { ...m, campaign_id: undefined, campaign: null }
             : m,
@@ -176,7 +165,7 @@ export default function AdvertiserMedia() {
     }
   };
 
-  const openRename = (media: any) => {
+  const openRename = (media: MediaAsset) => {
     setRenameModal({
       open: true,
       media,
@@ -184,12 +173,12 @@ export default function AdvertiserMedia() {
     });
   };
 
-  const isVideo = (m: any) =>
+  const isVideo = (m: MediaAsset) =>
     !!(m.mimeType && m.mimeType.startsWith("video/")) ||
     !!(m.mime_type && m.mime_type.startsWith("video/")) ||
     (m.filename && m.filename.toLowerCase().endsWith(".mp4"));
 
-  const isImage = (m: any) =>
+  const isImage = (m: MediaAsset) =>
     !!(m.mimeType && m.mimeType.startsWith("image/")) ||
     !!(m.mime_type && m.mime_type.startsWith("image/")) ||
     !!(
@@ -255,7 +244,7 @@ export default function AdvertiserMedia() {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <AnimatePresence>
-              {mediaLibrary.map((item: any, i: number) => (
+              {mediaLibrary.map((item, i) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -517,7 +506,9 @@ export default function AdvertiserMedia() {
                     Cancelar
                   </button>
                   <button
-                    onClick={() => handleUnlink(unlinkModal.media)}
+                    onClick={() => {
+                      if (unlinkModal.media) handleUnlink(unlinkModal.media);
+                    }}
                     className="px-4 py-2 bg-rose-600/80 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-rose-600 transition-colors flex items-center gap-2"
                   >
                     <Unlink className="w-3 h-3" />

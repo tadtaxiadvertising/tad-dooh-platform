@@ -126,7 +126,13 @@ export class WalletService {
         // Concurrent withdrawals on the SAME driver will block here
         // until this transaction commits or rolls back.
         const [walletRow] = await tx.$queryRaw<
-          [{ id: string; available_balance: number; bank_info: any }]
+          [
+            {
+              id: string;
+              available_balance: number;
+              bank_info: Prisma.JsonValue;
+            },
+          ]
         >`
         SELECT id, available_balance, bank_info
         FROM wallets
@@ -248,8 +254,9 @@ export class WalletService {
     );
   }
 
-  async updateBank(driverId: string, bankData: any) {
-    const { driverId: _, ...accountData } = bankData;
+  async updateBank(driverId: string, bankData: Prisma.InputJsonObject) {
+    const accountData = { ...bankData };
+    Reflect.deleteProperty(accountData, "driverId");
 
     // Upsert bank info in Wallet model
     const wallet = await this.prisma.wallet.upsert({

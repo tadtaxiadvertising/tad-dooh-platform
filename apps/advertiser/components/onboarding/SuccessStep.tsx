@@ -1,15 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  CheckCircle2,
-  Zap,
-  ArrowRight,
-  Building2,
-  Calendar,
-  Target,
-  TrendingUp,
-} from "lucide-react";
+import { CheckCircle2, Zap, ArrowRight } from "lucide-react";
 
 interface SuccessStepProps {
   onContinue: () => void;

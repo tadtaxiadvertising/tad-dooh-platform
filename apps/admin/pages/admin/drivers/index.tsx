@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@/lib/error-message";
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { GetServerSideProps } from "next";
@@ -83,6 +84,9 @@ export default function DriversPage() {
       cedula?: string;
       licensePlate?: string;
       referralBonus?: number;
+      referralsCount?: number;
+      advertiserReferralBonus?: number;
+      advertiserReferralsCount?: number;
       subscriptionEnd?: string;
     }[]
   >([]);
@@ -98,7 +102,13 @@ export default function DriversPage() {
     const savedSearch = localStorage.getItem("tad_drivers_search");
     const savedFilter = localStorage.getItem("tad_drivers_filter");
     if (savedSearch) setSearch(savedSearch);
-    if (savedFilter) setFilter(savedFilter as any);
+    if (
+      savedFilter === "all" ||
+      savedFilter === "active" ||
+      savedFilter === "blocked" ||
+      savedFilter === "unpaid"
+    )
+      setFilter(savedFilter);
   }, []);
 
   // Persistir cambios en filtros
@@ -114,10 +124,12 @@ export default function DriversPage() {
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAuditDriver, setSelectedAuditDriver] = useState<any>(null);
+  const [selectedAuditDriver, setSelectedAuditDriver] = useState<
+    (typeof drivers)[number] | null
+  >(null);
 
   const [assigningDeviceId, setAssigningDeviceId] = useState<string>("");
-  const [savingDevice, setSavingDevice] = useState(false);
+  const [, setSavingDevice] = useState(false);
 
   const handleAssignDevice = async (driverId: string) => {
     if (!assigningDeviceId.trim()) {
@@ -132,10 +144,8 @@ export default function DriversPage() {
       );
       await loadDrivers();
       notifyChange("TAD_DRIVERS");
-    } catch (e: any) {
-      toast.error(
-        "FALLA DE VINCULACIÓN: " + (e.response?.data?.message || e.message),
-      );
+    } catch (e: unknown) {
+      toast.error("FALLA DE VINCULACIÓN: " + getErrorMessage(e));
     } finally {
       setSavingDevice(false);
       setAssigningDeviceId("");
@@ -151,10 +161,8 @@ export default function DriversPage() {
       );
       await loadDrivers();
       notifyChange("TAD_DRIVERS");
-    } catch (e: any) {
-      toast.error(
-        "ERROR AL DESVINCULAR: " + (e.response?.data?.message || e.message),
-      );
+    } catch (e: unknown) {
+      toast.error("ERROR AL DESVINCULAR: " + getErrorMessage(e));
     } finally {
       setSavingDevice(false);
     }

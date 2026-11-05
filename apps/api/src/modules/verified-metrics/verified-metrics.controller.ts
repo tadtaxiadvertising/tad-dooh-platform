@@ -9,11 +9,7 @@ import {
   UseInterceptors,
   Logger,
 } from "@nestjs/common";
-import {
-  VerifiedMetricsService,
-  CampaignVerifiedReport,
-  DriverPlaybackStats,
-} from "./verified-metrics.service";
+import { VerifiedMetricsService } from "./verified-metrics.service";
 import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 

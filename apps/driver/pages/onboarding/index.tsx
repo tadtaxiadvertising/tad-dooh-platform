@@ -1,3 +1,4 @@
+import type { WalletSetupData } from "@/components/onboarding/WalletSetupStep";
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { DriverOnboardingLayout } from "../../components/onboarding/DriverOnboardingLayout";
@@ -36,7 +37,7 @@ export default function DriverOnboarding() {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handleComplete = (data: any) => {
+  const handleComplete = (data: WalletSetupData) => {
     console.log("Driver onboarding completed with wallet data:", data);
     // Submit final data and redirect
     // window.location.href = '/driver/hub';

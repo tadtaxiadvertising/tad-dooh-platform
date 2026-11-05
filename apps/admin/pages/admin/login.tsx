@@ -56,13 +56,6 @@ export default function AdminLoginPage() {
         entityId: null,
       };
 
-      const tokenPayload = {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        entityId: user.entityId,
-      };
-
       if (!data.access_token) {
         throw new Error("Respuesta de autenticación inválida (sin token).");
       }
@@ -76,7 +69,7 @@ export default function AdminLoginPage() {
       // A7: Access token ahora está en cookie HttpOnly (no en localStorage).
       // El usuario ya está autenticado; redirigir al dashboard.
       // TODO: El middleware de auth verificará la cookie 'tad_access_token' en cada request.
-      (window as any).__tad_user = user;
+      (window as Window & { __tad_user?: typeof user }).__tad_user = user;
 
       router.replace("/admin/dashboard");
     } catch (err) {

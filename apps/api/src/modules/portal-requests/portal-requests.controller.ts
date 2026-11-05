@@ -7,7 +7,6 @@ import {
   Param,
   Body,
   UseGuards,
-  Request,
 } from "@nestjs/common";
 import { PortalRequestsService } from "./portal-requests.service";
 import { Public } from "../auth/decorators/public.decorator";
@@ -20,7 +19,7 @@ export class PortalRequestsController {
 
   @Post()
   @Public() // Allow advertisers to submit requests (they'll send their advertiserId)
-  async create(@Body() body: any) {
+  async create(@Body() body: Parameters<PortalRequestsService["create"]>[0]) {
     return this.portalRequestsService.create(body);
   }
 
@@ -52,7 +51,10 @@ export class PortalRequestsController {
 
   @Put(":id")
   @Roles(UserRole.ADMIN)
-  async update(@Param("id") id: string, @Body() body: any) {
+  async update(
+    @Param("id") id: string,
+    @Body() body: Parameters<PortalRequestsService["update"]>[1],
+  ) {
     return this.portalRequestsService.update(id, body);
   }
 

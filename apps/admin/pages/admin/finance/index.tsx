@@ -1,3 +1,5 @@
+import type { LedgerRecord } from "@/types/admin-api";
+import { getErrorMessage } from "@/lib/error-message";
 import { useEffect, useState, useCallback } from "react";
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
@@ -17,19 +19,15 @@ export const getServerSideProps: GetServerSideProps = async () => ({
   props: {},
 });
 import {
-  AlertTriangle,
   Receipt,
   Users,
-  Zap,
   TrendingUp,
   Target,
-  BarChart3,
   DollarSign,
   FileBarChart,
   ShieldCheck,
   Activity,
   Cpu,
-  ArrowUpRight,
   Download,
   Building2,
   RefreshCcw,
@@ -77,8 +75,14 @@ export default function FinancePage() {
       totalImpressions?: number;
     }[]
   >([]);
-  const [ledger, setLedger] = useState<any[]>([]);
-  const [summary, setSummary] = useState<any>(null);
+  const [ledger, setLedger] = useState<LedgerRecord[]>([]);
+  const [summary, setSummary] = useState<{
+    mrr?: number;
+    activeSubscribers?: number;
+    campaignRevenue?: number;
+    burnRate?: number;
+    netProjection?: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -512,7 +516,7 @@ export default function FinancePage() {
                                     const { sendDriverPaymentWhatsApp } =
                                       await import("@tad/services");
                                     await sendDriverPaymentWhatsApp({
-                                      phone: (item as any).driverPhone || "",
+                                      phone: item.driverPhone || "",
                                       driverName: item.driverName,
                                       amount: item.totalAmount,
                                       month: format(new Date(), "MMMM yyyy", {
@@ -523,10 +527,13 @@ export default function FinancePage() {
                                       "✅ Notificado exitosamente",
                                       { id: loadingToast },
                                     );
-                                  } catch (err: any) {
-                                    toast.error("❌ Fallo: " + err.message, {
-                                      id: loadingToast,
-                                    });
+                                  } catch (err: unknown) {
+                                    toast.error(
+                                      "❌ Fallo: " + getErrorMessage(err),
+                                      {
+                                        id: loadingToast,
+                                      },
+                                    );
                                   }
                                 }}
                                 title="Notificar por WhatsApp"
@@ -567,11 +574,10 @@ export default function FinancePage() {
                                           "✅ Email enviado exitosamente",
                                           { id: loadingToast },
                                         );
-                                      } catch (err: any) {
+                                      } catch (err: unknown) {
                                         toast.error(
                                           "❌ Error al enviar email: " +
-                                            (err.response?.data?.message ||
-                                              err.message),
+                                            getErrorMessage(err),
                                           { id: loadingToast },
                                         );
                                       }
@@ -794,7 +800,7 @@ export default function FinancePage() {
                         </td>
                       </tr>
                     ) : (
-                      ledger.map((item, idx) => (
+                      ledger.map((item) => (
                         <tr
                           key={item.id}
                           className="hover:bg-gray-900/40 transition-all group"

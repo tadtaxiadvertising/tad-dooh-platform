@@ -79,7 +79,7 @@ export default function CityMapBackdrop({
         </defs>
         <rect width="100%" height="100%" fill="url(#tad-street-grid)" />
         <rect width="100%" height="100%" fill="url(#tad-avenues)" />
-        {NODES.map((n, i) => (
+        {NODES.map((n, _i) => (
           <circle
             key={`${n.x}-${n.y}`}
             cx={n.x}

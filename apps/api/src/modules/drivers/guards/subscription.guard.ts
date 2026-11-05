@@ -47,7 +47,7 @@ export class SubscriptionGuard implements CanActivate {
     const deviceId =
       (request.headers["x-device-id"] as string) ||
       request.body?.deviceId ||
-      (request.params as any)?.deviceId ||
+      request.params?.deviceId ||
       null;
 
     if (!deviceId) {

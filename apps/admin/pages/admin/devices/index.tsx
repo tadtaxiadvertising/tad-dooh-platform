@@ -17,11 +17,8 @@ import {
   CheckCircle2,
   Server,
   Plus,
-  Edit2,
   Cpu,
   Activity,
-  Zap,
-  ShieldCheck,
 } from "lucide-react";
 import clsx from "clsx";
 import { formatDistanceToNow } from "date-fns";
@@ -32,6 +29,10 @@ import { notifyChange } from "@tad/ui";
 export default function DevicesPage() {
   const [devices, setDevices] = useState<
     {
+      driver_name?: string;
+      city?: string;
+      fleet?: string;
+      last_playback?: string;
       device_id?: string;
       deviceId?: string;
       taxi_number?: string;
@@ -244,7 +245,7 @@ export default function DevicesPage() {
         </div>
         <div className="h-8 w-px bg-gray-700/50 hidden xl:block mx-2" />
         <div className="flex gap-2 pr-2">
-          {(["all", "healthy", "warning", "critical"] as const).map((f, i) => (
+          {(["all", "healthy", "warning", "critical"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -296,16 +297,16 @@ export default function DevicesPage() {
             const battery = device.battery_level ?? device.batteryLevel ?? null;
             const version = device.appVersion || device.app_version || "—";
             const lastSeen = device.last_seen || device.lastSeen;
-            const driverName = (device as any).driver_name || "Sin Asignar";
-            const storageUsed = (device as any).storage_used;
-            const storageTotal = (device as any).storage_total;
+            const driverName = device.driver_name || "Sin Asignar";
+            const storageUsed = device.storage_used;
+            const storageTotal = device.storage_total;
             const storagePct =
               storageUsed && storageTotal
                 ? Math.round((storageUsed / storageTotal) * 100)
                 : 0;
-            const city = (device as any).city || "N/A";
-            const fleet = (device as any).fleet || "TAD Core";
-            const lastPlayback = (device as any).last_playback;
+            const city = device.city || "N/A";
+            const fleet = device.fleet || "TAD Core";
+            const lastPlayback = device.last_playback;
 
             return (
               <div

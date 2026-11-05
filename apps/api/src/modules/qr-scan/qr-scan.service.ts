@@ -11,7 +11,7 @@ export interface RecordQrScanInput {
 }
 
 export interface QrScanResult {
-  scan: any;
+  scan: import("@prisma/client").QrScan;
   isDuplicate: boolean;
   converted: boolean;
 }

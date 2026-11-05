@@ -1,3 +1,4 @@
+import type { Advertiser, Driver, Device, Campaign } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 
@@ -15,9 +16,11 @@ if (!SEED_PASSWORD || SEED_PASSWORD.length < 8) {
   process.exit(1);
 }
 
+const validatedSeedPassword: string = SEED_PASSWORD;
+
 async function main() {
   console.log("=== TAD DOOH Platform — Full Ecosystem Seed ===\n");
-  const hashedPw = await bcrypt.hash(SEED_PASSWORD, 10);
+  const hashedPw = await bcrypt.hash(validatedSeedPassword, 10);
 
   // ── Step 1: Advertisers ──────────────────────────────────
   console.log("1/7  Creating 5 advertisers...");
@@ -59,7 +62,7 @@ async function main() {
     },
   ];
 
-  const advertisers: any[] = [];
+  const advertisers: Advertiser[] = [];
   for (const adv of advertisersData) {
     const record = await prisma.advertiser.upsert({
       where: { email: adv.email },
@@ -87,7 +90,7 @@ async function main() {
     "Manuel Sánchez",
   ];
 
-  const drivers: any[] = [];
+  const drivers: Driver[] = [];
   for (let i = 0; i < 10; i++) {
     const phone = `82955500${String(i + 1).padStart(2, "0")}`;
     const cedula = `001-00000${String(i + 1).padStart(2, "0")}-${i + 1}`;
@@ -121,7 +124,7 @@ async function main() {
   // ── Step 3: Devices (screens) ─────────────────────────────
   console.log("3/7  Creating 10 devices and assigning to drivers...");
   const cities = ["Santo Domingo", "Santiago"];
-  const deviceRecords: any[] = [];
+  const deviceRecords: Device[] = [];
 
   for (let i = 0; i < 10; i++) {
     const deviceId = `TAD-SCR-${String(i + 1).padStart(3, "0")}`;
@@ -164,14 +167,14 @@ async function main() {
     { name: "Claro 5G — Sin Límites", advIdx: 3, budget: 20000 },
   ];
 
-  const campaignRecords: any[] = [];
+  const campaignRecords: Campaign[] = [];
   for (const def of campaignDefs) {
     const adv = advertisers[def.advIdx];
     const existing = await prisma.campaign.findFirst({
       where: { name: def.name, advertiserId: adv.id },
     });
 
-    let campaign: any;
+    let campaign: Campaign;
     if (existing) {
       campaign = existing;
     } else {
@@ -292,7 +295,7 @@ async function main() {
   // 2 CAMPAIGN_CREATE requests from advertisers without active campaigns
   for (let i = 0; i < 2; i++) {
     const adv = advertisers[i + 1]; // CND and Banco Popular
-    const existingReq = await (prisma as any).portalRequest.findFirst({
+    const existingReq = await prisma.portalRequest.findFirst({
       where: {
         advertiserId: adv.id,
         status: "PENDING",
@@ -300,7 +303,7 @@ async function main() {
       },
     });
     if (!existingReq) {
-      await (prisma as any).portalRequest.create({
+      await prisma.portalRequest.create({
         data: {
           advertiserId: adv.id,
           type: "CAMPAIGN_CREATE",
@@ -323,11 +326,11 @@ async function main() {
   for (let i = 0; i < 2; i++) {
     const driver = drivers[i];
     const earnings = campaignRecords.length * RATE_PER_AD_DRIVER;
-    const existingReq = await (prisma as any).portalRequest.findFirst({
+    const existingReq = await prisma.portalRequest.findFirst({
       where: { driverId: driver.id, status: "PENDING", type: "PAYOUT" },
     });
     if (!existingReq) {
-      await (prisma as any).portalRequest.create({
+      await prisma.portalRequest.create({
         data: {
           driverId: driver.id,
           type: "PAYOUT",

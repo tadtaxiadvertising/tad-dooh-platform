@@ -15,8 +15,6 @@ const AntigravitySync = dynamic(() => import("../components/AntigravitySync"), {
   ssr: false,
 });
 
-const PUBLIC_PAGES = ["/login", "/check-in"];
-
 function AppWrapper({
   Component,
   pageProps,

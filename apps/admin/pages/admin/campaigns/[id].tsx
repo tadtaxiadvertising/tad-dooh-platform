@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@/lib/error-message";
 import { useEffect, useState, useCallback } from "react";
 import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
@@ -45,8 +46,8 @@ export default function CampaignDetailPage() {
     endDate: string;
     start_date?: string;
     end_date?: string;
-    mediaAssets?: unknown[];
-    media?: unknown[];
+    mediaAssets?: { id: string }[];
+    media?: { id: string }[];
     priority?: number;
     version?: number;
     targetImpressions?: number;
@@ -536,17 +537,18 @@ export default function CampaignDetailPage() {
                             return {
                               ...prev,
                               mediaAssets: (prev.mediaAssets || []).filter(
-                                (m: any) => m.id !== asset.id,
+                                (m) => m.id !== asset.id,
                               ),
                               media: (prev.media || []).filter(
-                                (m: any) => m.id !== asset.id,
+                                (m) => m.id !== asset.id,
                               ),
                             };
                           });
                           toast.success("Activo desvinculado de la campaña");
-                        } catch (err: any) {
+                        } catch (err: unknown) {
                           toast.error(
-                            "Error desvinculando activo: " + err.message,
+                            "Error desvinculando activo: " +
+                              getErrorMessage(err),
                           );
                         }
                       }}
@@ -641,7 +643,6 @@ export default function CampaignDetailPage() {
                   } as React.CSSProperties;
                   const styleProps = { style: delayStyle };
                   return (
-                    // eslint-disable-next-line
                     // nosonar
                     <div
                       key={device.id}
@@ -758,9 +759,10 @@ export default function CampaignDetailPage() {
                                 toast.success(
                                   "Pantalla desasignada correctamente",
                                 );
-                              } catch (err: any) {
+                              } catch (err: unknown) {
                                 toast.error(
-                                  "Error desasignando pantalla: " + err.message,
+                                  "Error desasignando pantalla: " +
+                                    getErrorMessage(err),
                                 );
                               }
                             }}

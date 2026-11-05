@@ -1,22 +1,17 @@
 // advertiser/pages/network.tsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import type {
+  FleetVehicle,
+  HeatmapPoint,
+  PathPoint,
+} from "../../types/tracking";
 import { useRouter } from "next/router";
 import {
   Navigation,
-  MapPin,
   Activity,
-  Search,
   RefreshCw,
-  Battery,
-  ChevronDown,
-  ChevronRight,
-  Gauge as Speedometer,
-  Signal,
-  AlertTriangle,
-  Smartphone,
   Map as MapIcon,
   Layers,
-  ChevronUp,
   Sun,
   Moon,
 } from "lucide-react";
@@ -27,7 +22,7 @@ import {
   getHeatmapData,
   getDeviceRecentPath,
 } from "@tad/services";
-import { useTabSync } from "@tad/ui";
+import "@tad/ui";
 import dynamic from "next/dynamic";
 import { AdvertiserLayout } from "../../components/layout/AdvertiserLayout";
 import { FleetSidebar } from "../../components/ui/FleetSidebar";
@@ -84,12 +79,12 @@ interface TrackingDriver {
 
 export default function NetworkPage() {
   const [mounted, setMounted] = useState(false);
-  const router = useRouter();
-  const [summary, setSummary] = useState<TrackingDriver[]>([]);
-  const [fleetLocations, setFleetLocations] = useState<any[]>([]);
-  const [heatmap, setHeatmap] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  useRouter();
+  const [, setSummary] = useState<TrackingDriver[]>([]);
+  const [fleetLocations, setFleetLocations] = useState<FleetVehicle[]>([]);
+  const [heatmap, setHeatmap] = useState<HeatmapPoint[]>([]);
+  const [, setLoading] = useState(true);
+  const [, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -112,7 +107,7 @@ export default function NetworkPage() {
   });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [recentPath, setRecentPath] = useState<any[]>([]);
+  const [recentPath, setRecentPath] = useState<PathPoint[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -130,7 +125,7 @@ export default function NetworkPage() {
       setFleetLocations(locations || []);
       setHeatmap(heat || []);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching tracking data:", err);
       setError("Error de conexión con el satélite.");
     } finally {
@@ -170,7 +165,7 @@ export default function NetworkPage() {
     });
   }, [fleetLocations, search, fleetFilter]);
 
-  const handleSelectVehicle = async (v: any) => {
+  const handleSelectVehicle = async (v: FleetVehicle) => {
     setSelectedId(v.deviceId);
     if (v.lastLat && v.lastLng) {
       setMapCenter([v.lastLat, v.lastLng]);
@@ -317,7 +312,17 @@ export default function NetworkPage() {
   );
 }
 
-const ModeBtn = ({ active, onClick, label, icon }: any) => (
+const ModeBtn = ({
+  active,
+  onClick,
+  label,
+  icon,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  icon: React.ReactNode;
+}) => (
   <button
     onClick={onClick}
     className={clsx(
@@ -334,7 +339,7 @@ const ModeBtn = ({ active, onClick, label, icon }: any) => (
   </button>
 );
 
-const LegendItem = ({ color, label }: any) => (
+const LegendItem = ({ color, label }: { color: string; label: string }) => (
   <div className="flex items-center gap-2.5">
     <div className={clsx("w-2 h-2 rounded-full", color)} />
     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">

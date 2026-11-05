@@ -1,3 +1,4 @@
+import type { AdvertiserRecord } from "@/types/admin-api";
 import { useState, useEffect, useCallback } from "react";
 import {
   Search,
@@ -12,7 +13,6 @@ import {
   Zap,
   Shield,
   Briefcase,
-  ChevronRight,
   Trash2,
   ExternalLink,
 } from "lucide-react";
@@ -51,9 +51,10 @@ export default function AdvertisersPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAdvertiser, setSelectedAdvertiser] = useState<any>(null);
+  const [selectedAdvertiser, setSelectedAdvertiser] =
+    useState<AdvertiserRecord | null>(null);
 
-  const openConfig = (advertiser: any) => {
+  const openConfig = (advertiser: AdvertiserRecord) => {
     setSelectedAdvertiser(advertiser);
     setIsModalOpen(true);
   };

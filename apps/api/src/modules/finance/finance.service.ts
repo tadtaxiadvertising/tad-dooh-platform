@@ -1,3 +1,4 @@
+import { errorCode } from "../../utils/error.util";
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { InvoiceService } from "./invoice.service";
@@ -107,8 +108,8 @@ export class FinanceService {
           note: `Factura de morosidad generada automáticamente por Kill-Switch.`,
         },
       });
-    } catch (e: any) {
-      if (e?.code === "P2002") {
+    } catch (e: unknown) {
+      if (errorCode(e) === "P2002") {
         this.logger.log(
           `⏭️ [DELINQUENCY] Device ${deviceId} ya notificado hoy (${dateKey}). Saltando duplicado concurrente.`,
         );
@@ -118,7 +119,7 @@ export class FinanceService {
     }
 
     // 2. Generar la Factura SOS (PDF)
-    const pdfBuffer = await this.invoiceService.generateDebtInvoicePDF({
+    await this.invoiceService.generateDebtInvoicePDF({
       deviceId: device.deviceId,
       chofer: device.driver?.fullName || "Socio TAD",
       placa: device.taxiNumber,
@@ -195,7 +196,7 @@ export class FinanceService {
     this.logger.log(`Calculating payroll for ${month}/${year}`);
 
     // 1. Get all drivers and their associated devices
-    const activeCampaigns = await this.prisma.campaign.findMany({
+    await this.prisma.campaign.findMany({
       where: { status: "ACTIVE", active: true },
     });
 
@@ -331,7 +332,6 @@ export class FinanceService {
           const penaltyPercentage = penaltyApplied
             ? BUSINESS_RULES.LEVELS.BASE.penalty
             : 0;
-          const penaltyAmount = penaltyResult.penaltyAmount;
 
           // Enhanced: Get the actual taxi number from the assigned devices or driver record
           const actualTaxiNumber =
@@ -380,8 +380,8 @@ export class FinanceService {
           );
           return {
             driverId: driver.id,
-            driverName: (driver as any).fullName || "ERROR",
-            driverPhone: (driver as any).phone || "",
+            driverName: driver.fullName || "ERROR",
+            driverPhone: driver.phone || "",
             taxiNumber: "ERR",
             activeAds: 0,
             adIncome: 0,
@@ -624,7 +624,7 @@ export class FinanceService {
       // 2. Pricing model: RD$1,500 per 30-second block per media asset
       let monthlyRevenue = 0;
       campaign.media.forEach((media) => {
-        const duration = (media as any).durationSeconds || 30;
+        const duration = media.durationSeconds || 30;
         const blocks = Math.ceil(duration / 30);
         monthlyRevenue +=
           blocks * BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD;
@@ -1171,7 +1171,20 @@ export class FinanceService {
     });
   }
 
-  private generateInvoiceTemplate(data: any) {
+  private generateInvoiceTemplate(data: {
+    invoiceNumber: string;
+    date: string;
+    client: string;
+    email: string;
+    campaign: string;
+    period: string;
+    impressions: number;
+    qty: number;
+    unitPrice: number;
+    subtotal: number;
+    taxes: number;
+    total: number;
+  }) {
     return `
 <!DOCTYPE html>
 <html lang="es">

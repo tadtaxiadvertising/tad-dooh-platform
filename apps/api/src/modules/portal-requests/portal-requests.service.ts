@@ -19,9 +19,9 @@ export class PortalRequestsService {
     type: string;
     title: string;
     description?: string;
-    data?: any;
+    data?: unknown;
   }) {
-    return (this.prisma as any).portalRequest.create({
+    return this.prisma.portalRequest.create({
       data: {
         advertiserId: data.advertiserId,
         driverId: data.driverId,
@@ -36,7 +36,7 @@ export class PortalRequestsService {
   }
 
   async findAll() {
-    return (this.prisma as any).portalRequest.findMany({
+    return this.prisma.portalRequest.findMany({
       include: {
         advertiser: {
           select: {
@@ -56,21 +56,21 @@ export class PortalRequestsService {
   }
 
   async findByAdvertiser(advertiserId: string) {
-    return (this.prisma as any).portalRequest.findMany({
+    return this.prisma.portalRequest.findMany({
       where: { advertiserId },
       orderBy: { createdAt: "desc" },
     });
   }
 
   async findByDriver(driverId: string) {
-    return (this.prisma as any).portalRequest.findMany({
+    return this.prisma.portalRequest.findMany({
       where: { driverId },
       orderBy: { createdAt: "desc" },
     });
   }
 
   async findOne(id: string) {
-    return (this.prisma as any).portalRequest.findUnique({
+    return this.prisma.portalRequest.findUnique({
       where: { id },
       include: {
         advertiser: true,
@@ -86,14 +86,14 @@ export class PortalRequestsService {
       adminNotes?: string;
     },
   ) {
-    const request = await (this.prisma as any).portalRequest.findUnique({
+    const request = await this.prisma.portalRequest.findUnique({
       where: { id },
       include: { advertiser: true, driver: true },
     });
 
     if (!request) throw new Error(`PortalRequest ${id} not found`);
 
-    const updated = await (this.prisma as any).portalRequest.update({
+    await this.prisma.portalRequest.update({
       where: { id },
       data: updateData,
     });
@@ -199,7 +199,7 @@ export class PortalRequestsService {
           }
 
           // 3. Update request with the new campaign reference
-          await (this.prisma as any).portalRequest.update({
+          await this.prisma.portalRequest.update({
             where: { id },
             data: { campaignId: targetCampaignId },
           });
@@ -282,7 +282,18 @@ export class PortalRequestsService {
 
           // 2. If it's a content update, link the new media asset
           if (request.type === "CONTENT_UPDATE" && request.data) {
-            let mediaData: any;
+            let mediaData:
+              | {
+                  mediaId?: string;
+                  url?: string;
+                  checksum?: string;
+                  hashMd5?: string;
+                  filename?: string;
+                  type?: string;
+                  fileSize?: number | string;
+                  duration?: number | string;
+                }
+              | undefined;
             try {
               mediaData =
                 typeof request.data === "string"
@@ -421,14 +432,14 @@ export class PortalRequestsService {
     }
 
     // Return enriched response
-    return (this.prisma as any).portalRequest.findUnique({
+    return this.prisma.portalRequest.findUnique({
       where: { id },
       include: { advertiser: true, driver: true },
     });
   }
 
   async remove(id: string) {
-    return (this.prisma as any).portalRequest.delete({
+    return this.prisma.portalRequest.delete({
       where: { id },
     });
   }

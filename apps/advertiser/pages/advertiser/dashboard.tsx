@@ -15,7 +15,15 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 });
 
 export default function AdvertiserDashboard() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<{
+    entityId?: string;
+    status?: string;
+    brand?: { name?: string; companyName?: string };
+    stats?: React.ComponentProps<typeof MetricsGrid>["data"] & {
+      activeCampaigns?: number;
+    };
+    financials?: React.ComponentProps<typeof BillingPortal>["data"];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
   const { session } = useAuth();
@@ -24,7 +32,9 @@ export default function AdvertiserDashboard() {
   // NUEVO: Leer status del JWT claims (backend) — fuente de verdad
   // session.user puede ser User de Supabase (sin status) o nuestro sintético (con status)
   const backendStatus =
-    (session?.user as any)?.status ||
+    (session?.user && "status" in session.user
+      ? session.user.status
+      : undefined) ||
     session?.user?.app_metadata?.status ||
     "ACTIVE";
 

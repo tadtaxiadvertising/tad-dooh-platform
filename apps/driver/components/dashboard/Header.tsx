@@ -1,5 +1,5 @@
 import React from "react";
-import { Signal, SignalLow, Wifi, WifiOff, Database } from "lucide-react";
+import { Signal, Wifi, WifiOff, Database } from "lucide-react";
 
 interface HeaderProps {
   connectionStatus: "online" | "offline" | "syncing";

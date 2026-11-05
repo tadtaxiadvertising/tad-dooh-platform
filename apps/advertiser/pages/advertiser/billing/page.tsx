@@ -1,63 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AdvertiserLayout } from "@/components/layout/AdvertiserLayout";
-import {
-  CreditCard,
-  Receipt,
-  TrendingUp,
-  ShieldCheck,
-  CheckCircle2,
-  ArrowLeft,
-  Copy,
-  RefreshCw,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { CreditCard, CheckCircle2, Copy, RefreshCw } from "lucide-react";
+import { motion } from "framer-motion";
 import { BillingPortal } from "@/components/bi/BillingPortal";
 
 type Step = "method" | "details" | "processing" | "success";
 
-type PaymentMethod =
-  | { id: "card"; label: string; description: string }
-  | { id: "bank_transfer"; label: string; description: string }
-  | { id: "apple_pay"; label: string; description: string }
-  | { id: "google_pay"; label: string; description: string }
-  | { id: "paypal"; label: string; description: string };
-
-const METHODS: PaymentMethod[] = [
-  {
-    id: "card",
-    label: "Tarjeta de crédito/débito",
-    description: "Visa, Mastercard, Amex",
-  },
-  {
-    id: "bank_transfer",
-    label: "Transferencia bancaria",
-    description: "Banco Popular ****802",
-  },
-  {
-    id: "apple_pay",
-    label: "Apple Pay",
-    description: "Pago con Face/Touch ID",
-  },
-  {
-    id: "google_pay",
-    label: "Google Pay",
-    description: "Pago con cuenta Google",
-  },
-  { id: "paypal", label: "PayPal", description: "Pago protegido por PayPal" },
-];
-
-const ACCOUNT_ID = "ad_acc_001_nexpay";
-
 export default function BillingPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [step, setStep] = useState<Step>("method");
-  const [method, setMethod] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [reference, setReference] = useState<string | null>(null);
+  const [step] = useState<Step>("method");
+
+  const [reference] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -68,42 +25,6 @@ export default function BillingPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
-
-  const handlePayment = useCallback(async () => {
-    setProcessing(true);
-    try {
-      const res = await fetch("/api/payments/nexpay", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key":
-            typeof crypto !== "undefined" && crypto.randomUUID
-              ? crypto.randomUUID()
-              : `pay-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`,
-        },
-        body: JSON.stringify({
-          accountId: ACCOUNT_ID,
-          amountRD: 7080,
-          method,
-          currency: "DOP",
-          items: [
-            { id: "sub_annual", name: "Suscripción Anual TAD", amountRD: 6000 },
-          ],
-        }),
-      });
-
-      if (!res.ok) throw new Error("No se pudo iniciar el pago");
-
-      const data = await res.json();
-      setReference(data.reference ?? data.id);
-      setStep("success");
-    } catch (error) {
-      setStep("details");
-      alert(error instanceof Error ? error.message : "Error en el pago");
-    } finally {
-      setProcessing(false);
-    }
-  }, [method]);
 
   if (step === "processing") {
     return (

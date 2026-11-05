@@ -8,7 +8,6 @@ import {
   useMap,
   ZoomControl,
   Polyline,
-  CircleMarker,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -208,7 +207,7 @@ const createIcon = (
   });
 };
 
-const createClusterIcon = (cluster: any) => {
+const createClusterIcon = (cluster: { getChildCount: () => number }) => {
   const n = cluster.getChildCount();
   const size = n < 10 ? 44 : n < 50 ? 52 : 64;
   return L.divIcon({
@@ -231,7 +230,7 @@ const createClusterIcon = (cluster: any) => {
 // ============================================
 // INTERFACES
 // ============================================
-interface MapLocation {
+export interface MapLocation {
   deviceId?: string;
   taxiNumber?: string;
   lastLat?: number;
@@ -251,12 +250,12 @@ interface MapLocation {
 
 interface MapViewProps {
   locations: MapLocation[];
-  heatmapData?: any[];
+  heatmapData?: { lat: number; lng: number; count?: number }[];
   center?: [number, number];
   zoom?: number;
   mode?: "live" | "heatmap";
   selectedId?: string | null;
-  recentPath?: any[];
+  recentPath?: { latitude: number; longitude: number }[];
   mapTheme?: "dark" | "light";
   heatmapIntensity?: number;
   heatmapRadius?: number;
@@ -397,7 +396,7 @@ const MapView: React.FC<MapViewProps> = ({
             >
               <Popup className="popup-clean" offset={[0, -12]}>
                 <VehiclePopup
-                  device={{ ...loc, isOutsideFence: !inFence } as any}
+                  device={{ ...loc, isOutsideFence: !inFence }}
                   onViewHistory={() => onViewHistory?.(loc)}
                   onSyncCommand={() => onSyncCommand?.(loc)}
                 />

@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from "../auth/auth.types";
 import {
   Controller,
   Get,
@@ -122,7 +123,7 @@ export class DriversController {
       referredBy?: string;
       referralCode?: string;
     },
-    @Req() req?: any,
+    @Req() req?: AuthenticatedRequest,
     @Query("ref") referralCode?: string,
   ) {
     if (!body.fullName || !body.phone) {
@@ -308,7 +309,7 @@ export class DriversController {
    */
   @Get("me/hub")
   @Roles(UserRole.DRIVER)
-  async getMyHub(@Req() req: any) {
+  async getMyHub(@Req() req: AuthenticatedRequest) {
     const { entityId } = req.user;
     if (!entityId)
       throw new ForbiddenException("No tienes un perfil de conductor asociado");
@@ -320,7 +321,7 @@ export class DriversController {
    */
   @Get("me/transactions")
   @Roles(UserRole.DRIVER)
-  async getMyTransactions(@Req() req: any) {
+  async getMyTransactions(@Req() req: AuthenticatedRequest) {
     const { entityId } = req.user;
     if (!entityId)
       throw new ForbiddenException("No tienes un perfil de conductor asociado");
@@ -375,7 +376,10 @@ export class DriversController {
    */
   @Post("purge-all")
   @Roles(UserRole.ADMIN)
-  async purgeAll(@Headers("x-admin-secret") secret: string, @Req() req: any) {
+  async purgeAll(
+    @Headers("x-admin-secret") secret: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     const adminSecret = process.env.ADMIN_SECRET;
     if (!adminSecret || secret !== adminSecret) {
       this.logger.warn(`⚠️ [PURGE] Intento no autorizado desde IP: ${req.ip}`);

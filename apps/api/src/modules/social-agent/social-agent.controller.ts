@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from "../auth/auth.types";
 import {
   Controller,
   Get,
@@ -44,7 +45,9 @@ export class SocialAgentController {
   @Post("webhooks/meta")
   @HttpCode(HttpStatus.OK)
   @Public() // Meta webhook callbacks carry no JWT
-  async handleWebhook(@Body() payload: any) {
+  async handleWebhook(
+    @Body() payload: Parameters<SocialAgentService["handleMetaWebhook"]>[0],
+  ) {
     return this.socialAgentService.handleMetaWebhook(payload);
   }
 
@@ -68,7 +71,7 @@ export class SocialAgentController {
   async approveReview(
     @Param("id") taskId: string,
     @Body() body: { note?: string },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const reviewerId = req.user?.sub || req.user?.id || "unknown-admin";
     const task = await this.prisma.humanReviewTask.update({
@@ -88,7 +91,7 @@ export class SocialAgentController {
   async rejectReview(
     @Param("id") taskId: string,
     @Body() body: { note?: string },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const reviewerId = req.user?.sub || req.user?.id || "unknown-admin";
     const task = await this.prisma.humanReviewTask.update({
@@ -105,7 +108,10 @@ export class SocialAgentController {
 
   @Post("publish-approved/:taskId")
   @Roles(UserRole.ADMIN)
-  async publishApprovedPost(@Param("taskId") taskId: string, @Req() req: any) {
+  async publishApprovedPost(
+    @Param("taskId") taskId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     const reviewerId = req.user?.sub || req.user?.id || "unknown-admin";
     return this.socialAgentService.publishApprovedPost(taskId, reviewerId);
   }

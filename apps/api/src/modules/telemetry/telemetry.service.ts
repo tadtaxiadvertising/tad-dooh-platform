@@ -20,8 +20,6 @@ const MAX_BATCH_SIZE = 500;
 const CHUNK_SIZE = 100;
 const PLAYBACK_MAX_BATCH_SIZE = 200;
 const PLAYBACK_RATE_LIMIT = 60; // events per minute per device
-const PLAYBACK_RATE_WINDOW = 60_000; // 1 minute in ms
-const RATE_LIMIT_WINDOW_TZ = "UTC"; // Use UTC to avoid TZ ambiguity
 
 @Injectable()
 export class TelemetryService {
@@ -138,7 +136,15 @@ export class TelemetryService {
   }
 
   // --- GPS Batch Sync ---
-  async sync(data: any[]) {
+  async sync(
+    data: Array<{
+      driverId: string;
+      lng: number;
+      lat: number;
+      speed?: number;
+      timestamp?: string | number | Date;
+    }>,
+  ) {
     if (!data || data.length === 0) return;
 
     const safeData =
@@ -157,7 +163,7 @@ export class TelemetryService {
         const chunk = safeData.slice(offset, offset + CHUNK_SIZE);
 
         const values: string[] = [];
-        const params: any[] = [];
+        const params: Array<string | number | Date> = [];
 
         for (let i = 0; i < chunk.length; i++) {
           const item = chunk[i];
@@ -265,7 +271,7 @@ export class TelemetryService {
 
   // --- Bulk Playback Events ---
   async recordPlaybackBatch(
-    events: any[],
+    events: Array<Parameters<TelemetryService["recordPlayback"]>[0]>,
   ): Promise<{ processed: number; rejected: number }> {
     const safeEvents =
       events.length > PLAYBACK_MAX_BATCH_SIZE
@@ -286,7 +292,7 @@ export class TelemetryService {
       const chunk = safeEvents.slice(offset, offset + CHUNK_SIZE);
 
       const values: string[] = [];
-      const params: any[] = [];
+      const params: Array<string | number | Date | boolean | null> = [];
 
       for (let i = 0; i < chunk.length; i++) {
         const event = chunk[i];

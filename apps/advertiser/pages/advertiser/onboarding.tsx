@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import clsx from "clsx";
+import "clsx";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import BenefitsStep from "@/components/onboarding/BenefitsStep";
 import SimulatorStep, {
@@ -36,7 +36,7 @@ const EMAIL_RE = /^\S+@\S+\.\S+$/;
 export default function AdvertiserOnboarding() {
   const router = useRouter();
   const [step, setStep] = useState<OnboardingStep>(1);
-  const [mounted, setMounted] = useState(false);
+  const [, setMounted] = useState(false);
 
   const [simulator, setSimulator] = useState<SimulatorConfig>({
     screens: 1,

@@ -1,3 +1,5 @@
+"use client";
+
 // apps/driver/components/dashboard/BottomNavigationBar.tsx
 /**
  * BottomNavigationBar — Barra de navegación inferior premium
@@ -10,7 +12,6 @@
  * @usage
  *   <BottomNavigationBar activeTab="home" onChange={(tab) => setActiveTab(tab)} />
  */
-"use client";
 
 import React from "react";
 import { Home, MapPin, Wallet, Settings } from "lucide-react";

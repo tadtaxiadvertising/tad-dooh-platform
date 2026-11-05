@@ -4,9 +4,6 @@ import {
   Calculator,
   TrendingUp,
   RotateCcw,
-  Check,
-  Users,
-  Store,
   Info,
 } from "lucide-react";
 import {
@@ -40,7 +37,6 @@ export default function SimulatorStep({
   onNext,
 }: SimulatorStepProps) {
   const [customScreens, setCustomScreens] = useState(6);
-  const isCustomScreens = config.screens > 5;
 
   const estimate = estimateCampaign(config);
   const detailed = estimateCampaignDetailed(config);

@@ -17,7 +17,7 @@
  *  ⚠️  KIOSK_001: Barras del browser visibles (modo NO fullscreen real en Android)
  *  ⚠️  KIOSK_002: Scroll habilitado (permite al pasajero navegar fuera del player)
  */
-import { test, expect, Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { getAdminCredentials, loginAsAdmin } from "./helpers/auth.helper";
 
 const hasAdminCredentials = Boolean(

@@ -79,7 +79,8 @@ describe("MediaService - Security & Validation", () => {
     it("should reject non-string paths", async () => {
       await expect(
         service.confirmUpload({
-          path: 12345 as any,
+          // @ts-expect-error A JSON caller can supply a number; exercise the runtime validation.
+          path: 12345,
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -87,7 +88,8 @@ describe("MediaService - Security & Validation", () => {
 
   describe("renameFile - Input Validation", () => {
     it("should reject non-string filename payloads gracefully", async () => {
-      await expect(service.renameFile("media-123", 123 as any)).rejects.toThrow(
+      // @ts-expect-error Deliberately malformed runtime input must produce BadRequestException.
+      await expect(service.renameFile("media-123", 123)).rejects.toThrow(
         BadRequestException,
       );
     });

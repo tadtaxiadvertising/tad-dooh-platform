@@ -3,6 +3,54 @@ import { TDocumentDefinitions } from "pdfmake/interfaces";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 const pdfmake = require("pdfmake");
 
+interface DriverInvoiceData {
+  deviceId?: string | null;
+  chofer?: string | null;
+  nombre?: string | null;
+  placa?: string | null;
+  vehiculo?: string | null;
+  estatus?: string | null;
+  anuncios?: string | number;
+  ingreso?: string;
+}
+
+interface CampaignInvoiceData {
+  id: string;
+  name: string;
+  advertiser: string;
+  startDate: Date | string;
+  endDate: Date | string;
+}
+
+interface CampaignProofMetrics {
+  totalImpressions: number;
+  assignedTaxis: number;
+}
+
+interface WeeklyPerformanceRow {
+  day: string;
+  impressions: number;
+  scans: number;
+  ctr: number;
+}
+
+interface ProformaInvoiceData {
+  socio?: string;
+  concepto?: string;
+  montoBruto?: number;
+  itbis?: number;
+  montoNeto?: number;
+}
+
+interface TransactionReceiptData {
+  id: string;
+  reference?: string | null;
+  createdAt: Date | string;
+  category: string;
+  amount: number;
+  status: string;
+}
+
 @Injectable()
 export class InvoiceService implements OnModuleInit {
   private readonly logger = new Logger(InvoiceService.name);
@@ -24,7 +72,9 @@ export class InvoiceService implements OnModuleInit {
    * Genera el Factura/Liquidación SRE Oficial para Anunciantes o Choferes.
    * Utiliza la BD secundaria temporal (Sheet) o Prisma si está viva.
    */
-  async generateDriverSettlementPDF(driverData: any): Promise<Buffer> {
+  async generateDriverSettlementPDF(
+    driverData: DriverInvoiceData,
+  ): Promise<Buffer> {
     // Logotipo o Diseño TAD
     const docDefinition: TDocumentDefinitions = {
       defaultStyle: { font: "Helvetica" },
@@ -155,7 +205,7 @@ export class InvoiceService implements OnModuleInit {
   /**
    * Genera una factura de morosidad (RD$6,000) por suscripción vencida.
    */
-  async generateDebtInvoicePDF(driverData: any): Promise<Buffer> {
+  async generateDebtInvoicePDF(driverData: DriverInvoiceData): Promise<Buffer> {
     const docDefinition: TDocumentDefinitions = {
       defaultStyle: { font: "Helvetica" },
       content: [
@@ -233,8 +283,8 @@ export class InvoiceService implements OnModuleInit {
    * Genera un Certificado de Exhibición Publicitaria para Anunciantes.
    */
   async generateCampaignProofOfPlayPDF(
-    campaignData: any,
-    metrics: any,
+    campaignData: CampaignInvoiceData,
+    metrics: CampaignProofMetrics,
   ): Promise<Buffer> {
     const docDefinition: TDocumentDefinitions = {
       defaultStyle: { font: "Helvetica" },
@@ -300,7 +350,12 @@ export class InvoiceService implements OnModuleInit {
   /**
    * Genera un Reporte de Estado de Flota (Inventario técnico).
    */
-  async generateFleetStatusPDF(devices: any[]): Promise<Buffer> {
+  async generateFleetStatusPDF(
+    devices: Pick<
+      import("@prisma/client").Device,
+      "taxiNumber" | "deviceId" | "batteryLevel" | "status"
+    >[],
+  ): Promise<Buffer> {
     const docDefinition: TDocumentDefinitions = {
       defaultStyle: { font: "Helvetica" },
       content: [
@@ -345,7 +400,9 @@ export class InvoiceService implements OnModuleInit {
   /**
    * Genera un Recibo de Transacción Financiera.
    */
-  async generateTransactionReceiptPDF(tx: any): Promise<Buffer> {
+  async generateTransactionReceiptPDF(
+    tx: TransactionReceiptData,
+  ): Promise<Buffer> {
     const docDefinition: TDocumentDefinitions = {
       defaultStyle: { font: "Helvetica" },
       content: [
@@ -375,8 +432,8 @@ export class InvoiceService implements OnModuleInit {
    * Genera un reporte de rendimiento semanal para anunciantes.
    */
   async generateWeeklyPerformancePDF(
-    campaign: any,
-    data: any[],
+    campaign: Pick<CampaignInvoiceData, "name" | "advertiser">,
+    data: WeeklyPerformanceRow[],
   ): Promise<Buffer> {
     const totalImpressions = data.reduce((s, d) => s + d.impressions, 0);
     const totalScans = data.reduce((s, d) => s + d.scans, 0);
@@ -474,7 +531,7 @@ export class InvoiceService implements OnModuleInit {
    * Genera "Facturas Proforma" en PDF (buffer ligero) detallando ITBIS y neto
    * para transparencia con los socios (Inversionistas/Choferes).
    */
-  async generateProformaPDF(data: any): Promise<Buffer> {
+  async generateProformaPDF(data: ProformaInvoiceData): Promise<Buffer> {
     const docDefinition: TDocumentDefinitions = {
       defaultStyle: { font: "Helvetica" },
       content: [
@@ -531,7 +588,7 @@ export class InvoiceService implements OnModuleInit {
 
   // B6: número de factura auditable y sin colisiones (timestamp + hash corto del socio),
   // en lugar del antiguo Math.random()*100000.
-  private refId(driverData: any): string {
+  private refId(driverData: DriverInvoiceData): string {
     const seed =
       driverData.deviceId ||
       driverData.placa ||
@@ -542,7 +599,6 @@ export class InvoiceService implements OnModuleInit {
     for (let i = 0; i < seed.length; i++) {
       h = (h * 31 + seed.charCodeAt(i)) >>> 0;
     }
-    const base = 36;
     const stamp = Date.now().toString(36).toUpperCase().slice(-6);
     return `${stamp}${("0000" + (h % 100000).toString()).slice(-5)}`;
   }

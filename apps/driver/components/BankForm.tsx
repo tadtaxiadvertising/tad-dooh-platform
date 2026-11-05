@@ -1,4 +1,7 @@
+import { getErrorResponse } from "@/lib/error-response";
 // apps/driver/components/BankForm.tsx
+
+import { getErrorMessage } from "@tad/services";
 import React, { useEffect, useState } from "react";
 import api from "@tad/services";
 import { enqueueOfflineAction, syncOfflineQueue } from "../lib/offlineQueue";
@@ -140,15 +143,14 @@ export const BankForm: React.FC<BankFormProps> = ({ driverId, onSuccess }) => {
         localStorage.removeItem(pendingKey);
       }
       onSuccess();
-    } catch (error: any) {
-      const status = error?.response?.status;
+    } catch (error: unknown) {
+      const response = getErrorResponse(error);
+      const status = response?.status;
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "No se pudo guardar la información bancaria.";
+        getErrorMessage(error) || "No se pudo guardar la información bancaria.";
       const isNetworkFailure =
         !navigator.onLine ||
-        !error?.response ||
+        !response ||
         /failed to fetch|network|load failed/i.test(
           String(errorMessage).toLowerCase(),
         );

@@ -7,8 +7,6 @@ import {
   Param,
   Body,
   BadRequestException,
-  Req,
-  UnauthorizedException,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -131,7 +129,10 @@ export class AdvertisersController {
   @Put(":id")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   @UseGuards(TenantGuard)
-  async update(@Param("id") id: string, @Body() body: any) {
+  async update(
+    @Param("id") id: string,
+    @Body() body: Parameters<AdvertisersService["update"]>[1],
+  ) {
     return this.advertisersService.update(id, body);
   }
 

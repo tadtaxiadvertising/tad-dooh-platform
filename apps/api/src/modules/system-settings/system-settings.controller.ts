@@ -17,7 +17,7 @@ export class SystemSettingsController {
 
   @Put()
   @Roles(UserRole.ADMIN)
-  async updateSettings(@Body() settings: Record<string, any>) {
+  async updateSettings(@Body() settings: Record<string, unknown>) {
     return this.settingsService.updateMany(settings);
   }
 }

@@ -26,7 +26,6 @@ async function main() {
   const devices = [];
 
   for (let i = 1; i <= 10; i++) {
-    const driverId = `DRV-${i.toString().padStart(3, "0")}`;
     const taxiNum = `TX-${i.toString().padStart(3, "0")}`;
     const taxiPlate = `PLATE-${i.toString().padStart(3, "0")}`;
 

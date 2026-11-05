@@ -16,6 +16,14 @@ export class AnalyticsService {
     hourly?: { data: HourlyData[]; expiry: number };
     totalImpressions?: { data: number; expiry: number };
     antiFraud?: { data: AntiFraudData; expiry: number };
+    [key: `summary_${string}`]:
+      { data: AnalyticsSummary; expiry: number } | undefined;
+    [key: `totalImpressions_${string}`]:
+      { data: number; expiry: number } | undefined;
+    [key: `antiFraud_${string}`]:
+      { data: AntiFraudData; expiry: number } | undefined;
+    [key: `topTaxis_${string}`]:
+      { data: TopTaxi[]; expiry: number } | undefined;
   } = {};
 
   private deviceExistsCache = new Set<string>();
@@ -103,7 +111,7 @@ export class AnalyticsService {
     }));
 
     await this.prisma.analyticsEvent.createMany({
-      data: processedEvents as any,
+      data: processedEvents,
     });
 
     return { count: processedEvents.length };
@@ -128,12 +136,11 @@ export class AnalyticsService {
   async getAnalyticsSummary(advertiserId?: string) {
     const now = Date.now();
     // Use a different cache key if advertiserId is provided
-    const cacheKey = advertiserId ? `summary_${advertiserId}` : "summary";
-    if (
-      (this.cache as any)[cacheKey] &&
-      (this.cache as any)[cacheKey].expiry > now
-    ) {
-      return (this.cache as any)[cacheKey].data;
+    const cacheKey: "summary" | `summary_${string}` = advertiserId
+      ? `summary_${advertiserId}`
+      : "summary";
+    if (this.cache[cacheKey] && this.cache[cacheKey].expiry > now) {
+      return this.cache[cacheKey].data;
     }
 
     const videoIds = advertiserId
@@ -179,7 +186,7 @@ export class AnalyticsService {
       hourlyAverage: Math.round(recentImpressions / 24),
     };
 
-    (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
+    this.cache[cacheKey] = { data, expiry: now + this.CACHE_TTL };
     return data;
   }
 
@@ -199,14 +206,10 @@ export class AnalyticsService {
 
   async getTotalImpressions(advertiserId?: string) {
     const now = Date.now();
-    const cacheKey = advertiserId
-      ? `totalImpressions_${advertiserId}`
-      : "totalImpressions";
-    if (
-      (this.cache as any)[cacheKey] &&
-      (this.cache as any)[cacheKey].expiry > now
-    ) {
-      return (this.cache as any)[cacheKey].data;
+    const cacheKey: "totalImpressions" | `totalImpressions_${string}` =
+      advertiserId ? `totalImpressions_${advertiserId}` : "totalImpressions";
+    if (this.cache[cacheKey] && this.cache[cacheKey].expiry > now) {
+      return this.cache[cacheKey].data;
     }
 
     const videoIds = advertiserId
@@ -220,7 +223,7 @@ export class AnalyticsService {
       },
     });
 
-    (this.cache as any)[cacheKey] = {
+    this.cache[cacheKey] = {
       data: count,
       expiry: now + this.CACHE_TTL,
     };
@@ -229,12 +232,11 @@ export class AnalyticsService {
 
   async getAntiFraudMetrics(advertiserId?: string) {
     const now = Date.now();
-    const cacheKey = advertiserId ? `antiFraud_${advertiserId}` : "antiFraud";
-    if (
-      (this.cache as any)[cacheKey] &&
-      (this.cache as any)[cacheKey].expiry > now
-    ) {
-      return (this.cache as any)[cacheKey].data;
+    const cacheKey: "antiFraud" | `antiFraud_${string}` = advertiserId
+      ? `antiFraud_${advertiserId}`
+      : "antiFraud";
+    if (this.cache[cacheKey] && this.cache[cacheKey].expiry > now) {
+      return this.cache[cacheKey].data;
     }
 
     const videoIds = advertiserId
@@ -275,18 +277,17 @@ export class AnalyticsService {
             : "ALTO RIESGO",
     };
 
-    (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
+    this.cache[cacheKey] = { data, expiry: now + this.CACHE_TTL };
     return data;
   }
 
   async getTopTaxis(advertiserId?: string) {
     const now = Date.now();
-    const cacheKey = advertiserId ? `topTaxis_${advertiserId}` : "topTaxis";
-    if (
-      (this.cache as any)[cacheKey] &&
-      (this.cache as any)[cacheKey].expiry > now
-    ) {
-      return (this.cache as any)[cacheKey].data;
+    const cacheKey: "topTaxis" | `topTaxis_${string}` = advertiserId
+      ? `topTaxis_${advertiserId}`
+      : "topTaxis";
+    if (this.cache[cacheKey] && this.cache[cacheKey].expiry > now) {
+      return this.cache[cacheKey].data;
     }
 
     const videoIds = advertiserId
@@ -315,7 +316,7 @@ export class AnalyticsService {
       plays: d._count.id,
     }));
 
-    (this.cache as any)[cacheKey] = { data, expiry: now + this.CACHE_TTL };
+    this.cache[cacheKey] = { data, expiry: now + this.CACHE_TTL };
     return data;
   }
 

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { getDeviceSlots } from "@tad/services";
+import "react";
+import "@tad/services";
 import { Zap, AlertCircle, CheckCircle2 } from "lucide-react";
 import clsx from "clsx";
 

@@ -1,17 +1,9 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  UseGuards,
-  Req,
-} from "@nestjs/common";
+import type { AuthenticatedRequest } from "../auth/auth.types";
+import { Body, Controller, Get, Param, Post, Req } from "@nestjs/common";
 import { FleetService } from "./fleet.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { UserRole } from "../auth/decorators/roles.decorator";
-import { RolesGuard } from "../auth/guards/roles.guard";
 
 import { TrackBatchDto } from "./dto/track-batch.dto";
 
@@ -43,7 +35,7 @@ export class FleetController {
 
   @Get("map")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getFleetMap(@Req() req: any) {
+  async getFleetMap(@Req() req: AuthenticatedRequest) {
     const user = req.user;
     const advertiserId =
       user.role === UserRole.ADVERTISER ? user.entityId : undefined;
@@ -52,7 +44,7 @@ export class FleetController {
 
   @Get("tracking/baseline")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getTrackingBaseline(@Req() req: any) {
+  async getTrackingBaseline(@Req() req: AuthenticatedRequest) {
     const user = req.user;
     const advertiserId =
       user.role === UserRole.ADVERTISER ? user.entityId : undefined;
@@ -72,13 +64,15 @@ export class FleetController {
   @Post(":id/command")
   async sendFleetCommand(
     @Param("id") deviceId: string,
-    @Body() body: { type: string; params?: any },
+    @Body() body: { type: string; params?: Record<string, unknown> },
   ) {
     return this.fleetService.sendCommand(deviceId, body.type, body.params);
   }
 
   @Post("broadcast-command")
-  async broadcastFleetCommand(@Body() body: { type: string; params?: any }) {
+  async broadcastFleetCommand(
+    @Body() body: { type: string; params?: Record<string, unknown> },
+  ) {
     return this.fleetService.broadcastCommand(body.type, body.params);
   }
 
@@ -109,7 +103,7 @@ export class FleetController {
 
   @Get("tracking/summary")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getTrackingSummary(@Req() req: any) {
+  async getTrackingSummary(@Req() req: AuthenticatedRequest) {
     const user = req.user;
     const advertiserId =
       user.role === UserRole.ADVERTISER ? user.entityId : undefined;

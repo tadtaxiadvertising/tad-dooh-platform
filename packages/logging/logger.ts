@@ -5,10 +5,10 @@
  */
 
 export enum LogLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARN = 'WARN',
-  ERROR = 'ERROR',
+  DEBUG = "DEBUG",
+  INFO = "INFO",
+  WARN = "WARN",
+  ERROR = "ERROR",
 }
 
 interface LogEntry {
@@ -16,7 +16,7 @@ interface LogEntry {
   level: LogLevel;
   module: string;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   stackTrace?: string;
   performanceMs?: number;
 }
@@ -28,25 +28,32 @@ class Logger {
   private persistToLocalStorage = false;
 
   constructor(defaultLevel?: LogLevel) {
-    this.logLevel = defaultLevel || (
-      process.env.NODE_ENV === 'production'
-        ? (process.env.NEXT_PUBLIC_LOG_LEVEL as LogLevel || LogLevel.WARN)
-        : (process.env.NEXT_PUBLIC_LOG_LEVEL === 'debug' ? LogLevel.DEBUG : LogLevel.INFO)
-    );
-    
-    this.persistToLocalStorage = 
-      typeof window !== 'undefined' && 
-      process.env.NEXT_PUBLIC_LOG_PERSISTENCE === 'true';
+    this.logLevel =
+      defaultLevel ||
+      (process.env.NODE_ENV === "production"
+        ? (process.env.NEXT_PUBLIC_LOG_LEVEL as LogLevel) || LogLevel.WARN
+        : process.env.NEXT_PUBLIC_LOG_LEVEL === "debug"
+          ? LogLevel.DEBUG
+          : LogLevel.INFO);
+
+    this.persistToLocalStorage =
+      typeof window !== "undefined" &&
+      process.env.NEXT_PUBLIC_LOG_PERSISTENCE === "true";
   }
 
   private shouldLog(level: LogLevel): boolean {
-    const levels = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR];
+    const levels = [
+      LogLevel.DEBUG,
+      LogLevel.INFO,
+      LogLevel.WARN,
+      LogLevel.ERROR,
+    ];
     return levels.indexOf(level) >= levels.indexOf(this.logLevel);
   }
 
   private formatLog(entry: LogEntry): string {
     const { timestamp, level, module, message, performanceMs } = entry;
-    const perf = performanceMs ? ` (${performanceMs}ms)` : '';
+    const perf = performanceMs ? ` (${performanceMs}ms)` : "";
     return `[${timestamp}] ${level} [${module}]${perf}: ${message}`;
   }
 
@@ -58,8 +65,8 @@ class Logger {
 
     if (this.persistToLocalStorage) {
       try {
-        localStorage.setItem('tad_logs', JSON.stringify(this.logs));
-      } catch (e) {
+        localStorage.setItem("tad_logs", JSON.stringify(this.logs));
+      } catch {
         // Quota exceeded, not critical
       }
     }
@@ -69,8 +76,8 @@ class Logger {
     level: LogLevel,
     module: string,
     message: string,
-    data?: Record<string, any>,
-    performanceMs?: number
+    data?: Record<string, unknown>,
+    performanceMs?: number,
   ): void {
     if (!this.shouldLog(level)) return;
 
@@ -86,33 +93,33 @@ class Logger {
     this.storeLog(entry);
 
     const colors: Record<LogLevel, string> = {
-      [LogLevel.DEBUG]: 'color: #999',
-      [LogLevel.INFO]: 'color: #0066cc',
-      [LogLevel.WARN]: 'color: #ff9900',
-      [LogLevel.ERROR]: 'color: #ff0000',
+      [LogLevel.DEBUG]: "color: #999",
+      [LogLevel.INFO]: "color: #0066cc",
+      [LogLevel.WARN]: "color: #ff9900",
+      [LogLevel.ERROR]: "color: #ff0000",
     };
 
     const formatted = this.formatLog(entry);
-    
-    if (typeof window !== 'undefined' && typeof console !== 'undefined') {
+
+    if (typeof window !== "undefined" && typeof console !== "undefined") {
       console.log(`%c${formatted}`, colors[level]);
-      if (data) console.log('  Data:', data);
+      if (data) console.log("  Data:", data);
     }
   }
 
-  debug(module: string, message: string, data?: Record<string, any>): void {
+  debug(module: string, message: string, data?: Record<string, unknown>): void {
     this.log(LogLevel.DEBUG, module, message, data);
   }
 
-  info(module: string, message: string, data?: Record<string, any>): void {
+  info(module: string, message: string, data?: Record<string, unknown>): void {
     this.log(LogLevel.INFO, module, message, data);
   }
 
-  warn(module: string, message: string, data?: Record<string, any>): void {
+  warn(module: string, message: string, data?: Record<string, unknown>): void {
     this.log(LogLevel.WARN, module, message, data);
   }
 
-  error(module: string, message: string, data?: Record<string, any>): void {
+  error(module: string, message: string, data?: Record<string, unknown>): void {
     this.log(LogLevel.ERROR, module, message, data);
   }
 
@@ -123,16 +130,16 @@ class Logger {
     this.log(
       LogLevel.DEBUG,
       module,
-      `Performance: ${label || 'operation'}`,
+      `Performance: ${label || "operation"}`,
       { durationMs: duration },
-      duration
+      duration,
     );
   }
 
   async perfAsync<T>(
     module: string,
     fn: () => Promise<T>,
-    label?: string
+    label?: string,
   ): Promise<T> {
     const start = performance.now();
     const result = await fn();
@@ -140,9 +147,9 @@ class Logger {
     this.log(
       LogLevel.DEBUG,
       module,
-      `Performance: ${label || 'async operation'}`,
+      `Performance: ${label || "async operation"}`,
       { durationMs: duration },
-      duration
+      duration,
     );
     return result;
   }
@@ -154,14 +161,14 @@ class Logger {
   clearLogs(): void {
     this.logs = [];
     if (this.persistToLocalStorage) {
-      localStorage.removeItem('tad_logs');
+      localStorage.removeItem("tad_logs");
     }
   }
 
   getLogs(module?: string, level?: LogLevel): LogEntry[] {
     return this.logs.filter(
       (log) =>
-        (!module || log.module === module) && (!level || log.level === level)
+        (!module || log.module === module) && (!level || log.level === level),
     );
   }
 
@@ -170,7 +177,6 @@ class Logger {
   }
 }
 
-export const logger =
-  typeof window !== 'undefined' ? new Logger() : null;
+export const logger = typeof window !== "undefined" ? new Logger() : null;
 
 export default Logger;

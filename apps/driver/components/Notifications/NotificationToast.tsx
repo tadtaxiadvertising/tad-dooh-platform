@@ -50,7 +50,7 @@ const PRIORITY_TOAST_CONFIG: Record<
 
 export function NotificationToast() {
   const { lastEvent } = useNotifications();
-  const [online, setOnline] = React.useState(() => isOnline());
+  const [, setOnline] = React.useState(() => isOnline());
 
   // ─── Network Status Toasts ────────────────────────────────────────────────
   React.useEffect(() => {

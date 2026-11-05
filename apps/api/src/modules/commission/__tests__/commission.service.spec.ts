@@ -1,3 +1,10 @@
+import type {
+  Prisma,
+  Commission,
+  SettlementBatch,
+  FinancialTransaction,
+  Driver,
+} from "@prisma/client";
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import {
@@ -10,28 +17,70 @@ import { PrismaService } from "../../prisma/prisma.service";
 // Type annotation for mockPrisma to avoid circular reference
 interface MockPrisma {
   commission: {
-    findUnique: any;
-    findFirst: any;
-    create: any;
-    update: any;
-    findMany: any;
-    count: any;
+    findUnique: jest.Mock<
+      Promise<Partial<Commission> | null>,
+      [Prisma.CommissionFindUniqueArgs?]
+    >;
+    findFirst: jest.Mock<
+      Promise<Partial<Commission> | null>,
+      [Prisma.CommissionFindFirstArgs?]
+    >;
+    create: jest.Mock<
+      Promise<Partial<Commission>>,
+      [Prisma.CommissionCreateArgs?]
+    >;
+    update: jest.Mock<
+      Promise<Partial<Commission>>,
+      [Prisma.CommissionUpdateArgs?]
+    >;
+    findMany: jest.Mock<
+      Promise<Partial<Commission>[]>,
+      [Prisma.CommissionFindManyArgs?]
+    >;
+    count: jest.Mock<Promise<number>, [Prisma.CommissionCountArgs?]>;
   };
   settlementBatch: {
-    findUnique: any;
-    findFirst: any;
-    create: any;
-    update: any;
-    findMany: any;
+    findUnique: jest.Mock<
+      Promise<Partial<SettlementBatch> | null>,
+      [Prisma.SettlementBatchFindUniqueArgs?]
+    >;
+    findFirst: jest.Mock<
+      Promise<Partial<SettlementBatch> | null>,
+      [Prisma.SettlementBatchFindFirstArgs?]
+    >;
+    create: jest.Mock<
+      Promise<Partial<SettlementBatch>>,
+      [Prisma.SettlementBatchCreateArgs?]
+    >;
+    update: jest.Mock<
+      Promise<Partial<SettlementBatch>>,
+      [Prisma.SettlementBatchUpdateArgs?]
+    >;
+    findMany: jest.Mock<
+      Promise<Partial<SettlementBatch>[]>,
+      [Prisma.SettlementBatchFindManyArgs?]
+    >;
   };
   financialTransaction: {
-    create: any;
-    findMany: any;
+    create: jest.Mock<
+      Promise<Partial<FinancialTransaction>>,
+      [Prisma.FinancialTransactionCreateArgs?]
+    >;
+    findMany: jest.Mock<
+      Promise<Partial<FinancialTransaction>[]>,
+      [Prisma.FinancialTransactionFindManyArgs?]
+    >;
   };
   driver: {
-    findUnique: any;
+    findUnique: jest.Mock<
+      Promise<Partial<Driver> | null>,
+      [Prisma.DriverFindUniqueArgs?]
+    >;
   };
-  $transaction: any;
+  $transaction: jest.Mock<
+    Promise<unknown>,
+    [(prisma: MockPrisma) => Promise<unknown>]
+  >;
 }
 
 describe("CommissionService", () => {

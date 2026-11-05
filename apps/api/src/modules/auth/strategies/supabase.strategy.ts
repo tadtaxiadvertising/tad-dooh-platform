@@ -2,6 +2,8 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { ConfigService } from "@nestjs/config";
+import type { Request } from "express";
+import type { JwtPayload } from "jsonwebtoken";
 
 /**
  * SUPABASE JWT STRATEGY — Validación LOCAL sin llamadas de red.
@@ -28,7 +30,7 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, "jwt") {
 
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (request: any) => {
+        (request: Request) => {
           let data = request?.headers?.authorization;
           if (!data) return null;
           // Limpia la cadena: quita "Bearer ", "bearer ", espacios extra y comillas
@@ -45,7 +47,7 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, "jwt") {
     });
   }
 
-  async validate(payload: any) {
+  async validate(payload: JwtPayload) {
     if (!payload || !payload.sub) {
       throw new UnauthorizedException("Token inválido o expirado.");
     }

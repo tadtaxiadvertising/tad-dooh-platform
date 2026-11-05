@@ -17,7 +17,11 @@ export const FleetProfileStep = ({ onNext }: Props) => {
   });
 
   const mutation = useMutation({
-    mutationFn: async (newData: any) => newData,
+    mutationFn: async (newData: {
+      plate: FormDataEntryValue | null;
+      model: FormDataEntryValue | null;
+      year: FormDataEntryValue | null;
+    }) => newData,
     onSuccess: (data) => {
       queryClient.setQueryData(["onboarding-fleet"], data);
       onNext();

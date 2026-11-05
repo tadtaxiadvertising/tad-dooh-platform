@@ -244,7 +244,7 @@ export class BiService {
         churnRate,
         projectedRevenue,
         discrepancyCount,
-        recentDiscrepancies: recentDiscrepancies as any[],
+        recentDiscrepancies,
         lastUpdate: new Date(),
       };
     } catch (err) {

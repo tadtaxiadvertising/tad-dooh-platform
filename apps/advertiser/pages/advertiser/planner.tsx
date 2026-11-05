@@ -2,15 +2,8 @@ import { useState, useMemo } from "react";
 import type { GetServerSideProps } from "next";
 import { AdvertiserLayout } from "../../components/layout/AdvertiserLayout";
 import { simulateImpactDetailed } from "../../utils/simulations";
-import {
-  BarChart3,
-  Users,
-  Monitor,
-  MapPin,
-  TrendingUp,
-  Info,
-} from "lucide-react";
-import { motion } from "framer-motion";
+import { Users, Monitor, MapPin, TrendingUp, Info } from "lucide-react";
+import "framer-motion";
 import clsx from "clsx";
 
 export const getServerSideProps: GetServerSideProps = async () => ({

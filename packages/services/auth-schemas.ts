@@ -64,7 +64,7 @@ const authorizedEmail = z
  * Login Form Schema
  */
 export const LoginSchema = z.object({
-  email: authorizedEmail.and(noSqlInjection),
+  email: authorizedEmail.pipe(noSqlInjection),
   password: z
     .string()
     .min(6, 'La contraseña debe tener al menos 6 caracteres.')
@@ -85,7 +85,7 @@ export const PublicCredentialsSchema = z.object({
     .min(5, 'El correo debe tener al menos 5 caracteres.')
     .max(254, 'El correo es demasiado largo.')
     .transform((email) => email.toLowerCase().trim())
-    .and(noSqlInjection),
+    .pipe(noSqlInjection),
   password: z
     .string()
     .min(6, 'La contraseña debe tener al menos 6 caracteres.')
@@ -97,7 +97,7 @@ export const PublicCredentialsSchema = z.object({
  * Password Recovery Schema
  */
 export const RecoverySchema = z.object({
-  email: authorizedEmail.and(noSqlInjection),
+  email: authorizedEmail.pipe(noSqlInjection),
 });
 
 /**

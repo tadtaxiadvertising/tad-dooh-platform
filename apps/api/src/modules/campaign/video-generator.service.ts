@@ -1,10 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { SupabaseService } from "../supabase/supabase.service";
 import { PrismaService } from "../prisma/prisma.service";
-import * as path from "path";
-import * as fs from "fs";
-import * as os from "os";
-import * as crypto from "crypto";
 
 @Injectable()
 export class VideoGeneratorService {
@@ -17,7 +13,7 @@ export class VideoGeneratorService {
 
   async generateAdVideo(
     campaignId: string,
-    props: {
+    _props: {
       logoUrl: string;
       brandColor: string;
       primaryText: string;

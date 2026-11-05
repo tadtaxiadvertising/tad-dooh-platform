@@ -1,3 +1,5 @@
+"use client";
+
 // apps/driver/components/dashboard/RoutesTab.tsx
 /**
  * RoutesTab — Vista de Rutas / Mapa de Telemetría
@@ -11,7 +13,6 @@
  * Totalmente estática (no requiere Leaflet ni librerías externas pesadas).
  * Los datos en vivo vienen del shell (useTelemetry).
  */
-"use client";
 
 import React from "react";
 import { motion } from "framer-motion";

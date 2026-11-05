@@ -115,7 +115,7 @@ test.describe("AUDITORÍA END-TO-END DE TAD DOOH PLATFORM (2026)", () => {
     });
 
     // Verify Modal auto-open
-    const modal = page.locator(".upload-nexus-modal, .modal-content").first();
+
     // await expect(modal).toBeVisible(); // This might fail if the ID is missing in modal
 
     // Verify campaign selector is locked (disabled) or pre-selected
@@ -236,9 +236,7 @@ test.describe("AUDITORÍA END-TO-END DE TAD DOOH PLATFORM (2026)", () => {
       await marker.click();
 
       // 2. Verify Spotlight effect (Overlay with backdrop-blur)
-      const spotlightOverlay = page.locator(
-        ".backdrop-blur-sm, .spotlight-overlay",
-      );
+
       // await expect(spotlightOverlay).toBeVisible({ timeout: 5000 });
       console.log(
         "🔦 Spotlight effect (Visual confirmation needed or CSS check).",

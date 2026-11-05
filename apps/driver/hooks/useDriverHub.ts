@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@tad/services";
 import { useState, useEffect, useCallback } from "react";
 import api from "@tad/services";
 
@@ -33,7 +34,11 @@ const toNumber = (value: unknown, fallback = 0): number => {
   return fallback;
 };
 
-const normalizeHubData = (raw: any): DriverHubData => {
+const normalizeHubData = (input: unknown): DriverHubData => {
+  const raw =
+    typeof input === "object" && input !== null
+      ? (input as Record<string, unknown>)
+      : {};
   const activeAds = toNumber(raw?.activeAds, 0);
 
   return {
@@ -112,10 +117,8 @@ export function useDriverHub() {
       }
       setError(null);
       setIsLocalMode(false);
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message || "Error al conectar con el servidor",
-      );
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || "Error al conectar con el servidor");
 
       // Circuit breaker DNS/offline-first: fallback inmediato al cache local
       const cached = readHubCache();

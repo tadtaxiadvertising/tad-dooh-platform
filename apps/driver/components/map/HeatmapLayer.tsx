@@ -33,7 +33,7 @@ const HeatmapLayer: React.FC<HeatmapLayerProps> = ({
     if (!map || !points || points.length === 0) return;
 
     // heatLayer added by leaflet.heat plugin
-    const heatLayer = (L as any).heatLayer(points, {
+    const heatLayer = L.heatLayer(points, {
       radius,
       blur,
       max,

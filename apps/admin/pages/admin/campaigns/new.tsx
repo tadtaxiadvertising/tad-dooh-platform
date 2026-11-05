@@ -52,7 +52,7 @@ export default function NewCampaignPage() {
     // Cargar Catálogo de Anunciantes/Marcas
     const { getAdvertisers } = require("@tad/services");
     getAdvertisers()
-      .then((data: any) => {
+      .then((data: unknown) => {
         if (Array.isArray(data)) setAdvertisers(data);
       })
       .catch(console.error);

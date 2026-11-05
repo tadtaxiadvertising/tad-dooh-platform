@@ -8,7 +8,7 @@ import { SyncDeviceDto } from "./dto/sync-device.dto";
 import { BulkSyncDto } from "./dto/bulk-sync.dto";
 import { CampaignService } from "../campaign/campaign.service";
 import { FinanceService } from "../finance/finance.service";
-import { throttledMap } from "../../utils/throttler.util";
+
 import { requireEnv } from "../../utils/env.util";
 import * as jwt from "jsonwebtoken";
 
@@ -145,7 +145,7 @@ export class DeviceService {
         },
       }),
       // 2. Count campaign assignments per device in one query
-      (this.prisma as any).deviceCampaign
+      this.prisma.deviceCampaign
         .groupBy({
           by: ["device_id"],
           _count: { campaign_id: true },
@@ -527,7 +527,7 @@ export class DeviceService {
     };
   }
 
-  async acknowledgeCommand(commandId: string, result: any) {
+  async acknowledgeCommand(commandId: string, result: unknown) {
     this.logger.log(
       `📥 Command ${commandId} acknowledged with result: ${JSON.stringify(result)}`,
     );

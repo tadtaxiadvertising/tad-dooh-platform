@@ -46,7 +46,7 @@ export class SheetsController {
 
     try {
       // Obtenemos datos del "Secondary Storage" (Sheets) para validar resiliencia
-      const data = (await this.sheetsService.getSecondaryDBData()) as any[];
+      const data = await this.sheetsService.getSecondaryDBData();
 
       // Buscamos al chofer por ID o Nombre (búsqueda flexible en Sheets)
       let row = data?.find(

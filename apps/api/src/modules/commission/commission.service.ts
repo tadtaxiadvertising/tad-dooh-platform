@@ -6,6 +6,10 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
+import type {
+  Prisma,
+  SettlementBatch as StoredSettlementBatch,
+} from "@prisma/client";
 
 export enum CommissionStatus {
   PENDING = "PENDING",
@@ -25,7 +29,7 @@ export interface CreateCommissionInput {
   amount: number;
   sourceType: CommissionSourceType;
   reference: string; // Clave de idempotencia: REF-BONUS-<campaignId> o DRIVER-REF-<driverId>
-  metadata?: Record<string, any>;
+  metadata?: Prisma.InputJsonObject;
 }
 
 export interface MonthlySettlementInput {
@@ -42,8 +46,8 @@ export interface SettlementBatch {
   netTotal: number;
   withholdings: number;
   status: "DRAFT" | "APPROVED" | "PAID";
-  approvedAt?: Date;
-  paidAt?: Date;
+  approvedAt?: Date | null;
+  paidAt?: Date | null;
   createdAt: Date;
 }
 
@@ -410,9 +414,7 @@ export class CommissionService {
           sourceType: c.sourceType as CommissionSourceType,
           reference: c.reference,
           createdAt: c.createdAt,
-          relatedEntityId:
-            (c.metadata as Record<string, any>)?.campaignId ||
-            (c.metadata as Record<string, any>)?.referredDriverId,
+          relatedEntityId: this.relatedEntityId(c.metadata),
         });
         ref.grossAmount += c.amount;
       }
@@ -766,15 +768,27 @@ export class CommissionService {
     );
   }
 
-  private mapBatchToOutput(batch: any): SettlementBatch {
+  private relatedEntityId(metadata: Prisma.JsonValue): string | undefined {
+    if (
+      typeof metadata !== "object" ||
+      metadata === null ||
+      Array.isArray(metadata)
+    )
+      return undefined;
+    const id = metadata.campaignId || metadata.referredDriverId;
+    return typeof id === "string" ? id : undefined;
+  }
+
+  private mapBatchToOutput(batch: StoredSettlementBatch): SettlementBatch {
     return {
       id: batch.id,
       period: batch.period,
-      referents: batch.referents || [],
+      // This JSON is produced from SettlementReferent[] by generateMonthlySettlement.
+      referents: (batch.referents || []) as unknown as SettlementReferent[],
       grossTotal: batch.grossTotal,
       netTotal: batch.netTotal,
       withholdings: batch.withholdings,
-      status: batch.status,
+      status: batch.status as SettlementBatch["status"],
       approvedAt: batch.approvedAt,
       paidAt: batch.paidAt,
       createdAt: batch.createdAt,

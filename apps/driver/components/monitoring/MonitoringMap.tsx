@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import React from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -119,14 +119,6 @@ interface Device {
 
 interface MonitoringMapProps {
   devices: Device[];
-}
-
-function ChangeView({ center }: { center: [number, number] }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center);
-  }, [center, map]);
-  return null;
 }
 
 export default function MonitoringMap({ devices }: MonitoringMapProps) {

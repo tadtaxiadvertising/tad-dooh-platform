@@ -1,10 +1,6 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import type { Prisma } from "@prisma/client";
 
 export interface CreateConversationInput {
   platform: "WHATSAPP" | "MESSENGER" | "INSTAGRAM";
@@ -14,7 +10,7 @@ export interface CreateConversationInput {
   leadId?: string;
   driverId?: string;
   advertiserId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Prisma.InputJsonObject;
 }
 
 export interface AddMessageInput {
@@ -31,7 +27,7 @@ export interface UpdateConversationInput {
     "INITIAL" | "QUALIFYING" | "PAYMENT_PENDING" | "HUMAN_REVIEW" | "COMPLETED";
   consentGiven?: boolean;
   assignedTo?: string;
-  metadata?: Record<string, any>;
+  metadata?: Prisma.InputJsonObject;
 }
 
 @Injectable()
@@ -57,7 +53,7 @@ export class ConversationService {
 
     if (conversation) {
       // Actualizar campos si vienen nuevos datos
-      const updates: any = {};
+      const updates: Prisma.ConversationUncheckedUpdateInput = {};
       if (input.contactPhone && !conversation.contactPhone)
         updates.contactPhone = input.contactPhone;
       if (input.contactName && !conversation.contactName)
@@ -69,7 +65,7 @@ export class ConversationService {
         updates.advertiserId = input.advertiserId;
       if (input.metadata) {
         updates.metadata = {
-          ...((conversation.metadata as Record<string, any>) || {}),
+          ...((conversation.metadata as Prisma.JsonObject) || {}),
           ...input.metadata,
         };
       }
@@ -169,7 +165,7 @@ export class ConversationService {
       throw new NotFoundException(`Conversation ${conversationId} not found`);
     }
 
-    const updates: any = { ...input };
+    const updates: Prisma.ConversationUpdateInput = { ...input };
     if (input.consentGiven === true && !conversation.consentAt) {
       updates.consentAt = new Date();
     }
@@ -245,7 +241,7 @@ export class ConversationService {
     limit?: number;
     offset?: number;
   }) {
-    const where: any = {};
+    const where: Prisma.ConversationWhereInput = {};
     if (filters.status) where.status = filters.status;
     if (filters.stage) where.stage = filters.stage;
     if (filters.platform) where.platform = filters.platform;

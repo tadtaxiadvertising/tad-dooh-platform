@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from "../auth/auth.types";
 import {
   Controller,
   Post,
@@ -7,14 +8,11 @@ import {
   Body,
   Param,
   NotFoundException,
-  UseInterceptors,
-  UploadedFile,
   Logger,
   Req,
-  UseGuards,
   ForbiddenException,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
+
 import { CampaignService } from "./campaign.service";
 import { CreateCampaignDto } from "./dto/create-campaign.dto";
 import { AddMediaAssetDto } from "./dto/add-media-asset.dto";
@@ -25,6 +23,7 @@ import { MediaService } from "../media/media.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { VideoGeneratorService } from "./video-generator.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
+import type { Device } from "@prisma/client";
 
 const mediaAssetSafeSelect = {
   id: true,
@@ -146,8 +145,8 @@ export class CampaignController {
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async updateCampaign(
     @Param("id") id: string,
-    @Body() dto: any,
-    @Req() req: any,
+    @Body() dto: Parameters<CampaignService["updateCampaign"]>[1],
+    @Req() req: AuthenticatedRequest,
   ) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
@@ -165,7 +164,10 @@ export class CampaignController {
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async createCampaign(@Body() dto: CreateCampaignDto, @Req() req: any) {
+  async createCampaign(
+    @Body() dto: CreateCampaignDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.campaignService.createCampaign(dto, req.user);
   }
 
@@ -175,7 +177,10 @@ export class CampaignController {
    */
   @Post("register-media")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async registerMedia(@Body() dto: any, @Req() req: any) {
+  async registerMedia(
+    @Body() dto: Parameters<CampaignService["registerDirectMedia"]>[0],
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.campaignService.registerDirectMedia(dto, req.user);
   }
 
@@ -196,7 +201,7 @@ export class CampaignController {
       primaryText: string;
       secondaryText: string;
     },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
@@ -217,7 +222,7 @@ export class CampaignController {
   async addMediaAsset(
     @Param("id") id: string,
     @Body() dto: AddMediaAssetDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
@@ -235,7 +240,7 @@ export class CampaignController {
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getAllCampaigns(@Req() req: any) {
+  async getAllCampaigns(@Req() req: AuthenticatedRequest) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
     if (role === "ADVERTISER" && entityId) {
@@ -312,10 +317,12 @@ export class CampaignController {
 
       // V2 Real Map extraction using DeviceUUIDs directly from explicit assignments
       const deviceUuids = distributions.map(
-        (d) => d.device_id || (d as any).deviceId,
+        (d) => d.device_id || (d as typeof d & { deviceId?: string }).deviceId,
       );
       const devices = await this.prisma.device.findMany({
-        where: { id: { in: deviceUuids.filter(Boolean) } },
+        where: {
+          id: { in: deviceUuids.filter((id): id is string => Boolean(id)) },
+        },
       });
 
       const assignedTaxis = devices.map((d) => ({
@@ -347,7 +354,7 @@ export class CampaignController {
   @Get(":campaignId/devices")
   async getCampaignDevices(
     @Param("campaignId") campaignId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     console.log(
       `[CAMPAIGN_DEBUG] Fetching devices for campaign: ${campaignId}`,
@@ -419,7 +426,10 @@ export class CampaignController {
     );
 
     // Merge both (avoid duplicates)
-    const deviceMap = new Map<string, any>();
+    const deviceMap = new Map<
+      string,
+      Device & { assigned_at: Date | null; assignment_type: string }
+    >();
 
     for (const a of assignments) {
       if (a.device) {
@@ -528,7 +538,7 @@ export class CampaignController {
   async linkMediaToCampaign(
     @Param("id") campaignId: string,
     @Body("mediaId") mediaId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     if (!mediaId) throw new NotFoundException("mediaId is required");
     // M7: validar ownership antes de linkear media a la campaña.
@@ -541,7 +551,7 @@ export class CampaignController {
   async unlinkMediaFromCampaign(
     @Param("id") campaignId: string,
     @Body("mediaId") mediaId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     if (!mediaId) throw new NotFoundException("mediaId is required");
     // M7: validar ownership antes de desvincular media de la campaña.
@@ -631,7 +641,10 @@ export class CampaignController {
   // 6. Delete a campaign
   @Delete(":id")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async deleteCampaign(@Param("id") id: string, @Req() req: any) {
+  async deleteCampaign(
+    @Param("id") id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
     const campaign = await this.prisma.campaign.findUnique({ where: { id } });
@@ -664,7 +677,7 @@ export class CampaignController {
 
   @Get("reports/summary")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getReportsSummary(@Req() req: any) {
+  async getReportsSummary(@Req() req: AuthenticatedRequest) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
     const advertiserId = role === "ADVERTISER" ? entityId : undefined;
@@ -673,14 +686,20 @@ export class CampaignController {
 
   @Post("intent")
   @Public()
-  async createIntent(@Body() createCampaignIntentDto: any) {
+  async createIntent(
+    @Body()
+    createCampaignIntentDto: Parameters<CampaignService["createIntent"]>[0],
+  ) {
     return this.campaignService.createIntent(createCampaignIntentDto);
   }
 
   // 6. Generic ID lookup MUST BE LAST to avoid route conflicts
   @Get(":id")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getCampaignById(@Param("id") id: string, @Req() req: any) {
+  async getCampaignById(
+    @Param("id") id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
     const campaign = await this.campaignService.getCampaignById(id);
@@ -696,7 +715,7 @@ export class CampaignController {
 
   // M7: valida que un ADVERTISER sea dueño de la campaña antes de operar sobre ella.
   private async assertCampaignOwnership(
-    req: any,
+    req: AuthenticatedRequest,
     campaignId: string,
   ): Promise<void> {
     const role = req.user?.role;

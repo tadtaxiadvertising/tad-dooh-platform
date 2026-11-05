@@ -8,8 +8,6 @@ import {
   Res,
   HttpStatus,
   Logger,
-  UseGuards,
-  Req,
   UseInterceptors,
   InternalServerErrorException,
 } from "@nestjs/common";
@@ -21,7 +19,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AdvertiserBillingService } from "../advertisers/advertiser-billing.service";
 import type { Response } from "express";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
-import { RolesGuard } from "../auth/guards/roles.guard";
+
 import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";
 
 const mediaSafeSelect = {
@@ -528,6 +526,7 @@ export class FinanceController {
 
     const pdf = await this.invoiceService.generateTransactionReceiptPDF({
       ...invoice,
+      amount: invoice.totalAmount,
       category: `Suscripción Mensual - ${invoice.advertiser.companyName}`,
       reference: invoice.id,
     });

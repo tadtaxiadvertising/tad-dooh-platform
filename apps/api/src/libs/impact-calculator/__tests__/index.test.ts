@@ -15,6 +15,22 @@
  *   npx ts-node src/libs/impact-calculator/__tests__/index.test.ts
  */
 
+/**
+ * Tests unitarios para @tad/impact-calculator
+ *
+ * Suites:
+ * - Modes: conservative/expected/optimistic produce rangos coherentes
+ * - Edges: includeProduction=false, screens=0, months=0
+ * - Sources: cada variable del cálculo tiene sourceId registrada
+ * - Formula sanity: relaciones matemáticas básicas
+ *
+ * Run:
+ *   cd apps/api
+ *   npx jest src/libs/impact-calculator/__tests__/index.test.ts
+ *
+ * O sin Jest:
+ *   npx ts-node src/libs/impact-calculator/__tests__/index.test.ts
+ */
 import {
   calculateImpact,
   calculateImpactLegacy,
@@ -23,7 +39,6 @@ import {
   getPrimarySource,
   getCalibrationBadge,
   isCalibrationStatus,
-  SOURCES,
 } from "../index";
 
 let passed = 0;
@@ -331,7 +346,7 @@ r_expected.sourcesUsed.forEach((s) => {
 
 // === Result ===
 
-console.log("\n=== Result: ${passed} passed, ${failed} failed ===");
+console.log(`\n=== Result: ${passed} passed, ${failed} failed ===`);
 if (failed > 0) {
   console.log("\nFAILURES:");
   failures.forEach((f, i) => console.log(`\n[${i + 1}]\n${f}`));

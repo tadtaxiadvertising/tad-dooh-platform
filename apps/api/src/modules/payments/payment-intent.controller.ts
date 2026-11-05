@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from "../auth/auth.types";
 /**
  * Payment Intent Controller — REST endpoints para el flujo de pagos Fase 7
  *
@@ -101,7 +102,10 @@ export class PaymentIntentController {
    */
   @Post("intents")
   @UseInterceptors(IdempotencyInterceptor)
-  async createIntent(@Req() req: any, @Body() payload: any) {
+  async createIntent(
+    @Req() req: AuthenticatedRequest,
+    @Body() payload: unknown,
+  ) {
     const parsed = CreateIntentSchema.safeParse(payload);
     if (!parsed.success) {
       throw new BadRequestException({
@@ -222,8 +226,8 @@ export class PaymentIntentController {
   @UseInterceptors(IdempotencyInterceptor)
   async submitEvidence(
     @Param("id") intentId: string,
-    @Req() req: any,
-    @Body() payload: any,
+    @Req() req: AuthenticatedRequest,
+    @Body() payload: unknown,
   ) {
     const parsed = SubmitEvidenceSchema.safeParse(payload);
     if (!parsed.success) {
@@ -292,8 +296,8 @@ export class PaymentIntentController {
   @UseInterceptors(IdempotencyInterceptor)
   async reviewEvidence(
     @Param("id") evidenceId: string,
-    @Req() req: any,
-    @Body() payload: any,
+    @Req() req: AuthenticatedRequest,
+    @Body() payload: unknown,
   ) {
     const parsed = ReviewEvidenceSchema.safeParse(payload);
     if (!parsed.success) {

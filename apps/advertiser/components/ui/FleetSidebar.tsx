@@ -1,14 +1,15 @@
 import React from "react";
+import type { FleetVehicle } from "../../types/tracking";
 import clsx from "clsx";
 import { X, Search } from "lucide-react";
 
 interface FleetSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  vehicles: any[];
+  vehicles: FleetVehicle[];
   searchQuery: string;
   onSearchChange: (q: string) => void;
-  onSelectVehicle: (v: any) => void;
+  onSelectVehicle: (v: FleetVehicle) => void;
   filter: "all" | "active" | "offline" | "unpaid";
   onFilterChange: (f: "all" | "active" | "offline" | "unpaid") => void;
 }
@@ -80,7 +81,7 @@ export function FleetSidebar({
           </p>
         ) : (
           <div className="space-y-2">
-            {vehicles.map((v: any, i: number) => (
+            {vehicles.map((v, i) => (
               <button
                 key={v.deviceId || i}
                 onClick={() => onSelectVehicle(v)}

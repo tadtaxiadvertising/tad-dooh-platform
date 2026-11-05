@@ -13,7 +13,6 @@ import {
   Fingerprint,
   BarChart3,
   ArrowUpRight,
-  Radio,
   Server,
   Activity,
 } from "lucide-react";
@@ -86,7 +85,7 @@ export default function Home() {
   );
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingChart, setLoadingChart] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [pilotMode, setPilotMode] = useState(false);
   const { session } = useAuth();
@@ -132,15 +131,20 @@ export default function Home() {
 
       const devicesList = Array.isArray(devices) ? devices : [];
       const filteredDevices = pilotMode
-        ? devicesList.filter((d: any) =>
-            (d.device_id || d.deviceId || "").startsWith("STI"),
+        ? devicesList.filter(
+            (d: {
+              device_id?: string;
+              deviceId?: string;
+              status?: string;
+              is_online?: boolean;
+            }) => (d.device_id || d.deviceId || "").startsWith("STI"),
           )
         : devicesList;
 
       setStats({
         devices: filteredDevices.length,
         online: filteredDevices.filter(
-          (d: any) =>
+          (d: { status?: string; is_online?: boolean }) =>
             d.status === "online" ||
             d.status === "OPERATIVO" ||
             d.status === "ACTIVE" ||
@@ -154,7 +158,9 @@ export default function Home() {
         totalScans: analytics?.totalScans || 0,
         ctr: analytics?.ctr || 0,
         pendingRequests: Array.isArray(portalRequests)
-          ? portalRequests.filter((r: any) => r.status === "PENDING").length
+          ? portalRequests.filter(
+              (r: { status?: string }) => r.status === "PENDING",
+            ).length
           : 0,
       });
       setLoadingStats(false);
@@ -598,7 +604,21 @@ export default function Home() {
   );
 }
 
-function PremiumStatCard({ icon, label, value, sub, primary, delay }: any) {
+function PremiumStatCard({
+  icon,
+  label,
+  value,
+  sub,
+  primary,
+  delay,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  sub: string;
+  primary?: boolean;
+  delay?: number;
+}) {
   return (
     <div
       className={clsx(
@@ -673,7 +693,15 @@ function PremiumInfoCard({
   progress,
   primary,
   uid,
-}: any) {
+}: {
+  icon: React.ReactNode;
+  title: string;
+  label: string;
+  description: string;
+  progress: number;
+  primary?: boolean;
+  uid: string;
+}) {
   return (
     <div className="bg-black/60 backdrop-blur-lg border border-white/10 rounded-[2.5rem] p-8 group relative overflow-hidden hover:border-white/20 transition-all duration-500 shadow-xl">
       <div className="flex items-center gap-4 mb-6 relative z-10">

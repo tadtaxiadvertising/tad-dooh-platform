@@ -1,3 +1,25 @@
+import type {
+  Prisma,
+  Campaign,
+  MediaAsset,
+  PlaybackEvent,
+  Driver,
+  Device,
+} from "@prisma/client";
+type CampaignFixture = Partial<Campaign> & {
+  mediaAssets?: { id: string; filename: string; weight: number }[];
+  devices?: {
+    id?: string;
+    deviceId?: string;
+    taxiNumber?: string;
+    device: {
+      id: string;
+      taxiNumber: string;
+      driver: { id: string; fullName: string };
+    };
+  }[];
+};
+type DriverFixture = Partial<Driver> & { devices?: { id: string }[] };
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { VerifiedMetricsService } from "../verified-metrics.service";
@@ -5,17 +27,54 @@ import { PrismaService } from "../../prisma/prisma.service";
 
 // Type annotation for mockPrisma to avoid circular reference
 interface MockPrisma {
-  campaign: { findUnique: any; findMany: any };
-  mediaAsset: { findMany: any };
-  playbackEvent: { findMany: any; count: any; groupBy: any; updateMany: any };
-  driver: { findUnique: any };
-  device: { findMany: any };
-  $transaction: any;
+  campaign: {
+    findUnique: jest.Mock<
+      Promise<CampaignFixture | null>,
+      [Prisma.CampaignFindUniqueArgs?]
+    >;
+    findMany: jest.Mock<
+      Promise<CampaignFixture[]>,
+      [Prisma.CampaignFindManyArgs?]
+    >;
+  };
+  mediaAsset: {
+    findMany: jest.Mock<
+      Promise<Partial<MediaAsset>[]>,
+      [Prisma.MediaAssetFindManyArgs?]
+    >;
+  };
+  playbackEvent: {
+    findMany: jest.Mock<
+      Promise<Partial<PlaybackEvent>[]>,
+      [Prisma.PlaybackEventFindManyArgs?]
+    >;
+    count: jest.Mock<Promise<number>, [Prisma.PlaybackEventCountArgs?]>;
+    groupBy: jest.Mock<Promise<unknown[]>, [Prisma.PlaybackEventGroupByArgs]>;
+    updateMany: jest.Mock<
+      Promise<Prisma.BatchPayload>,
+      [Prisma.PlaybackEventUpdateManyArgs?]
+    >;
+  };
+  driver: {
+    findUnique: jest.Mock<
+      Promise<DriverFixture | null>,
+      [Prisma.DriverFindUniqueArgs?]
+    >;
+  };
+  device: {
+    findMany: jest.Mock<
+      Promise<Partial<Device>[]>,
+      [Prisma.DeviceFindManyArgs?]
+    >;
+  };
+  $transaction: jest.Mock<
+    Promise<unknown>,
+    [(prisma: MockPrisma) => Promise<unknown>]
+  >;
 }
 
 describe("VerifiedMetricsService", () => {
   let service: VerifiedMetricsService;
-  let prisma: PrismaService;
 
   const mockPrisma: MockPrisma = {
     campaign: {
@@ -49,7 +108,6 @@ describe("VerifiedMetricsService", () => {
     }).compile();
 
     service = module.get<VerifiedMetricsService>(VerifiedMetricsService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 

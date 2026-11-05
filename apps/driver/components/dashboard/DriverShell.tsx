@@ -1,3 +1,5 @@
+"use client";
+
 // apps/driver/components/dashboard/DriverShell.tsx
 /**
  * DriverShell — Shell orquestador del Driver Portal con 4 tabs internos.
@@ -16,7 +18,6 @@
  *  95 — DriverOnboardingModal
  * 100 — LockdownScreen
  */
-"use client";
 
 import React, { useState } from "react";
 import { BottomNavigationBar, type DriverTab } from "./BottomNavigationBar";
@@ -28,7 +29,7 @@ import { GrowthCenter } from "./GrowthCenter";
 import { PulseDot } from "./dashboard-utils";
 import type { WalletState } from "./DriverWalletCard";
 import type { DriverHubData } from "../../hooks/useDriverHub";
-import { getMyReferralCode } from "@tad/services";
+import "@tad/services";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type ConnectionStatus = "online" | "offline" | "syncing";

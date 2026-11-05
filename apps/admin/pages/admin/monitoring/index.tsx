@@ -8,11 +8,7 @@ import {
   Cloud,
   Database,
   ExternalLink,
-  AlertTriangle,
   CheckCircle2,
-  Lock,
-  Globe,
-  LayoutGrid,
   BarChart3,
 } from "lucide-react";
 import clsx from "clsx";

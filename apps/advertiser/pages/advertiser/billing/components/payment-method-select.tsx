@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { PAYMENT_METHODS, PaymentMethod } from "@/lib/payment-types";
-import type { PaymentRequestPayload } from "@/lib/payment-types";
 
 export interface PaymentMethodSelectorProps {
   selected: PaymentMethod | null;
@@ -15,8 +14,6 @@ export interface PaymentMethodSelectorProps {
 export default function PaymentMethodSelector({
   selected,
   onSelect,
-  totalRD,
-  subtotalRD,
 }: PaymentMethodSelectorProps) {
   const [showAll, setShowAll] = useState(false);
   const methods = PAYMENT_METHODS;

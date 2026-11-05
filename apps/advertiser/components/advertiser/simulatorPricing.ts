@@ -1,7 +1,6 @@
 import {
   calculateImpactLegacy,
   calculateImpact,
-  ImpactInput,
   ImpactOutput,
 } from "@tad/impact-calculator";
 

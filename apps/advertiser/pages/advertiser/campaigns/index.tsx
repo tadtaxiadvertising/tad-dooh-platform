@@ -1,10 +1,11 @@
+import { getErrorMessage } from "@tad/services";
+import type { AdvertiserCampaign } from "../../../types/portal-api";
 import { useEffect, useState } from "react";
 import { useAuth } from "@tad/ui";
 import {
   Plus,
   Search,
   Filter,
-  MoreHorizontal,
   Edit2,
   Trash2,
   Calendar,
@@ -12,10 +13,8 @@ import {
   AlertCircle,
   FileVideo,
   Sparkles,
-  Wand2,
   Loader2,
   QrCode,
-  ExternalLink,
   Save,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,14 +41,12 @@ export default function AdvertiserCampaigns() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<AdvertiserCampaign[]>([]);
   const [search, setSearch] = useState("");
 
   // States for Video Generator
   const [showGenerator, setShowGenerator] = useState(false);
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
-    null,
-  );
+  const [selectedCampaignId] = useState<string | null>(null);
   const [rendering, setRendering] = useState(false);
   const [generatorData, setGeneratorData] = useState({
     logoUrl: "",
@@ -60,7 +57,7 @@ export default function AdvertiserCampaigns() {
 
   // States for QR Hub Editor
   const [showQrHub, setShowQrHub] = useState(false);
-  const [qrCampaign, setQrCampaign] = useState<any>(null);
+  const [qrCampaign, setQrCampaign] = useState<AdvertiserCampaign | null>(null);
   const [qrSaving, setQrSaving] = useState(false);
   const [qrData, setQrData] = useState({
     whatsapp: "",
@@ -141,8 +138,8 @@ export default function AdvertiserCampaigns() {
       } else {
         throw new Error("No se pudo enviar la solicitud");
       }
-    } catch (err: any) {
-      alert("❌ Error: " + err.message);
+    } catch (err: unknown) {
+      alert("❌ Error: " + getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -168,21 +165,21 @@ export default function AdvertiserCampaigns() {
 
       if (!res.ok) throw new Error("Fallo al generar el video");
 
-      const data = await res.json();
+      await res.json();
       alert(
         "✅ ¡Video generado con éxito! El sistema lo ha registrado en tu campaña.",
       );
       setShowGenerator(false);
       // Refresh campaigns to show new asset
       window.location.reload();
-    } catch (err: any) {
-      alert("❌ Error de Renderizado: " + err.message);
+    } catch (err: unknown) {
+      alert("❌ Error de Renderizado: " + getErrorMessage(err));
     } finally {
       setRendering(false);
     }
   };
 
-  const openQrHub = (campaign: any) => {
+  const openQrHub = (campaign: AdvertiserCampaign) => {
     setQrCampaign(campaign);
     setQrData({
       whatsapp: campaign.whatsapp || "",
@@ -217,8 +214,8 @@ export default function AdvertiserCampaigns() {
       );
       setShowQrHub(false);
       setQrCampaign(null);
-    } catch (err: any) {
-      alert("Error: " + err.message);
+    } catch (err: unknown) {
+      alert("Error: " + getErrorMessage(err));
     } finally {
       setQrSaving(false);
     }

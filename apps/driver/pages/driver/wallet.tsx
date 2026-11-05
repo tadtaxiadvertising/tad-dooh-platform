@@ -23,7 +23,11 @@ export const getServerSideProps: GetServerSideProps = async () => ({
   props: {},
 });
 
-function normalizeWalletHubData(raw: any): DriverHubData {
+function normalizeWalletHubData(input: unknown): DriverHubData {
+  const raw =
+    typeof input === "object" && input !== null
+      ? (input as Record<string, unknown>)
+      : {};
   return {
     driverId: String(raw?.driverId || ""),
     driverName: String(raw?.driverName || "Conductor"),
@@ -47,7 +51,7 @@ function normalizeWalletHubData(raw: any): DriverHubData {
 }
 
 export default function DriverWalletPage() {
-  const [rawHubData, setRawHubData] = useState<any>(null);
+  const [rawHubData, setRawHubData] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

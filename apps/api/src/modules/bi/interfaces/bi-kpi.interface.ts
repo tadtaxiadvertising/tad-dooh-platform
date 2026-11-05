@@ -1,3 +1,5 @@
+import type { DriverLocation, ReconciliationReport } from "@prisma/client";
+
 export interface BiKpiResponse {
   mrr: number;
   activeSubscribers: number;
@@ -10,7 +12,7 @@ export interface BiKpiResponse {
   deliveryRateAvg: number;
   syncHealthRate: number;
   discrepancyCount: number;
-  recentDiscrepancies: any[];
+  recentDiscrepancies: ReconciliationReport[];
 
   // INVESTOR METRICS (v7.5)
   yieldPerScreen?: number;
@@ -45,7 +47,7 @@ export interface TaxiDrillDownResponse {
   gps: {
     lastLat: number;
     lastLng: number;
-    lastKnownLocations: any[];
+    lastKnownLocations: DriverLocation[];
     googleMapsUrl: string;
   };
   financials: {

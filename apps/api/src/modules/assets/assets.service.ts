@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { SupabaseService } from "../supabase/supabase.service";
+import type { MediaAsset } from "@prisma/client";
 
 const mediaAssetSafeSelect = {
   id: true,
@@ -68,7 +69,12 @@ export class AssetsService {
       },
     });
 
-    const manifest: Record<string, any> = {};
+    const manifest: Record<
+      string,
+      Pick<MediaAsset, "url" | "checksum" | "type" | "filename"> & {
+        size: MediaAsset["fileSize"];
+      }
+    > = {};
     for (const campaign of activeCampaigns) {
       for (const asset of campaign.mediaAssets) {
         manifest[asset.id] = {
@@ -88,7 +94,11 @@ export class AssetsService {
     };
   }
 
-  async handleAssetWebhook(payload: any) {
+  async handleAssetWebhook(payload: {
+    type?: string;
+    record?: { status?: string; id?: string };
+    assetId?: string;
+  }) {
     this.logger.log(`📥 Webhook recibido: ${JSON.stringify(payload)}`);
 
     if (

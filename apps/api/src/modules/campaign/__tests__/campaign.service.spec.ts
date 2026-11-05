@@ -1,3 +1,22 @@
+import type { Prisma, DeviceCampaign } from "@prisma/client";
+interface TransactionMock {
+  $executeRaw: jest.Mock<Promise<number>>;
+  deviceCampaign: {
+    count: jest.Mock<Promise<number>, [Prisma.DeviceCampaignCountArgs?]>;
+    create: jest.Mock<
+      Promise<Partial<DeviceCampaign>>,
+      [Prisma.DeviceCampaignCreateArgs]
+    >;
+  };
+}
+interface CampaignPrismaMock {
+  $transaction: jest.Mock<
+    Promise<unknown>,
+    [(tx: TransactionMock) => Promise<unknown>]
+  >;
+  device: { findMany: jest.Mock };
+  campaign: { count: jest.Mock; create: jest.Mock };
+}
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
@@ -9,8 +28,8 @@ import { ReferralService } from "../../referral/referral.service";
 
 describe("CampaignService — 15-Slot Limit & Advisory Locking", () => {
   let service: CampaignService;
-  let prismaService: any;
-  let txMock: any;
+  let prismaService: CampaignPrismaMock;
+  let txMock: TransactionMock;
 
   beforeEach(async () => {
     txMock = {
@@ -22,7 +41,9 @@ describe("CampaignService — 15-Slot Limit & Advisory Locking", () => {
     };
 
     prismaService = {
-      $transaction: jest.fn(async (cb: any) => cb(txMock)),
+      $transaction: jest.fn(
+        async (cb: (tx: TransactionMock) => Promise<unknown>) => cb(txMock),
+      ),
       device: {
         findMany: jest.fn(),
       },

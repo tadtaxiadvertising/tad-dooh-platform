@@ -25,7 +25,6 @@
  * 9) IMPRESIONES_TOTALES_CAMPAÑA = IMPRESIONES_BRUTAS_MES_PANTALLA × pantallas × meses
  * 10) ALCANCE_TOTAL_CAMPAÑA = ALCANCE_ÚNICO_MES_PANTALLA × pantallas × meses
  */
-
 import type { ImpactSource } from "./sources";
 import { SOURCES, getSource, isCalibrationStatus } from "./sources";
 
@@ -101,24 +100,6 @@ export interface ImpactOutput {
 /** Valor único (point) o rango [min, expected, max] */
 type Val = number | [number, number, number];
 
-function toRange(
-  val: Val,
-  mode: CalculationMode,
-): { min: number; expected: number; max: number } {
-  if (typeof val === "number") {
-    return { min: val, expected: val, max: val };
-  }
-  const [min, expected, max] = val;
-  switch (mode) {
-    case "conservative":
-      return { min, expected: min, max: expected };
-    case "optimistic":
-      return { min: expected, expected: max, max };
-    default:
-      return { min, expected, max };
-  }
-}
-
 /** Extrae el valor numérico para un modo específico */
 function pick(val: Val, mode: CalculationMode): number {
   if (typeof val === "number") return val;
@@ -143,7 +124,7 @@ function sourceValue(id: string): Val {
 /** Cálculo principal — pura matemática, sin side effects */
 export function calculateImpact(input: ImpactInput): ImpactOutput {
   const mode = input.mode ?? "expected";
-  const { screens, months, frequencySeconds, includeProduction } = input;
+  const { screens, months, includeProduction } = input;
 
   // --- Constantes desde fuentes ---
   const rotationSeconds = sourceValue("rotation-seconds") as number; // 30

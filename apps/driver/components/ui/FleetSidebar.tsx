@@ -1,9 +1,9 @@
+import type { MapLocation } from "@/components/MapView";
 // admin-dashboard/components/ui/FleetSidebar.tsx
 import React from "react";
 import {
   X,
   Search,
-  Filter,
   AlertTriangle,
   CheckCircle2,
   WifiOff,
@@ -16,10 +16,10 @@ import clsx from "clsx";
 interface FleetSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  vehicles: any[];
+  vehicles: MapLocation[];
   searchQuery: string;
   onSearchChange: (q: string) => void;
-  onSelectVehicle: (v: any) => void;
+  onSelectVehicle: (v: MapLocation) => void;
   filter: "all" | "active" | "offline" | "unpaid";
   onFilterChange: (f: "all" | "active" | "offline" | "unpaid") => void;
 }
@@ -36,7 +36,7 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const getStatusColor = (v: any) => {
+  const getStatusColor = (v: MapLocation) => {
     if (!v.isOnline) return "bg-zinc-800";
     if (v.subscriptionStatus !== "ACTIVE") return "bg-rose-500";
     return "bg-tad-yellow";
@@ -123,7 +123,7 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
             </p>
           </div>
         ) : (
-          vehicles.map((v, i) => (
+          vehicles.map((v, _i) => (
             <div
               key={v.deviceId}
               onClick={() => onSelectVehicle(v)}
@@ -207,7 +207,21 @@ export const FleetSidebar: React.FC<FleetSidebarProps> = ({
   );
 };
 
-const FilterBtn = ({ active, onClick, label, count, color, icon }: any) => (
+const FilterBtn = ({
+  active,
+  onClick,
+  label,
+  count,
+  color,
+  icon,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count?: number;
+  color?: string;
+  icon: React.ReactNode;
+}) => (
   <button
     onClick={onClick}
     className={clsx(

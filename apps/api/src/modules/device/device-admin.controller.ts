@@ -1,3 +1,4 @@
+import { errorMessage } from "../../utils/error.util";
 import {
   Controller,
   Get,
@@ -108,7 +109,9 @@ export class DeviceAdminController {
           campaign_id: campaignId,
         },
       });
-    } catch (e) {}
+    } catch {
+      // A deployment may only have the legacy assignment table; try it below.
+    }
 
     // 2. Intentamos borrar en la tabla v1 (legacy)
     try {
@@ -118,7 +121,9 @@ export class DeviceAdminController {
           deviceId: device.deviceId,
         },
       });
-    } catch (e) {}
+    } catch {
+      // Removing an assignment remains idempotent when the legacy table is absent.
+    }
 
     return {
       success: true,
@@ -228,8 +233,10 @@ export class DeviceAdminController {
           message: `Dispositivo ${hwId} eliminado correctamente`,
         };
       });
-    } catch (error: any) {
-      this.logger.error(`❌ Failed to delete device ${hwId}: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `❌ Failed to delete device ${hwId}: ${errorMessage(error)}`,
+      );
       throw new InternalServerErrorException(
         "Error al eliminar el dispositivo",
       );
@@ -299,9 +306,9 @@ export class DeviceAdminController {
             assigned_at: c.assigned_at,
           })),
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.logger.error(
-        `❌ Error fatal cargando perfil de ${deviceId}: ${error.message}`,
+        `❌ Error fatal cargando perfil de ${deviceId}: ${errorMessage(error)}`,
       );
       throw new InternalServerErrorException(
         "Error al obtener el perfil del dispositivo",
@@ -313,7 +320,14 @@ export class DeviceAdminController {
   @Put(":deviceId/profile")
   async updateDeviceProfile(
     @Param("deviceId") deviceId: string,
-    @Body() data: any,
+    @Body()
+    data: {
+      taxi_number?: string;
+      status?: string;
+      driver_name?: string;
+      driver_phone?: string;
+      subscription_paid?: boolean;
+    },
   ) {
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
@@ -323,7 +337,7 @@ export class DeviceAdminController {
     if (!device) throw new BadRequestException("Dispositivo no encontrado");
 
     // Update Device
-    const updateData: any = {};
+    const updateData: import("@prisma/client").Prisma.DeviceUpdateInput = {};
     if (data.taxi_number !== undefined)
       updateData.taxiNumber = data.taxi_number;
     if (data.status !== undefined) {
@@ -334,7 +348,7 @@ export class DeviceAdminController {
           `Status inválido: ${data.status}. Valores válidos: ${validStatuses.join(", ")}`,
         );
       }
-      updateData.status = data.status;
+      updateData.status = data.status as import("@prisma/client").SystemStatus;
     }
 
     // Update Driver if exists
@@ -433,7 +447,9 @@ export class DeviceAdminController {
       );
     }
 
-    const where: any = { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE };
+    const where: import("@prisma/client").Prisma.DeviceWhereInput = {
+      status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
+    };
     if (body.city) where.city = body.city;
     if (body.fleet) where.fleet = body.fleet;
 

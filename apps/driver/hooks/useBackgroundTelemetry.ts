@@ -41,7 +41,7 @@ const MAX_OFFLINE_RECORDS = 500;
 const DRIP_CHUNK_SIZE = 50; // Tamaño de chunk para drip-sync offline
 const LIVE_PING_THROTTLE_MS = 30_000; // 30s — MAP-SPEC-2026
 const SYNC_IDLE_DELAY_MS = 200; // requestIdleCallback fallback delay
-const RECONNECT_SYNC_DELAY_MS = 1500; // Delay post-reconnect para stabilizar red
+// Delay post-reconnect para stabilizar red
 
 export type ConnectionStatus = "online" | "offline" | "syncing";
 
@@ -50,6 +50,10 @@ export interface TelemetryCoord {
   lng: number;
   ts: number;
   accuracy?: number;
+}
+
+interface StoredTelemetryCoord extends TelemetryCoord {
+  status: "batch" | "offline";
 }
 
 export interface BackgroundTelemetryState {
@@ -88,8 +92,8 @@ async function readCoordsByStatus(
     return new Promise((resolve) => {
       const request = store.getAll();
       request.onsuccess = () => {
-        const all = request.result || [];
-        resolve(all.filter((x: any) => x.status === status));
+        const all: StoredTelemetryCoord[] = request.result || [];
+        resolve(all.filter((x) => x.status === status));
       };
       request.onerror = () => resolve([]);
     });
@@ -106,10 +110,10 @@ async function writeBatchCoords(batch: TelemetryCoord[]): Promise<void> {
     return new Promise<void>((resolve) => {
       const allRequest = store.getAll();
       allRequest.onsuccess = () => {
-        const all = allRequest.result || [];
+        const all: StoredTelemetryCoord[] = allRequest.result || [];
         all
-          .filter((x: any) => x.status === "batch")
-          .forEach((x: any) => store.delete(x.ts));
+          .filter((x) => x.status === "batch")
+          .forEach((x) => store.delete(x.ts));
         batch.forEach((coord) => store.put({ ...coord, status: "batch" }));
         resolve();
       };
@@ -128,39 +132,15 @@ async function appendOfflineCoords(coords: TelemetryCoord[]): Promise<void> {
     return new Promise<void>((resolve) => {
       const allRequest = store.getAll();
       allRequest.onsuccess = () => {
-        const all = allRequest.result || [];
-        const offlineRecords = all.filter((x: any) => x.status === "offline");
+        const all: StoredTelemetryCoord[] = allRequest.result || [];
+        const offlineRecords = all.filter((x) => x.status === "offline");
         const merged = [...offlineRecords, ...coords];
         const toKeep = merged.slice(-MAX_OFFLINE_RECORDS);
         const toKeepKeys = new Set(toKeep.map((x) => x.ts));
-        offlineRecords.forEach((x: any) => {
+        offlineRecords.forEach((x) => {
           if (!toKeepKeys.has(x.ts)) store.delete(x.ts);
         });
         toKeep.forEach((coord) => store.put({ ...coord, status: "offline" }));
-        resolve();
-      };
-      allRequest.onerror = () => resolve();
-    });
-  } catch {
-    /* graceful */
-  }
-}
-
-async function writeOfflineCoords(coords: TelemetryCoord[]): Promise<void> {
-  try {
-    const db = await openDB();
-    const tx = db.transaction("telemetry", "readwrite");
-    const store = tx.objectStore("telemetry");
-    return new Promise<void>((resolve) => {
-      const allRequest = store.getAll();
-      allRequest.onsuccess = () => {
-        const all = allRequest.result || [];
-        all
-          .filter((x: any) => x.status === "offline")
-          .forEach((x: any) => store.delete(x.ts));
-        coords
-          .slice(-MAX_OFFLINE_RECORDS)
-          .forEach((coord) => store.put({ ...coord, status: "offline" }));
         resolve();
       };
       allRequest.onerror = () => resolve();
@@ -178,10 +158,10 @@ async function clearOfflineCoords(): Promise<void> {
     return new Promise<void>((resolve) => {
       const allRequest = store.getAll();
       allRequest.onsuccess = () => {
-        const all = allRequest.result || [];
+        const all: StoredTelemetryCoord[] = allRequest.result || [];
         all
-          .filter((x: any) => x.status === "offline")
-          .forEach((x: any) => store.delete(x.ts));
+          .filter((x) => x.status === "offline")
+          .forEach((x) => store.delete(x.ts));
         resolve();
       };
       allRequest.onerror = () => resolve();
@@ -257,7 +237,7 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
   const isOnlineRef = useRef(
     typeof navigator !== "undefined" ? navigator.onLine : true,
   );
-  const wakeLockRef = useRef<any>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const memoryBufferRef = useRef<TelemetryCoord[]>([]);
   const liveChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(
     null,
@@ -549,9 +529,9 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
 
     // ── Wake Lock ──────────────────────────────────────────────────────────
     if ("wakeLock" in navigator) {
-      void (navigator as any).wakeLock
+      void navigator.wakeLock
         .request("screen")
-        .then((lock: any) => {
+        .then((lock) => {
           wakeLockRef.current = lock;
         })
         .catch(() => {
@@ -634,9 +614,9 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
       if (!isHidden && isTracking) {
         // App volvió al foreground — re-adquirir Wake Lock
         if ("wakeLock" in navigator && !wakeLockRef.current) {
-          void (navigator as any).wakeLock
+          void navigator.wakeLock
             .request("screen")
-            .then((lock: any) => {
+            .then((lock) => {
               wakeLockRef.current = lock;
             })
             .catch(() => {

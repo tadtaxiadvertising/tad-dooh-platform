@@ -49,10 +49,11 @@ const DriverModal = React.memo(function DriverModal({
       const { getDevices } = await import("@tad/services");
       const devices = await getDevices();
       const exists = devices.some(
-        (d: any) => (d.deviceId || d.device_id) === id,
+        (d: { deviceId?: string; device_id?: string }) =>
+          (d.deviceId || d.device_id) === id,
       );
       setFormData((prev) => ({ ...prev, deviceId: id, deviceFound: exists }));
-    } catch (e) {
+    } catch {
       setFormData((prev) => ({ ...prev, deviceId: id, deviceFound: null }));
     }
   };

@@ -1,4 +1,5 @@
 "use client";
+import { calculateFileMd5, getErrorMessage } from "@tad/services";
 
 import { useCallback, useState, useRef } from "react";
 
@@ -13,7 +14,7 @@ interface UploadProgress {
   percentage: number;
 }
 
-interface UploadResult {
+export interface UploadResult {
   url: string;
   filename: string;
   mediaId: string;
@@ -49,14 +50,6 @@ function validateFile(file: File): string | null {
 }
 
 export function useDirectUpload(options: UseDirectUploadOptions = {}) {
-  const {
-    onSuccess,
-    onError,
-    onProgress,
-    maxRetries = 3,
-    retryBaseDelayMs = 1000,
-  } = options;
-
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState<UploadProgress>({
     loaded: 0,
@@ -92,13 +85,6 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
     setRetryCount(0);
   }, []);
 
-  const calculateHash = async (file: File): Promise<string> => {
-    const buffer = await file.arrayBuffer();
-    const hash = await crypto.subtle.digest("MD5", buffer);
-    const hashArray = Array.from(new Uint8Array(hash));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-  };
-
   const upload = async (file: File, campaignId?: string) => {
     // Validación cliente
     const validationError = validateFile(file);
@@ -124,7 +110,6 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
     }
 
     const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
-    let uploadedPath: string | null = null;
 
     try {
       // 1. Obtener signed URL del backend
@@ -145,11 +130,10 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
         );
       }
 
-      const { uploadUrl, path, publicUrl } = await uploadUrlRes.json();
-      uploadedPath = path;
+      const { uploadUrl, path } = await uploadUrlRes.json();
 
       // 2. Calcular hash MD5 localmente (para verificación)
-      const hashMd5 = await calculateHash(file);
+      const hashMd5 = await calculateFileMd5(file);
 
       // 3. Subir a Supabase Storage con progress + soporte de cancelación
       await uploadToSignedUrl(uploadUrl, file, (loaded) => {
@@ -201,10 +185,10 @@ export function useDirectUpload(options: UseDirectUploadOptions = {}) {
       options.onSuccess?.(uploadResult);
 
       return uploadResult;
-    } catch (err: any) {
-      const message = err.message || "Error desconocido en la subida";
+    } catch (err: unknown) {
+      const message = getErrorMessage(err) || "Error desconocido en la subida";
       setError(message);
-      options.onError?.(err);
+      options.onError?.(err instanceof Error ? err : new Error(message));
       throw err;
     } finally {
       setIsUploading(false);

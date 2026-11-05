@@ -1,3 +1,4 @@
+import { errorMessage } from "../../../utils/error.util";
 import { Test, TestingModule } from "@nestjs/testing";
 import { InternalServerErrorException } from "@nestjs/common";
 import { DeviceAdminController } from "../device-admin.controller";
@@ -6,7 +7,6 @@ import { PrismaService } from "../../prisma/prisma.service";
 
 describe("DeviceAdminController", () => {
   let controller: DeviceAdminController;
-  let prismaService: any;
 
   const mockPrismaService = {
     device: {
@@ -35,7 +35,6 @@ describe("DeviceAdminController", () => {
     }).compile();
 
     controller = module.get<DeviceAdminController>(DeviceAdminController);
-    prismaService = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });
@@ -57,10 +56,10 @@ describe("DeviceAdminController", () => {
 
       try {
         await controller.deleteDevice("HW-123");
-      } catch (err: any) {
-        expect(err.message).toBe("Error al eliminar el dispositivo");
-        expect(err.message).not.toContain("FATAL DB ERROR");
-        expect(err.message).not.toContain("deadlock");
+      } catch (err: unknown) {
+        expect(errorMessage(err)).toBe("Error al eliminar el dispositivo");
+        expect(errorMessage(err)).not.toContain("FATAL DB ERROR");
+        expect(errorMessage(err)).not.toContain("deadlock");
       }
     });
   });
@@ -78,10 +77,14 @@ describe("DeviceAdminController", () => {
 
       try {
         await controller.getDeviceProfile("HW-123");
-      } catch (err: any) {
-        expect(err.message).toBe("Error al obtener el perfil del dispositivo");
-        expect(err.message).not.toContain("PrismaClientKnownRequestError");
-        expect(err.message).not.toContain("Table missing");
+      } catch (err: unknown) {
+        expect(errorMessage(err)).toBe(
+          "Error al obtener el perfil del dispositivo",
+        );
+        expect(errorMessage(err)).not.toContain(
+          "PrismaClientKnownRequestError",
+        );
+        expect(errorMessage(err)).not.toContain("Table missing");
       }
     });
   });

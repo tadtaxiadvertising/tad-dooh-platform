@@ -2,7 +2,10 @@ import React from "react";
 import { CreditCard } from "lucide-react";
 
 interface BillingPortalProps {
-  data?: any;
+  data?: {
+    balance?: number;
+    financials?: { latestInvoice?: { date?: string } };
+  };
 }
 
 export function BillingPortal({ data }: BillingPortalProps) {

@@ -24,24 +24,34 @@ export { captureReferralCode, clearReferralCode };
 
 type GatewayView = "login" | "forgot" | "forgot-sent";
 
-const GOLD = "#FDCB01";
+interface AdvertiserSessionPayload {
+  access_token?: string;
+  token?: string;
+  session?: { access_token?: string };
+  advertiserId?: string;
+  email?: string;
+  name?: string;
+  companyName?: string;
+  status?: string;
+  category?: string | null;
+  phone?: string | null;
+  user?: { id?: string; email?: string; entityId?: string | null };
+}
 
 function persistSession(
-  payload: Record<string, unknown>,
+  payload: AdvertiserSessionPayload,
   fallbackEmail: string,
 ): void {
   const accessToken =
-    payload?.access_token ||
-    payload?.token ||
-    (payload as any)?.session?.access_token;
+    payload?.access_token || payload?.token || payload?.session?.access_token;
   if (!accessToken)
     throw new Error("El servidor no devolvió un token de acceso válido.");
 
   const user = {
-    id: payload?.advertiserId || (payload as any)?.user?.id || "",
-    email: payload?.email || (payload as any)?.user?.email || fallbackEmail,
+    id: payload?.advertiserId || payload?.user?.id || "",
+    email: payload?.email || payload?.user?.email || fallbackEmail,
     role: "ADVERTISER",
-    entityId: payload?.advertiserId || (payload as any)?.user?.entityId || null,
+    entityId: payload?.advertiserId || payload?.user?.entityId || null,
     name: payload?.name || payload?.companyName || fallbackEmail,
     // NUEVO: campos del backend para UX de onboarding/estados
     status: payload?.status || "ACTIVE",

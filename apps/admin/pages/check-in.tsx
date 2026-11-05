@@ -19,7 +19,6 @@ import {
   Database,
   ShieldCheck,
   Zap,
-  RefreshCw,
 } from "lucide-react";
 import {
   startTadTracking,

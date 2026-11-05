@@ -24,7 +24,6 @@
  *
  * Ejecutar script de test: npx ts-node scripts/test-kyc.ts
  */
-
 import {
   Injectable,
   Logger,
@@ -35,7 +34,6 @@ import { PrismaService } from "../prisma/prisma.service";
 import { Prisma } from "@prisma/client";
 import * as crypto from "crypto";
 import * as fs from "fs";
-import * as path from "path";
 
 export interface KYCSubmission {
   driverId: string;
@@ -75,8 +73,7 @@ export class KYCService {
    * En modo MOCK, guarda la info en la tabla drivers.identidadVehicular.
    */
   async submit(submission: KYCSubmission): Promise<KYCResult> {
-    const { driverId, documentType, documentNumber, fileHash, metadata } =
-      submission;
+    const { driverId, documentType, documentNumber, fileHash } = submission;
 
     // Validar que el conductor existe
     const driver = await this.prisma.driver.findUnique({

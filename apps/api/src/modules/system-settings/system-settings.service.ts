@@ -34,7 +34,7 @@ export class SystemSettingsService implements OnModuleInit {
     const settings = await this.prisma.systemSetting.findMany();
     return settings.reduce(
       (acc, curr) => {
-        let value: any = curr.value;
+        let value: unknown = curr.value;
         if (curr.type === "NUMBER") value = Number(curr.value);
         if (curr.type === "BOOLEAN") value = curr.value === "true";
         if (curr.type === "JSON") {
@@ -47,11 +47,11 @@ export class SystemSettingsService implements OnModuleInit {
         acc[curr.key] = value;
         return acc;
       },
-      {} as Record<string, any>,
+      {} as Record<string, unknown>,
     );
   }
 
-  async updateMany(settings: Record<string, any>) {
+  async updateMany(settings: Record<string, unknown>) {
     const updates = Object.entries(settings).map(async ([key, value]) => {
       // @ts-ignore - Temporary bypass for locked Prisma Client on Windows
       const existing = await this.prisma.systemSetting.findUnique({

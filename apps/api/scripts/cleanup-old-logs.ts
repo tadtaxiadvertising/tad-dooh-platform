@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 /**
  * TAD DOOH Platform - Log Cleanup Script
  *
@@ -152,28 +153,28 @@ async function purgeTable(
     switch (tableName) {
       case "analytics_events": {
         const result = await prisma.analyticsEvent.deleteMany({
-          where: where as any,
+          where: where as Prisma.AnalyticsEventWhereInput,
         });
         count = result.count;
         break;
       }
       case "driver_locations": {
         const result = await prisma.driverLocation.deleteMany({
-          where: where as any,
+          where: where as Prisma.DriverLocationWhereInput,
         });
         count = result.count;
         break;
       }
       case "playback_events": {
         const result = await prisma.playbackEvent.deleteMany({
-          where: where as any,
+          where: where as Prisma.PlaybackEventWhereInput,
         });
         count = result.count;
         break;
       }
       case "device_heartbeats": {
         const result = await prisma.deviceHeartbeat.deleteMany({
-          where: where as any,
+          where: where as Prisma.DeviceHeartbeatWhereInput,
         });
         count = result.count;
         break;

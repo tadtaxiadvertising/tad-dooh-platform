@@ -1,3 +1,4 @@
+import type { AdvertiserRecord } from "@/types/admin-api";
 import { useState, useEffect, useCallback } from "react";
 import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
@@ -15,7 +16,6 @@ import {
   Play,
   Plus,
   Megaphone,
-  CheckCircle2,
   AlertTriangle,
   MonitorPlay,
   Zap,
@@ -24,13 +24,13 @@ import {
 import clsx from "clsx";
 import { getAdvertiser } from "@tad/services";
 import { useTabSync } from "@tad/ui";
-import { notifyChange } from "@tad/ui";
+
 import { QRCodeSVG } from "qrcode.react";
 
 export default function AdvertiserProfilePage() {
   const router = useRouter();
   const { id } = router.query;
-  const [advertiser, setAdvertiser] = useState<any>(null);
+  const [advertiser, setAdvertiser] = useState<AdvertiserRecord | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async () => {
@@ -82,19 +82,17 @@ export default function AdvertiserProfilePage() {
   // Calculate overall metrics
   const totalCampaigns = advertiser.campaigns?.length || 0;
   const activeCampaigns =
-    advertiser.campaigns?.filter((c: any) => c.status === "ACTIVE").length || 0;
+    advertiser.campaigns?.filter((c) => c.status === "ACTIVE").length || 0;
 
   let totalImpressions = 0;
   let totalPlays = 0;
   let totalBudget = 0;
-  let totalMedia = 0;
 
-  advertiser.campaigns?.forEach((campaign: any) => {
+  advertiser.campaigns?.forEach((campaign) => {
     totalBudget += campaign.budget || 0;
-    totalMedia += campaign.media?.length || 0;
 
     if (campaign.metrics) {
-      campaign.metrics.forEach((m: any) => {
+      campaign.metrics.forEach((m) => {
         totalImpressions += m.impressions || 0;
         totalPlays += m.playCount || 0;
       });
@@ -255,12 +253,12 @@ export default function AdvertiserProfilePage() {
 
       <div className="space-y-6">
         {advertiser.campaigns?.length > 0 ? (
-          advertiser.campaigns.map((campaign: any) => {
+          advertiser.campaigns.map((campaign) => {
             const isActive = campaign.status === "ACTIVE";
             let cPlays = 0;
             let cImpressions = 0;
             if (campaign.metrics) {
-              campaign.metrics.forEach((m: any) => {
+              campaign.metrics.forEach((m) => {
                 cPlays += m.playCount || 0;
                 cImpressions += m.impressions || 0;
               });

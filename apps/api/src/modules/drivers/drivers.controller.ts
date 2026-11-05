@@ -1,4 +1,5 @@
 import type { AuthenticatedRequest } from "../auth/auth.types";
+import { errorMessage } from "../../utils/error.util";
 import {
   Controller,
   Get,
@@ -238,10 +239,10 @@ export class DriversController {
         ipAddress,
         userAgent,
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       this.logger.error(
-        `[ACCEPT_AGREEMENT] Error al procesar acuerdo para driver ${id}: ${e?.message}`,
-        e?.stack,
+        `[ACCEPT_AGREEMENT] Error al procesar acuerdo para driver ${id}: ${errorMessage(e)}`,
+        e instanceof Error ? e.stack : undefined,
       );
       if (e instanceof BadRequestException || e instanceof ForbiddenException) {
         throw e;
@@ -263,12 +264,12 @@ export class DriversController {
   async completeBankSetup(@Param("id") id: string) {
     try {
       return await this.driversService.completeBankSetup(id);
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof ForbiddenException) throw e;
       if (e instanceof BadRequestException) throw e;
       this.logger.error(
-        `[BANK_SETUP] Error configurando cuenta bancaria para driver ${id}: ${e?.message}`,
-        e?.stack,
+        `[BANK_SETUP] Error configurando cuenta bancaria para driver ${id}: ${errorMessage(e)}`,
+        e instanceof Error ? e.stack : undefined,
       );
       throw new BadRequestException(
         "No se pudo completar la configuración bancaria.",
@@ -379,12 +380,12 @@ export class DriversController {
     }
     try {
       return await this.driversService.getDriverHubData(tabletId);
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof ForbiddenException) throw e;
       if (e instanceof BadRequestException) throw e;
       this.logger.error(
-        `[DRIVER_HUB] Error al obtener datos para tablet ${tabletId}: ${e?.message}`,
-        e?.stack,
+        `[DRIVER_HUB] Error al obtener datos para tablet ${tabletId}: ${errorMessage(e)}`,
+        e instanceof Error ? e.stack : undefined,
       );
       throw new BadRequestException(
         "No se pudieron cargar los datos del portal del chofer.",

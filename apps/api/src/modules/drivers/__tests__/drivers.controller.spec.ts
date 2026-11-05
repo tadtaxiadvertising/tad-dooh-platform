@@ -1,6 +1,12 @@
 import { Reflector } from "@nestjs/core";
 import { DriversController } from "../drivers.controller";
 import { ROLES_KEY, UserRole } from "../../auth/decorators/roles.decorator";
+import { DriversService } from "../drivers.service";
+import { SystemSettingsService } from "../../system-settings/system-settings.service";
+import { PrismaService } from "../../prisma/prisma.service";
+import { Test, TestingModule } from "@nestjs/testing";
+import type { Request } from "express";
+import { Socket } from "node:net";
 
 describe("DriversController Authorization", () => {
   let reflector: Reflector;
@@ -21,10 +27,19 @@ describe("DriversController Authorization", () => {
 
 describe("DriversController Error Sanitization", () => {
   let controller: DriversController;
-  let mockDriversService: any;
-  let mockSystemSettingsService: any;
+  let moduleRef: TestingModule;
+  const originalTabletHubKey = process.env.TABLET_HUB_KEY;
+  let mockDriversService: jest.Mocked<
+    Pick<
+      DriversService,
+      "acceptAgreement" | "completeBankSetup" | "getDriverHubData"
+    >
+  >;
+  let mockSystemSettingsService: jest.Mocked<
+    Pick<SystemSettingsService, "getDriverAppVersion">
+  >;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockDriversService = {
       acceptAgreement: jest.fn(),
       completeBankSetup: jest.fn(),
@@ -33,10 +48,21 @@ describe("DriversController Error Sanitization", () => {
     mockSystemSettingsService = {
       getDriverAppVersion: jest.fn(),
     };
-    controller = new DriversController(
-      mockDriversService,
-      mockSystemSettingsService,
-    );
+    moduleRef = await Test.createTestingModule({
+      controllers: [DriversController],
+      providers: [
+        { provide: DriversService, useValue: mockDriversService },
+        { provide: SystemSettingsService, useValue: mockSystemSettingsService },
+        { provide: PrismaService, useValue: {} },
+      ],
+    }).compile();
+    controller = moduleRef.get(DriversController);
+  });
+
+  afterEach(async () => {
+    await moduleRef.close();
+    if (originalTabletHubKey === undefined) delete process.env.TABLET_HUB_KEY;
+    else process.env.TABLET_HUB_KEY = originalTabletHubKey;
   });
 
   it("should sanitize raw error message in acceptAgreement", async () => {
@@ -44,24 +70,30 @@ describe("DriversController Error Sanitization", () => {
       new Error("FATAL: connection to server at '10.0.0.5' failed"),
     );
 
-    const dummyReq = {
+    const dummyReq: Pick<Request, "headers" | "socket"> = {
       headers: {},
-      socket: { remoteAddress: "127.0.0.1" },
-    } as any;
+      socket: new Socket(),
+    };
 
     await expect(
-      controller.acceptAgreement("driver-1", { version: "2.0" }, dummyReq),
+      controller.acceptAgreement(
+        "driver-1",
+        { version: "2.0" },
+        dummyReq as Request,
+      ),
     ).rejects.toThrow("No se pudo procesar la aceptación del contrato.");
   });
 
   it("should sanitize raw error message in completeBankSetup", async () => {
     mockDriversService.completeBankSetup.mockRejectedValue(
-      new Error("PrismaClientKnownRequestError: column users.password does not exist"),
+      new Error(
+        "PrismaClientKnownRequestError: column users.password does not exist",
+      ),
     );
 
-    await expect(
-      controller.completeBankSetup("driver-1"),
-    ).rejects.toThrow("No se pudo completar la configuración bancaria.");
+    await expect(controller.completeBankSetup("driver-1")).rejects.toThrow(
+      "No se pudo completar la configuración bancaria.",
+    );
   });
 
   it("should sanitize raw error message in getDriverHub", async () => {

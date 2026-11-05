@@ -15,7 +15,7 @@
     "dev:admin": "npm run dev --workspace admin",
     "dev:advertiser": "npm run dev --workspace advertiser",
     "dev:driver": "npm run dev --workspace driver",
-    "dev:tablet": "npm run dev --workspace player",
+    "dev:tablet": "npm run dev --workspace tad-player",
     "dev:driver-native": "cd apps/driver-flutter && flutter run --dart-define-from-file=.env",
     "dev:simulator": "npm run dev --workspace tad-simulator",
     "install:all": "npm install",
@@ -96,6 +96,7 @@
       "multer": "2.5.0",
       "follow-redirects": "1.16.2",
       "@nestjs/platform-express>body-parser": "1.20.9",
+      "@nestjs/platform-express>express": "4.22.3",
       "express@4>body-parser": "1.20.9",
       "express@5>body-parser": "2.4.0",
       "next@15.5.28>postcss": "8.5.31",
@@ -105,7 +106,7 @@
       "@nestjs/swagger>js-yaml": "4.3.2",
       "@nestjs/swagger>lodash": "4.18.1",
       "external-editor>tmp": "0.2.7",
-      "@rollup/plugin-terser>serialize-javascript": "7.0.3"
+      "@rollup/plugin-terser>serialize-javascript": "7.1.3"
     }
   }
 }

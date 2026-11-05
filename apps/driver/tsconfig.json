@@ -50,6 +50,7 @@
   },
   "include": [
     "next-env.d.ts",
+    "next.config.ts",
     "pages/**/*.ts",
     "pages/**/*.tsx",
     "contexts/**/*.ts",

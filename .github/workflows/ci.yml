@@ -124,6 +124,7 @@ jobs:
           node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
           node --test scripts/simulator-key-security.test.cjs scripts/next-security-contract.test.cjs
           node --test scripts/ci-e2e-isolation.test.cjs
+          node --test scripts/api-entrypoint-env.test.cjs
           node --test scripts/error-message-contract.test.cjs scripts/advertiser-upload-contract.test.cjs scripts/driver-error-contract.test.cjs scripts/direct-upload-checksum.test.cjs scripts/monitoring-status.test.cjs scripts/driver-pwa-config.test.cjs
           node --test --test-concurrency=1 scripts/security-compatible-transitives.test.cjs scripts/permissions-parser-security.test.cjs scripts/tmp-cli-security.test.cjs scripts/security-major-compatibility.test.cjs scripts/smtp-transport-security.test.cjs scripts/security-followup-regressions.test.cjs
 

@@ -1,7 +1,9 @@
 # TAD — recuperación de controles después de #200
 
-- Estado: VERIFICADO localmente; pendiente de los controles remotos del PR y de su eventual fusión.
+- Estado: IMPLEMENTADO, PENDIENTE DE VERIFICACIÓN remota. Las comprobaciones locales descritas abajo están verificadas; GitHub no inicia los jobs por facturación/límite de gasto de la cuenta.
 - Base: `e808358207140ed0f4d772fee6e73f24a1e3f58b`, merge de #200 confirmado en GitHub el 2026-11-04 a las 01:25:28 UTC.
+- El merge recordado por el usuario, #198 (`10774bb4`), también pertenece a la historia de `main`; se confirmó de nuevo antes del cierre.
+- Fuente final verificada: `29cd1a07d186244e72fba99291e391ca1092438e`, después de integrar `main` (`64bc44cc5d246e56fbd354df599e5018f2e46e0e`, merge #207). Cierre local: 2026-11-05.
 - Rama: `codex/post-200-quality-security-20261104`.
 - Entorno: Windows local, Node 22.20.0 y pnpm 10.34.0; configuración sintética para las compilaciones web. Sin conexión de pruebas a datos, proveedores de correo o pagos de producción.
 - Alcance: recuperar los controles globales que seguían rojos tras las mejoras de landing: lint con umbral cero y auditoría de dependencias de severidad alta. Corregir errores de comportamiento reproducibles encontrados al sustituir tipos abiertos por contratos reales.
@@ -21,31 +23,44 @@
 | Perfil Admin del anunciante utilizaba consultas Prisma inválidas | `referredBy` es un scalar, la relación se llama `referrer`; la aceptación de contrato tiene `timestamp`, no `createdAt` | Usa los nombres del esquema existente y conserva el identificador referido en la respuesta | Regresión de perfiles con dobles de Prisma, sin cambios de esquema |
 | Perfil Admin del conductor pedía una relación inexistente | `referencedDrivers` era un alias de respuesta, la relación Prisma se llama `referrals` | Consulta la relación real y conserva el alias de respuesta | Regresión de contrato del perfil con doble de Prisma |
 | Recibo de factura fallaba al dar formato al importe | La factura tiene `totalAmount`; el PDF requiere `amount` | Traduce explícitamente el importe al contrato del PDF | Regresión que reproduce `amount.toLocaleString` ausente |
+| El nuevo #207 de `main` incorporó contratos abiertos en su regresión de errores Driver | Capturas `any` y dobles parciales forzados al tipo de la clase | Conserva las respuestas públicas sanitizadas de #207, usa errores `unknown` y dobles tipados mediante el módulo de pruebas Nest | 2 suites/9 tests dirigidos; suite API completa 151/151 |
 
 ## Evidencia y verificación
 
-Los logs originales, incluidos los intentos fallidos, se conservan fuera del repositorio en `C:\Users\Arismendy\.codex\visualizations\2026\11\03\01a1a16d-39e3-7ae0-bed9-073a22bff88c\post-200-20261104`.
+Los logs originales, incluidos los intentos fallidos, se conservan fuera del repositorio en el conjunto local de evidencias `post-200-20261104`. El checkpoint local registra su ruta absoluta.
 
 Los resultados remotos por SHA se registran en los checks y en la descripción del PR de esta rama. Un build de Next que omite lint/tipos por configuración histórica no acredita esos controles: se ejecutan por separado.
 
 | Comando o alcance ejecutado | Exit | Resultado | Evidencia |
 | --- | ---: | --- | --- |
 | `corepack pnpm@10.34.0 install --offline --frozen-lockfile` | 0 | PASS; lock consistente, sin descargar versiones nuevas | `frozen-install-checksum-final.log` |
-| `pnpm audit --audit-level=high` | 0 | PASS; 0 altas/críticas, 19 moderadas y 6 bajas | `audit-high-candidate.log` |
+| `corepack pnpm@10.34.0 audit --audit-level=high` | 0 | PASS; 0 altas/críticas, 17 moderadas y 6 bajas en la consulta final | `audit-high-after-main-final.log` |
 | ESLint, `--max-warnings 0`, los 11 workspaces de CI | 0 | PASS; mismos controles y umbral | `lint-verified-summary.json`, logs de portales y `api-eslint-complete-verified.log` |
 | TypeScript 5.9.3, los 14 proyectos con tsconfig | 0 | PASS; los 4 consumidores del nuevo checksum se repitieron tras integrarlo | `types-integrated-summary.json`, `types-impact-composite-verified.log`, `api-source-evidence.json`, `direct-upload-md5-evidence.json` |
 | `prisma validate --schema apps/api/prisma/schema.prisma` con URL sintética local | 0 | PASS; sin consultas ni migraciones | `prisma-validate-verified.log` |
 | Prettier 3.9.10 sobre `apps/**/*.{ts,tsx}`, `--end-of-line auto` | 0 | PASS; CRLF del checkout Windows, CI Linux comprueba LF | `prettier-candidate.log` |
 | Contratos integrados Node, ejecución en serie | 0 | 111/111 PASS, incluidos consentimiento, seguridad, SMTP y regresiones de UI | `contracts-integrated-verified.log` |
 | Regresión de checksum y hooks de subida | 0 | 13/13 PASS; tres hooks reales, oráculo Node independiente y errores | `direct-upload-md5-green.log` |
-| `pnpm --filter api test --runInBand` | 0 | 31 suites, 148/148 tests PASS | `api-jest-final.log`, `api-jest-final.json` |
+| `pnpm --filter api test --runInBand`, después de integrar #207 | 0 | 31 suites, 151/151 tests PASS | `post-207-api-jest-final.log`, `post-207-api-jest-final.json` |
+| Tipos API y lint de los dos archivos ajustados después de #207 | 0 | PASS; conserva mensajes sanitizados y diagnósticos estrictos | `post-207-api-types.log`, `post-207-driver-final-lint.log`, `post-207-targeted-verified.log` |
 | Runner puro del cálculo de impacto API | 0 | 37 comprobaciones PASS | `api-impact-calculator-tests-final.log` |
 | Compilación estática de 9 scripts operativos modificados | 0 | PASS; scripts no ejecutados | `api-operational-scripts-types-final.log` |
-| Builds Admin y Driver con configuración sintética | 0 | PASS anterior al último cambio de checksum; Admin también anterior al ajuste de email | `admin-build-verified.log`, `driver-build-verified.log`; los artefactos finales requieren CI |
+| Builds finales en serie: impact-calculator, Advertiser, Admin, Driver, API y Player | 0 en los 6 | PASS; scripts de build declarados, configuración web sintética | `final-builds-summary.json`, `final-build-{impact,advertiser,admin,driver,api,player}.log` |
+| `docker build` de los cuatro Dockerfiles canónicos de CI: API, Player, Admin y Driver | 0 en los 4 | PASS; artefactos `linux/amd64` inspeccionados, tags locales `tad-local-{api,player,admin,driver}:29cd1a07` | `final-docker-builds-summary.json`, `final-docker-*.log`, `final-docker-artifacts-inspected.log` |
+| `node scripts/landing-v3-smoke.cjs`, contra el build standalone local de Anunciante | 0 | 15/15 PASS; ocho anchos, teclado, movimiento, sin JS, Slow 3G y consentimiento | `final-smoke-advertiser.log`, capturas `final-smoke-advertiser/` |
+| `node scripts/driver-landing-smoke.cjs`, contra el build standalone local de Driver | 0 | 13/13 PASS; ocho anchos, teclado, movimiento, sin JS y simulación de ingresos | `final-smoke-driver.log`, capturas `final-smoke-driver/` |
 
 La revisión independiente de Anunciante/shared y de dependencias/SMTP no encontró P1/P2 introducidos pendientes después de reparar la normalización de email y el checksum. La revisión crítica de API comprobó KYC, roles, importes y nombres Prisma; las suites de pagos, comisiones, wallet, sincronización y dispositivos terminaron verdes.
 
-La instalación congelada anterior terminó con exit 0. La auditoría actual con umbral alto terminó con exit 0 y 25 hallazgos restantes: 19 moderados y 6 bajos; cero altos y cero críticos. Es un resultado acotado al árbol de dependencias consultado, no una certificación de seguridad de producción.
+La instalación congelada terminó con exit 0. La consulta final de auditoría terminó con exit 0 y 23 hallazgos restantes: 17 moderados y 6 bajos; cero altos y cero críticos. La consulta anterior devolvía 25 (19 moderados y 6 bajos); se conservan ambos logs. El inventario de avisos del registro puede variar sin modificar el lock. Este resultado se limita al árbol consultado y no certifica la seguridad de producción.
+
+Los builds finales terminaron entre 01:59 y 02:15 UTC del 2026-11-05. Las webs utilizaron una URL Supabase sintética, backend en loopback y Sentry desactivado mediante variables vacías; no se ejecutó el arranque operativo de API. Las advertencias existentes de Sentry se conservan en los logs. Los smokes públicos bloquean API, solicitudes remotas y service workers, y sus servidores locales se detienen al terminar. Se revisaron también capturas de escritorio y móvil. No acreditan sesiones autenticadas, datos financieros reales, accesibilidad completa ni offline del Player.
+
+El smoke de Anunciante registró el merge `67e45cb` con árbol modificado por los dos ajustes API posteriores y outputs generados. La comparación de `apps/admin`, `apps/driver`, `apps/advertiser`, `packages/shared-ui` y `packages/services` entre `d4c91240` y `29cd1a07` no contiene cambios: los builds y smokes finales utilizan la misma fuente frontend comprobada. Después de integrar #207 se repitieron tipos, regresiones y la suite completa API. Los outputs generados finales se respaldaron antes de restaurarlos; no se incorporan al PR.
+
+Las cuatro imágenes se compilaron en serie entre 06:47 y 07:09 UTC, con Docker 29.9.2 en Linux/amd64. Se usaron exactamente `Dockerfile.api`, `Dockerfile.player`, `Dockerfile.admin` y `Dockerfile.driver`; las URLs y claves públicas de los builders web se sustituyeron por fixtures sintéticos/loopback mediante build args. Los identificadores de imagen y códigos de salida están registrados en el resumen. No se publicaron imágenes ni se inició el entrypoint operativo de API. Estos resultados acreditan compilación y presencia del artefacto, no despliegue ni salud de producción.
+
+El motor Docker inicialmente no arrancaba y el backend conservaba un error de comprobación WSL. Un reinicio acotado del runtime existente terminó después del timeout inicial de 45 segundos; se confirmó su recuperación antes de construir. No se instaló ni actualizó WSL ni se cambió su configuración. Se conservaron el diagnóstico y el intento fallido. Los logs de build conservan también las advertencias no bloqueantes de Sentry, Prisma/OpenSSL durante la instalación del workspace completo y BuildKit sobre nombres de variables de claves anónimas; no se suprimieron.
 
 La primera ejecución paralela de contratos tuvo un timeout de arranque del simulador en Windows: el proceso fue interrumpido antes de producir un código de salida. La ejecución diagnóstica aislada, con el mismo timeout de 5 segundos y sin modificar la prueba, terminó 4/4 PASS. La ejecución integrada posterior terminó 111/111 PASS. Un primer build Driver se interrumpió al confirmar presión de memoria; su ejecución en serie terminó con exit 0. Los intentos Jest que detectaron contratos incorrectos en dobles tipados se conservaron y corrigieron sin eliminar casos negativos ni desactivar diagnósticos.
 
@@ -53,6 +68,8 @@ El primer comando de tipos de impact-calculator utilizó `--incremental false`, 
 
 ## Cambios externos y límites
 
+- [PR #208](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/208) permanece abierto y en borrador. No se fusionó ni desplegó.
+- CI está BLOQUEADO externamente. La anotación de [Format & Lint del SHA final](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/41953164960/job/127001645827) confirma que el job no arrancó por pagos fallidos o límite de gasto de la cuenta. Se comprobó el mismo bloqueo en el candidato anterior. Los checks rojos no proporcionan resultados de ejecución de código; no se presentan como controles aprobados ni se relajan sus reglas. Hace falta resolver la cuenta y ejecutar los controles remotos.
 - Se reutilizaron payloads revisados de las propuestas #201, #202, #203 y #206; no se fusionaron esas ramas ni sus workflows generadores. El lock se resolvió centralmente.
 - No se modificaron el esquema ni las migraciones de Prisma, saldos, ledgers, condiciones comerciales, credenciales o configuración de proveedores.
 - El correo se prueba con transporte en memoria. La entrega SMTP real y las sesiones OAuth reales requieren un entorno autorizado de staging y no forman parte de los resultados locales.

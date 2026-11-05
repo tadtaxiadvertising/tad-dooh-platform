@@ -8,7 +8,6 @@ import {
   Cloud,
   Database,
   ExternalLink,
-  CheckCircle2,
   BarChart3,
 } from "lucide-react";
 import clsx from "clsx";
@@ -17,43 +16,52 @@ export const getServerSideProps: GetServerSideProps = async () => ({
   props: {},
 });
 
+function configuredConsoleUrl(value: string | undefined) {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.href
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export default function MonitoringPage() {
-  const UMAMI_ID =
-    process.env.NEXT_PUBLIC_UMAMI_ID || "2a7c0085-87e5-473c-b959-8854ba785e87";
+  const UMAMI_ID = process.env.NEXT_PUBLIC_UMAMI_ID?.trim();
   const SENTRY_URL = "https://sentry.io/";
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const SUPABASE_URL = configuredConsoleUrl(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+  );
 
   const services = [
     {
       name: "Sentry Error Tracking",
-      status: "OPERATIONAL",
       icon: Activity,
-      desc: "Monitoreo de bugs y excepciones en tiempo real.",
+      desc: "Consola para revisar los errores recibidos por Sentry.",
       link: SENTRY_URL,
       color: "text-purple-400",
     },
     {
       name: "Umami Analytics",
-      status: "ACTIVE",
       icon: BarChart3,
-      desc: "Analítica web privada y sin cookies.",
+      desc: "Consola para consultar la analítica del sitio configurado.",
       link: `https://cloud.umami.is/`,
       color: "text-blue-400",
     },
     {
       name: "Supabase DB & Auth",
-      status: "OPERATIONAL",
       icon: Database,
       desc: "Motor de datos PostgreSQL y gestión de sesiones.",
-      link: `${SUPABASE_URL}`,
+      link: SUPABASE_URL,
       color: "text-emerald-400",
     },
     {
       name: "EasyPanel / VPS",
-      status: "HEALTHY",
       icon: Cloud,
       desc: "Infraestructura de hosting y despliegue automático.",
-      link: "#",
+      link: undefined,
       color: "text-orange-400",
     },
   ];
@@ -72,16 +80,16 @@ export default function MonitoringPage() {
             AUDITORÍA & <span className="text-tad-yellow">SALUD</span>
           </h1>
           <p className="text-zinc-500 mt-2 font-medium">
-            Control unificado de herramientas externas y estabilidad del
-            sistema.
+            Accesos a las herramientas de revisión. Esta página no comprueba su
+            disponibilidad ni confirma que estén recibiendo datos.
           </p>
         </div>
 
         <div className="flex items-center gap-4 px-6 py-3 bg-zinc-900/50 border border-white/5 rounded-2xl">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
+            <div className="w-2.5 h-2.5 bg-zinc-500 rounded-full" />
             <span className="text-sm font-bold text-zinc-300">
-              PROTOCOLO ANTIGRAVITY v4.5 OK
+              Estado pendiente de revisión
             </span>
           </div>
         </div>
@@ -92,15 +100,15 @@ export default function MonitoringPage() {
         {services.map((svc) => (
           <div
             key={svc.name}
-            className="card-premium p-6 flex flex-col justify-between group cursor-pointer"
+            className="card-premium p-6 flex flex-col justify-between group"
           >
             <div className="space-y-4">
               <div className="flex justify-between items-start">
                 <div className={clsx("p-3 rounded-2xl bg-white/5", svc.color)}>
                   <svc.icon className="w-6 h-6" />
                 </div>
-                <div className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-black rounded-md border border-emerald-500/20">
-                  {svc.status}
+                <div className="px-2 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-black rounded-md border border-zinc-700">
+                  Sin verificar
                 </div>
               </div>
               <div>
@@ -110,15 +118,21 @@ export default function MonitoringPage() {
                 </p>
               </div>
             </div>
-            <a
-              href={svc.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-6 flex items-center justify-between text-xs font-bold text-zinc-400 group-hover:text-tad-yellow transition-colors"
-            >
-              ACCEDER A CONSOLA
-              <ExternalLink className="w-4 h-4" />
-            </a>
+            {svc.link ? (
+              <a
+                href={svc.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 flex items-center justify-between text-xs font-bold text-zinc-400 group-hover:text-tad-yellow transition-colors"
+              >
+                ACCEDER A CONSOLA
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            ) : (
+              <p className="mt-6 text-xs text-zinc-500">
+                Enlace no configurado
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -130,8 +144,8 @@ export default function MonitoringPage() {
             <BarChart3 className="w-6 h-6 text-blue-400" />
             PANEL DE ANALÍTICA (UMAMI)
           </h2>
-          <div className="px-4 py-1.5 bg-blue-500/10 text-blue-400 text-xs font-bold rounded-full border border-blue-500/20">
-            EN TIEMPO REAL
+          <div className="px-4 py-1.5 bg-zinc-800 text-zinc-300 text-xs font-bold rounded-full border border-zinc-700">
+            Consola externa
           </div>
         </div>
 
@@ -145,24 +159,25 @@ export default function MonitoringPage() {
           <div className="flex-1 space-y-3">
             <h3 className="text-xl font-bold">Umami Analytics Cloud</h3>
             <p className="text-zinc-400 text-sm leading-relaxed max-w-lg">
-              Las analíticas de uso de la plataforma se registran en Umami
-              Cloud. Haz clic en el botón para abrirlas en una nueva pestaña.
-              Asegúrate de que el{" "}
-              <span className="text-white font-bold">Share Link</span> esté
-              activado para el sitio{" "}
-              <code className="bg-zinc-800 text-tad-yellow px-1 rounded text-xs">
-                {UMAMI_ID}
-              </code>
-              .
+              Abre Umami para comprobar los datos disponibles y la configuración
+              del sitio. El enlace a la consola no confirma que la analítica
+              esté activa; su carga en el portal depende de la configuración y
+              del consentimiento.
             </p>
-            <div className="flex items-center gap-2 text-xs text-zinc-600 font-mono">
-              <span className="text-emerald-400">●</span> Website ID: {UMAMI_ID}
+            <div className="text-xs text-zinc-500 font-mono break-all">
+              {UMAMI_ID
+                ? `Website ID: ${UMAMI_ID}`
+                : "Sitio de Umami sin configurar"}
             </div>
           </div>
 
           {/* CTA */}
           <a
-            href={`https://cloud.umami.is/websites/${UMAMI_ID}`}
+            href={
+              UMAMI_ID
+                ? `https://cloud.umami.is/websites/${encodeURIComponent(UMAMI_ID)}`
+                : "https://cloud.umami.is/"
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 flex items-center gap-2 px-6 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold rounded-2xl transition-all duration-300 hover:scale-105"
@@ -182,41 +197,28 @@ export default function MonitoringPage() {
             </div>
             <div>
               <h3 className="text-xl font-bold">Rendimiento Técnico</h3>
-              <p className="text-zinc-500 text-sm">
-                Latencia promedio:{" "}
-                <span className="text-white font-bold">42ms</span>
-              </p>
+              <p className="text-zinc-500 text-sm">Sin mediciones</p>
             </div>
           </div>
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-500">Disponibilidad (Uptime)</span>
-              <span className="text-emerald-400 font-bold">99.98%</span>
-            </div>
-            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 w-[99.98%]" />
-            </div>
-          </div>
+          <p className="text-sm text-zinc-400">
+            La latencia y la disponibilidad requieren mediciones de los
+            servicios. Consulta sus consolas para revisar esos resultados.
+          </p>
         </div>
 
         <div className="card-premium p-10 space-y-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20">
-              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+            <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center border border-zinc-700">
+              <Activity className="w-6 h-6 text-zinc-400" />
             </div>
             <div>
               <h3 className="text-xl font-bold">Estado General</h3>
-              <p className="text-zinc-500 text-sm">
-                Todos los pods operativos.
-              </p>
+              <p className="text-zinc-500 text-sm">Sin revisión registrada</p>
             </div>
           </div>
           <p className="text-sm text-zinc-400">
-            Última verificación de integridad automática:{" "}
-            <span className="text-white font-bold text-xs bg-zinc-800 px-2 py-0.5 rounded">
-              1 minuto atrás
-            </span>
-            . Todos los micro-servicios responden bajo los 150ms.
+            Esta página no realiza una revisión automática de los servicios.
+            Abre las consolas disponibles para comprobar su estado actual.
           </p>
         </div>
       </div>

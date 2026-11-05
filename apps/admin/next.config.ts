@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import path from "path";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 // IMPORTANTE: En EasyPanel Free, las variables NEXT_PUBLIC_* deben estar
 // configuradas como Build Args, NO solo como Environment Variables.

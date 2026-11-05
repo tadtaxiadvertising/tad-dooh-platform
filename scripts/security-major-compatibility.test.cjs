@@ -114,7 +114,7 @@ test("MCP validates Zod v4 input using only linked in-memory transports", { time
 
 test("the actual Workbox minifier resolves patched serialization and preserves options", () => {
   const { serialize, version } = loadWorkboxSerializer();
-  assert.equal(version, "7.0.3");
+  assert.equal(version, "7.1.3");
   const options = { pattern: /fixture/gi, expires: new Date("2026-01-01T00:00:00Z"), values: [1, "two"] };
   const restored = vm.runInNewContext("(" + serialize(options) + ")", {}, { timeout: 100 });
   assert.equal(restored.pattern.source, "fixture");

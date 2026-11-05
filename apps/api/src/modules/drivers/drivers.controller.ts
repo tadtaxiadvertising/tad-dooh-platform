@@ -238,8 +238,17 @@ export class DriversController {
         ipAddress,
         userAgent,
       );
-    } catch (e) {
-      throw new BadRequestException(e.message);
+    } catch (e: any) {
+      this.logger.error(
+        `[ACCEPT_AGREEMENT] Error al procesar acuerdo para driver ${id}: ${e?.message}`,
+        e?.stack,
+      );
+      if (e instanceof BadRequestException || e instanceof ForbiddenException) {
+        throw e;
+      }
+      throw new BadRequestException(
+        "No se pudo procesar la aceptación del contrato.",
+      );
     }
   }
 
@@ -254,10 +263,16 @@ export class DriversController {
   async completeBankSetup(@Param("id") id: string) {
     try {
       return await this.driversService.completeBankSetup(id);
-    } catch (e) {
+    } catch (e: any) {
       if (e instanceof ForbiddenException) throw e;
       if (e instanceof BadRequestException) throw e;
-      throw new BadRequestException(e.message);
+      this.logger.error(
+        `[BANK_SETUP] Error configurando cuenta bancaria para driver ${id}: ${e?.message}`,
+        e?.stack,
+      );
+      throw new BadRequestException(
+        "No se pudo completar la configuración bancaria.",
+      );
     }
   }
 
@@ -364,8 +379,16 @@ export class DriversController {
     }
     try {
       return await this.driversService.getDriverHubData(tabletId);
-    } catch (e) {
-      throw new BadRequestException(e.message);
+    } catch (e: any) {
+      if (e instanceof ForbiddenException) throw e;
+      if (e instanceof BadRequestException) throw e;
+      this.logger.error(
+        `[DRIVER_HUB] Error al obtener datos para tablet ${tabletId}: ${e?.message}`,
+        e?.stack,
+      );
+      throw new BadRequestException(
+        "No se pudieron cargar los datos del portal del chofer.",
+      );
     }
   }
 

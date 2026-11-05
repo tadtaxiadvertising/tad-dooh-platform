@@ -416,7 +416,7 @@ export class DriversService {
           );
         }
         throw new HttpException(
-          `No se pudo crear el conductor: ${msg}`,
+          "Error interno al crear el conductor.",
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       });

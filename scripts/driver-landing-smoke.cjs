@@ -226,7 +226,7 @@ async function main() {
         await button.focus();
         await button.press('Enter');
         assert.equal(await button.getAttribute('aria-pressed'), 'true');
-        assert.equal(await choices.locator('[aria-pressed="true"]').count(), 1);
+        assert.equal(await hero.locator('ul[aria-label="Explora las tres oportunidades para conductores"] button[aria-pressed="true"]').count(), 1);
         const scene = hero.locator('[data-channel="' + channel + '"]');
         assert.equal(await scene.count(), 1);
         titles.add(await scene.locator('strong').last().innerText());

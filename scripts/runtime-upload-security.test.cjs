@@ -9,12 +9,13 @@ const { createRequire } = require("node:module");
 
 const root = path.resolve(__dirname, "..");
 const lock = fs.readFileSync(path.join(root, "pnpm-lock.yaml"), "utf8");
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const { readOverrides } = require("./pnpm-overrides-config.cjs");
+const overrides = readOverrides();
 const apiPkg = JSON.parse(fs.readFileSync(path.join(root, "apps/api/package.json"), "utf8"));
 const apiRequire = createRequire(path.join(root, "apps/api/package.json"));
 
 test("NestJS/Express upload dependencies no longer resolve vulnerable Multer versions", () => {
-  assert.equal(pkg.pnpm.overrides.multer, "2.5.0");
+  assert.equal(overrides.multer, "2.5.0");
   assert.equal(apiPkg.dependencies.multer, "^2.5.0");
   assert.match(lock, /\n  multer@2\.5\.0:\n/);
   assert.doesNotMatch(lock, /\n  multer@(?:1\.|2\.[0-4]\.)/);
@@ -22,7 +23,7 @@ test("NestJS/Express upload dependencies no longer resolve vulnerable Multer ver
 });
 
 test("redirect dependency is patched across workspace snapshots", () => {
-  assert.equal(pkg.pnpm.overrides["follow-redirects"], "1.16.2");
+  assert.equal(overrides["follow-redirects"], "1.16.2");
   assert.match(lock, /\n  follow-redirects@1\.16\.2:\n/);
   assert.doesNotMatch(lock, /\n  follow-redirects@1\.16\.[01]:\n/);
 });

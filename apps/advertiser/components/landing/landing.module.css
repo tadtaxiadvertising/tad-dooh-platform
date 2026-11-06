@@ -435,3 +435,59 @@
   .landing :global(.landing-access) { gap: 7px; padding-inline: 13px; }
 }
 .landing :global(.landing-preview :focus-visible) { outline-color: #665200; }
+
+/* Cinematic Director: the urban hero is an accessible live counterpart to the campaign studio. */
+.landing :global(.landing-hero-cities) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 26px;
+  max-width: 520px;
+}
+.landing :global(.landing-hero-cities > span) {
+  flex-basis: 100%;
+  color: #ddd6bc;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+.landing :global(.landing-hero-cities button) {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 1px solid #ffffff53;
+  border-radius: 999px;
+  background: #ffffff0c;
+  color: #f7f3e9;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+.landing :global(.landing-hero-cities button:hover) { border-color: #ffd400; }
+.landing :global(.landing-hero-cities button[aria-pressed="true"]) {
+  border-color: #ffd400;
+  background: #ffd400;
+  color: #171715;
+}
+.landing :global(.landing-hero-cities button:focus-visible) {
+  outline: 3px solid #ffe97b;
+  outline-offset: 4px;
+}
+.landing :global(.landing-scene[data-city="stgo"]) {
+  background:
+    radial-gradient(ellipse at 72% 14%, #ffe38c38, transparent 55%),
+    radial-gradient(ellipse at 11% 91%, #94763d45, transparent 55%),
+    linear-gradient(145deg, #252526, #0a1218 84%);
+}
+@media (max-width: 380px) {
+  .landing :global(.landing-hero-cities) { gap: 7px; }
+  .landing :global(.landing-hero-cities button) { padding-inline: 12px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing :global(.landing-hero-cities button) { transition: none !important; }
+}

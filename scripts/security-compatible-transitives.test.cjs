@@ -9,7 +9,8 @@ const { gzipSync } = require("node:zlib");
 const { createRequire } = require("node:module");
 
 const root = path.resolve(__dirname, "..");
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const { readOverrides } = require("./pnpm-overrides-config.cjs");
+const overrides = readOverrides();
 const lock = fs.readFileSync(path.join(root, "pnpm-lock.yaml"), "utf8").replace(/\r\n?/g, "\n");
 const expected = {
   "@nestjs/platform-express>body-parser": "1.20.9",
@@ -66,7 +67,7 @@ test("actual Nest and MCP parsers preserve JSON while rejecting malformed or ove
 
 test("overrides affect only identified vulnerable package versions, preserving major lines", () => {
   for (const [selector, version] of Object.entries(expected)) {
-    assert.equal(pkg.pnpm?.overrides?.[selector], version);
+    assert.equal(overrides.[selector], version);
     assert.ok(selector.includes(">"), "Overrides must target a proven parent edge: " + selector);
     const targetMajor = selector === "express@5>body-parser" ? 2
       : selector.endsWith(">body-parser") ? 1
@@ -77,8 +78,8 @@ test("overrides affect only identified vulnerable package versions, preserving m
       : NaN;
     assert.equal(Number(version.split(".")[0]), targetMajor);
   }
-  assert.equal(pkg.pnpm?.overrides?.multer, "2.5.0");
-  assert.equal(pkg.pnpm?.overrides?.["follow-redirects"], "1.16.2");
+  assert.equal(overrides.multer, "2.5.0");
+  assert.equal(overrides.["follow-redirects"], "1.16.2");
 });
 
 test("pnpm generated lock no longer contains the targeted unsafe resolutions", () => {

@@ -485,3 +485,65 @@
   .mobileMenu summary { font-size: 11px; padding-inline: 6px; }
   .login { padding-inline: 10px; }
 }
+
+/* Cinematic Director: interactive, reversible chapters. Existing CTA and earnings logic stay unchanged. */
+.heroChannels li { padding: 0; background: transparent; border: 0; }
+.heroChannels button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 10px 15px;
+  border: 1px solid #ffffff43;
+  border-radius: 999px;
+  background: #ffffff0a;
+  color: #f6f4ef;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+.heroChannels button:hover { background: #ffffff1b; border-color: #ffd4009c; }
+.heroChannels button[aria-pressed="true"] {
+  border-color: #ffd400;
+  background: #ffd400;
+  color: #151515;
+}
+.heroChannels button[aria-pressed="true"] strong { color: #151515; }
+.heroChannels button:focus-visible {
+  outline: 3px solid #ffe783;
+  outline-offset: 4px;
+}
+.channelDescription {
+  min-height: 3em;
+  max-width: 510px;
+  margin: 15px 0 0;
+  color: #d9d9d2;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.scene[data-channel="sales"] {
+  background: radial-gradient(ellipse at 67% 12%, #ffd4003b, transparent 55%),
+    radial-gradient(ellipse at 10% 82%, #8f874a40, transparent 56%), #0c1015;
+}
+.scene[data-channel="referrals"] {
+  background: radial-gradient(ellipse at 65% 18%, #e4bb3b40, transparent 56%),
+    radial-gradient(ellipse at 18% 82%, #8e745440, transparent 56%), #0e1012;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .scene { transition: background-color 240ms ease; }
+  .screenCardContent { animation: tadChapterChange 230ms ease-out both; }
+}
+@keyframes tadChapterChange {
+  from { opacity: .6; transform: translate3d(0, 5px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .heroChannels button, .scene, .screenCardContent { transition: none !important; animation: none !important; }
+}
+@media (max-width: 370px) {
+  .heroChannels button { padding-inline: 11px; font-size: 11px; }
+  .channelDescription { font-size: 12px; }
+}

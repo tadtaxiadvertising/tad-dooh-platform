@@ -216,6 +216,28 @@ async function main() {
         'Run default smoke with NEXT_PUBLIC_LANDING_SIGNUP_ENABLED unset or false.');
     });
 
+    await check('Driver cinematic chapters update with keyboard, keep one active option and restore', async () => {
+      const hero = page.locator('section[aria-labelledby="hero-title"]');
+      const choices = hero.locator('ul[aria-label="Explora las tres oportunidades para conductores"] button');
+      assert.equal(await choices.count(), 3);
+      const titles = new Set();
+      for (const [index, channel] of ['screen', 'sales', 'referrals'].entries()) {
+        const button = choices.nth(index);
+        await button.focus();
+        await button.press('Enter');
+        assert.equal(await button.getAttribute('aria-pressed'), 'true');
+        assert.equal(await choices.locator('[aria-pressed="true"]').count(), 1);
+        const scene = hero.locator('[data-channel="' + channel + '"]');
+        assert.equal(await scene.count(), 1);
+        titles.add(await scene.locator('strong').last().innerText());
+        assert.ok((await hero.locator('#driver-channel-summary').innerText()).trim().length > 40);
+        assert.ok((await button.evaluate(element => element.getBoundingClientRect().height)) >= 44);
+      }
+      assert.equal(titles.size, 3, 'Each chapter needs distinct explanatory media.');
+      await choices.first().click();
+      assert.equal(await hero.locator('[data-channel="screen"]').count(), 1);
+    });
+
     await check('Three earning streams match independent fixtures through actual keyboard controls', async () => {
       const lab = page.locator('#calculadora');
       assert.equal(await lab.count(), 1);

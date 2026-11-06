@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import {
@@ -88,9 +89,41 @@ const questions = [
   },
 ];
 
-function TaxiIllustration() {
+const CHANNELS = [
+  {
+    id: "screen",
+    label: "Pantalla",
+    statement: "Pantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.",
+    cardEyebrow: "PUBLICIDAD A BORDO",
+    cardTitle: "Tu taxi, conectado.",
+    cardNote: "Una pantalla para mensajes aprobados.",
+  },
+  {
+    id: "sales",
+    label: "Ventas",
+    statement: "Ventas: las comisiones corresponden a publicidad efectivamente aprobada, no a simples solicitudes.",
+    cardEyebrow: "CONEXIONES COMERCIALES",
+    cardTitle: "Conecta marcas con rutas.",
+    cardNote: "Las ventas requieren revisión y aprobación.",
+  },
+  {
+    id: "referrals",
+    label: "Referidos",
+    statement: "Referidos: el bono es único y depende de la activación y aprobación del conductor referido.",
+    cardEyebrow: "RED DE CONDUCTORES",
+    cardTitle: "Comparte el recorrido.",
+    cardNote: "El registro por sí solo no genera un bono.",
+  },
+] as const;
+
+type DriverChannel = (typeof CHANNELS)[number]["id"];
+
+function TaxiIllustration({ channel }: { channel: DriverChannel }) {
+  const selected = CHANNELS.find((item) => item.id === channel) ?? CHANNELS[0];
+  const ChannelIcon =
+    channel === "sales" ? BadgeCheck : channel === "referrals" ? UserRound : MonitorPlay;
   return (
-    <div className={styles.scene}>
+    <div className={styles.scene} data-channel={channel}>
       <div className={styles.sceneGrid} aria-hidden="true" />
       <div className={styles.sceneLabel}>
         <span aria-hidden="true" /> PUBLICIDAD DIGITAL A BORDO
@@ -201,15 +234,15 @@ function TaxiIllustration() {
       </svg>
       <div className={styles.screenCard} aria-hidden="true">
         <div className={styles.screenCardTop}>
-          <MonitorPlay size={15} /> Una pantalla. Nuevas conexiones.
+          <ChannelIcon size={15} /> {selected.cardEyebrow}
         </div>
         <div className={styles.screenCardContent}>
           <span className={styles.screenPlay}>
-            <MonitorPlay size={30} />
+            <ChannelIcon size={30} />
           </span>
           <span>
-            <strong>Tu taxi, conectado.</strong>
-            <small>El mensaje acompaña el recorrido.</small>
+            <strong>{selected.cardTitle}</strong>
+            <small>{selected.cardNote}</small>
           </span>
         </div>
       </div>
@@ -222,6 +255,10 @@ function TaxiIllustration() {
 }
 
 export default function DriverLandingPage() {
+  const [channel, setChannel] = useState<DriverChannel>("screen");
+  const selectedChannel =
+    CHANNELS.find((item) => item.id === channel) ?? CHANNELS[0];
+
   return (
     <>
       <Head>
@@ -343,20 +380,33 @@ export default function DriverLandingPage() {
               </p>
               <ul
                 className={styles.heroChannels}
-                aria-label="Tres oportunidades para conductores"
+                aria-label="Explora las tres oportunidades para conductores"
               >
-                <li>
-                  <strong>01</strong> Pantalla
-                </li>
-                <li>
-                  <strong>02</strong> Ventas
-                </li>
-                <li>
-                  <strong>03</strong> Referidos
-                </li>
+                {CHANNELS.map((item, index) => (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      aria-pressed={channel === item.id}
+                      aria-controls="driver-channel-summary"
+                      onClick={() => setChannel(item.id)}
+                    >
+                      <strong>{String(index + 1).padStart(2, "0")}</strong>
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
               </ul>
+              <p
+                id="driver-channel-summary"
+                className={styles.channelDescription}
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {selectedChannel.statement}
+              </p>
             </div>
-            <TaxiIllustration />
+            <TaxiIllustration channel={channel} />
           </section>
 
           <div className={styles.promiseBar}>

@@ -226,6 +226,25 @@ async function main() {
       await assertAdvertiserLinks(page);
     });
 
+    await check('Cinematic city selection is keyboard-accessible, reversible and synchronized with the campaign', async () => {
+      const choices = page.locator('.landing-hero-cities button');
+      assert.equal(await choices.count(), 2);
+      const santoDomingo = choices.getByText('Santo Domingo');
+      const santiago = choices.getByText('Santiago');
+      assert.equal(await santoDomingo.getAttribute('aria-pressed'), 'true');
+      await santiago.focus();
+      await santiago.press('Enter');
+      assert.equal(await santiago.getAttribute('aria-pressed'), 'true');
+      assert.equal(await santoDomingo.getAttribute('aria-pressed'), 'false');
+      assert.equal(await page.locator('.landing-scene').getAttribute('data-city'), 'stgo');
+      assert.equal(await page.locator('#campaign-city').inputValue(), 'stgo');
+      assert.ok((await santiago.evaluate(element => element.getBoundingClientRect().height)) >= 44);
+      await santoDomingo.click();
+      assert.equal(await santoDomingo.getAttribute('aria-pressed'), 'true');
+      assert.equal(await page.locator('.landing-scene').getAttribute('data-city'), 'sd');
+      assert.equal(await page.locator('#campaign-city').inputValue(), 'sd');
+    });
+
     await check('Campaign story has four controllable keyboard steps', async () => {
       const story = page.locator('#recorrido-campana');
       const steps = story.locator('button[aria-pressed]');

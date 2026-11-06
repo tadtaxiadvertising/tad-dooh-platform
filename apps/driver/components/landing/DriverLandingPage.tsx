@@ -236,7 +236,7 @@ function TaxiIllustration({ channel }: { channel: DriverChannel }) {
         <div className={styles.screenCardTop}>
           <ChannelIcon size={15} /> {selected.cardEyebrow}
         </div>
-        <div className={styles.screenCardContent}>
+        <div className={styles.screenCardContent} key={channel}>
           <span className={styles.screenPlay}>
             <ChannelIcon size={30} />
           </span>

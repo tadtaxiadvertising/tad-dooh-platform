@@ -188,7 +188,7 @@ jobs:
 
       - name: TruffleHog secret scan
         if: ${{ always() }}
-        uses: trufflesecurity/trufflehog@v3.90.12
+        uses: trufflesecurity/trufflehog@v3.99.8
         with:
           path: ./
           extra_args: --results=verified,unknown

@@ -66,7 +66,7 @@ test("non-string temporary path options cannot bypass traversal validation", () 
 });
 
 test("temporary editor dependency is fixed without upgrading its parent major", () => {
-  assert.equal(overrides.["external-editor>tmp"], "0.2.7");
+  assert.equal(overrides["external-editor>tmp"], "0.2.7");
   assert.match(lock, /\n  tmp@0\.2\.7:\n/);
   assert.doesNotMatch(lock, /\n  tmp@0\.0\.33:\n/);
   const source = lock.split("\n  external-editor@3.1.0:\n")[1] || "";
@@ -76,7 +76,7 @@ test("temporary editor dependency is fixed without upgrading its parent major", 
 
 test("the root override still preserves Multer and redirect security controls", () => {
   assert.equal(overrides.multer, "2.5.0");
-  assert.equal(overrides.["follow-redirects"], "1.16.2");
+  assert.equal(overrides["follow-redirects"], "1.16.2");
 });
 
 test("the write-enabled helper is absent from the reviewed candidate", () => {

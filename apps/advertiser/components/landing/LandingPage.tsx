@@ -218,6 +218,23 @@ export default function LandingPage() {
                 sujetas a validación.
               </span>
             </div>
+            <div
+              className="landing-hero-cities"
+              role="group"
+              aria-label="Elegir ciudad del escenario publicitario ilustrativo"
+            >
+              <span>ESCENA URBANA</span>
+              {(Object.keys(CITIES) as DemoCity[]).map((choice) => (
+                <button
+                  key={choice}
+                  type="button"
+                  aria-pressed={city === choice}
+                  onClick={() => setCity(choice)}
+                >
+                  {CITIES[choice]}
+                </button>
+              ))}
+            </div>
             <ol
               className="landing-hero-steps"
               aria-label="Así comienza una campaña"
@@ -233,7 +250,7 @@ export default function LandingPage() {
               </li>
             </ol>
           </div>
-          <CityScene />
+          <CityScene city={city} />
         </section>
         <noscript>
           <p className="landing-wrap landing-noscript">

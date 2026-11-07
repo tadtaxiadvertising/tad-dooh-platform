@@ -9,14 +9,14 @@
 
 On the connected Supabase project, all three tables are absent, but Prisma declares `SystemError`, `Notification` and `NotificationQueue` models. Backend code calls `systemError.create` in error-handling paths and attempts `notification.create` to record financial anomalies. These operations fail when the tables do not exist, obscuring incident visibility.
 
-The models contain only scalars and independent indexes/uniqueness; **no foreign keys**. The historical `20261012_campaign_notification_dedup` migration contains invalid nested `DO $` syntax and was marked applied despite prior failure. Its DDL must **not** be replayed wholesale. The earlier drift inventory reports 29 missing model tables; this proposal addresses two only. Current 20 Prisma migration records still coexist with historical failed migrations and unrelated UUID/TEXT drift.
+The models contain only scalars and independent indexes/uniqueness; **no foreign keys**. The historical `20261012_campaign_notification_dedup` migration contains invalid nested PL/pgSQL dollar-quoted blocks and was marked applied despite prior failure. It also creates `notification_queue.entity_id` while the **current Prisma model declares unmapped `entityId`**. The new migration deliberately uses the Prisma-compatible quoted `"entityId"` column and does not replay the legacy DDL. Its DDL must **not** be replayed wholesale. The earlier drift inventory reports 29 missing model tables; this proposal addresses three only. Current 20 Prisma migration records still coexist with historical failed migrations and unrelated UUID/TEXT drift.
 
 ## Proposed smallest safe change
 
 `apps/api/prisma/migrations/20261107_z_restore_internal_observability/migration.sql` creates exactly:
 - `system_errors`: text client-generated PK, source/severity/message, optional details/entity, retry count, resolved state, timestamps and query indexes.
 - `notifications`: text client-generated PK, title/message/type/category, read flag/entity, timestamp and indexes.
-- `notification_queue`: text client-generated PK, type/category/entity, title/message, sent state, timestamp and indexes; unique deduplication key on `(type, category, entity_id)`.
+- `notification_queue`: text client-generated PK, type/category/entity, title/message, sent state, timestamp and indexes; unique deduplication key on `(type, category, "entityId")`.
 
 All three use Prisma-compatible scalar names/defaults, have RLS explicitly enabled, and revoke `PUBLIC`, `anon` and `authenticated` table access. No service or UI path is changed. SQL contains no DROP/DELETE/TRUNCATE, no data backfill and no financial table operations.
 

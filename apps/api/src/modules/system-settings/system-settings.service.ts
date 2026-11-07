@@ -74,6 +74,9 @@ export class SystemSettingsService implements OnModuleInit {
   }
 
   private async seedDefaults() {
+    // Do not insert financial defaults until the pricing/commission contract
+    // is approved (issue #218). Existing persisted financial values remain
+    // readable and editable; only automatic creation is blocked.
     const defaults = [
       {
         key: "platformName",
@@ -87,8 +90,6 @@ export class SystemSettingsService implements OnModuleInit {
         type: "BOOLEAN",
         group: "GENERAL",
       },
-      { key: "slotPrice", value: "500", type: "NUMBER", group: "FINANCIAL" },
-      { key: "referralFee", value: "500", type: "NUMBER", group: "FINANCIAL" },
       { key: "maxSlots", value: "15", type: "NUMBER", group: "FLEET" },
       { key: "syncInterval", value: "10", type: "NUMBER", group: "FLEET" },
       { key: "telemetryBatch", value: "50", type: "NUMBER", group: "FLEET" },
@@ -97,12 +98,6 @@ export class SystemSettingsService implements OnModuleInit {
         value: "48",
         type: "NUMBER",
         group: "FLEET",
-      },
-      {
-        key: "subscriptionPrice",
-        value: "6000",
-        type: "NUMBER",
-        group: "FINANCIAL",
       },
       {
         key: "whatsappGateway",

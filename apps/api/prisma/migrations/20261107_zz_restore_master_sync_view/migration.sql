@@ -107,3 +107,9 @@ CREATE INDEX "idx_mv_campaigns_target_fleets_gin"
 -- access; the NestJS backend's privileged database role owns sync queries.
 REVOKE ALL ON TABLE "public"."mv_active_campaigns"
   FROM PUBLIC, anon, authenticated;
+
+-- The existing helper was callable by anon/authenticated via PostgreSQL's
+-- default PUBLIC EXECUTE grant (verified 2026-11-07). Refresh is an internal
+-- privileged operation; keep invoker semantics and remove RPC exposure.
+REVOKE ALL ON FUNCTION "public"."refresh_active_campaigns"()
+  FROM PUBLIC, anon, authenticated;

@@ -10,7 +10,7 @@
 Comparison of 52 Prisma models to `information_schema.columns` in the current database:
 - 26 models have physical tables; 26 models still lack tables.
 - Among present tables, **34 Prisma scalar fields** have no matching column name.
-- Exact breakdown: 19 in `drivers`, four in `subscriptions`, six in `campaign_expirations`, two in `driver_locations`, one in `devices` and one in `media`; the sum is 33 based on that breakdown, while the automated scanner reports 34 — **confirm scanner totals in the next full drift check**, not blindly trust counts.
+- Exact breakdown: 19 in `drivers`, four in `subscriptions`, seven in `campaign_expirations`, two in `driver_locations`, one in `devices` and one in `media`; total **34**.
 - `devices.is_simulated` missing: even `findUnique` can fail when Prisma selects it.
 - `drivers` missing onboarding, subscription and legal acceptance fields that are part of the current Prisma model.
 - `subscriptions` missing required `valid_until`, optional `device_id` and `paid_at`, and `is_simulated`.
@@ -27,7 +27,7 @@ No wallet/commission/ledger records, subscription balances or commercial prices 
 ## Explicit remaining work
 
 - `media.mimeType` is a second Prisma field alongside `media.mime_type @map("mime_type")`; do NOT add a fake duplicate physical column. Choose one canonical field and update all code/select/response contracts in a separate review.
-- `campaign_expirations` is not simply missing six names: physical table has legacy `expiry_date`, while the model expects scheduled notification/remaining-day fields. Align domain semantics before changing DDL or mappings.
+- `campaign_expirations` is not simply missing seven names: physical table has legacy `expiry_date`, while the model expects scheduled notification/remaining-day fields. Align domain semantics before changing DDL or mappings.
 - Physical UUID/TEXT mismatches remain in `devices`, `campaigns`, `driver_locations`, and other models. A column-presence fix does not reconcile foreign-key type drift.
 - 26 **entire model tables** are missing, including `device_commands`, `device_heartbeats` and `videos`; they block real approved-device sync until a staged, native-type-verified migration is applied.
 - Existing `drivers.status` and `subscriptions.status` database defaults diverge from current Prisma defaults. Do not change business/financial defaults without documented product signoff.

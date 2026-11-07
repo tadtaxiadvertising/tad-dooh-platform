@@ -517,7 +517,7 @@ export class MediaService {
       originalFilename: media.originalFilename,
       size: Number(media.fileSize),
       mimeType: media.mimeType,
-      mime_type: media.mime_type,
+      mime_type: media.mimeType,
       durationSeconds: media.durationSeconds,
       width: media.width,
       height: media.height,

@@ -1,3 +1,5 @@
+import { classifyOfflineQueueStatus } from "./offlineQueuePolicy";
+
 interface OfflineQueueItem {
   endpoint: string;
   id?: number;
@@ -152,26 +154,29 @@ export const syncOfflineQueue = async () => {
           body: JSON.stringify(normalizedPayload),
         });
 
-        const shouldDropItem =
-          response.ok ||
-          response.status === 409 ||
-          (response.status >= 400 &&
-            response.status < 500 &&
-            response.status !== 401 &&
-            response.status !== 402);
-
-        if (shouldDropItem && typeof item.id === "number") {
+        const disposition = classifyOfflineQueueStatus(response.status);
+        if (disposition === "ack" && typeof item.id === "number") {
           await deleteQueueItem(db, item.id);
           processed += 1;
           remaining -= 1;
           continue;
         }
 
-        if (response.status === 401 || response.status === 402) {
+        if (disposition === "pause") {
           break;
         }
+
+        if (response.status === 409) {
+          // A 409 may mean the server has an in-progress/unknown-outcome
+          // financial action. Keep it in IndexedDB for reconciliation.
+          // Continue with independent queued actions without dropping this one.
+          console.warn(
+            "[OfflineQueue] Conflict retained for reconciliation (HTTP 409).",
+          );
+        }
       } catch (error) {
-        console.error("Failed to sync item:", item, error);
+        // Never log offline payloads: they can include financial or bank data.
+        console.error("[OfflineQueue] Transport failed; queued action retained.");
         break;
       }
     }

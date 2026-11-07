@@ -18,7 +18,7 @@ test("unauthorized or unpaid sessions pause the queue", () => {
 });
 
 test("network/server errors retain actions for later retry", () => {
-  for (const status of [0, 429 + 71, 503, 504]) {
+  for (const status of [0, 500, 503, 504]) {
     assert.equal(classifyOfflineQueueStatus(status), "retain");
   }
 });

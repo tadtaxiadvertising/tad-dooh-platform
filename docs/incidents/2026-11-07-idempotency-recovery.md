@@ -63,4 +63,4 @@ WHERE "isLocked" = true
   AND created_at < (now() - interval '1 hour');
 ```
 
-**Do not** rewrite historical migration rows, run `prisma db push`, manually unlock pending financial keys, or remove the old CRON guard to make tests pass. Related issues: #217 (30 other tables absent), #147 (CI runners), #218 (commercial value contract).
+**Do not** rewrite historical migration rows, run `prisma db push`, manually unlock pending financial keys, or remove the old CRON guard to make tests pass. Related issues: #217 (30 other tables absent), #147 (CI runners), #218 (commercial value contract), #221 (durable dead-letter queue).

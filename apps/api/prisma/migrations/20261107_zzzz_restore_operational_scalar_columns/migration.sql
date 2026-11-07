@@ -10,6 +10,21 @@
 -- If other environments contain subscription rows, the migration MUST fail
 -- safely rather than invent a paid subscription's expiry date.
 
+-- Fail before ANY DDL on a database with subscription records whose
+-- required expiry dates would otherwise need a guessed financial backfill.
+DO $
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'subscriptions'
+      AND column_name = 'valid_until'
+  ) AND EXISTS (SELECT 1 FROM "public"."subscriptions" LIMIT 1) THEN
+    RAISE EXCEPTION
+      'Existing subscriptions require reviewed valid_until backfill; migration halted before DDL';
+  END IF;
+END $;
+
 ALTER TABLE "public"."devices"
   ADD COLUMN IF NOT EXISTS "is_simulated" BOOLEAN NOT NULL DEFAULT false;
 

@@ -885,6 +885,8 @@ export class CampaignService {
       // Fallback to legacy query if view fails
       activeCampaigns = await this.prisma.campaign.findMany({
         where: {
+          // Do not expose unapproved or unpaid creative if the MV is unavailable.
+          status: "ACTIVE",
           active: true,
           startDate: { lte: now },
           endDate: { gte: now },

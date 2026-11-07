@@ -16,7 +16,7 @@
    - PostgreSQL `uuid` vs `text` mismatches (`42804` and `42883`).
    - `CREATE INDEX CONCURRENTLY` inside a transaction (`25001`).
    - SQL syntax errors (`42601`).
-6. Actual database identifiers still have incompatible types in places: `drivers.id` is `text`, while `telemetry.driver_id` and `wallets.driver_id` are `uuid`. Do not rewrite their types or recreate foreign keys without checking rows and dependencies.
+6. **14 of the 19 present model-mapped tables with an `id` column** have PostgreSQL `uuid` identifiers where the current Prisma model declares a TEXT-backed String primary key. Examples include `devices`, `campaigns`, `wallets`, `telemetry`, `financial_transactions`, `invoices`, and `playback_events`. Separately, `drivers.id` is `text` while `telemetry.driver_id` and `wallets.driver_id` are `uuid`. Do not rewrite their types or recreate foreign keys without checking rows and dependencies.
 
 ## Targeted change in this PR
 
@@ -68,4 +68,4 @@ WHERE table_schema = 'public' AND table_name = 'system_settings';
 
 ## Completion criteria
 
-The targeted fix is only **verified** once its migration executes in the intended database and a live API startup + settings endpoint works. Full incident closure additionally requires a tracked remediation for the 30 other missing models and incompatible key types, with automated regression checks. A green `migrate deploy` alone is insufficient.
+Track the remaining schema recovery in issue #217. The targeted fix is only **verified** once its migration executes in the intended database and a live API startup + settings endpoint works. Full incident closure additionally requires a tracked remediation for the 30 other missing models and incompatible key types, with automated regression checks. A green `migrate deploy` alone is insufficient.

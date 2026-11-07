@@ -124,25 +124,45 @@ describe("IdempotencyInterceptor — financial and offline retry safety", () => 
 
   it("does not unlock or delete an expired in-flight operation", async () => {
     const prisma = makePrisma();
+    const interceptor = new IdempotencyInterceptor(
+      prisma as unknown as PrismaService,
+    );
+    const { context } = makeContext();
+    const next = { handle: jest.fn(() => of({ confirmation: "pending" })) };
+
+    await firstValueFrom(await interceptor.intercept(context, next as CallHandler));
     prisma.idempotencyKey.findUnique.mockResolvedValue({
-      key: "hashed",
-      path: "/api/v1/wallet/withdraw",
-      method: "POST",
-      driverId: "auth-user-123",
-      requestHash: "mismatched", // error may be conflict; neither path may unlock
+      ...prisma.idempotencyKey.create.mock.calls[0][0].data,
       isLocked: true,
       response: null,
       expiresAt: new Date(0),
     });
+
+    await expect(
+      interceptor.intercept(context, next as CallHandler),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.idempotencyKey.deleteMany).not.toHaveBeenCalled();
+    expect(next.handle).toHaveBeenCalledTimes(1);
+  });
+
+  it("isolates idempotency keys between different authenticated users", async () => {
+    const prisma = makePrisma();
     const interceptor = new IdempotencyInterceptor(
       prisma as unknown as PrismaService,
     );
-    const next = { handle: jest.fn(() => of({})) };
-    await expect(
-      interceptor.intercept(makeContext().context, next as CallHandler),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(prisma.idempotencyKey.deleteMany).not.toHaveBeenCalled();
-    expect(next.handle).not.toHaveBeenCalled();
+    const first = makeContext();
+    const second = makeContext();
+    second.request.user.id = "another-auth-user";
+    const next = { handle: jest.fn(() => of({ success: true })) };
+
+    await firstValueFrom(await interceptor.intercept(first.context, next as CallHandler));
+    await firstValueFrom(await interceptor.intercept(second.context, next as CallHandler));
+
+    const [firstKey, secondKey] = prisma.idempotencyKey.create.mock.calls.map(
+      ([operation]) => operation.data.key,
+    );
+    expect(firstKey).not.toBe(secondKey);
+    expect(next.handle).toHaveBeenCalledTimes(2);
   });
 
   it("fails closed when a concurrent insert hits the unique-key constraint", async () => {

@@ -868,7 +868,7 @@ model IdempotencyKey {
   method    String?
   response  String? // JSON-stringified response payload
   responseHeaders String? // JSON-stringified request headers for reconstruction
-  requestHash String @map("request_hash") // SHA-256 of request body/query; reject changed payload for same key
+  requestHash String @map("request_hash") // SHA-256 of request body/query
   isLocked  Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
   expiresAt DateTime @map("expires_at")

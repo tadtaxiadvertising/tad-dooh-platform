@@ -38,8 +38,24 @@ function projectRefFromDatabaseUrl(raw) {
 
 function inspectSupabaseTarget(env) {
   const expected = projectRefFromSupabaseUrl(env.SUPABASE_URL);
-  const runtime = projectRefFromDatabaseUrl(env.DATABASE_URL);
+  let runtime = projectRefFromDatabaseUrl(env.DATABASE_URL);
   const migration = projectRefFromDatabaseUrl(env.DIRECT_URL);
+  // PrismaService normalizes exactly the legacy 'postgres' pooler username
+  // to postgres.<SUPABASE_PROJECT_REF> before opening a runtime connection.
+  // This exception is not permitted for DIRECT_URL (migration connection).
+  if (!runtime && expected && env.DATABASE_URL) {
+    try {
+      const parsed = new URL(env.DATABASE_URL);
+      if (
+        parsed.hostname.toLowerCase().endsWith(".pooler.supabase.com") &&
+        decodeURIComponent(parsed.username) === "postgres"
+      ) {
+        runtime = expected;
+      }
+    } catch {
+      // The ordinary unverifiable-target failure applies.
+    }
+  }
   const hasInvalid = !expected || !runtime || !migration;
   if (hasInvalid) return { ok: false, code: "UNVERIFIABLE_TARGET" };
   if (expected !== runtime || expected !== migration) {

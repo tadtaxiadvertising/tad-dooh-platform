@@ -7,24 +7,37 @@ test("409 retains the action and pauses FIFO processing", () => {
 });
 
 test("successful HTTP responses acknowledge queued actions", () => {
-  for (const status of [200, 201, 202, 204]) {
+  for (const status of [200, 201, 202, 204, 299]) {
     assert.equal(classifyOfflineQueueStatus(status), "ack");
   }
 });
 
-test("unauthorized or unpaid sessions pause the queue", () => {
-  assert.equal(classifyOfflineQueueStatus(401), "pause");
-  assert.equal(classifyOfflineQueueStatus(402), "pause");
-});
-
-test("network/server errors retain actions for later retry", () => {
-  for (const status of [0, 500, 503, 504]) {
-    assert.equal(classifyOfflineQueueStatus(status), "retain");
+test("authentication and subscription problems pause the queue", () => {
+  for (const status of [401, 402]) {
+    assert.equal(classifyOfflineQueueStatus(status), "pause");
   }
 });
 
-test("existing terminal non-409 4xx behavior remains unchanged", () => {
-  for (const status of [400, 403, 404, 422]) {
+test("408, 425 and 429 never delete a pending offline request", () => {
+  for (const status of [408, 425, 429]) {
+    assert.equal(classifyOfflineQueueStatus(status), "pause");
+  }
+});
+
+test("server and transport failures pause FIFO to preserve operation order", () => {
+  for (const status of [0, -1, 500, 502, 503, 504, 599]) {
+    assert.equal(classifyOfflineQueueStatus(status), "pause");
+  }
+});
+
+test("unexpected redirects do not acknowledge a queued mutation", () => {
+  for (const status of [301, 302, 307, 308]) {
+    assert.equal(classifyOfflineQueueStatus(status), "pause");
+  }
+});
+
+test("legacy terminal non-retryable 4xx are unchanged until dead-letter store", () => {
+  for (const status of [400, 403, 404, 410, 422]) {
     assert.equal(classifyOfflineQueueStatus(status), "ack");
   }
 });

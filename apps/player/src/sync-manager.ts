@@ -93,19 +93,23 @@ export class SyncManager {
         return;
       }
 
+      // A matching media hash still requires a renewed offline license.
+      // Remote commands are also independent of whether creatives changed.
+      if (payload.licenseToken && payload.expiresAt) {
+        this.persistOfflineLicense(payload.licenseToken, payload.expiresAt);
+      }
+
+      if (payload.commands && payload.commands.length > 0) {
+        this.onCommands(payload.commands);
+        for (const cmd of payload.commands) {
+          this.acknowledgeCommand(cmd.id).catch(() => {});
+        }
+      }
+
       // Delta check — no update needed
       if (!payload.update) {
         console.log("[SyncManager] Delta sync matches. No update needed.");
         return;
-      }
-
-      // Process commands
-      if (payload.commands && payload.commands.length > 0) {
-        this.onCommands(payload.commands);
-        // Acknowledge commands
-        for (const cmd of payload.commands) {
-          this.acknowledgeCommand(cmd.id).catch(() => {});
-        }
       }
 
       // Download + cache new assets
@@ -119,13 +123,6 @@ export class SyncManager {
       }
 
       this.lastSyncHash = payload.sync_hash;
-
-      // Fix #4: Persistir licencia offline para validación anti-ghosting.
-      // Si el JWT expira tras 48h sin handshake del servidor, el Player debe
-      // activar el KillSwitch (pantalla negra "Conecte a Internet para Validar").
-      if (payload.licenseToken && payload.expiresAt) {
-        this.persistOfflineLicense(payload.licenseToken, payload.expiresAt);
-      }
 
       this.onPlaylistUpdate(assets, []);
     } catch (err) {
@@ -148,6 +145,12 @@ export class SyncManager {
         return;
       }
 
+      // The server issues a fresh license even when the media ETag matches.
+      // Persist that license before skipping the expensive media update.
+      if (manifest.licenseToken && manifest.expiresAt) {
+        this.persistOfflineLicense(manifest.licenseToken, manifest.expiresAt);
+      }
+
       // ETag comparison
       if (manifest.etag === this.lastSyncHash) {
         console.log("[SyncManager] Manifest ETag matches. No update.");
@@ -164,11 +167,6 @@ export class SyncManager {
       }
 
       this.lastSyncHash = manifest.etag;
-
-      // Fix #4: Persistir licencia offline del manifest
-      if (manifest.licenseToken && manifest.expiresAt) {
-        this.persistOfflineLicense(manifest.licenseToken, manifest.expiresAt);
-      }
 
       this.onPlaylistUpdate(assets, manifest.schedules || []);
     } catch (err) {

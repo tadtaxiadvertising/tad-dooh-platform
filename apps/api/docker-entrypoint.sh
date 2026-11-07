@@ -20,6 +20,7 @@ if [ -z "${DIRECT_URL:-}" ]; then
   echo "[entrypoint] 🚨 FATAL: DIRECT_URL is required for Prisma migrations. Configure the Supabase direct/session URL, not the transaction pooler on :6543."
   exit 1
 fi
+node ./scripts/check-supabase-target.cjs
 DATABASE_URL="$DIRECT_URL" pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma
 echo "[entrypoint] Prisma migrations applied."
 

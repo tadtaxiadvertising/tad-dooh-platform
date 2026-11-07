@@ -18,6 +18,10 @@ const healthController = fs.readFileSync(
   path.join(apiRoot, "src/health/health.controller.ts"),
   "utf8",
 );
+const campaignService = fs.readFileSync(
+  path.join(apiRoot, "src/modules/campaign/campaign.service.ts"),
+  "utf8",
+);
 const formerBootstrapSql = fs.readFileSync(
   path.join(apiRoot, "prisma/views.sql"),
   "utf8",
@@ -65,4 +69,12 @@ test("hardware and driver targeting aggregates are retained", () => {
   ]) {
     assert.ok(migration.includes(token), `Missing targeting dependency: ${token}`);
   }
+});
+
+test("fallback sync cannot serve campaigns pending payment or approval", () => {
+  const block = campaignService.slice(
+    campaignService.indexOf("Fallback to legacy query if view fails"),
+  );
+  assert.match(block, /status: "ACTIVE"/);
+  assert.match(block, /active: true/);
 });

@@ -247,14 +247,15 @@ export class PrismaService
         "REFRESH MATERIALIZED VIEW CONCURRENTLY public.mv_active_campaigns;",
       );
       this.logger.log("✅ mv_active_campaigns actualizada con éxito.");
-    } catch (e) {
-      if (e.message.includes("not been populated")) {
-        // Fallback if not populated yet
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Unknown refresh error";
+      if (message.includes("not been populated")) {
+        // Initial/non-concurrent refresh is only valid for an existing view.
         await this.$executeRawUnsafe(
           "REFRESH MATERIALIZED VIEW public.mv_active_campaigns;",
         );
       } else {
-        this.logger.error(`❌ Error al refrescar vista: ${e.message}`);
+        this.logger.error(`❌ Error al refrescar vista: ${message}`);
       }
     }
   }

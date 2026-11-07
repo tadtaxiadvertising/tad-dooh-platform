@@ -35,6 +35,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("general");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [persistedKeys, setPersistedKeys] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
 
   // Settings State
@@ -59,11 +60,14 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       const data = await getSystemSettings();
-      if (data) {
-        // Merge with existing defaults to handle missing keys
-        setConfig((prev) => ({ ...prev, ...data }));
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error("Respuesta inválida de configuración");
       }
+      setPersistedKeys(new Set(Object.keys(data)));
+      // Only values returned by the API are authoritative.
+      setConfig((prev) => ({ ...prev, ...data }));
     } catch (err) {
+      setPersistedKeys(new Set());
       console.error("Error fetching settings:", err);
       toast.error("Error al cargar la configuración desde el servidor");
     } finally {
@@ -77,10 +81,18 @@ export default function SettingsPage() {
   }, []);
 
   const handleSave = async () => {
+    // Never submit UI placeholders or values missing from the database.
+    const persisted = Object.fromEntries(
+      Object.entries(config).filter(([key]) => persistedKeys.has(key)),
+    );
+    if (Object.keys(persisted).length === 0) {
+      toast.error("No hay configuración persistida disponible para guardar");
+      return;
+    }
     setSaving(true);
     try {
-      await updateSystemSettings(config);
-      toast.success("Configuración sincronizada con el nodo central");
+      await updateSystemSettings(persisted);
+      toast.success("Configuración persistida actualizada");
     } catch (err) {
       console.error("Error saving settings:", err);
       toast.error("Error al guardar la configuración");
@@ -120,7 +132,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-4">
             <AntigravityButton
               onAsyncClick={handleSave}
-              disabled={saving || loading}
+              disabled={saving || loading || persistedKeys.size === 0}
               className="px-8 py-3 bg-tad-yellow text-black font-black uppercase tracking-widest rounded-2xl flex items-center gap-3 hover:scale-105 transition-all shadow-[0_10px_30px_rgba(255,212,0,0.2)]"
               actionName="save_system_settings"
             >
@@ -306,6 +318,11 @@ export default function SettingsPage() {
                         </div>
                       </div>
 
+                      {!["slotPrice", "referralFee", "subscriptionPrice"].every((key) => persistedKeys.has(key)) && (
+                        <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+                          Algunos importes aún no están configurados en la base de datos. Se muestran sin valor y no pueden modificarse hasta aprobar el contrato financiero.
+                        </p>
+                      )}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-6">
                           <div className="p-6 bg-zinc-900/50 rounded-2xl border border-white/5 space-y-4">
@@ -321,7 +338,9 @@ export default function SettingsPage() {
                               </span>
                               <input
                                 type="number"
-                                value={config.slotPrice}
+                                value={persistedKeys.has("slotPrice") ? config.slotPrice : ""}
+                                disabled={!persistedKeys.has("slotPrice")}
+                                placeholder="Sin configurar"
                                 onChange={(e) =>
                                   setConfig({
                                     ...config,
@@ -350,7 +369,9 @@ export default function SettingsPage() {
                               </span>
                               <input
                                 type="number"
-                                value={config.referralFee}
+                                value={persistedKeys.has("referralFee") ? config.referralFee : ""}
+                                disabled={!persistedKeys.has("referralFee")}
+                                placeholder="Sin configurar"
                                 onChange={(e) =>
                                   setConfig({
                                     ...config,
@@ -381,7 +402,9 @@ export default function SettingsPage() {
                               </span>
                               <input
                                 type="number"
-                                value={config.subscriptionPrice}
+                                value={persistedKeys.has("subscriptionPrice") ? config.subscriptionPrice : ""}
+                                disabled={!persistedKeys.has("subscriptionPrice")}
+                                placeholder="Sin configurar"
                                 onChange={(e) =>
                                   setConfig({
                                     ...config,

@@ -223,34 +223,55 @@ describe("IdempotencyInterceptor — financial and offline retry safety", () => 
     );
   });
 
-  it("reprocesses an expired completed record only after safely removing it", async () => {
+  it("replays completed withdrawals after the 24h review horizon without a second charge", async () => {
     const prisma = makePrisma();
     const interceptor = new IdempotencyInterceptor(
       prisma as unknown as PrismaService,
     );
     const { context } = makeContext();
-    const next = { handle: jest.fn(() => of({ accepted: true })) };
+    const next = { handle: jest.fn(() => of({ withdrawalId: "w-123" })) };
 
-    await firstValueFrom(
-      await interceptor.intercept(context, next as CallHandler),
-    );
+    await expect(
+      firstValueFrom(await interceptor.intercept(context, next as CallHandler)),
+    ).resolves.toEqual({ withdrawalId: "w-123" });
+
     prisma.idempotencyKey.findUnique.mockResolvedValue({
       ...prisma.idempotencyKey.create.mock.calls[0][0].data,
       isLocked: false,
-      response: JSON.stringify({ accepted: true }),
+      response: JSON.stringify({ withdrawalId: "w-123" }),
       expiresAt: new Date(0),
     });
 
-    await firstValueFrom(
-      await interceptor.intercept(context, next as CallHandler),
+    await expect(
+      firstValueFrom(await interceptor.intercept(context, next as CallHandler)),
+    ).resolves.toEqual({ withdrawalId: "w-123" });
+    expect(prisma.idempotencyKey.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.idempotencyKey.create).toHaveBeenCalledTimes(1);
+    expect(next.handle).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails closed on an expired record with no verifiable response", async () => {
+    const prisma = makePrisma();
+    const interceptor = new IdempotencyInterceptor(
+      prisma as unknown as PrismaService,
     );
-    expect(prisma.idempotencyKey.deleteMany).toHaveBeenCalledWith({
-      where: {
-        key: expect.any(String),
-        isLocked: false,
-      },
+    const { context } = makeContext();
+    const next = { handle: jest.fn(() => of({ withdrawalId: "w-456" })) };
+
+    await firstValueFrom(await interceptor.intercept(context, next as CallHandler));
+    prisma.idempotencyKey.findUnique.mockResolvedValue({
+      ...prisma.idempotencyKey.create.mock.calls[0][0].data,
+      isLocked: false,
+      response: null,
+      expiresAt: new Date(0),
     });
-    expect(next.handle).toHaveBeenCalledTimes(2);
+
+    await expect(
+      interceptor.intercept(context, next as CallHandler),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.idempotencyKey.create).toHaveBeenCalledTimes(1);
+    expect(prisma.idempotencyKey.deleteMany).not.toHaveBeenCalled();
+    expect(next.handle).toHaveBeenCalledTimes(1);
   });
 
   it("rejects malformed key headers without writing to the database", async () => {

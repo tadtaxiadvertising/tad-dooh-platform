@@ -23,6 +23,7 @@
 5. Preserve a locked record after an error of uncertain side-effect status (fail closed). Do not delete, unlock, or retry as though the handler rolled back.
 6. Catch unique-key races as conflicts rather than unhandled database errors.
 7. Cron only deletes **completed** expired records; aged in-progress records generate an explicit reconciliation warning.
+8. Driver PWA's IndexedDB queue no longer deletes HTTP 409 items. It retains the action and **pauses FIFO delivery** to avoid applying a later bank change before an earlier uncertain one is reconciled. It never logs the sensitive queued payload when a transport error occurs.
 
 ## Trade-offs and known limits
 
@@ -33,6 +34,8 @@
 - Supabase's connected project may not be identical to EasyPanel's running runtime until the production project reference is checked without exposing credentials.
 - This PR should remain draft until end-to-end CI and staging integration tests are executed. A successful `prisma migrate deploy` alone does not prove idempotency correctness.
 
+- **Offline queue:** other non-409 4xx responses are still treated as terminal acknowledgements by the legacy driver queue. This is a separate data-loss/UX risk requiring a durable dead-letter queue; outside this minimum 409 reconciliation fix.
+
 ## Release safety gates
 
 1. Confirm restorable PostgreSQL backup/PITR and active app's database project reference.
@@ -41,8 +44,10 @@
 4. Exercise one financial mutation twice concurrently with the same Idempotency-Key: exactly one business side effect; second returns conflict until completion, then cached result.
 5. Simulate a handler error **after** a business commit: retry must remain blocked until reconciliation, and no second ledger entry should be created.
 6. Simulate offline queue reconnect and repeated command delivery on the player/driver; verify no duplicate payout or commission.
-7. Verify Supabase RLS and least-privilege grants: role `anon`/`authenticated` cannot read the key table directly.
-8. Validate API readiness, error logs, and rate of stale locks after rollout. Rollback should revert the application version without deleting the table or its history.
+7. Execute driver queue policy regression tests with Node 22:
+   `pnpm --filter driver run test:unit:offline`. Verify an HTTP 409 keeps the item in IndexedDB, pauses FIFO order, and never deletes a bank update on unknown outcome.
+8. Verify Supabase RLS and least-privilege grants: role `anon`/`authenticated` cannot read the key table directly.
+9. Validate API readiness, error logs, and rate of stale locks after rollout. Rollback should revert the application version without deleting the table or its history.
 
 ## Read-only production checks
 

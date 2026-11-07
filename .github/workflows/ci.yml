@@ -9,7 +9,7 @@ on:
 # ─── GATES ───────────────────────────────────────────────────────────────────────
 env:
   NODE_VERSION: "22"
-  PNPM_VERSION: "10"
+  PNPM_VERSION: "10.34.9"
   PRISMA_SCHEMA: "apps/api/prisma/schema.prisma"
 
 jobs:
@@ -28,6 +28,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+
+      - name: Verify pinned overrides match the frozen lockfile
+        run: node --test scripts/pnpm-overrides-contract.test.cjs
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

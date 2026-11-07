@@ -1,22 +1,36 @@
 import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
   BadRequestException,
+  CallHandler,
+  ConflictException,
+  ExecutionContext,
+  Injectable,
   Logger,
+  NestInterceptor,
 } from "@nestjs/common";
-import { Observable, of, throwError } from "rxjs";
-import { tap, catchError } from "rxjs/operators";
+import { createHash } from "node:crypto";
+import { from, Observable, of } from "rxjs";
+import { concatMap, map, tap } from "rxjs/operators";
 import { PrismaService } from "../../modules/prisma/prisma.service";
 
+type IdempotencyRequest = {
+  method: string;
+  path: string;
+  headers: Record<string, string | string[] | undefined>;
+  user?: { id?: string };
+  body?: unknown;
+  query?: unknown;
+};
+
 /**
- * VULN #4 PATCH (v12.1.2): DB-backed IdempotencyInterceptor
+ * DB-backed, fail-closed HTTP idempotency guard.
  *
- * Replaces in-memory Map with PostgreSQL-backed store:
- * - Survives pod restarts and OOM kills
- * - Works across multiple instances (horizontal scaling)
- * - Uses row-level locking (isLocked) to prevent concurrent processing of same key
+ * The unique database key is scoped to the authenticated user, HTTP method,
+ * path, and client-provided key. A SHA-256 fingerprint prevents a caller from
+ * reusing the same key with a different body/query.
+ *
+ * A downstream error is NOT proof that its side effects were rolled back.
+ * Keep unknown-outcome records locked for reconciliation, rather than
+ * allowing another attempt to charge/pay twice.
  */
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
@@ -28,104 +42,152 @@ export class IdempotencyInterceptor implements NestInterceptor {
     context: ExecutionContext,
     next: CallHandler,
   ): Promise<Observable<unknown>> {
-    const request = context.switchToHttp().getRequest();
+    const request =
+      context.switchToHttp().getRequest<IdempotencyRequest>();
     const method = request.method;
 
-    if (["POST", "PUT", "PATCH"].includes(method)) {
-      const idempotencyKey = request.headers["idempotency-key"];
+    if (!["POST", "PUT", "PATCH"].includes(method)) {
+      return next.handle();
+    }
 
-      if (!idempotencyKey) {
-        throw new BadRequestException({
-          code: "IDEMPOTENCY_KEY_MISSING",
-          message: "Idempotency-Key header is required for this operation",
+    const suppliedKey = request.headers["idempotency-key"];
+    if (
+      typeof suppliedKey !== "string" ||
+      suppliedKey.length === 0 ||
+      suppliedKey.length > 256 ||
+      suppliedKey.trim().length === 0
+    ) {
+      throw new BadRequestException({
+        code: "INVALID_IDEMPOTENCY_KEY",
+        message: "A nonempty Idempotency-Key header is required (max 256 characters).",
+      });
+    }
+
+    const actor = request.user?.id || "public";
+    const storageKey = createHash("sha256")
+      .update(JSON.stringify([actor, method, request.path, suppliedKey]))
+      .digest("hex");
+
+    let requestHash: string;
+    try {
+      requestHash = createHash("sha256")
+        .update(JSON.stringify([request.body ?? null, request.query ?? null]))
+        .digest("hex");
+    } catch {
+      throw new BadRequestException({
+        code: "INVALID_IDEMPOTENCY_BODY",
+        message: "Request cannot be fingerprinted for a safe retry.",
+      });
+    }
+
+    const existing = await this.prisma.idempotencyKey.findUnique({
+      where: { key: storageKey },
+    });
+
+    if (existing) {
+      if (
+        existing.requestHash !== requestHash ||
+        existing.method !== method ||
+        existing.path !== request.path ||
+        existing.driverId !== actor
+      ) {
+        throw new ConflictException({
+          code: "IDEMPOTENCY_PAYLOAD_CONFLICT",
+          message: "Idempotency-Key was already used with a different request.",
         });
       }
 
-      // Check DB for existing idempotency record with advisory lock
-      const existing = await this.prisma.idempotencyKey.findUnique({
-        where: { key: idempotencyKey },
-      });
-
-      if (existing) {
-        // M3: registrar vencido (expiresAt pasado) → descartar y re-procesar,
-        // en vez de devolver una respuesta cacheada de una operación expirada.
-        if (existing.expiresAt && existing.expiresAt.getTime() <= Date.now()) {
-          this.logger.warn(
-            `Idempotency key ${idempotencyKey} expiró (${existing.expiresAt.toISOString()}). Descartando y re-procesando.`,
-          );
-          try {
-            await this.prisma.idempotencyKey.delete({
-              where: { key: idempotencyKey },
-            });
-          } catch (e) {
-            // ignore: key pudo haber sido eliminada por un request concurrente
-          }
-        } else if (existing.isLocked) {
-          // If locked, another request is currently processing this key — reject
-          this.logger.warn(
-            `Idempotency key ${idempotencyKey} is currently being processed by another request.`,
-          );
-          throw new BadRequestException({
-            code: "IDEMPOTENCY_KEY_IN_PROGRESS",
-            message:
-              "This operation is currently being processed. Please retry in a few seconds.",
-          });
-        } else {
-          // Already completed and still valid — return cached response
-          this.logger.log(
-            `Idempotency key ${idempotencyKey} already processed. Returning cached response.`,
-          );
-          try {
-            const cached = existing.response
-              ? JSON.parse(existing.response)
-              : {};
-            return of(cached);
-          } catch {
-            return of({ success: true, idempotent: true });
-          }
-        }
+      // An in-flight or unknown-outcome operation must never be auto-retried,
+      // even when its normal 24h TTL has expired.
+      if (existing.isLocked) {
+        throw new ConflictException({
+          code: "IDEMPOTENCY_KEY_IN_PROGRESS",
+          message: "Operation outcome is pending reconciliation.",
+        });
       }
 
-      // Acquire lock: create record with isLocked=true
-      await this.prisma.idempotencyKey.create({
-        data: {
-          key: idempotencyKey,
-          driverId:
-            request.user?.entityId || request.body?.driverId || "unknown",
-          path: request.path,
-          response: "{ }",
-          isLocked: true,
-          expiresAt: new Date(Date.now() + 86400000), // 24h TTL
-        },
-      });
-
-      return next.handle().pipe(
-        tap(async (response) => {
-          // Release lock: update record with response payload and isLocked=false
-          await this.prisma.idempotencyKey.update({
-            where: { key: idempotencyKey },
-            data: {
-              response: JSON.stringify(response),
-              isLocked: false,
-            },
+      if (existing.expiresAt.getTime() <= Date.now()) {
+        // Delete only a completed record. A concurrent transition to locked
+        // must not be mistaken for an expired safe-to-retry operation.
+        const removed = await this.prisma.idempotencyKey.deleteMany({
+          where: { key: storageKey, isLocked: false },
+        });
+        if (removed.count !== 1) {
+          throw new ConflictException({
+            code: "IDEMPOTENCY_KEY_IN_PROGRESS",
+            message: "Operation is being processed concurrently.",
           });
-        }),
-        catchError(async (err) => {
-          // FASE 2 (Item 7): liberar el lock si el handler falló (p. ej. validaciones
-          // o rollback de $transaction). Sin esto la key quedaría "locked" 24h y el
-          // cliente no podría reintentar pese a que nada se persistió.
-          try {
-            await this.prisma.idempotencyKey.delete({
-              where: { key: idempotencyKey },
-            });
-          } catch (e) {
-            // ignore: key pudo no existir o ya fue eliminada
-          }
-          return throwError(() => err);
-        }),
-      );
+        }
+      } else {
+        if (existing.response == null || existing.response === "{ }") {
+          throw new ConflictException({
+            code: "IDEMPOTENCY_RESULT_UNAVAILABLE",
+            message: "Stored outcome is unavailable; reconciliation required.",
+          });
+        }
+        try {
+          return of(JSON.parse(existing.response) as unknown);
+        } catch {
+          throw new ConflictException({
+            code: "IDEMPOTENCY_RESULT_UNAVAILABLE",
+            message: "Stored outcome could not be decoded.",
+          });
+        }
+      }
     }
 
-    return next.handle();
+    try {
+      await this.prisma.idempotencyKey.create({
+        data: {
+          key: storageKey,
+          driverId: actor,
+          path: request.path,
+          method,
+          requestHash,
+          response: null,
+          isLocked: true,
+          expiresAt: new Date(Date.now() + 86_400_000),
+        },
+      });
+    } catch (error) {
+      // A concurrent request won the unique-key race. Fail closed.
+      if (
+        error != null &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        throw new ConflictException({
+          code: "IDEMPOTENCY_KEY_IN_PROGRESS",
+          message: "Operation is being processed concurrently.",
+        });
+      }
+      throw error;
+    }
+
+    return next.handle().pipe(
+      // Unlike tap(async ...), concatMap waits for the persisted result
+      // before acknowledging a successful write to the HTTP caller.
+      concatMap((response) =>
+        from(
+          this.prisma.idempotencyKey.update({
+            where: { key: storageKey },
+            data: {
+              response: JSON.stringify(response ?? null),
+              isLocked: false,
+            },
+          }),
+        ).pipe(map(() => response)),
+      ),
+      // A thrown error can occur AFTER an external payment/DB commit.
+      // Keep the lock and log a safe reconciliation signal, not raw keys.
+      tap({
+        error: () =>
+          this.logger.error(
+            "[IDEMPOTENCY_RECONCILIATION_REQUIRED] " +
+              "Unknown operation outcome; record remains locked.",
+          ),
+      }),
+    );
   }
 }

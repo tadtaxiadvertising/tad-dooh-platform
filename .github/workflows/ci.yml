@@ -117,6 +117,11 @@ jobs:
           set -euo pipefail
           pnpm --filter api test --runInBand
 
+      - name: Driver offline queue retry safety (Node 22)
+        run: |
+          set -euo pipefail
+          pnpm --filter driver run test:unit:offline
+
       # The root tests/e2e tree includes authenticated production audits and
       # mutating driver-registration flows. Never execute those against live
       # systems in an unprivileged push/PR job. Public browser E2E runs in the

@@ -106,33 +106,24 @@ export class IdempotencyInterceptor implements NestInterceptor {
         });
       }
 
-      if (existing.expiresAt.getTime() <= Date.now()) {
-        // Delete only a completed record. A concurrent transition to locked
-        // must not be mistaken for an expired safe-to-retry operation.
-        const removed = await this.prisma.idempotencyKey.deleteMany({
-          where: { key: storageKey, isLocked: false },
+      // Financial/offline retries can arrive after the 24-hour review horizon.
+      // A completed request must never be executed again just because its
+      // metadata expired. Replay the recorded result for the same fingerprint.
+      // Deduplication records require explicit archival with permanent key
+      // tombstones before deletion is ever safe (see issue #217).
+      if (existing.response == null || existing.response === "{ }") {
+        throw new ConflictException({
+          code: "IDEMPOTENCY_RESULT_UNAVAILABLE",
+          message: "Stored outcome is unavailable; reconciliation required.",
         });
-        if (removed.count !== 1) {
-          throw new ConflictException({
-            code: "IDEMPOTENCY_KEY_IN_PROGRESS",
-            message: "Operation is being processed concurrently.",
-          });
-        }
-      } else {
-        if (existing.response == null || existing.response === "{ }") {
-          throw new ConflictException({
-            code: "IDEMPOTENCY_RESULT_UNAVAILABLE",
-            message: "Stored outcome is unavailable; reconciliation required.",
-          });
-        }
-        try {
-          return of(JSON.parse(existing.response) as unknown);
-        } catch {
-          throw new ConflictException({
-            code: "IDEMPOTENCY_RESULT_UNAVAILABLE",
-            message: "Stored outcome could not be decoded.",
-          });
-        }
+      }
+      try {
+        return of(JSON.parse(existing.response) as unknown);
+      } catch {
+        throw new ConflictException({
+          code: "IDEMPOTENCY_RESULT_UNAVAILABLE",
+          message: "Stored outcome could not be decoded.",
+        });
       }
     }
 

@@ -29,7 +29,9 @@ export class HealthController {
   async checkFull() {
     const db = await this.prisma.getHealthMetrics();
     return {
-      status: "up",
+      // Preserve /health liveness for EasyPanel, but expose degraded
+      // readiness when API-to-tablet master sync cannot deliver campaigns.
+      status: db.connected && db.masterSyncViewReady ? "up" : "degraded",
       timestamp: new Date().toISOString(),
       service: "tad-backend-api",
       node_env: process.env.NODE_ENV,

@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { classifyOfflineQueueStatus } from "../../lib/offlineQueuePolicy.ts";
 
-test("409 cannot acknowledge or delete an offline financial action", () => {
-  assert.equal(classifyOfflineQueueStatus(409), "retain");
+test("409 retains the action and pauses FIFO processing", () => {
+  assert.equal(classifyOfflineQueueStatus(409), "pause");
 });
 
 test("successful HTTP responses acknowledge queued actions", () => {

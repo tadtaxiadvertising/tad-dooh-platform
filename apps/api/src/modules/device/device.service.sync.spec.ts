@@ -61,8 +61,8 @@ describe("DeviceService synced license and command delivery", () => {
       media_assets: [],
       commands: [{ id: "command-01", type: "FORCE_SYNC", params: { force: true } }],
     });
-    expect(payload.licenseToken).toEqual(expect.any(String));
-    expect(payload.expiresAt).toEqual(expect.any(String));
+    expect(payload).toHaveProperty("licenseToken", expect.any(String));
+    expect(payload).toHaveProperty("expiresAt", expect.any(String));
     expect(prisma.deviceCommand.updateMany).toHaveBeenCalledWith({
       where: { id: { in: ["command-01"] }, status: "PENDING" },
       data: { status: "PROCESSING" },
@@ -83,8 +83,8 @@ describe("DeviceService synced license and command delivery", () => {
       sync_hash: "empty",
       commands: [{ id: "command-01", type: "FORCE_SYNC" }],
     });
-    expect(payload.licenseToken).toEqual(expect.any(String));
-    expect(payload.expiresAt).toEqual(expect.any(String));
+    expect(payload).toHaveProperty("licenseToken", expect.any(String));
+    expect(payload).toHaveProperty("expiresAt", expect.any(String));
   });
 
   it("does not mark commands as PROCESSING if stored params cannot be decoded", async () => {

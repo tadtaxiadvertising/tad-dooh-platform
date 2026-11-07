@@ -110,7 +110,7 @@ export class BiScheduler {
    */
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async handleIdempotencyCleanup() {
-    this.logger.log("🧹 [IDEMPOTENCY_TTL] Purging expired idempotency keys...");
+    this.logger.log("🔎 [IDEMPOTENCY_RETENTION] Checking records for reconciliation/archival...");
     try {
       // An old lock may represent a payment that committed just before
       // an API crash. Never release it based on age alone.
@@ -127,15 +127,23 @@ export class BiScheduler {
         );
       }
 
-      // Only completed records may expire automatically. Unknown-outcome
-      // records remain blocked until manually reconciled.
-      const deleted = await this.prisma.idempotencyKey.deleteMany({
+      // A completed payment can be retried after long offline periods.
+      // Never delete its deduplication key based on age alone. Inspect the
+      // expiry horizon cheaply via the index; archival requires permanent
+      // key tombstones + an approved retention/reconciliation plan.
+      const archiveCandidate = await this.prisma.idempotencyKey.findFirst({
         where: {
           expiresAt: { lt: new Date() },
           isLocked: false,
         },
+        select: { id: true },
       });
-      this.logger.log(`✅ Purged ${deleted.count} expired completed idempotency keys.`);
+      if (archiveCandidate) {
+        this.logger.warn(
+          "[IDEMPOTENCY_ARCHIVE_REQUIRED] Completed keys older than " +
+            "the review horizon are retained to prevent duplicate payments.",
+        );
+      }
     } catch (error) {
       this.logger.error("❌ Error in idempotency cleanup:", error.message);
     }

@@ -63,4 +63,30 @@ describe("SystemSettingsService", () => {
       expect.stringContaining("base de datos no está disponible"),
     );
   });
+
+  it("preserves previously configured commercial values during startup seeding", async () => {
+    const upsert = jest.fn().mockResolvedValue(undefined);
+    const prisma = {
+      isDatabaseAvailable: true,
+      systemSetting: { upsert },
+    };
+    const module = await Test.createTestingModule({
+      providers: [
+        SystemSettingsService,
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
+    const service = module.get(SystemSettingsService);
+
+    await service.onModuleInit();
+
+    for (const key of ["slotPrice", "referralFee", "subscriptionPrice"]) {
+      expect(upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { key },
+          update: {},
+        }),
+      );
+    }
+  });
 });

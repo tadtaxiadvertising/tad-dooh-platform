@@ -122,7 +122,8 @@ export class BiScheduler {
       });
       if (uncertain > 0) {
         this.logger.warn(
-          `[IDEMPOTENCY_RECONCILIATION_REQUIRED] ${uncertain} aged in-flight records remain locked; investigate before retrying.`,
+          `[IDEMPOTENCY_RECONCILIATION_REQUIRED] ${uncertain} aged in-flight ` +
+            "records remain locked; investigate before retrying.",
         );
       }
 

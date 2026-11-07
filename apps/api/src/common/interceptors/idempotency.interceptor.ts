@@ -184,7 +184,8 @@ export class IdempotencyInterceptor implements NestInterceptor {
       tap({
         error: () =>
           this.logger.error(
-            "[IDEMPOTENCY_RECONCILIATION_REQUIRED] Unknown operation outcome; record remains locked.",
+            "[IDEMPOTENCY_RECONCILIATION_REQUIRED] " +
+              "Unknown operation outcome; record remains locked.",
           ),
       }),
     );

@@ -54,18 +54,19 @@ SELECT
      WHERE dc."campaign_id" = c."id"),
     '[]'::jsonb
   ) AS assigned_device_uuids,
-  COALESCE(
-    (SELECT jsonb_agg(DISTINCT hw.device_id)
-     FROM (
-       SELECT dc."device_id"
+  (
+    COALESCE(
+      (SELECT jsonb_agg(DISTINCT dc."device_id")
        FROM "public"."device_campaigns" dc
-       WHERE dc."campaign_id" = c."id"
-       UNION
-       SELECT pi."device_id"
+       WHERE dc."campaign_id" = c."id"),
+      '[]'::jsonb
+    ) ||
+    COALESCE(
+      (SELECT jsonb_agg(DISTINCT pi."device_id")
        FROM "public"."playlist_items" pi
-       WHERE pi."campaign_id" = c."id"
-     ) AS hw),
-    '[]'::jsonb
+       WHERE pi."campaign_id" = c."id"),
+      '[]'::jsonb
+    )
   ) AS assigned_hw_ids,
   COALESCE(
     (SELECT jsonb_agg(DISTINCT d."id")

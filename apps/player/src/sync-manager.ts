@@ -89,6 +89,7 @@ export class SyncManager {
       // Kill-switch check
       if (payload.blocked) {
         const reason = payload.reason || "awaiting_approval";
+        this.revokeOfflineLicense();
         this.onKillSwitch(reason);
         return;
       }
@@ -134,13 +135,27 @@ export class SyncManager {
     if (!this.isOnline || !this.deviceId) return;
 
     try {
-      const response = await fetch(`${env.API_URL}/sync/${this.deviceId}`);
+      const response = await fetch(`${env.API_URL}/sync/${this.deviceId}`, {
+        cache: "no-store",
+      });
+      if ([402, 403, 404].includes(response.status)) {
+        const reason =
+          response.status === 402
+            ? "SUBSCRIPTION_UNPAID"
+            : response.status === 403
+              ? "DEVICE_DEACTIVATED"
+              : "DEVICE_NOT_FOUND_IN_CLUSTER";
+        this.revokeOfflineLicense();
+        this.onKillSwitch(reason);
+        return;
+      }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const manifest: SyncManifest = await response.json();
 
       // Kill-switch from manifest
       if (manifest.killSwitch) {
+        this.revokeOfflineLicense();
         this.onKillSwitch(manifest.killSwitchReason || "SUBSCRIPTION_UNPAID");
         return;
       }
@@ -334,6 +349,17 @@ export class SyncManager {
   // ── Fix #4: Offline License Persistence & Self-Destruct ──
   // Persiste el JWT de licencia offline y su fecha de expiración en localStorage.
   // Inicia un validator que evalúa cada 5 min si la licencia sigue válida.
+  // Revocation changes authorization only; retain downloaded creatives so
+  // they can be re-used after the device is legitimately reauthorized.
+  private revokeOfflineLicense(): void {
+    this.offlineLicenseExpiresAt = null;
+    try {
+      localStorage.removeItem("TAD_OFFLINE_LICENSE");
+    } catch {
+      // A blocked device must still receive its kill switch if storage fails.
+    }
+  }
+
   private persistOfflineLicense(token: string, expiresAt: string): void {
     try {
       const expiresAtMs = new Date(expiresAt).getTime();

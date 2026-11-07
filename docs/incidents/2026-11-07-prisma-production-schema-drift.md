@@ -30,7 +30,7 @@ The existing `SystemSettingsService.onModuleInit` seeds defaults on startup with
 
 1. Take and **verify** a restorable backup/snapshot. Record point-in-time recovery capability and a recovery owner. Do not copy customer data into issues or logs.
 2. Record production deployment SHA, active Supabase project, `DATABASE_URL` and `DIRECT_URL` **hosts only** (never print credential strings).
-3. Run read-only checks below and archive counts, column types, foreign keys, RLS settings, and migration status.
+3. Run read-only checks below and archive counts, column types, foreign keys, RLS settings, and migration status. From `apps/api`, run `node scripts/check-prisma-drift.cjs` with a **read-only** `DIRECT_URL` or `DATABASE_URL`; this script reports missing models, columns, and primary-key type mismatches without touching data. Exit code 1 means drift exists, and 2 means the check could not complete. Never log the URL.
 4. Review the targeted migration and the financial defaults. Deploy to a staging database that has a representative schema and synthetic data. Run API build and focused Jest tests.
 5. After required approvals, merge the PR and deploy the API image. Its entrypoint uses `prisma migrate deploy` and will pick up the new migration. Never use `prisma migrate reset`, `prisma db push`, or bulk `migrate resolve --applied` on production.
 6. Verify `public.system_settings` existence, column types, `relrowsecurity`, no grants to `anon`/`authenticated`, seed idempotency, admin configuration endpoints, and health checks.

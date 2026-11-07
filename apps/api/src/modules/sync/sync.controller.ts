@@ -34,7 +34,7 @@ export class SyncController {
     const manifest = await this.syncService.getDeviceManifest(deviceId);
 
     res.setHeader("Cache-Control", "private, no-store");
-    if (manifest.killSwitch === true) {
+    if ("killSwitch" in manifest && manifest.killSwitch === true) {
       res.status(HttpStatus.PAYMENT_REQUIRED).json(manifest);
       return;
     }

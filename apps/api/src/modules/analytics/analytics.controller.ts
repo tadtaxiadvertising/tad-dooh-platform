@@ -97,6 +97,7 @@ export class AnalyticsController {
   }
 
   @Get("campaign/:id")
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getCampaignAnalytics(
     @Param("id") campaignId: string,
     @Req() req: AuthenticatedRequest,

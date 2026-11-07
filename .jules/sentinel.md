@@ -7,3 +7,8 @@
 **Vulnerability:** `SimulationController` was annotated with `@Public()` and `@SkipThrottle()`, allowing unauthenticated public requests to start resource-heavy simulations (`/scenario`), halt running simulations (`/stop`), and execute batch deletion of database records (`/purge`).
 **Learning:** Administrative and load-simulation controllers originally built for local testing often retain permissive public decorators when deployed, creating denial of service and data tampering risks in shared environments.
 **Prevention:** Never mark simulation or state-mutating management controllers with `@Public()`. Ensure all administrative endpoints explicitly enforce `@Roles(UserRole.ADMIN)` so `RolesGuard` and `SupabaseAuthGuard` reject unauthenticated or non-admin callers.
+
+## 2026-04-01 - Enforce Role-Based Access Control on Campaign Analytics Endpoints
+**Vulnerability:** `GET /analytics/campaign/:id` in `AnalyticsController` omitted the `@Roles(...)` decorator, allowing non-admin and non-advertiser authenticated accounts (such as `DRIVER`) to query campaign analytics without triggering `RolesGuard` or handler-level ownership validation.
+**Learning:** In this NestJS architecture, `RolesGuard` permits access when no `@Roles(...)` decorator is configured on the route handler or class, making endpoints accessible to any authenticated role unless `@Roles` is explicitly declared.
+**Prevention:** Always annotate endpoints handling sensitive or tenant-scoped metrics with `@Roles(UserRole.ADMIN, UserRole.ADVERTISER)` and include unit tests verifying RBAC metadata on controller methods.

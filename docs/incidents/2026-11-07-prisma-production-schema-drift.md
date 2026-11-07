@@ -1,7 +1,7 @@
 # Incident: Prisma migration history diverges from the production schema
 
 **Date:** 2026-11-07  
-**Environment:** TAD API / connected Supabase us-west-2 project  
+**Environment:** connected Supabase us-west-2 project; exact runtime database reference **must be verified** against EasyPanel deployment host (region alone is not proof).  
 **Severity:** P1 (availability, integrity); financial flows require P0-level change controls.  
 **Status:** Diagnosed; targeted migration proposed; production repair not verified.
 
@@ -68,4 +68,6 @@ WHERE table_schema = 'public' AND table_name = 'system_settings';
 
 ## Completion criteria
 
-Track the remaining schema recovery in issue #217. The targeted fix is only **verified** once its migration executes in the intended database and a live API startup + settings endpoint works. Full incident closure additionally requires a tracked remediation for the 30 other missing models and incompatible key types, with automated regression checks. A green `migrate deploy` alone is insufficient.
+Track the remaining schema recovery in issue #217. For the connected Supabase instance, verify runtime identity first: the observed app log states a us-west-2 pooler host but omits the project reference; different projects can share a region. Confirm DB URL project reference using host-only, redacted inspection of deployment settings before applying any DDL.
+
+The targeted fix is only **verified** once its migration executes in the intended database and a live API startup + settings endpoint works. Full incident closure additionally requires a tracked remediation for the 30 other missing models and incompatible key types, with automated regression checks. A green `migrate deploy` alone is insufficient.

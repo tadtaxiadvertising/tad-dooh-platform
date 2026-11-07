@@ -112,23 +112,29 @@ export class BiScheduler {
   async handleIdempotencyCleanup() {
     this.logger.log("🧹 [IDEMPOTENCY_TTL] Purging expired idempotency keys...");
     try {
-      // Release stale locks first (PROCESSING keys older than 1h are orphans from crashed requests)
-      const staleLocks = await this.prisma.idempotencyKey.updateMany({
+      // An old lock may represent a payment that committed just before
+      // an API crash. Never release it based on age alone.
+      const uncertain = await this.prisma.idempotencyKey.count({
         where: {
           isLocked: true,
-          createdAt: { lt: new Date(Date.now() - 3600000) }, // older than 1h
+          createdAt: { lt: new Date(Date.now() - 3_600_000) },
         },
-        data: { isLocked: false },
       });
-      this.logger.log(
-        `⚠ Released ${staleLocks.count} stale idempotency locks (orphaned from crashed requests).`,
-      );
+      if (uncertain > 0) {
+        this.logger.warn(
+          `[IDEMPOTENCY_RECONCILIATION_REQUIRED] ${uncertain} aged in-flight records remain locked; investigate before retrying.`,
+        );
+      }
 
-      // Purge all expired keys (expiresAt < now)
+      // Only completed records may expire automatically. Unknown-outcome
+      // records remain blocked until manually reconciled.
       const deleted = await this.prisma.idempotencyKey.deleteMany({
-        where: { expiresAt: { lt: new Date() } },
+        where: {
+          expiresAt: { lt: new Date() },
+          isLocked: false,
+        },
       });
-      this.logger.log(`✅ Purged ${deleted.count} expired idempotency keys.`);
+      this.logger.log(`✅ Purged ${deleted.count} expired completed idempotency keys.`);
     } catch (error) {
       this.logger.error("❌ Error in idempotency cleanup:", error.message);
     }

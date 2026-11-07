@@ -22,6 +22,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:drift:check": "node scripts/check-prisma-drift.cjs",
     "prisma:drift:test": "node --test scripts/prisma-drift-core.test.cjs",
+    "db:target:test": "node --test scripts/check-supabase-target.test.cjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",

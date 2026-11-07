@@ -64,7 +64,7 @@ describe("SystemSettingsService", () => {
     );
   });
 
-  it("preserves previously configured commercial values during startup seeding", async () => {
+  it("does not auto-create unapproved financial settings during startup", async () => {
     const upsert = jest.fn().mockResolvedValue(undefined);
     const prisma = {
       isDatabaseAvailable: true,
@@ -80,13 +80,14 @@ describe("SystemSettingsService", () => {
 
     await service.onModuleInit();
 
-    for (const key of ["slotPrice", "referralFee", "subscriptionPrice"]) {
-      expect(upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { key },
-          update: {},
-        }),
-      );
+    const keys = upsert.mock.calls.map(([query]) => query.where.key);
+    expect(keys).toContain("platformName");
+    expect(keys).toContain("driverAppLatestVersion");
+    expect(keys).not.toContain("slotPrice");
+    expect(keys).not.toContain("referralFee");
+    expect(keys).not.toContain("subscriptionPrice");
+    for (const [query] of upsert.mock.calls) {
+      expect(query.update).toEqual({});
     }
   });
 });

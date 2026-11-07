@@ -3,7 +3,7 @@
 **Date:** 2026-11-07  
 **Environment:** connected Supabase us-west-2 project; exact runtime database reference **must be verified** against EasyPanel deployment host (region alone is not proof).  
 **Severity:** P1 (availability, integrity); financial flows require P0-level change controls.  
-**Status:** Diagnosed; targeted migration proposed; production repair not verified.
+**Status:** Targeted migration merged/applied in connected Supabase project; full schema drift unresolved.
 
 ## Evidence (read-only queries, 2026-11-07)
 
@@ -18,7 +18,21 @@
    - SQL syntax errors (`42601`).
 6. **14 of the 19 present model-mapped tables with an `id` column** have PostgreSQL `uuid` identifiers where the current Prisma model declares a TEXT-backed String primary key. Examples include `devices`, `campaigns`, `wallets`, `telemetry`, `financial_transactions`, `invoices`, and `playback_events`. Separately, `drivers.id` is `text` while `telemetry.driver_id` and `wallets.driver_id` are `uuid`. Do not rewrite their types or recreate foreign keys without checking rows and dependencies.
 
-## Targeted change in this PR
+## Post-merge verification — 2026-11-07 20:44 UTC
+
+PR #216 was merged at 20:35:57 UTC; the connected Supabase project records `20261107_restore_system_settings` as applied at 20:40:11 UTC. Read-only verification returned:
+- `public.system_settings` exists with **15 rows**;
+- RLS enabled, and `anon`/`authenticated` SELECT on that table denied;
+- `_prisma_migrations` now lists **19 completed** entries, with **11 historical failure logs still present**;
+- `public` has 25 base tables total, so **30 of the 52 Prisma model-mapped tables remain absent**;
+- The first startup inserted `slotPrice=500`, `referralFee=500` and `subscriptionPrice=6000` into `system_settings`. These are **observed values, not commercially approved values**. They must not be changed/deleted without explicit financial signoff.
+
+The original `system_settings` table-missing incident is **resolved only for this inspected project**, not a full API availability signoff. The application's EasyPanel runtime project ref still requires independent verification (do not assume based on region).
+
+Follow-up branch `fix/protect-financial-seed-and-db-target-20261107` addresses new-startup financial defaults, admin display of persisted data, and redacted DB target preflight. It does **not** mutate current financial rows.
+
+## Targeted change in prior PR #216
+
 
 The migration `20261107_restore_system_settings` adds only the missing `public.system_settings` table and its unique key index. It follows the Prisma model mapping, enables RLS, and revokes anonymous/authenticated Data API privileges.
 

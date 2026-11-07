@@ -12,7 +12,8 @@ export const classifyOfflineQueueStatus = (
 ): OfflineQueueDisposition => {
   if (status >= 200 && status < 300) return "ack";
   if (status === 401 || status === 402) return "pause";
-  if (status === 409) return "retain";
+  // Retain the item and pause FIFO processing to preserve action ordering.
+  if (status === 409) return "pause";
 
   // Preserve previous handling of other terminal 4xx responses. A future
   // dead-letter queue should retain their payloads for user review.

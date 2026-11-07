@@ -265,6 +265,7 @@ export class PrismaService
   async getHealthMetrics(): Promise<{
     connected: boolean;
     activeConnections?: number;
+    masterSyncViewReady: boolean;
   }> {
     try {
       const result = await this.$queryRaw<{ active_connections: bigint }[]>`
@@ -273,9 +274,10 @@ export class PrismaService
       return {
         connected: true,
         activeConnections: Number(result[0]?.active_connections ?? 0),
+        masterSyncViewReady: await this.checkMasterSyncViewReady(),
       };
     } catch {
-      return { connected: false };
+      return { connected: false, masterSyncViewReady: false };
     }
   }
 }

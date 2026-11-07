@@ -163,16 +163,14 @@ export const syncOfflineQueue = async () => {
         }
 
         if (disposition === "pause") {
+          if (response.status === 409) {
+            // Preserve strict FIFO order: a later bank update may depend on
+            // the operation that is still awaiting reconciliation.
+            console.warn(
+              "[OfflineQueue] HTTP 409: action retained; FIFO sync paused.",
+            );
+          }
           break;
-        }
-
-        if (response.status === 409) {
-          // A 409 may mean the server has an in-progress/unknown-outcome
-          // financial action. Keep it in IndexedDB for reconciliation.
-          // Continue with independent queued actions without dropping this one.
-          console.warn(
-            "[OfflineQueue] Conflict retained for reconciliation (HTTP 409).",
-          );
         }
       } catch (error) {
         // Never log offline payloads: they can include financial or bank data.

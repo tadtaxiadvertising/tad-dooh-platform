@@ -171,8 +171,7 @@ model Media {
   name             String?
   filename         String?
   originalFilename String?   @map("original_filename")
-  mime_type        String?   @map("mime_type")
-  mimeType         String?
+  mimeType         String?   @map("mime_type")
   size             BigInt?
   fileSize         BigInt?   @map("file_size")
   durationSeconds  Int?      @map("duration_seconds")

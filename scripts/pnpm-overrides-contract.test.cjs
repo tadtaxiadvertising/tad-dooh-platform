@@ -33,7 +33,7 @@ test("advertiser Docker build uses a fixed pnpm v10 and a frozen lockfile", () =
 test("all application Docker builders pin the CI pnpm release and preserve frozen installs", () => {
   for (const name of ["api", "admin", "driver", "player", "advertiser"]) {
     const docker = fs.readFileSync(path.join(root, `Dockerfile.${name}`), "utf8");
-    assert.match(docker, /^RUN npm install -g pnpm@10\.34\.9$/m, `${name}: pin pnpm`);
+    assert.match(docker, /(?:^RUN |&& )npm install -g pnpm@10\.34\.9$/m, `${name}: pin pnpm`);
     assert.match(docker, /^RUN pnpm install --frozen-lockfile(?:\s|$)/m, `${name}: frozen install`);
     assert.doesNotMatch(docker, /^RUN pnpm install --no-frozen-lockfile/m);
   }

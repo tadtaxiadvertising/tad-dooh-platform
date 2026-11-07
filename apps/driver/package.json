@@ -14,7 +14,8 @@
     "test:e2e:gps": "playwright test tests/e2e/gps-batch-sync.spec.ts",
     "test:e2e:report": "playwright show-report",
     "test:e2e:ci": "playwright test --reporter=github",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:unit:offline": "node --experimental-strip-types --test tests/unit/offlineQueuePolicy.test.mjs"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

@@ -5,8 +5,6 @@ import {
   Logger,
 } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
-import * as fs from "fs";
-import * as path from "path";
 
 /**
  * Supabase's shared pooler requires `postgres.<project-ref>` as the database
@@ -50,6 +48,10 @@ export class PrismaService
 {
   private readonly logger = new Logger(PrismaService.name);
   private databaseAvailable = false;
+  private masterSyncViewReady = false;
+  private masterSyncNextCheckAt = 0;
+  private masterSyncWarningEmitted = false;
+
 
   /**
    * Indicates whether the initial database connection completed successfully.
@@ -131,12 +133,9 @@ export class PrismaService
           `✅ Conexión establecida con éxito en el intento ${attempts + 1}`,
         );
 
-        // Async background initialization to keep startup lean
-        this.initializeSreViews().catch((e) => {
-          this.logger.error(
-            `❌ Fallo en inicialización de fondo: ${e.message}`,
-          );
-        });
+        // DDL belongs in versioned migrations, NEVER during API bootstrap.
+        // Verify the runtime contract read-only and surface one clear error.
+        await this.checkMasterSyncViewReady();
 
         return;
       } catch (e) {
@@ -176,69 +175,52 @@ export class PrismaService
   }
 
   /**
-   * REGLA SRE: Inicializar Vistas Materializadas en segundo plano
+   * Read-only preflight: no DROP/CREATE/REFRESH runs during NestJS startup.
+   * Keep the result briefly cached to avoid overloading the Supabase pooler
+   * when many campaigns/devices trigger refresh requests.
+   *
+   * The view is provisioned explicitly via versioned Prisma migrations.
+   * An absent or unpopulated view is an operational fault, never a success.
    */
-  private async initializeSreViews() {
+  private async checkMasterSyncViewReady(): Promise<boolean> {
+    const now = Date.now();
+    if (now < this.masterSyncNextCheckAt) {
+      return this.masterSyncViewReady;
+    }
+    this.masterSyncNextCheckAt = now + 60_000;
+
     try {
-      this.logger.log(
-        "🏗️ Sincronizando Vistas Materializadas (Master Sync)...",
-      );
-      const viewsFile = path.resolve(process.cwd(), "prisma/views.sql");
+      const views = await this.$queryRaw<{ ispopulated: boolean }[]>`
+        SELECT ispopulated
+        FROM pg_catalog.pg_matviews
+        WHERE schemaname = 'public'
+          AND matviewname = 'mv_active_campaigns'
+      `;
+      this.masterSyncViewReady = views[0]?.ispopulated === true;
 
-      if (!fs.existsSync(viewsFile)) {
-        this.logger.warn("⚠️ No se encontró prisma/views.sql. Saltando.");
-        return;
+      if (!this.masterSyncViewReady && !this.masterSyncWarningEmitted) {
+        this.logger.error(
+          "[MASTER_SYNC_VIEW_UNAVAILABLE] public.mv_active_campaigns " +
+            "is missing or unpopulated. Restore via reviewed migration; " +
+            "do not drop/recreate it during startup.",
+        );
+        this.masterSyncWarningEmitted = true;
+      } else if (this.masterSyncViewReady && this.masterSyncWarningEmitted) {
+        this.logger.log("[MASTER_SYNC_VIEW_READY] Materialized view available.");
+        this.masterSyncWarningEmitted = false;
       }
-
-      const sql = fs.readFileSync(viewsFile, "utf8");
-
-      // PgBouncer (Supabase Pooler) no soporta multi-statement; dividimos
-      // el SQL en statements individuales respetando bloques PL/pgSQL
-      // con dollar-quoted strings ($$...$$).
-      const statements = this.splitSqlStatements(sql);
-
-      for (const query of statements) {
-        await this.$executeRawUnsafe(query).catch((e) => {
-          if (!e.message.includes("already exists")) {
-            this.logger.error(`Error SQL en vista: ${e.message}`);
-          }
-        });
+      return this.masterSyncViewReady;
+    } catch {
+      this.masterSyncViewReady = false;
+      if (!this.masterSyncWarningEmitted) {
+        this.logger.error(
+          "[MASTER_SYNC_VIEW_CHECK_FAILED] Could not verify " +
+            "public.mv_active_campaigns. Check PostgreSQL access and migration state.",
+        );
+        this.masterSyncWarningEmitted = true;
       }
-      this.logger.log("✅ Master Sync Views configuradas.");
-    } catch (viewError) {
-      this.logger.error(
-        `❌ Fallo al cargar script de vistas: ${(viewError as Error).message}`,
-      );
+      return false;
     }
-  }
-
-  /**
-   * Divide SQL en statements individuales respetando bloques de código
-   * PL/pgSQL delimitados por $$ (dollar-quoted strings). El split simple
-   * por `;` rompe definiciones de función en medio (CREATE FUNCTION ... $$).
-   */
-  private splitSqlStatements(sql: string): string[] {
-    const statements: string[] = [];
-    let current = "";
-    let dollarDepth = 0;
-    for (let i = 0; i < sql.length; i++) {
-      const c = sql[i];
-      current += c;
-      // Track dollar-quote depth: "$$" toggles inside/outside PL block
-      if (c === "$" && i + 1 < sql.length && sql[i + 1] === "$") {
-        dollarDepth++;
-        i++;
-        current += sql[i];
-      } else if (c === ";" && dollarDepth % 2 === 0) {
-        // Semicolon outside dollar-quoted block → statement boundary
-        const trimmed = current.replace(/;\s*$/, "").trim();
-        if (trimmed.length > 0) statements.push(trimmed + ";");
-        current = "";
-      }
-    }
-    const trimmed = current.trim();
-    if (trimmed.length > 0) statements.push(trimmed);
-    return statements;
   }
 
   // REGLA SRE: Cerrar conexiones zombie al re-desplegar en EasyPanel
@@ -254,17 +236,22 @@ export class PrismaService
    * Se debe llamar cada vez que una campaña sea aprobada o modificada.
    */
   async refreshActiveCampaignsView() {
+    if (!(await this.checkMasterSyncViewReady())) {
+      // Never attempt a refresh against a missing MV or pretend success.
+      // Device sync still receives its explicit failure from the sync service.
+      return;
+    }
     this.logger.log("🔄 Refrescando Materialized View (Master Sync)...");
     try {
       await this.$executeRawUnsafe(
-        "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_active_campaigns;",
+        "REFRESH MATERIALIZED VIEW CONCURRENTLY public.mv_active_campaigns;",
       );
       this.logger.log("✅ mv_active_campaigns actualizada con éxito.");
     } catch (e) {
       if (e.message.includes("not been populated")) {
         // Fallback if not populated yet
         await this.$executeRawUnsafe(
-          "REFRESH MATERIALIZED VIEW mv_active_campaigns;",
+          "REFRESH MATERIALIZED VIEW public.mv_active_campaigns;",
         );
       } else {
         this.logger.error(`❌ Error al refrescar vista: ${e.message}`);

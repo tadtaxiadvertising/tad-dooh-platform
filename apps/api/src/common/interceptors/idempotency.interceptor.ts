@@ -9,7 +9,7 @@ import {
 } from "@nestjs/common";
 import { createHash } from "node:crypto";
 import { from, Observable, of } from "rxjs";
-import { concatMap, map } from "rxjs/operators";
+import { concatMap, map, tap } from "rxjs/operators";
 import { PrismaService } from "../../modules/prisma/prisma.service";
 
 type IdempotencyRequest = {
@@ -179,8 +179,14 @@ export class IdempotencyInterceptor implements NestInterceptor {
           }),
         ).pipe(map(() => response)),
       ),
-      // No catchError/delete: a thrown error may happen AFTER an external
-      // payment or database commit. Do not unlock without reconciliation.
+      // A thrown error can occur AFTER an external payment/DB commit.
+      // Keep the lock and log a safe reconciliation signal, not raw keys.
+      tap({
+        error: () =>
+          this.logger.error(
+            "[IDEMPOTENCY_RECONCILIATION_REQUIRED] Unknown operation outcome; record remains locked.",
+          ),
+      }),
     );
   }
 }

@@ -35,6 +35,7 @@ The runtime view definition is out of sync with physical tables, and data-defini
 6. The new MV only includes `status='ACTIVE'`, `active=true`, and campaigns within their approved date window. This prevents unapproved/pending-payment campaigns from playing even if they have `active=true` by default.
 7. For explicit device assignment, handle both hardware IDs and UUID-form strings in the materialized aggregates; current database `device_campaigns.device_id` is TEXT, so a UUID-only join would underdeliver.
 8. Revoke default public execution of `refresh_active_campaigns()` without changing its invoker security context.
+9. Harden `CampaignService.getActiveSyncVideos()` fallback to require `status='ACTIVE'` as well as `active=true` and valid dates, so a missing MV cannot cause delivery of unapproved/pending-payment ads.
 
 ## Important trade-offs and limitations
 
@@ -52,7 +53,7 @@ The runtime view definition is out of sync with physical tables, and data-defini
 3. Apply this migration to a **staging restore** with representative UUID/TEXT schema and synthetic seeded campaigns/devices/drivers. Test `prisma migrate deploy`, `prisma validate`, client generate, and strict API TypeScript.
 4. Verify `mv_active_campaigns` exists with `ispopulated=true` and a unique unconditional `campaign_id` index. Run `REFRESH MATERIALIZED VIEW CONCURRENTLY` on staging; PostgreSQL requires a populated view plus such an index.
 5. Test global, city, multi-city, device UUID, device hardware ID, driver, negative targeting, expiry, and pending-payment campaigns; ensure **at most 15 slots** and no unauthorized creative delivery.
-6. Run focused PrismaService and HealthController Jest tests; verify bootstrap never executes DROP/CREATE, returns one clear warning when view missing, and `/health/full` reports degradation.
+6. Run focused PrismaService and HealthController Jest tests plus the dependency-free 6-case master-sync contract; verify approved-only campaign fallback; verify bootstrap never executes DROP/CREATE, returns one clear warning when view missing, and `/health/full` reports degradation.
 7. Verify `anon` and `authenticated` cannot directly select the MV, change the implicit relation, or execute the refresh helper. Exercise protected NestJS manifest endpoints with the device's real authorization token.
 8. Check offline→reconnect→sync→reconciliation on a tablet/player fixture; if the API is temporarily degraded, existing cached ads must not be wiped.
 9. At 10x campaigns/devices, confirm refresh latency, index cost, PostgreSQL pool usage and no per-request refresh/DDL storms.

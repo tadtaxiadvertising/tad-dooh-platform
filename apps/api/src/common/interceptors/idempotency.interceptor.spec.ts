@@ -197,6 +197,62 @@ describe("IdempotencyInterceptor — financial and offline retry safety", () => 
     expect(prisma.idempotencyKey.deleteMany).not.toHaveBeenCalled();
   });
 
+  it("keeps an unknown outcome locked when saving a committed result fails", async () => {
+    const prisma = makePrisma();
+    prisma.idempotencyKey.update.mockRejectedValue(
+      new Error("database write unavailable"),
+    );
+    const interceptor = new IdempotencyInterceptor(
+      prisma as unknown as PrismaService,
+    );
+    const next = { handle: jest.fn(() => of({ withdrawalId: "w-1" })) };
+
+    const response$ = await interceptor.intercept(
+      makeContext().context,
+      next as CallHandler,
+    );
+
+    await expect(firstValueFrom(response$)).rejects.toThrow(
+      "database write unavailable",
+    );
+    expect(prisma.idempotencyKey.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.idempotencyKey.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ isLocked: true }),
+      }),
+    );
+  });
+
+  it("reprocesses an expired completed record only after safely removing it", async () => {
+    const prisma = makePrisma();
+    const interceptor = new IdempotencyInterceptor(
+      prisma as unknown as PrismaService,
+    );
+    const { context } = makeContext();
+    const next = { handle: jest.fn(() => of({ accepted: true })) };
+
+    await firstValueFrom(
+      await interceptor.intercept(context, next as CallHandler),
+    );
+    prisma.idempotencyKey.findUnique.mockResolvedValue({
+      ...prisma.idempotencyKey.create.mock.calls[0][0].data,
+      isLocked: false,
+      response: JSON.stringify({ accepted: true }),
+      expiresAt: new Date(0),
+    });
+
+    await firstValueFrom(
+      await interceptor.intercept(context, next as CallHandler),
+    );
+    expect(prisma.idempotencyKey.deleteMany).toHaveBeenCalledWith({
+      where: {
+        key: expect.any(String),
+        isLocked: false,
+      },
+    });
+    expect(next.handle).toHaveBeenCalledTimes(2);
+  });
+
   it("rejects malformed key headers without writing to the database", async () => {
     const prisma = makePrisma();
     const interceptor = new IdempotencyInterceptor(

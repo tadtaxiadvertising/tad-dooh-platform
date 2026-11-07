@@ -46,7 +46,7 @@ CREATE TABLE "public"."notification_queue" (
     "id" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "category" TEXT NOT NULL,
-    "entity_id" TEXT NOT NULL,
+    "entityId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "message" TEXT NOT NULL,
     "sent" BOOLEAN NOT NULL DEFAULT false,
@@ -55,8 +55,8 @@ CREATE TABLE "public"."notification_queue" (
     CONSTRAINT "notification_queue_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "notification_queue_type_category_entity_id_key"
-    ON "public"."notification_queue"("type", "category", "entity_id");
+CREATE UNIQUE INDEX "notification_queue_type_category_entityId_key"
+    ON "public"."notification_queue"("type", "category", "entityId");
 CREATE INDEX "notification_queue_sent_idx" ON "public"."notification_queue"("sent");
 CREATE INDEX "notification_queue_created_at_idx" ON "public"."notification_queue"("created_at");
 

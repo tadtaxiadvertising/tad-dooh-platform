@@ -134,6 +134,7 @@ jobs:
           node --test scripts/ci-e2e-isolation.test.cjs
           node --test scripts/api-entrypoint-env.test.cjs
           node --test apps/api/scripts/master-sync-migration.contract.test.cjs
+          node --test apps/api/scripts/device-command-ack.contract.test.cjs
           node --experimental-strip-types --test apps/api/scripts/device-scope.test.mjs
           node --test apps/api/scripts/sync-renewal.contract.test.cjs
           node --test scripts/error-message-contract.test.cjs scripts/advertiser-upload-contract.test.cjs scripts/driver-error-contract.test.cjs scripts/direct-upload-checksum.test.cjs scripts/monitoring-status.test.cjs scripts/driver-pwa-config.test.cjs

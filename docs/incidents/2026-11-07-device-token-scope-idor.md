@@ -16,13 +16,19 @@ Affected guarded routes include:
 
 A valid token for device A could therefore reach downstream device-B queries. The guard's own active-status check did not enforce ownership of the requested resource.
 
+## Secondary root cause — bulk-sync subscription bypass
+
+`@UseGuards(DeviceTokenGuard, SubscriptionGuard)` protects both `/device/sync` and `/device/bulk-sync`. However, the old `SubscriptionGuard` tried `x-device-id`, `body.deviceId`, or `params.deviceId`; `bulk-sync` uses `body.device_id`. If the header was missing, it returned `true` without checking payment state.
+
+The guard now gets `authenticatedDeviceId` **only** from the preceding verified `DeviceTokenGuard`. Missing authenticated identity fails closed with 401; body/query/header override cannot select a different driver's subscription. Paid legacy subscriptions with null `subscriptionEnd` are accepted as already specified in `SyncService` (no invented dates). Existing offline grace for expired subscriptions is preserved.
+
 ## Minimum safe correction
 
 - Immediately after token verification, compare **every provided** device identity in `x-device-id`, camelCase/snake_case body, camelCase/snake_case query and `params.deviceId` to the authenticated claim.
 - Mismatch or non-string identity (array/object) returns `403` before a DB lookup.
 - Keep command `params.id` out of this comparison; ACK route has its own command ownership verification.
 - No database DDL, token format migration, JWT secret changes, client-side offline cache changes or global auth bypass.
-- Add guard-level Jest tests and Node 22 no-dependency tests for ownership/conflicting inputs. Wire standalone tests to CI.
+- Add device and subscription guard-level Jest tests and Node 22 no-dependency tests for ownership/conflicting inputs. Wire standalone tests to CI.
 
 ## Limitations requiring separate engineering
 
@@ -33,7 +39,7 @@ A valid token for device A could therefore reach downstream device-B queries. Th
 
 ## Release gates
 
-1. Run NestJS Jest for token-mismatch and active-status cases; verify no `403`/ownership regressions on matching legitimate requests.
+1. Run NestJS Jest for token-mismatch, active-status, bulk-sync subscription, paid-without-end and grace-period cases; verify no `403`/ownership regressions on matching legitimate requests.
 2. Run API TypeScript strict build, relevant device sync tests and Node 22 `--experimental-strip-types --test` contract.
 3. Test a device-A token against device-B sync, bulk-sync, asset query and conflicting header; expect `403` and no side effect. Device A continues normally when properly authenticated.
 4. Verify DeviceTokenGuard has no bypass for malformed claim or token and no new JWT/identity values appear in logs.

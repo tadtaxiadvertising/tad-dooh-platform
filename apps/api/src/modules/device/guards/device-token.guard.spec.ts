@@ -30,6 +30,13 @@ describe("DeviceTokenGuard device ownership", () => {
       query: {},
       params: {},
       ...overrides,
+      headers: {
+        "x-device-token": jwt.sign(
+          { deviceId: "TAD-A", type: "OFFLINE_LICENSE" },
+          signingKey,
+        ),
+        ...(overrides.headers as Record<string, unknown> | undefined),
+      },
     };
     return {
       context: {

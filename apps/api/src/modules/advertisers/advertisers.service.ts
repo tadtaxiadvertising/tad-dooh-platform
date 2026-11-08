@@ -495,7 +495,7 @@ export class AdvertisersService {
         ...c.media.map((m) => ({
           id: m.id,
           url: m.cdnUrl || m.url,
-          type: m.mimeType || m.mime_type,
+          type: m.mimeType,
           name: m.name || m.filename,
           category: "Vault",
         })),

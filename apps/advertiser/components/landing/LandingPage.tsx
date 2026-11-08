@@ -125,7 +125,7 @@ export default function LandingPage() {
 
   return (
     <div className={styles.landing}>
-      <a className="landing-skip" href="#main-content">
+      <a className="landing-skip" href="#main">
         Saltar al contenido
       </a>
       <header className="landing-header landing-wrap">
@@ -180,7 +180,7 @@ export default function LandingPage() {
         </a>
       </header>
 
-      <main id="main-content">
+      <main id="main">
         <section
           className="landing-hero landing-wrap"
           aria-labelledby="hero-title"

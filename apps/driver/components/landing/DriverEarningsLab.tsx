@@ -72,7 +72,7 @@ export default function DriverEarningsLab({
 
   return (
     <section
-      id="calculadora"
+      id="calculadora" data-slot="driver-earnings-lab"
       className={styles.section}
       aria-labelledby="driver-lab-title"
     >

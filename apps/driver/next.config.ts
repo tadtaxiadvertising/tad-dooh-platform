@@ -58,7 +58,7 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: "standalone",
+  // output: "standalone",
   transpilePackages: ["@tad/services", "@tad/ui", "@tad/store", "@tad/logging"],
   eslint: {
     ignoreDuringBuilds: true,
@@ -66,7 +66,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  outputFileTracingRoot: path.join(process.cwd(), "../../"),
+  outputFileTracingRoot: path.join(__dirname, "../.."),
   // TAREA C: Optimización de Memoria para EasyPanel (512MB RAM)
   experimental: {
     // Reduce el uso de RAM sacando el build de webpack a un proceso separado

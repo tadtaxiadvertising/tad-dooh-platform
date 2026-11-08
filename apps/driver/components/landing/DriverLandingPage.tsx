@@ -230,9 +230,10 @@ export default function DriverLandingPage() {
           name="description"
           content="Conoce TAD para taxistas: publicidad digital a bordo, requisitos de incorporación, proceso de revisión y acceso al portal de conductor. Consulta las condiciones antes de participar."
         />
-      </Head>
+      <meta name="robots" content="index, follow" />
+    </Head>
       <div className={styles.landing} lang="es-DO">
-        <a className={styles.skipLink} href="#contenido">
+        <a className={styles.skipLink} href="#main">
           Saltar al contenido
         </a>
         <header className={styles.header}>
@@ -303,7 +304,7 @@ export default function DriverLandingPage() {
           </div>
         </header>
 
-        <main id="contenido" tabIndex={-1}>
+        <main id="main" tabIndex={-1}>
           <section
             className={`${styles.container} ${styles.hero}`}
             aria-labelledby="hero-title"

@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description:
     "Conoce la publicidad en pantallas de taxis de TAD: explora campañas, descubre el simulador de presupuesto y conoce el proceso de contratación.",
   metadataBase: new URL("https://tad.anunciante.ibusiness.com.do"),
+  robots: { index: true, follow: true },
   alternates: { canonical: "/" },
   openGraph: {
     title: "TAD | Tu ciudad se mueve. Tu marca también.",

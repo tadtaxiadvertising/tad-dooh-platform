@@ -4,9 +4,10 @@ import {
   ExecutionContext,
   HttpException,
   HttpStatus,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
-import { Request } from "express";
+import type { AuthenticatedRequest } from "../../auth/auth.types";
 
 /**
  * REVENUE SHIELD v12.2.5: Subscription Guard
@@ -26,15 +27,13 @@ export class SubscriptionGuard implements CanActivate {
   constructor(private readonly prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
-    const deviceId =
-      (request.headers["x-device-id"] as string) ||
-      request.body?.deviceId ||
-      request.params?.deviceId;
-
+    // DeviceTokenGuard runs first and sets this identity only after a valid
+    // JWT and an ownership check. Never pick a client-supplied header/body ID:
+    // bulk-sync uses body.device_id and previously bypassed the payment guard.
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const deviceId = request.authenticatedDeviceId;
     if (!deviceId) {
-      // No deviceId — allow through (auth guard handles general access)
-      return true;
+      throw new UnauthorizedException("Authenticated device is required");
     }
 
     const device = await this.prisma.device.findUnique({
@@ -61,8 +60,7 @@ export class SubscriptionGuard implements CanActivate {
     // Check if subscription is paid and not expired
     if (
       driver.subscriptionPaid &&
-      driver.subscriptionEnd &&
-      driver.subscriptionEnd > new Date()
+      (!driver.subscriptionEnd || driver.subscriptionEnd > new Date())
     ) {
       return true; // Active subscription
     }

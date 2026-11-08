@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { matchesAuthenticatedDevice } from "../src/modules/device/guards/device-request-scope.ts";
 
 test("device identity accepts its own body/header/query identifiers", () => {
-  assert.equal(matchesAuthenticatedDevice("TAD-A", ["TAD-A", undefined, null]), true);
+  assert.equal(matchesAuthenticatedDevice("TAD-A", ["TAD-A", undefined]), true);
 });
 
 test("a different device token cannot be used for body, path, header or query", () => {
@@ -13,7 +13,7 @@ test("a different device token cannot be used for body, path, header or query", 
 });
 
 test("arrays, objects and empty values cannot bypass identity matching", () => {
-  for (const value of [["TAD-A"], { id: "TAD-A" }, "", 0, false]) {
+  for (const value of [["TAD-A"], { id: "TAD-A" }, "", 0, false, null]) {
     assert.equal(matchesAuthenticatedDevice("TAD-A", [value]), false);
   }
 });

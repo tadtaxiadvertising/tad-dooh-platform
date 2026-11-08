@@ -12,7 +12,6 @@ export function matchesAuthenticatedDevice(
   return requestedDeviceIds.every(
     (value) =>
       value === undefined ||
-      value === null ||
       (typeof value === "string" && value === authenticatedDeviceId),
   );
 }

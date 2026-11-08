@@ -3,7 +3,7 @@ import { matchesAuthenticatedDevice } from "./device-request-scope";
 describe("matchesAuthenticatedDevice", () => {
   it("permits a request for exactly the authenticated device", () => {
     expect(
-      matchesAuthenticatedDevice("TAD-A", ["TAD-A", undefined, null, "TAD-A"]),
+      matchesAuthenticatedDevice("TAD-A", ["TAD-A", undefined, "TAD-A"]),
     ).toBe(true);
   });
 
@@ -13,6 +13,7 @@ describe("matchesAuthenticatedDevice", () => {
     [[["TAD-A"]], "array value"],
     [[{ value: "TAD-A" }], "object value"],
     [[""], "empty device"],
+    [[null], "null explicit device"],
   ])("rejects %s (%s)", (values) => {
     expect(matchesAuthenticatedDevice("TAD-A", values)).toBe(false);
   });

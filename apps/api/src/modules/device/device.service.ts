@@ -1,4 +1,5 @@
-import { BadRequestException, ConflictException, Injectable, Logger } from "@nestjs/common";
+import { BadRequestException as DeviceAckBadRequestException, ConflictException } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { RegisterDeviceDto } from "./dto/register-device.dto";
@@ -550,7 +551,7 @@ export class DeviceService {
       !("success" in result) ||
       result.success !== true
     ) {
-      throw new BadRequestException(
+      throw new DeviceAckBadRequestException(
         "A successful command execution result is required",
       );
     }

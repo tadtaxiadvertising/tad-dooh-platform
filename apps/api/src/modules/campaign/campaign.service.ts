@@ -11,6 +11,7 @@ import { AuthUser } from "../auth/auth.types";
 import { calculateImpact, ImpactOutput } from "@tad/impact-calculator";
 import { ReferralService } from "../referral/referral.service";
 import type { Prisma } from "@prisma/client";
+import { deviceIdentityWhere } from "./device-identity-lookup";
 
 interface SyncMediaAsset {
   id?: string;
@@ -816,7 +817,7 @@ export class CampaignService {
 
     // 1. Resolve Identity: Find the device by Hardware ID or UUID
     const device = await this.prisma.device.findFirst({
-      where: { OR: [{ id: deviceIdOrUuid }, { deviceId: deviceIdOrUuid }] },
+      where: deviceIdentityWhere(deviceIdOrUuid),
       select: { id: true, deviceId: true, city: true, driverId: true },
     });
 

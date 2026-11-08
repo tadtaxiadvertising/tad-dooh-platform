@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { RegisterDeviceDto } from "./dto/register-device.dto";
@@ -541,17 +541,49 @@ export class DeviceService {
   }
 
   async acknowledgeCommand(commandId: string, result: unknown) {
-    this.logger.log(
-      `📥 Command ${commandId} acknowledged with result: ${JSON.stringify(result)}`,
-    );
-    return this.prisma.deviceCommand.update({
-      where: { id: commandId },
+    // A delivery attempt is not execution. Never accept the legacy
+    // {result:{acknowledged:true}} placeholder or any unsuccessful outcome.
+    if (
+      result === null ||
+      typeof result !== "object" ||
+      Array.isArray(result) ||
+      !("success" in result) ||
+      result.success !== true
+    ) {
+      throw new BadRequestException(
+        "A successful command execution result is required",
+      );
+    }
+
+    // Transition once only, and store a canonical minimal receipt without
+    // arbitrary untrusted client payloads/identifiers in logs.
+    const receipt = JSON.stringify({ success: true });
+    const updated = await this.prisma.deviceCommand.updateMany({
+      where: { id: commandId, status: "PROCESSING" },
       data: {
         status: "EXECUTED",
         executedAt: new Date(),
-        result: JSON.stringify(result),
+        result: receipt,
       },
     });
+
+    if (updated.count === 1) {
+      return { acknowledged: true };
+    }
+
+    // Duplicate HTTP ACKs after a lost response must be idempotent, but
+    // must never overwrite an existing result or revive PENDING commands.
+    const current = await this.prisma.deviceCommand.findUnique({
+      where: { id: commandId },
+      select: { status: true, result: true },
+    });
+    if (current?.status === "EXECUTED" && current.result === receipt) {
+      return { acknowledged: true, alreadyRecorded: true };
+    }
+
+    throw new ConflictException(
+      "Command is not awaiting an execution acknowledgment",
+    );
   }
 
   // M9: verifica que el comando (referenciado por su UUID) pertenezca al dispositivo

@@ -54,6 +54,12 @@ export interface DeviceCommand {
   params: Record<string, unknown>;
 }
 
+/** Execution result, not a delivery receipt. Only successful safe operations may be ACKed. */
+export interface DeviceCommandResult {
+  id: string;
+  success: boolean;
+}
+
 export interface PlaybackEvent {
   device_id: string;
   video_id: string;

@@ -13,6 +13,7 @@
 4. That same backend marked `device_commands` as `PROCESSING` before the early return, so the command could disappear from subsequent syncs while never appearing in the response.
 5. `SyncManager.executeFullSync` also returned on `!payload.update` before handling commands and renewing the offline token.
 6. When a device was server-blocked, the player activated the kill switch but did not clear its persisted offline license. A restart while offline could incorrectly reuse the old token until expiry.
+7. `CampaignService.getActiveSyncVideos` used `OR: [{id: deviceIdOrUuid}, {deviceId: deviceIdOrUuid}]` even for hardware names such as `TAD-0001`. The physical `devices.id` is UUID, so a malformed UUID string comparison can throw PostgreSQL input-syntax errors before the hardware branch matches.
 
 ## Smallest safe code repair
 
@@ -21,6 +22,7 @@
 - The player persists a new JWT and receives remote commands **before** its unchanged-media early return; it does not redownload cached assets unnecessarily.
 - Blocked/deactivated/unknown device responses revoke the persisted offline license and activate the existing kill switch without erasing cached media files.
 - Parse command parameters **before** changing command statuses, so invalid JSON cannot silently mark an undispatched command as PROCESSING.
+- Resolve device identity with a UUID-format guard: hardware IDs query only `device_id`, canonical UUIDs query both DB and hardware identifiers. Unit tests cover both shapes.
 - Add 4 Jest tests for API controller, 4 for device sync and 5 dependency-free structural contract tests; register contracts in CI Quality Gates.
 
 ## Explicit scope and remaining risks

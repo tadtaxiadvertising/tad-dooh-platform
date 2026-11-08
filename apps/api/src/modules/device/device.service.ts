@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { RegisterDeviceDto } from "./dto/register-device.dto";
@@ -62,37 +62,54 @@ export class DeviceService {
   }
 
   async registerDevice(dto: RegisterDeviceDto) {
+    // Public first-contact enrollment is an untrusted signal, NOT proof of
+    // driver ownership or device activity. Only an authenticated admin/driver
+    // pairing workflow may assign driverId or approve a tablet.
+    if (dto.driver_id !== undefined) {
+      throw new BadRequestException(
+        "Driver assignment requires an authenticated pairing workflow",
+      );
+    }
+
     const existingDevice = await this.prisma.device.findUnique({
       where: { deviceId: dto.device_id },
+      select: { deviceId: true },
     });
 
     if (existingDevice) {
-      this.logger.log(
-        `Device already exists, updating lastSeen: ${dto.device_id}`,
-      );
-      return this.prisma.device.update({
-        where: { deviceId: dto.device_id },
-        data: {
-          isOnline: true,
-          appVersion: dto.app_version,
-          lastSeen: new Date(),
-          driverId: dto.driver_id ?? undefined,
-        },
-      });
+      // Repeated unauthenticated registration must never overwrite the
+      // owner, software version, online status or lastSeen of a known device.
+      return existingDevice;
     }
 
-    this.logger.log(
-      `Registering new device (PENDING approval): ${dto.device_id}`,
-    );
-    return this.prisma.device.create({
-      data: {
-        deviceId: dto.device_id,
-        appVersion: dto.app_version,
-        status: BUSINESS_RULES.STATUS.DEVICE.INITIAL, // 🔒 Requires admin approval before joining fleet
-        lastSeen: new Date(),
-        driverId: dto.driver_id,
-      },
-    });
+    try {
+      return await this.prisma.device.create({
+        data: {
+          deviceId: dto.device_id,
+          appVersion: dto.app_version,
+          status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
+          lastSeen: new Date(),
+          // No driverId: identity is bound only after verified pairing.
+        },
+        select: { deviceId: true },
+      });
+    } catch (error: unknown) {
+      // A concurrent first registration can win the unique hardware-ID
+      // race. Return the existing pending identity without modifying it.
+      if (
+        error !== null &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        const raced = await this.prisma.device.findUnique({
+          where: { deviceId: dto.device_id },
+          select: { deviceId: true },
+        });
+        if (raced) return raced;
+      }
+      throw error;
+    }
   }
 
   /** Returns all devices that have PENDING approval — for the admin dashboard. */

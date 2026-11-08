@@ -29,7 +29,13 @@ export class NotificationsController {
 
   @Post("test-alert")
   async createTestAlert(
-    @Body() body: { title: string; message: string; type: any; category: any },
+    @Body()
+    body: {
+      title: string;
+      message: string;
+      type: Parameters<NotificationsService["createAlert"]>[0]["type"];
+      category: Parameters<NotificationsService["createAlert"]>[0]["category"];
+    },
   ) {
     return this.notificationsService.createAlert({
       title: body.title || "Alerta de Prueba",

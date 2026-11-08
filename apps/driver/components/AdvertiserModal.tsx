@@ -1,3 +1,6 @@
+import type { AdvertiserRecord } from "@/types/admin-api";
+
+import { getErrorMessage } from "@tad/services";
 import React, { useState, useEffect } from "react";
 import {
   X,
@@ -20,7 +23,7 @@ interface AdvertiserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  initialData?: any;
+  initialData?: AdvertiserRecord;
 }
 
 export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
@@ -48,12 +51,15 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
   });
 
   const [screensCount, setScreensCount] = useState<number>(
-    Number.isFinite(initialData?.screensCount) && initialData.screensCount > 0
+    typeof initialData?.screensCount === "number" &&
+      Number.isFinite(initialData.screensCount) &&
+      initialData.screensCount > 0
       ? initialData.screensCount
       : 1,
   );
   const [campaignMonths, setCampaignMonths] = useState<number>(
-    Number.isFinite(initialData?.campaignMonths) &&
+    typeof initialData?.campaignMonths === "number" &&
+      Number.isFinite(initialData.campaignMonths) &&
       initialData.campaignMonths > 0
       ? initialData.campaignMonths
       : 1,
@@ -75,7 +81,9 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
     );
   };
 
-  const [drivers, setDrivers] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<
+    { id: string; fullName: string; taxiPlate?: string; phone?: string }[]
+  >([]);
 
   useEffect(() => {
     const fetchDrivers = async () => {
@@ -147,9 +155,9 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
         }
         onClose();
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.response?.data?.message || "Error al guardar el servidor.");
+      setError(getErrorMessage(err) || "Error al guardar el servidor.");
     } finally {
       setLoading(false);
     }

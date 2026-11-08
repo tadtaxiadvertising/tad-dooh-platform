@@ -12,7 +12,11 @@ export class UmamiClient {
     this.baseUrl = baseUrl;
   }
 
-  private async request(method: string, endpoint: string, params: any = {}) {
+  private async request(
+    method: string,
+    endpoint: string,
+    params: Record<string, string | number> = {},
+  ) {
     try {
       const response = await axios({
         method,

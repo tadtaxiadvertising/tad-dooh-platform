@@ -16,8 +16,13 @@ import { getDriverStatusInfo } from "@/utils/driverStatus";
 import { VehiclePopup } from "@/components/ui/VehiclePopup";
 import { parseMapCoordinate } from "@/utils/mapCoordinates";
 
-interface MapLocation {
+export interface MapLocation {
   id?: string;
+  driverId?: string;
+  status?: string;
+  bearing?: number;
+  timestamp?: string;
+  _lastPingAt?: string;
   deviceId?: string;
   taxiNumber?: string;
   lastLat?: number;
@@ -51,16 +56,16 @@ interface MapViewProps {
   heatmapMode?: boolean;
 
   // New props from realtime.tsx
-  locations?: any[];
-  heatmapData?: any[];
+  locations?: MapLocation[];
+  heatmapData?: unknown[];
   mode?: "normal" | "heatmap" | "live";
   mapTheme?: "light" | "dark";
   heatmapIntensity?: number;
   heatmapRadius?: number;
   selectedId?: string | null;
-  recentPath?: any[];
+  recentPath?: unknown[];
   onClearSelection?: () => void;
-  onViewHistory?: (v: any) => void;
+  onViewHistory?: (v: MapLocation) => void;
   onSyncCommand?: (deviceId: string) => void;
 }
 
@@ -155,7 +160,6 @@ function MapUpdater({
 export default function MapView({
   taxis,
   locations,
-  heatmapData,
   center = [18.4861, -69.9312],
   zoom = 12,
   heatmapMode = false,
@@ -164,8 +168,6 @@ export default function MapView({
   heatmapIntensity = 0.5,
   heatmapRadius = 25,
   selectedId,
-  recentPath = [],
-  onClearSelection,
   onViewHistory,
   onSyncCommand,
 }: MapViewProps) {
@@ -242,8 +244,8 @@ export default function MapView({
         const lastSeenMs = item.lastSeen
           ? new Date(item.lastSeen).getTime()
           : NaN;
-        const pingMs = (item as any)._lastPingAt
-          ? new Date((item as any)._lastPingAt).getTime()
+        const pingMs = item._lastPingAt
+          ? new Date(item._lastPingAt).getTime()
           : NaN;
         const freshnessMs = Math.min(
           Number.isFinite(lastSeenMs)

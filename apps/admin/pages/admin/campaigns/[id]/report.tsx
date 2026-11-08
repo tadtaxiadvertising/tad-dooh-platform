@@ -1,3 +1,5 @@
+import type { CampaignRecord } from "@/types/admin-api";
+import { getErrorMessage } from "@/lib/error-message";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
@@ -12,7 +14,6 @@ import {
   ArrowLeft,
   Download,
   TrendingUp,
-  Users,
   MapPin,
   QrCode,
   BarChart3,
@@ -25,7 +26,6 @@ import {
   CreditCard,
   Building2,
   User,
-  Hash,
   Mail,
 } from "lucide-react";
 import {
@@ -40,7 +40,7 @@ import {
 import Link from "next/link";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
-import clsx from "clsx";
+
 import { toast } from "sonner";
 
 export const getServerSideProps: GetServerSideProps = async () => ({
@@ -50,8 +50,10 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 export default function CampaignReportPage() {
   const router = useRouter();
   const { id } = router.query;
-  const [campaign, setCampaign] = useState<any>(null);
-  const [metrics, setMetrics] = useState<any[]>([]);
+  const [campaign, setCampaign] = useState<CampaignRecord | null>(null);
+  const [metrics, setMetrics] = useState<
+    { impressions: number; scans: number; date: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [emailingSending, setEmailingSending] = useState(false);
@@ -221,8 +223,10 @@ export default function CampaignReportPage() {
                     reportUrl: window.location.href,
                   });
                   toast.success("✅ WhatsApp enviado", { id: loadingToast });
-                } catch (err: any) {
-                  toast.error("❌ Fallo: " + err.message, { id: loadingToast });
+                } catch (err: unknown) {
+                  toast.error("❌ Fallo: " + getErrorMessage(err), {
+                    id: loadingToast,
+                  });
                 }
               }}
               className="p-3 bg-gray-900 border border-emerald-500/30 rounded-xl hover:border-emerald-500 text-emerald-500 transition-all shadow-sm flex items-center gap-2"
@@ -254,10 +258,9 @@ export default function CampaignReportPage() {
                   toast.success(`✅ ${result.message || "Reporte enviado"}`, {
                     id: loadingToast,
                   });
-                } catch (err: any) {
+                } catch (err: unknown) {
                   toast.error(
-                    "❌ Error al enviar email: " +
-                      (err.response?.data?.message || err.message),
+                    "❌ Error al enviar email: " + getErrorMessage(err),
                     { id: loadingToast },
                   );
                 } finally {
@@ -290,10 +293,9 @@ export default function CampaignReportPage() {
                   toast.success(`✅ ${result.message || "Factura enviada"}`, {
                     id: loadingToast,
                   });
-                } catch (err: any) {
+                } catch (err: unknown) {
                   toast.error(
-                    "❌ Error al enviar factura: " +
-                      (err.response?.data?.message || err.message),
+                    "❌ Error al enviar factura: " + getErrorMessage(err),
                     { id: loadingToast },
                   );
                 } finally {
@@ -321,7 +323,7 @@ export default function CampaignReportPage() {
                 try {
                   await downloadWeeklyCampaignPdf(campaign.id, campaign.name);
                   toast.success("PDF generado exitosamente");
-                } catch (err) {
+                } catch {
                   toast.error("Error al generar PDF");
                 } finally {
                   setDownloading(false);

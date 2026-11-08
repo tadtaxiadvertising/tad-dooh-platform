@@ -1,10 +1,10 @@
 import React from "react";
 
 interface FleetSidebarProps {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
-export const FleetSidebar: React.FC<FleetSidebarProps> = (props) => {
+export const FleetSidebar: React.FC<FleetSidebarProps> = () => {
   return (
     <div className="w-80 bg-slate-900 border-l border-slate-700 overflow-y-auto">
       <div className="p-4">

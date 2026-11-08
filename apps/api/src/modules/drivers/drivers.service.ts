@@ -8,7 +8,7 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { SupabaseService } from "../supabase/supabase.service";
+
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcrypt";
 import * as jwt from "jsonwebtoken";
@@ -261,7 +261,7 @@ export class DriversService {
           referredAdvertisers: {
             select: { id: true, status: true },
           },
-        } as any,
+        },
         orderBy: { createdAt: "desc" },
       }),
       // FIX M-2: Usar constante en lugar de magic number
@@ -269,10 +269,10 @@ export class DriversService {
     ]);
 
     return drivers.map((d) => {
-      const driver = d as any;
+      const driver = d;
       const validReferrals = driver.referrals
         ? driver.referrals.filter(
-            (r: any) =>
+            (r) =>
               r.status === BUSINESS_RULES.STATUS.DRIVER.ACTIVE &&
               r.subscriptionPaid,
           ).length
@@ -416,7 +416,7 @@ export class DriversService {
           );
         }
         throw new HttpException(
-          `No se pudo crear el conductor: ${msg}`,
+          "Error interno al crear el conductor.",
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       });
@@ -644,10 +644,10 @@ export class DriversService {
           take: 5,
         },
         contractAcceptances: {
-          orderBy: { createdAt: "desc" },
+          orderBy: { timestamp: "desc" },
           take: 1,
         },
-        referencedDrivers: {
+        referrals: {
           where: { status: BUSINESS_RULES.STATUS.DRIVER.ACTIVE },
           select: {
             id: true,
@@ -659,7 +659,7 @@ export class DriversService {
         referredAdvertisers: {
           select: { id: true, companyName: true, status: true },
         },
-      } as any,
+      },
     });
     if (!driver) throw new Error("Chofer no encontrado");
 
@@ -674,10 +674,11 @@ export class DriversService {
 
     return {
       ...driver,
+      referencedDrivers: driver.referrals,
       bankAccountConfigured: bankReady,
       onboardingStatus: driver.onboardingStatus || "UNKNOWN",
       lastPayment,
-    } as any;
+    };
   }
 
   /**
@@ -795,9 +796,9 @@ export class DriversService {
       where: { deviceId },
       include: {
         driver: {
-          include: { referredAdvertisers: true } as any,
+          include: { referredAdvertisers: true },
         },
-      } as any,
+      },
     });
 
     if (!device) {
@@ -857,7 +858,7 @@ export class DriversService {
           referredAdvertisers: {
             select: { id: true },
           },
-        } as any,
+        },
       });
 
       if (!driver) {
@@ -869,7 +870,7 @@ export class DriversService {
         );
       }
 
-      const deviceId = (driver as any).devices?.[0]?.deviceId || null;
+      const deviceId = driver.devices?.[0]?.deviceId || null;
       this.logger.debug(
         `[DRIVER_HUB][GET_BY_ID][FOUND] driverId=${driverId} deviceId=${deviceId}`,
       );
@@ -889,7 +890,12 @@ export class DriversService {
   /**
    * Método interno para construir el payload del Hub
    */
-  private async buildHubData(driver: any, deviceId: string | null) {
+  private async buildHubData(
+    driver: import("@prisma/client").Driver & {
+      referredAdvertisers: { id: string }[];
+    },
+    deviceId: string | null,
+  ) {
     this.logger.debug(`[HUB_BUILD] Iniciando construcción para ${driver.id}`);
 
     const monthStart = new Date(
@@ -1009,7 +1015,7 @@ export class DriversService {
       (driver.referredAdvertisers?.length || 0) *
       BUSINESS_RULES.ADVERTISER_REFERRAL_BONUS_RD;
 
-    const totalPaid = (totalPaidSum as any)?._sum?.amount || 0;
+    const totalPaid = totalPaidSum?._sum?.amount || 0;
 
     this.logger.debug(`[HUB_BUILD] Aplicando penalizaciones...`);
 
@@ -1116,22 +1122,22 @@ export class DriversService {
     this.logger.error(
       `[DRIVER_PURGE][CRITICAL] purgeAll ejecutado en entorno=${nodeEnv || "undefined"}.`,
     );
-    const tables = [
-      "driverLocation",
-      "payrollPayment",
-      "subscription",
-      "analyticsEvent",
-      "deviceHeartbeat",
-      "playbackEvent",
-      "deviceCommand",
-      "campaignMetric",
-      "playlistItem",
-      "deviceCampaign",
+    const tables: Array<[string, () => Promise<unknown>]> = [
+      ["driverLocation", () => this.prisma.driverLocation.deleteMany()],
+      ["payrollPayment", () => this.prisma.payrollPayment.deleteMany()],
+      ["subscription", () => this.prisma.subscription.deleteMany()],
+      ["analyticsEvent", () => this.prisma.analyticsEvent.deleteMany()],
+      ["deviceHeartbeat", () => this.prisma.deviceHeartbeat.deleteMany()],
+      ["playbackEvent", () => this.prisma.playbackEvent.deleteMany()],
+      ["deviceCommand", () => this.prisma.deviceCommand.deleteMany()],
+      ["campaignMetric", () => this.prisma.campaignMetric.deleteMany()],
+      ["playlistItem", () => this.prisma.playlistItem.deleteMany()],
+      ["deviceCampaign", () => this.prisma.deviceCampaign.deleteMany()],
     ];
 
-    for (const table of tables) {
+    for (const [table, deleteRows] of tables) {
       try {
-        await (this.prisma as any)[table].deleteMany();
+        await deleteRows();
       } catch (err) {
         this.logger.warn(
           `[PURGE] Tabla ${table} falló o no existe: ${err.message}`,

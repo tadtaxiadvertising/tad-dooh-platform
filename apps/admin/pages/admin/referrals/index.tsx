@@ -22,10 +22,28 @@ export const getServerSideProps: GetServerSideProps = async () => ({
   props: {},
 });
 
+interface Recruiter {
+  id: string;
+  fullName?: string;
+  referralCode?: string;
+  _count?: { referrals?: number };
+}
+interface ReferralNode {
+  id: string;
+  fullName?: string;
+  referredByDriver?: { fullName?: string };
+  createdAt?: string;
+  status?: string;
+}
+
 export default function ReferralsDashboard() {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>(null);
-  const [network, setNetwork] = useState<any[]>([]);
+  const [stats, setStats] = useState<{
+    totalReferrals?: number;
+    pendingCommissions?: number;
+    topRecruiters?: Recruiter[];
+  } | null>(null);
+  const [network, setNetwork] = useState<ReferralNode[]>([]);
   const [search, setSearch] = useState("");
 
   const fetchData = async () => {
@@ -136,7 +154,7 @@ export default function ReferralsDashboard() {
                     />
                   ))
               ) : stats?.topRecruiters?.length > 0 ? (
-                stats.topRecruiters.map((recruiter: any, idx: number) => (
+                stats.topRecruiters.map((recruiter, idx) => (
                   <div
                     key={recruiter.id}
                     className="flex items-center justify-between p-4 bg-black/20 rounded-2xl border border-white/5"
@@ -289,7 +307,19 @@ export default function ReferralsDashboard() {
   );
 }
 
-function StatCard({ label, value, icon: Icon, highlight, alert }: any) {
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  highlight,
+  alert,
+}: {
+  label: string;
+  value: string | number;
+  icon: typeof Users;
+  highlight?: boolean;
+  alert?: boolean;
+}) {
   return (
     <div
       className={clsx(

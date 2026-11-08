@@ -9,7 +9,7 @@ on:
 # ─── GATES ───────────────────────────────────────────────────────────────────────
 env:
   NODE_VERSION: "22"
-  PNPM_VERSION: "10"
+  PNPM_VERSION: "10.34.9"
   PRISMA_SCHEMA: "apps/api/prisma/schema.prisma"
 
 jobs:
@@ -28,6 +28,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+
+      - name: Verify pinned overrides match the frozen lockfile
+        run: node --test scripts/pnpm-overrides-contract.test.cjs
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -114,6 +117,11 @@ jobs:
           set -euo pipefail
           pnpm --filter api test --runInBand
 
+      - name: Driver offline queue retry safety (Node 22)
+        run: |
+          set -euo pipefail
+          pnpm --filter driver run test:unit:offline
+
       # The root tests/e2e tree includes authenticated production audits and
       # mutating driver-registration flows. Never execute those against live
       # systems in an unprivileged push/PR job. Public browser E2E runs in the
@@ -124,6 +132,12 @@ jobs:
           node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
           node --test scripts/simulator-key-security.test.cjs scripts/next-security-contract.test.cjs
           node --test scripts/ci-e2e-isolation.test.cjs
+          node --test scripts/api-entrypoint-env.test.cjs
+          node --test apps/api/scripts/master-sync-migration.contract.test.cjs
+          node --experimental-strip-types --test apps/api/scripts/device-scope.test.mjs
+          node --test apps/api/scripts/sync-renewal.contract.test.cjs
+          node --test scripts/error-message-contract.test.cjs scripts/advertiser-upload-contract.test.cjs scripts/driver-error-contract.test.cjs scripts/direct-upload-checksum.test.cjs scripts/monitoring-status.test.cjs scripts/driver-pwa-config.test.cjs
+          node --test --test-concurrency=1 scripts/security-compatible-transitives.test.cjs scripts/permissions-parser-security.test.cjs scripts/tmp-cli-security.test.cjs scripts/security-major-compatibility.test.cjs scripts/smtp-transport-security.test.cjs scripts/security-followup-regressions.test.cjs
 
   # ── 4. PRISMA SCHEMA VALIDATION ──────────────────────────────────────────────
   prisma:
@@ -185,7 +199,7 @@ jobs:
 
       - name: TruffleHog secret scan
         if: ${{ always() }}
-        uses: trufflesecurity/trufflehog@v3.90.12
+        uses: trufflesecurity/trufflehog@v3.99.8
         with:
           path: ./
           extra_args: --results=verified,unknown

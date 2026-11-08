@@ -17,8 +17,26 @@
  *   TAD_AUTH_SYNC_BOOTSTRAP_PASSWORD (only used when creating missing Auth users)
  */
 
+/**
+ * sync-auth-users.ts
+ *
+ * Creates/confirms users in Supabase Auth (GoTrue) using the service_role key.
+ * This bridges the gap between the local Prisma DB and Supabase Auth.
+ *
+ * ROOT CAUSE: Users existed in Prisma (local DB) but NOT in Supabase Auth.
+ * signInWithPassword() always failed with "invalid_credentials".
+ *
+ * Usage:
+ *   npx ts-node scripts/sync-auth-users.ts
+ *
+ * Env vars required (from .env):
+ *   SUPABASE_URL
+ *   SUPABASE_SERVICE_ROLE_KEY
+ *   DATABASE_URL
+ *   TAD_AUTH_SYNC_BOOTSTRAP_PASSWORD (only used when creating missing Auth users)
+ */
 import { PrismaClient } from "@prisma/client";
-import * as bcrypt from "bcrypt";
+
 import * as https from "https";
 
 const prisma = new PrismaClient();
@@ -35,8 +53,8 @@ if (!SERVICE_ROLE_KEY) {
 function supabaseAdminRequest(
   path: string,
   method: string,
-  body?: any,
-): Promise<any> {
+  body?: Record<string, unknown>,
+): Promise<{ status: number; data: unknown }> {
   return new Promise((resolve, reject) => {
     const url = new URL(path, SUPABASE_URL);
     const data = body ? JSON.stringify(body) : undefined;
@@ -58,9 +76,12 @@ function supabaseAdminRequest(
         });
         res.on("end", () => {
           try {
-            resolve({ status: res.statusCode, data: JSON.parse(responseData) });
+            resolve({
+              status: res.statusCode || 0,
+              data: JSON.parse(responseData),
+            });
           } catch {
-            resolve({ status: res.statusCode, data: responseData });
+            resolve({ status: res.statusCode || 0, data: responseData });
           }
         });
       },
@@ -75,12 +96,26 @@ function supabaseAdminRequest(
 async function upsertAuthUser(
   email: string,
   password: string | undefined,
-  appMetadata: Record<string, any>,
+  appMetadata: Record<string, unknown>,
 ) {
   // 1. Try to list users and find by email
   const listRes = await supabaseAdminRequest("/auth/v1/admin/users", "GET");
-  const users = listRes.data?.users || [];
-  const existing = users.find((u: any) => u.email === email);
+  const users =
+    typeof listRes.data === "object" &&
+    listRes.data !== null &&
+    "users" in listRes.data &&
+    Array.isArray(listRes.data.users)
+      ? listRes.data.users
+      : [];
+  const existing = users.find(
+    (u: unknown): u is { id: string; email: string } =>
+      typeof u === "object" &&
+      u !== null &&
+      "email" in u &&
+      u.email === email &&
+      "id" in u &&
+      typeof u.id === "string",
+  );
 
   if (existing) {
     console.log(
@@ -119,8 +154,17 @@ async function upsertAuthUser(
     return null;
   }
 
-  console.log(`  ✅ Created ${email} (id=${createRes.data.id})`);
-  return createRes.data.id;
+  const user = createRes.data;
+  if (
+    typeof user !== "object" ||
+    user === null ||
+    !("id" in user) ||
+    typeof user.id !== "string"
+  ) {
+    throw new Error("Auth user response did not contain an id");
+  }
+  console.log(`  ✅ Created ${email} (id=${user.id})`);
+  return user.id;
 }
 
 async function main() {
@@ -162,7 +206,7 @@ async function main() {
       console.log(`  ⚠️  Skipping advertiser ${adv.id} (no email)`);
       continue;
     }
-    await upsertAuthUser(adv.email, DEFAULT_PASSWORD, {
+    await upsertAuthUser(adv.email, bootstrapPassword, {
       role: "ADVERTISER",
       entityId: adv.id,
     });
@@ -173,7 +217,7 @@ async function main() {
   for (const driver of drivers) {
     // Drivers log in with phone@tad.driver (email proxy)
     const driverEmail = `${driver.phone}@tad.driver`;
-    await upsertAuthUser(driverEmail, DEFAULT_PASSWORD, {
+    await upsertAuthUser(driverEmail, bootstrapPassword, {
       role: "DRIVER",
       entityId: driver.id,
     });

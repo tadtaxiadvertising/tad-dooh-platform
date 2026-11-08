@@ -1,6 +1,6 @@
+import type { CampaignRecord, LedgerRecord } from "@/types/admin-api";
 import { useState, useEffect } from "react";
 import {
-  FileText,
   Download,
   Car,
   Briefcase,
@@ -16,7 +16,6 @@ import Link from "next/link";
 import type { GetServerSideProps } from "next";
 import {
   getCampaigns,
-  getDevices,
   getFinancialLedger,
   downloadCampaignPdf,
   downloadFleetPdf,
@@ -29,8 +28,8 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 });
 
 export default function ExportsPage() {
-  const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [ledgers, setLedgers] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignRecord[]>([]);
+  const [ledgers, setLedgers] = useState<LedgerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
 

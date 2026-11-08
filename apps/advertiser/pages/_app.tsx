@@ -19,8 +19,6 @@ const ToasterClient = dynamic(() => import("sonner").then((m) => m.Toaster), {
   ssr: false,
 });
 
-const PUBLIC_PAGES = ["/login", "/check-in"];
-
 function AppWrapper({
   Component,
   pageProps,

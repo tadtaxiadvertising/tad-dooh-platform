@@ -133,8 +133,8 @@ export class SupabaseAuthGuard implements CanActivate {
     // --- ESTRATEGIA 1: Validación Local JWT ---
     if (jwtSecret) {
       try {
-        const decodedToken = jwt.decode(token, { complete: true }) as any;
-        const alg = decodedToken?.header?.alg || "HS256";
+        const decodedToken = jwt.decode(token, { complete: true });
+        const alg = (decodedToken?.header?.alg || "HS256") as jwt.Algorithm;
 
         const isSymmetricSecret =
           !jwtSecret.includes("BEGIN PUBLIC KEY") &&

@@ -25,7 +25,10 @@ export const swrConfig: SWRConfiguration = {
 };
 
 // Custom fetcher for mutations that supports offline queueing
-export const fetchWithOfflineQueue = async (url: string, payload: any) => {
+export const fetchWithOfflineQueue = async (
+  url: string,
+  payload: Record<string, unknown>,
+) => {
   if (!navigator.onLine) {
     await enqueueOfflineAction(url, payload);
     return { queued: true };

@@ -12,7 +12,6 @@ import {
   Calendar,
   Target,
   Activity,
-  Share2,
   AlertCircle,
   Sparkles,
   Download,
@@ -27,13 +26,12 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 import Link from "next/link";
 import { format } from "date-fns";
 import clsx from "clsx";
-import DeviceSelectorModal from "@/components/DeviceSelectorModal";
+
 import { CampaignModal } from "@/components/CampaignModal";
 import { useTabSync } from "@tad/ui";
 import { notifyChange } from "@tad/ui";
 import { AntigravityButton } from "@tad/ui";
 import { toast } from "sonner";
-import { getMedia } from "@tad/services";
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<

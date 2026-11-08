@@ -23,7 +23,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
-      const exceptionResponse: any = exception.getResponse();
+      const exceptionResponse = exception.getResponse() as
+        | string
+        | {
+            message?: string;
+            code?: string;
+          };
 
       if (typeof exceptionResponse === "object" && exceptionResponse !== null) {
         message = exceptionResponse.message || exception.message;

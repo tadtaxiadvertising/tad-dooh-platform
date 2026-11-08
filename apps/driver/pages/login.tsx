@@ -2,13 +2,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import type { GetServerSideProps } from "next";
-import {
-  Shield,
-  BarChart3,
-  Car,
-  ChevronRight,
-  LayoutDashboard,
-} from "lucide-react";
+import { Shield, BarChart3, Car, ChevronRight } from "lucide-react";
 import clsx from "clsx";
 
 export const getServerSideProps: GetServerSideProps = async () => ({
@@ -86,7 +80,21 @@ export default function LoginGateway() {
   );
 }
 
-function PortalCard({ title, subtitle, icon, bgColor, onClick, delay }: any) {
+function PortalCard({
+  title,
+  subtitle,
+  icon,
+  bgColor,
+  onClick,
+  delay,
+}: {
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  bgColor: string;
+  onClick: () => void;
+  delay?: string;
+}) {
   return (
     <button
       onClick={onClick}

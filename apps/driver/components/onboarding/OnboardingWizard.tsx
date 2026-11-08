@@ -15,31 +15,14 @@ interface OnboardingWizardProps<T extends number> {
   className?: string;
 }
 
-const stepVariants = {
-  enter: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
-  },
-  exit: {
-    opacity: 0,
-    x: 40,
-    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
-  },
-};
-
 export function OnboardingWizard<T extends number>({
   step,
   totalSteps,
   children,
-  onNext,
   onPrev,
   onClose,
-  stepLabels,
   className,
 }: OnboardingWizardProps<T>) {
-  const direction = step > step - 1 ? 1 : -1;
-
   return (
     <div
       className={clsx(

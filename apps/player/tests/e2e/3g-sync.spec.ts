@@ -7,7 +7,7 @@
  * (header X-Device-Id + timeout). Red simulada offline/3G.
  * Corrido por el proyecto '3g-slow' (playwright.config.ts).
  */
-import { test, expect, BrowserContext, Page } from "@playwright/test";
+import { test, expect, BrowserContext } from "@playwright/test";
 
 test.describe("3G Sync — Telemetry flush on reconnect", () => {
   let context: BrowserContext;
@@ -30,9 +30,7 @@ test.describe("3G Sync — Telemetry flush on reconnect", () => {
     await context.close();
   });
 
-  test("5.1 — Cola de PoP se descarga al recuperar red", async ({
-    browser,
-  }) => {
+  test("5.1 — Cola de PoP se descarga al recuperar red", async () => {
     const page = await context.newPage();
 
     await page.addInitScript(() => {

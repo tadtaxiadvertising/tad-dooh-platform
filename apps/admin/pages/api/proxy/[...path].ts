@@ -164,7 +164,7 @@ export default async function handler(
       return headers;
     };
 
-    const fetchOptions: RequestInit = {
+    const fetchOptions: RequestInit & { duplex?: "half" } = {
       method: req.method || "GET",
       headers: getForwardHeaders(targetUrl),
       signal: AbortSignal.timeout(60000),
@@ -172,7 +172,6 @@ export default async function handler(
 
     if (req.method !== "GET" && req.method !== "HEAD") {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const getRawBody = require("next/dist/compiled/raw-body");
         const rawBody = await getRawBody(req, {
           length: req.headers["content-length"],
@@ -181,7 +180,7 @@ export default async function handler(
         fetchOptions.body = rawBody;
         (fetchOptions.headers as Record<string, string>)["content-length"] =
           String(rawBody.length);
-        (fetchOptions as any).duplex = "half";
+        fetchOptions.duplex = "half";
       } catch (bodyError: unknown) {
         const errMsg =
           bodyError instanceof Error ? bodyError.message : String(bodyError);
@@ -333,7 +332,9 @@ export default async function handler(
               upstreamStatusText: backendResponse.statusText,
             },
           });
-        } catch {}
+        } catch {
+          // Preserve the raw upstream response when it is not valid JSON.
+        }
       }
 
       return res.status(backendResponse.status).json({
@@ -351,7 +352,9 @@ export default async function handler(
       try {
         const data = JSON.parse(buffer.toString("utf-8"));
         return res.status(backendResponse.status).json(data);
-      } catch (e) {}
+      } catch {
+        // Fall back to sending the original buffer for non-JSON content.
+      }
     }
 
     return res.status(backendResponse.status).send(buffer);

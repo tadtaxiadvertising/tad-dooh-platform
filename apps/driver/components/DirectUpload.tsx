@@ -3,14 +3,7 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { AntigravityButton } from "@tad/ui";
-import {
-  UploadCloud,
-  FileVideo,
-  X,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-} from "lucide-react";
+import { UploadCloud, FileVideo, X, Loader2, AlertCircle } from "lucide-react";
 import { useDirectUpload } from "@/hooks/useDirectUpload";
 
 interface DirectUploadProps {
@@ -29,7 +22,7 @@ export function DirectUpload({ onSuccess }: DirectUploadProps) {
     onError: (err) => {
       toast.error(err.message || "Error al subir el video.");
     },
-    onProgress: (p) => {
+    onProgress: (_p) => {
       // Progress handled in UI
     },
   });
@@ -54,7 +47,7 @@ export function DirectUpload({ onSuccess }: DirectUploadProps) {
 
     try {
       await upload(selectedFile);
-    } catch (err) {
+    } catch {
       // Error handled by hook + toast
     }
   };

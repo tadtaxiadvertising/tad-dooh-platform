@@ -5,7 +5,7 @@
  * Tests para el reproductor de anuncios en tablets Android (FullyKiosk).
  * Enfocado en: Service Worker, offline-first, video playback, memory leaks.
  */
-import { test, expect, BrowserContext, Page } from "@playwright/test";
+import { test, expect, BrowserContext } from "@playwright/test";
 
 // ──────────────────────────────────────────────────────────────────
 // TEST 1: PWA OFFLINE RESILIENCE (Service Worker)

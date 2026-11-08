@@ -1,3 +1,4 @@
+import { errorMessage } from "../../utils/error.util";
 import { CreateCampaignDto } from "./dto/create-campaign.dto";
 import { AddMediaAssetDto } from "./dto/add-media-asset.dto";
 import { Injectable, BadRequestException, Logger } from "@nestjs/common";
@@ -9,6 +10,23 @@ import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { AuthUser } from "../auth/auth.types";
 import { calculateImpact, ImpactOutput } from "@tad/impact-calculator";
 import { ReferralService } from "../referral/referral.service";
+import type { Prisma } from "@prisma/client";
+import { deviceIdentityWhere } from "./device-identity-lookup";
+
+interface SyncMediaAsset {
+  id?: string;
+  checksum?: string | null;
+  filename?: string | null;
+  name?: string | null;
+  title?: string | null;
+  cdnUrl?: string | null;
+  url?: string | null;
+  hashMd5?: string | null;
+  hash?: string | null;
+  duration?: number | null;
+  qrUrl?: string | null;
+  weight?: number | null;
+}
 
 const mediaAssetSafeSelect = {
   id: true,
@@ -275,7 +293,7 @@ export class CampaignService {
           websiteUrl: dto.websiteUrl,
           pedidosYaUrl: dto.pedidosYaUrl,
           uberEatsUrl: dto.uberEatsUrl,
-        } as any,
+        },
       });
     });
 
@@ -556,10 +574,12 @@ export class CampaignService {
 
       this.logger.log(`✅ [MEDIA_REG] Media registrada con éxito: ${media.id}`);
       return { success: true, media };
-    } catch (e: any) {
-      this.logger.error(`❌ [MEDIA_REG] Error en base de datos: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(
+        `❌ [MEDIA_REG] Error en base de datos: ${errorMessage(e)}`,
+      );
       throw new BadRequestException(
-        `Error al guardar en base de datos: ${e.message}`,
+        `Error al guardar en base de datos: ${errorMessage(e)}`,
       );
     }
   }
@@ -653,7 +673,10 @@ export class CampaignService {
     }
 
     // Inventory Control: If targeted to specific devices, check their current slots
-    const deviceId = (dto as any).deviceId;
+    const deviceId =
+      "deviceId" in dto && typeof dto.deviceId === "string"
+        ? dto.deviceId
+        : undefined;
     if (deviceId) {
       const activeData = await this.getActiveSyncVideos(deviceId);
       if (
@@ -719,7 +742,7 @@ export class CampaignService {
       // For global campaigns (targetAll/isGlobal), there are no explicit device assignments.
       // Queue FORCE_SYNC for ALL active devices so they pull the new content on next heartbeat.
       const allActiveDevices = await this.prisma.device.findMany({
-        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE as any },
+        where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
         select: { id: true },
       });
       if (allActiveDevices.length > 0) {
@@ -794,7 +817,7 @@ export class CampaignService {
 
     // 1. Resolve Identity: Find the device by Hardware ID or UUID
     const device = await this.prisma.device.findFirst({
-      where: { OR: [{ id: deviceIdOrUuid }, { deviceId: deviceIdOrUuid }] },
+      where: deviceIdentityWhere(deviceIdOrUuid),
       select: { id: true, deviceId: true, city: true, driverId: true },
     });
 
@@ -813,13 +836,20 @@ export class CampaignService {
       `🔎 Sync for device: hwId=${hwId}, uuid=${uuid}, city=${city}, driverId=${driverId || "none"}`,
     );
 
-    let activeCampaigns: any[] = [];
+    let activeCampaigns: Prisma.CampaignGetPayload<{
+      include: {
+        mediaAssets: { select: typeof mediaAssetSafeSelect };
+        media: { select: typeof mediaSafeSelect };
+        videos: true;
+        advertiserRef: true;
+      };
+    }>[] = [];
 
     try {
       // 2. MASTER SYNC (Materialized View)
       // Pre-calculated targeting avoids complex joins in heartbeats.
       // SRE Anti-OOM: LIMIT 15 en SQL — reduce memoria trasladada desde Postgres.
-      const results: any[] = await this.prisma.$queryRaw`
+      const results = await this.prisma.$queryRaw<{ campaign_id: string }[]>`
         SELECT campaign_id FROM mv_active_campaigns
         WHERE active = true 
           AND start_date <= NOW() 
@@ -849,13 +879,15 @@ export class CampaignService {
           orderBy: { updatedAt: "desc" },
         });
       }
-    } catch (primaryError: any) {
+    } catch (primaryError: unknown) {
       this.logger.error(
-        `❌ getActiveSyncVideos optimized query failed: ${primaryError?.message}. Falling back to legacy query.`,
+        `❌ getActiveSyncVideos optimized query failed: ${errorMessage(primaryError)}. Falling back to legacy query.`,
       );
       // Fallback to legacy query if view fails
       activeCampaigns = await this.prisma.campaign.findMany({
         where: {
+          // Do not expose unapproved or unpaid creative if the MV is unavailable.
+          status: "ACTIVE",
           active: true,
           startDate: { lte: now },
           endDate: { gte: now },
@@ -870,7 +902,7 @@ export class CampaignService {
               ? [{ targetDrivers: { some: { id: driverId } } }]
               : []),
           ],
-        } as any,
+        },
         include: {
           mediaAssets: { select: mediaAssetSafeSelect },
           media: { select: mediaSafeSelect },
@@ -901,9 +933,21 @@ export class CampaignService {
       return { version: 0, sync_hash: "empty", media_assets: [] };
     }
 
-    const mediaAssets: any[] = [];
+    const mediaAssets: {
+      id: string;
+      campaignId: string;
+      filename: string;
+      url: string;
+      checksum: string;
+      hashMd5: string | null;
+      duration: number;
+      qrUrl: string | null;
+      advertiserId: string | null;
+      advertiserName: string;
+      weight: number | null;
+    }[] = [];
     for (const campaign of activeCampaigns) {
-      const mapMediaAsset = (ma: any) => ({
+      const mapMediaAsset = (ma: SyncMediaAsset) => ({
         id:
           ma.id ||
           ma.checksum ||
@@ -952,7 +996,7 @@ export class CampaignService {
     startDate?: Date,
     endDate?: Date,
   ) {
-    const where: any = {};
+    const where: Prisma.CampaignMetricWhereInput = {};
     if (advertiserId) {
       where.campaign = { advertiserId };
     }
@@ -973,7 +1017,7 @@ export class CampaignService {
     });
 
     const summary = metrics.reduce(
-      (acc: any, curr) => {
+      (acc, curr) => {
         acc.impressions += curr.totalImpressions;
         acc.completions += curr.totalCompletions;
         return acc;
@@ -981,20 +1025,32 @@ export class CampaignService {
       { impressions: 0, completions: 0 },
     );
 
-    const byDate = metrics.reduce((acc: any, curr) => {
-      const day = curr.date.toISOString().split("T")[0];
-      if (!acc[day]) acc[day] = { date: day, impressions: 0, completions: 0 };
-      acc[day].impressions += curr.totalImpressions;
-      acc[day].completions += curr.totalCompletions;
-      return acc;
-    }, {});
+    const byDate = metrics.reduce(
+      (
+        acc: Record<
+          string,
+          { date: string; impressions: number; completions: number }
+        >,
+        curr,
+      ) => {
+        const day = curr.date.toISOString().split("T")[0];
+        if (!acc[day]) acc[day] = { date: day, impressions: 0, completions: 0 };
+        acc[day].impressions += curr.totalImpressions;
+        acc[day].completions += curr.totalCompletions;
+        return acc;
+      },
+      {},
+    );
 
-    const byCity = metrics.reduce((acc: any, curr) => {
-      const city = curr.city || "Desconocido";
-      if (!acc[city]) acc[city] = { city, impressions: 0 };
-      acc[city].impressions += curr.totalImpressions;
-      return acc;
-    }, {});
+    const byCity = metrics.reduce(
+      (acc: Record<string, { city: string; impressions: number }>, curr) => {
+        const city = curr.city || "Desconocido";
+        if (!acc[city]) acc[city] = { city, impressions: 0 };
+        acc[city].impressions += curr.totalImpressions;
+        return acc;
+      },
+      {},
+    );
 
     return {
       summary,
@@ -1158,7 +1214,7 @@ export class CampaignService {
       [BUSINESS_RULES.LEVELS.BASE.label]: BUSINESS_RULES.LEVELS.BASE.priority,
     };
 
-    availableDevices.sort((a: any, b: any) => {
+    availableDevices.sort((a, b) => {
       const priorityA = priorityMap[a.driver?.level || "BASE"] || 0;
       const priorityB = priorityMap[b.driver?.level || "BASE"] || 0;
       return priorityB - priorityA; // Descendente
@@ -1239,7 +1295,12 @@ export class CampaignService {
     };
   }
 
-  async createIntent(dto: any) {
+  async createIntent(
+    dto: Pick<
+      Prisma.CampaignIntentUncheckedCreateInput,
+      "brandName" | "budget" | "expectedScreens" | "fileMetadata"
+    >,
+  ) {
     try {
       const intent = await this.prisma.campaignIntent.create({
         data: {
@@ -1251,10 +1312,10 @@ export class CampaignService {
         },
       });
       return { success: true, data: intent };
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.logger.error("Error creating campaign intent:", error);
       throw new BadRequestException(
-        `No se pudo registrar la intención de campaña: ${error.message}`,
+        `No se pudo registrar la intención de campaña: ${errorMessage(error)}`,
       );
     }
   }

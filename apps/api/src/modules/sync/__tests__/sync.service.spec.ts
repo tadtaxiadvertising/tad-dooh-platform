@@ -13,8 +13,6 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
 
 describe("SyncService", () => {
   let service: SyncService;
-  let prisma: PrismaService;
-  let notifications: NotificationsService;
 
   const mockNotifications = {
     createAlert: jest.fn(),
@@ -43,7 +41,6 @@ describe("SyncService", () => {
     }).compile();
 
     service = module.get<SyncService>(SyncService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 

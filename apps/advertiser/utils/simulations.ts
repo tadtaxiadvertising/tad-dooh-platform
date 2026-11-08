@@ -1,7 +1,5 @@
 import {
   calculateImpact,
-  formatRange,
-  formatCPM,
   getCalibrationBadge,
   getPrimarySource,
   ImpactOutput,

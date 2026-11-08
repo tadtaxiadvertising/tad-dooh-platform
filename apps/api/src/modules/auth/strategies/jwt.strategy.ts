@@ -3,6 +3,7 @@ import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { ConfigService } from "@nestjs/config";
 import { SupabaseService } from "../../supabase/supabase.service";
+import type { Request } from "express";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -24,7 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (request: any) => {
+        (request: Request) => {
           let data = request?.headers?.authorization;
           if (!data) return null;
           data = data
@@ -40,7 +41,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(req: any, payload: any) {
+  async validate(req: Request, _payload: unknown) {
     let token = req.headers.authorization;
     if (!token) throw new UnauthorizedException("No token provided");
     token = token

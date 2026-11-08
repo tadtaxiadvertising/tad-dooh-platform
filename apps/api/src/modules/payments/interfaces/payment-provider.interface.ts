@@ -17,7 +17,7 @@ export interface PaymentProviderConfig {
   secretKey?: string;
   webhookSecret?: string;
   merchantId?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface CreatePaymentIntentInput {
@@ -27,7 +27,7 @@ export interface CreatePaymentIntentInput {
   reference: string; // Clave de idempotencia única
   idempotencyKey: string;
   leadId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   customerInfo?: {
     name?: string;
     email?: string;
@@ -43,7 +43,7 @@ export interface PaymentIntentResult {
   qrCode?: string; // QR para pago móvil
   paymentInstructions?: string; // Instrucciones para transferencia manual
   expiresAt?: Date;
-  providerData?: Record<string, any>;
+  providerData?: Record<string, unknown>;
 }
 
 export type PaymentIntentStatus =
@@ -66,7 +66,7 @@ export interface PaymentWebhookPayload {
   currency: string;
   status: PaymentIntentStatus;
   paidAt?: Date;
-  rawData: Record<string, any>;
+  rawData: Record<string, unknown>;
   signature?: string;
 }
 
@@ -76,7 +76,7 @@ export interface PaymentVerificationResult {
   currency: string;
   paidAt: Date;
   providerRef: string;
-  rawResponse: Record<string, any>;
+  rawResponse: Record<string, unknown>;
 }
 
 export interface RefundResult {
@@ -121,7 +121,7 @@ export interface IPaymentProvider {
    * Debe validar firma y retornar payload parseado
    */
   processWebhook(
-    payload: any,
+    payload: PaymentNotificationPayload,
     signature?: string,
   ): Promise<PaymentWebhookPayload>;
 
@@ -156,3 +156,12 @@ export interface IPaymentProvider {
 export type PaymentProviderFactory = (
   providerType: PaymentProviderType,
 ) => IPaymentProvider;
+
+/** Provider notification fields consumed by the manual-transfer adapter. */
+export interface PaymentNotificationPayload extends Record<string, unknown> {
+  transactionId?: string;
+  reference?: string;
+  idempotencyKey?: string;
+  amount?: number;
+  currency?: string;
+}

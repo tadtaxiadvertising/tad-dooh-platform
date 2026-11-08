@@ -125,14 +125,14 @@ export default function LandingPage() {
 
   return (
     <div className={styles.landing}>
-      <a className="landing-skip" href="#main">
+      <a className="landing-skip" href="#main-content">
         Saltar al contenido
       </a>
       <header className="landing-header landing-wrap">
         <a
           href="/"
           className="landing-brand"
-          aria-label="TAD Anunciantes, inicio"
+          aria-label="TAD Taxi Advertising, Anunciantes, inicio"
         >
           TAD<span>.</span>
           <small>TAXI ADVERTISING</small>
@@ -180,7 +180,7 @@ export default function LandingPage() {
         </a>
       </header>
 
-      <main id="main">
+      <main id="main-content" tabIndex={-1}>
         <section
           className="landing-hero landing-wrap"
           aria-labelledby="hero-title"
@@ -218,6 +218,23 @@ export default function LandingPage() {
                 sujetas a validación.
               </span>
             </div>
+            <div
+              className="landing-hero-cities"
+              role="group"
+              aria-label="Elegir ciudad del escenario publicitario ilustrativo"
+            >
+              <span>ESCENA URBANA</span>
+              {(Object.keys(CITIES) as DemoCity[]).map((choice) => (
+                <button
+                  key={choice}
+                  type="button"
+                  aria-pressed={city === choice}
+                  onClick={() => setCity(choice)}
+                >
+                  {CITIES[choice]}
+                </button>
+              ))}
+            </div>
             <ol
               className="landing-hero-steps"
               aria-label="Así comienza una campaña"
@@ -233,7 +250,7 @@ export default function LandingPage() {
               </li>
             </ol>
           </div>
-          <CityScene />
+          <CityScene city={city} />
         </section>
         <noscript>
           <p className="landing-wrap landing-noscript">

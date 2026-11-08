@@ -9,9 +9,6 @@ import {
   QrCode,
   RefreshCw,
   ShieldCheck,
-  TrendingUp,
-  Users,
-  Wallet,
 } from "lucide-react";
 
 interface Referral {

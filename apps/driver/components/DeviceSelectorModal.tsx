@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 
-const fetcher = (url: string) => api.get(url).then((res: any) => res.data);
+const fetcher = (url: string) => api.get(url).then((res) => res.data);
 
 interface Device {
   device_id: string;

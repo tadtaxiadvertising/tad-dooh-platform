@@ -8,8 +8,8 @@ describe("LeadController RBAC", () => {
 
   beforeEach(() => {
     reflector = new Reflector();
-    // Pass mock service to controller constructor
-    controller = new LeadController({} as any);
+    // Metadata lives on the real methods; no service instance is needed.
+    controller = LeadController.prototype;
   });
 
   it("should restrict getLead to ADMIN role", () => {

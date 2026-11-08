@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@tad/services";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@tad/ui";
 import { AdvertiserLayout } from "@/components/layout/AdvertiserLayout";
@@ -122,8 +123,8 @@ export default function RequestsPage() {
         },
       );
       if (listRes.ok) setRequests(await listRes.json());
-    } catch (err: any) {
-      alert("Error: " + err.message);
+    } catch (err: unknown) {
+      alert("Error: " + getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

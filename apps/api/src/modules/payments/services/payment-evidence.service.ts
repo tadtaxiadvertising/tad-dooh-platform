@@ -7,7 +7,6 @@
  *
  * Estados: SUBMITTED → UNDER_REVIEW → PAYMENT_CONFIRMED | REJECTED
  */
-
 import {
   Injectable,
   Logger,
@@ -16,7 +15,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
-import { v4 as uuidv4 } from "uuid";
+import type { PaymentIntent, Prisma } from "@prisma/client";
 
 export interface CreatePaymentEvidenceInput {
   paymentIntentId: string;
@@ -25,7 +24,7 @@ export interface CreatePaymentEvidenceInput {
   fileSize?: number;
   mimeType?: string;
   submittedBy: string;
-  metadata?: Record<string, any>;
+  metadata?: Prisma.InputJsonObject;
 }
 
 export interface ReviewPaymentEvidenceInput {
@@ -272,7 +271,7 @@ export class PaymentEvidenceService {
    * - Actualiza onboardingStatus
    */
   private async handleDriverSubscriptionConfirmed(
-    paymentIntent: any,
+    paymentIntent: PaymentIntent,
     amount: number,
   ) {
     this.logger.log(
@@ -367,7 +366,7 @@ export class PaymentEvidenceService {
    * - Crea comisión de referido si aplica
    */
   private async handleAdvertiserCampaignConfirmed(
-    paymentIntent: any,
+    paymentIntent: PaymentIntent,
     amount: number,
   ) {
     this.logger.log(

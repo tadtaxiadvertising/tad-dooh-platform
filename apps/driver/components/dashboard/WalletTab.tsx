@@ -1,3 +1,5 @@
+"use client";
+
 // apps/driver/components/dashboard/WalletTab.tsx
 /**
  * WalletTab — Vista de Billetera V12 (migrada de /driver/wallet)
@@ -8,7 +10,6 @@
  * Usa los datos del hub (useDriverHub) que ya están disponibles en el shell.
  * No monta su propio useTelemetry ni useDriverHub.
  */
-"use client";
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";

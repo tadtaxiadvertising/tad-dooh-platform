@@ -10,7 +10,6 @@
  * 3. Humano revisa → PaymentVerification → PAYMENT_CONFIRMED
  * 4. Sistema crea comisión y activa flujo correspondiente
  */
-
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
@@ -18,7 +17,6 @@ import {
   PaymentProviderConfig,
   CreatePaymentIntentInput,
   PaymentIntentResult,
-  PaymentIntentStatus,
   PaymentWebhookPayload,
   PaymentVerificationResult,
   RefundResult,
@@ -46,7 +44,7 @@ export class ManualTransferProvider implements IPaymentProvider {
 
   constructor(private readonly configService: ConfigService) {}
 
-  async initialize(config: PaymentProviderConfig): Promise<void> {
+  async initialize(_config: PaymentProviderConfig): Promise<void> {
     this.logger.log(`Initializing ${this.providerType} provider`);
     // Cargar config bancaria desde env
     this.bankConfig.accountNumber =
@@ -170,8 +168,8 @@ IMPORTANTE:
    * Pero puede recibir notificaciones de banca online si se integra
    */
   async processWebhook(
-    payload: any,
-    signature?: string,
+    payload: import("../interfaces/payment-provider.interface").PaymentNotificationPayload,
+    _signature?: string,
   ): Promise<PaymentWebhookPayload> {
     this.logger.warn(
       `Webhook received for manual transfer (unexpected):`,

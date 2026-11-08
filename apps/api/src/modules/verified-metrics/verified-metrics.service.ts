@@ -366,10 +366,19 @@ export class VerifiedMetricsService {
     });
 
     const allDeviceIds = new Set<string>();
-    const deviceInfo = new Map<string, any>();
+    const deviceInfo = new Map<
+      string,
+      {
+        taxiNumber: string | null;
+        driver: { id: string; fullName: string } | null;
+      }
+    >();
     for (const c of activeCampaigns) {
       for (const dc of c.devices) {
-        const devId = dc.device_id || (dc as any).deviceId || dc.device?.id;
+        const devId =
+          dc.device_id ||
+          (dc as typeof dc & { deviceId?: string }).deviceId ||
+          dc.device?.id;
         if (devId) {
           allDeviceIds.add(devId);
           deviceInfo.set(devId, {

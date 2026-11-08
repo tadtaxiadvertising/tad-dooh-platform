@@ -725,7 +725,7 @@ export class FleetService {
    * Envía un comando a toda la flota activa (Realtime + Persistencia)
    * Útil para el "Panic Button" o actualizaciones globales.
    */
-  async broadcastCommand(type: string, params: Record<string, any> = {}) {
+  async broadcastCommand(type: string, params: Record<string, unknown> = {}) {
     Logger.log(`[FLEET_C2] Broadcasting global command: ${type}`);
 
     // 1. Emitir vía Realtime para efectos inmediatos en dispositivos conectados

@@ -1,3 +1,57 @@
+import type {
+  Prisma,
+  Driver,
+  Commission,
+  FinancialTransaction,
+  Wallet,
+  Advertiser,
+} from "@prisma/client";
+interface ReferralPrismaMock {
+  driver: {
+    findUnique: jest.Mock<
+      Promise<Partial<Driver> | null>,
+      [Prisma.DriverFindUniqueArgs?]
+    >;
+    findMany: jest.Mock<
+      Promise<Partial<Driver>[]>,
+      [Prisma.DriverFindManyArgs?]
+    >;
+    count: jest.Mock<Promise<number>, [Prisma.DriverCountArgs?]>;
+  };
+  commission: {
+    aggregate: jest.Mock<
+      Promise<Prisma.GetCommissionAggregateType<{ _sum: { amount: true } }>>,
+      [Prisma.CommissionAggregateArgs?]
+    >;
+    findFirst: jest.Mock<
+      Promise<Partial<Commission> | null>,
+      [Prisma.CommissionFindFirstArgs?]
+    >;
+    create: jest.Mock<
+      Promise<Partial<Commission>>,
+      [Prisma.CommissionCreateArgs?]
+    >;
+  };
+  financialTransaction: {
+    upsert: jest.Mock<
+      Promise<Partial<FinancialTransaction>>,
+      [Prisma.FinancialTransactionUpsertArgs?]
+    >;
+  };
+  wallet: {
+    upsert: jest.Mock<Promise<Partial<Wallet>>, [Prisma.WalletUpsertArgs?]>;
+  };
+  advertiser: {
+    findMany: jest.Mock<
+      Promise<Partial<Advertiser>[]>,
+      [Prisma.AdvertiserFindManyArgs?]
+    >;
+  };
+  $transaction: jest.Mock<
+    Promise<unknown>,
+    [(tx: ReferralPrismaMock) => Promise<unknown>]
+  >;
+}
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { ReferralService } from "./referral.service";
@@ -6,7 +60,7 @@ import { BUSINESS_RULES } from "../../common/constants/business-rules";
 
 describe("ReferralService", () => {
   let service: ReferralService;
-  let prisma: any;
+  let prisma: ReferralPrismaMock;
 
   beforeEach(async () => {
     prisma = {
@@ -29,7 +83,10 @@ describe("ReferralService", () => {
       advertiser: {
         findMany: jest.fn(),
       },
-      $transaction: jest.fn((callback: any) => callback(prisma)),
+      $transaction: jest.fn(
+        (callback: (tx: ReferralPrismaMock) => Promise<unknown>) =>
+          callback(prisma),
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({

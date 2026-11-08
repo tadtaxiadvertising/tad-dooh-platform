@@ -5,25 +5,18 @@ import {
   Scale,
   Search,
   AlertTriangle,
-  CheckCircle2,
   DollarSign,
-  BarChart3,
   ArrowUpRight,
   ArrowDownRight,
-  Calendar,
   Filter,
   Download,
   Terminal,
-  Activity,
   RefreshCw,
   Loader2,
-  ChevronRight,
   ShieldCheck,
-  FileText,
-  Clock,
 } from "lucide-react";
 import clsx from "clsx";
-import { AntigravityButton } from "@tad/ui";
+
 import {
   getReconciliationReport,
   generateReconciliation,
@@ -41,7 +34,14 @@ function ReconStat({
   trend,
   trendType,
   loading,
-}: any) {
+}: {
+  label: string;
+  value: React.ReactNode;
+  icon: typeof Scale;
+  trend?: string;
+  trendType?: "up" | "down";
+  loading?: boolean;
+}) {
   return (
     <div className="bg-zinc-900/40 backdrop-blur-md border border-white/[0.05] p-8 rounded-[32px] relative group overflow-hidden transition-all duration-300 hover:border-tad-yellow/20">
       <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
@@ -96,8 +96,26 @@ export default function ReconciliationPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [period, setPeriod] = useState("2026-04");
-  const [reports, setReports] = useState<any[]>([]);
-  const [kpis, setKpis] = useState<any>(null);
+  const [reports, setReports] = useState<
+    {
+      id: string;
+      deviceId?: string;
+      driver?: { fullName?: string };
+      discrepancyType?: string;
+      revenueContracted?: number;
+      revenueReceived?: number;
+      payrollDue?: number;
+      payrollPaid?: number;
+      hasDiscrepancy?: boolean;
+      totalPlaybacks?: number;
+      deliveryRate?: number;
+    }[]
+  >([]);
+  const [kpis, setKpis] = useState<{
+    projectedRevenue?: number;
+    discrepancyCount?: number;
+    deliveryRateAvg?: number;
+  } | null>(null);
 
   // Modal State
   const [drillDownOpen, setDrillDownOpen] = useState(false);
@@ -131,7 +149,7 @@ export default function ReconciliationPage() {
       await generateReconciliation(period);
       toast.success("Auditoría regenerada con éxito", { id: toastId });
       fetchData();
-    } catch (error) {
+    } catch {
       toast.error("Error al generar reporte de auditoría", { id: toastId });
     } finally {
       setGenerating(false);

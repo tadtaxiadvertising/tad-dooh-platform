@@ -89,7 +89,7 @@ test.describe("Admin Dashboard — Autenticación", () => {
       "Configure isolated admin E2E credentials.",
     );
     await loginAsAdmin(page);
-    const urlAfterLogin = page.url();
+
     await page.reload({ waitUntil: "networkidle" });
     const urlAfterRefresh = page.url();
     const redirectedToLogin = urlAfterRefresh.includes("/login");

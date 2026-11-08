@@ -1,3 +1,4 @@
+import type { Prisma, QrScan } from "@prisma/client";
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { QrScanService } from "../qr-scan.service";
@@ -6,14 +7,26 @@ import { PrismaService } from "../../prisma/prisma.service";
 // Type annotation for mockPrisma to avoid circular reference
 interface MockPrisma {
   qrScan: {
-    findFirst: any;
-    findUnique: any;
-    create: any;
-    findMany: any;
-    count: any;
-    update: any;
+    findFirst: jest.Mock<
+      Promise<Partial<QrScan> | null>,
+      [Prisma.QrScanFindFirstArgs?]
+    >;
+    findUnique: jest.Mock<
+      Promise<Partial<QrScan> | null>,
+      [Prisma.QrScanFindUniqueArgs?]
+    >;
+    create: jest.Mock<Promise<Partial<QrScan>>, [Prisma.QrScanCreateArgs?]>;
+    findMany: jest.Mock<
+      Promise<Partial<QrScan>[]>,
+      [Prisma.QrScanFindManyArgs?]
+    >;
+    count: jest.Mock<Promise<number>, [Prisma.QrScanCountArgs?]>;
+    update: jest.Mock<Promise<Partial<QrScan>>, [Prisma.QrScanUpdateArgs?]>;
   };
-  $transaction: any;
+  $transaction: jest.Mock<
+    Promise<unknown>,
+    [(prisma: MockPrisma) => Promise<unknown>]
+  >;
 }
 
 describe("QrScanService", () => {

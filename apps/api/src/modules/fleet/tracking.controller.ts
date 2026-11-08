@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from "../auth/auth.types";
 import { Controller, Get, Req } from "@nestjs/common";
 import { FleetService } from "./fleet.service";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
@@ -8,7 +9,7 @@ export class TrackingController {
 
   @Get("baseline")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getBaseline(@Req() req: any) {
+  async getBaseline(@Req() req: AuthenticatedRequest) {
     const user = req.user;
     const advertiserId =
       user.role === UserRole.ADVERTISER ? user.entityId : undefined;

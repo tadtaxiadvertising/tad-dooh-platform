@@ -16,7 +16,9 @@ export class AssetsController {
   }
 
   @Post("webhook/supabase")
-  async handleWebhook(@Body() payload: any) {
+  async handleWebhook(
+    @Body() payload: Parameters<AssetsService["handleAssetWebhook"]>[0],
+  ) {
     return this.assetsService.handleAssetWebhook(payload);
   }
 }

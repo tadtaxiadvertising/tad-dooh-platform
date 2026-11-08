@@ -110,25 +110,40 @@ export class BiScheduler {
    */
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async handleIdempotencyCleanup() {
-    this.logger.log("🧹 [IDEMPOTENCY_TTL] Purging expired idempotency keys...");
+    this.logger.log("🔎 [IDEMPOTENCY_RETENTION] Checking records for reconciliation/archival...");
     try {
-      // Release stale locks first (PROCESSING keys older than 1h are orphans from crashed requests)
-      const staleLocks = await this.prisma.idempotencyKey.updateMany({
+      // An old lock may represent a payment that committed just before
+      // an API crash. Never release it based on age alone.
+      const uncertain = await this.prisma.idempotencyKey.count({
         where: {
           isLocked: true,
-          createdAt: { lt: new Date(Date.now() - 3600000) }, // older than 1h
+          createdAt: { lt: new Date(Date.now() - 3_600_000) },
         },
-        data: { isLocked: false },
       });
-      this.logger.log(
-        `⚠ Released ${staleLocks.count} stale idempotency locks (orphaned from crashed requests).`,
-      );
+      if (uncertain > 0) {
+        this.logger.warn(
+          `[IDEMPOTENCY_RECONCILIATION_REQUIRED] ${uncertain} aged in-flight ` +
+            "records remain locked; investigate before retrying.",
+        );
+      }
 
-      // Purge all expired keys (expiresAt < now)
-      const deleted = await this.prisma.idempotencyKey.deleteMany({
-        where: { expiresAt: { lt: new Date() } },
+      // A completed payment can be retried after long offline periods.
+      // Never delete its deduplication key based on age alone. Inspect the
+      // expiry horizon cheaply via the index; archival requires permanent
+      // key tombstones + an approved retention/reconciliation plan.
+      const archiveCandidate = await this.prisma.idempotencyKey.findFirst({
+        where: {
+          expiresAt: { lt: new Date() },
+          isLocked: false,
+        },
+        select: { id: true },
       });
-      this.logger.log(`✅ Purged ${deleted.count} expired idempotency keys.`);
+      if (archiveCandidate) {
+        this.logger.warn(
+          "[IDEMPOTENCY_ARCHIVE_REQUIRED] Completed keys older than " +
+            "the review horizon are retained to prevent duplicate payments.",
+        );
+      }
     } catch (error) {
       this.logger.error("❌ Error in idempotency cleanup:", error.message);
     }

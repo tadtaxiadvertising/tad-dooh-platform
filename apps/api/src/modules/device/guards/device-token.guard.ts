@@ -10,6 +10,8 @@ import { Request } from "express";
 import * as jwt from "jsonwebtoken";
 import { BUSINESS_RULES } from "../../../common/constants/business-rules";
 import { requireEnv } from "../../../utils/env.util";
+import type { AuthenticatedRequest } from "../../auth/auth.types";
+import { matchesAuthenticatedDevice } from "./device-request-scope";
 
 /**
  * SEC-03: Device Token Guard
@@ -48,6 +50,22 @@ export class DeviceTokenGuard implements CanActivate {
       throw new UnauthorizedException("Device token missing deviceId claim");
     }
 
+    // The token must authorize the SAME device in every user-controlled
+    // identity field. Without this check, a device-A token could request
+    // device-B sync, bulk-sync or asset manifest (IDOR).
+    // Do not treat params.id as a device: command/:id/ack uses a command ID.
+    const requestedDeviceIds = [
+      request.headers["x-device-id"],
+      request.body?.deviceId,
+      request.body?.device_id,
+      request.query?.deviceId,
+      request.query?.device_id,
+      request.params?.deviceId,
+    ];
+    if (!matchesAuthenticatedDevice(deviceId, requestedDeviceIds)) {
+      throw new ForbiddenException("Device identity does not match token");
+    }
+
     // Look up the device and enforce OPERATIVO status
     const device = await this.prisma.device.findUnique({
       where: { deviceId },
@@ -65,7 +83,7 @@ export class DeviceTokenGuard implements CanActivate {
     }
 
     // Attach deviceId to request for downstream use
-    (request as any).authenticatedDeviceId = deviceId;
+    (request as AuthenticatedRequest).authenticatedDeviceId = deviceId;
     return true;
   }
 }

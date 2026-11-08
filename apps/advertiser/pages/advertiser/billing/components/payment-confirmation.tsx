@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { CheckCircle2, Copy, ExternalLink } from "lucide-react";
-import { cn } from "@/lib/utils";
+import "@/lib/utils";
 
 export interface PaymentConfirmationProps {
   paymentId: string;

@@ -1,3 +1,4 @@
+import { errorMessage } from "../../utils/error.util";
 /// <reference types="multer" />
 import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -10,7 +11,7 @@ import { BUSINESS_RULES } from "../../common/constants/business-rules";
 @Injectable()
 export class MediaService {
   private readonly logger = new Logger(MediaService.name);
-  private supabase: any;
+  private supabase: ReturnType<SupabaseService["getClient"]>;
 
   constructor(
     private readonly config: ConfigService,
@@ -113,14 +114,23 @@ export class MediaService {
         path: path,
         publicUrl,
       };
-    } catch (e: any) {
-      this.logger.error(`Falla en generateUploadUrl: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(`Falla en generateUploadUrl: ${errorMessage(e)}`);
       // REGLA SRE 01: Mensajes de error amigables pero con suficiente info para debug local
-      throw new BadRequestException(`${e.message}`);
+      throw new BadRequestException(`${errorMessage(e)}`);
     }
   }
 
-  async registerBypassedMedia(data: any) {
+  async registerBypassedMedia(data: {
+    filename: string;
+    contentType: string;
+    publicUrl: string;
+    storageKey: string;
+    campaignId?: string;
+    size?: string | number;
+    qrUrl?: string;
+    hashMd5?: string;
+  }) {
     if (data.size && Number(data.size) > BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES) {
       throw new BadRequestException(
         `El archivo registro excede el límite permitido de ${BUSINESS_RULES.MAX_VIDEO_SIZE_MB}MB`,
@@ -148,24 +158,19 @@ export class MediaService {
           `publicUrl debe apuntar al storage de TAD (${allowedHosts.join(", ")}) — se recibió ${parsed.host}`,
         );
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof BadRequestException) throw e;
-      throw new BadRequestException(`publicUrl inválida: ${e.message}`);
+      throw new BadRequestException(`publicUrl inválida: ${errorMessage(e)}`);
     }
 
     try {
       const cdnPrefix = String(this.config.get("CDN_URL_PREFIX"));
+      const supabaseUrl = this.config.get<string>("SUPABASE_URL");
       let finalCdnUrl = data.publicUrl;
 
       // Si tenemos un CDN_PREFIX, reemplazamos la base de Supabase por el CDN
-      if (
-        cdnPrefix &&
-        data.publicUrl.includes(this.config.get("SUPABASE_URL"))
-      ) {
-        finalCdnUrl = data.publicUrl.replace(
-          this.config.get("SUPABASE_URL"),
-          cdnPrefix,
-        );
+      if (cdnPrefix && supabaseUrl && data.publicUrl.includes(supabaseUrl)) {
+        finalCdnUrl = data.publicUrl.replace(supabaseUrl, cdnPrefix);
       }
 
       const media = await this.prisma.media.create({
@@ -188,10 +193,10 @@ export class MediaService {
         ...media,
         fileSize: Number(media.fileSize),
       };
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       this.logger.error("Database Insert Error on bypass: ", dbError);
       throw new BadRequestException(
-        `Error guardando metadata: ${dbError.message}`,
+        `Error guardando metadata: ${errorMessage(dbError)}`,
       );
     }
   }
@@ -214,8 +219,8 @@ export class MediaService {
         qrUrl: m.qrUrl,
         createdAt: m.createdAt,
       }));
-    } catch (error: any) {
-      this.logger.error(`Error listing files from DB: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`Error listing files from DB: ${errorMessage(error)}`);
       return [];
     }
   }
@@ -265,10 +270,10 @@ export class MediaService {
         ...media,
         fileSize: Number(media.fileSize),
       };
-    } catch (error: any) {
-      this.logger.error(`Error updating media ${id}: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`Error updating media ${id}: ${errorMessage(error)}`);
       throw new BadRequestException(
-        `Falla al actualizar metadata: ${error.message}`,
+        `Falla al actualizar metadata: ${errorMessage(error)}`,
       );
     }
   }
@@ -289,7 +294,7 @@ export class MediaService {
       );
     }
 
-    const sanitized = newFilename.trim().replace(/[\\/&?:*$#%'\"!<>|?]/g, "_");
+    const sanitized = newFilename.trim().replace(/[\\/&?:*$#%'"!<>|?]/g, "_");
     if (sanitized.length === 0) {
       throw new BadRequestException(
         "El nombre del archivo contiene solo caracteres no permitidos.",
@@ -346,11 +351,11 @@ export class MediaService {
       // Eliminar de la Base de Datos
       await this.prisma.media.delete({ where: { id } });
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof BadRequestException) throw error;
-      this.logger.error(`Error deleting file: ${error.message}`);
+      this.logger.error(`Error deleting file: ${errorMessage(error)}`);
       throw new BadRequestException(
-        `Error al eliminar archivo: ${error.message}`,
+        `Error al eliminar archivo: ${errorMessage(error)}`,
       );
     }
   }
@@ -482,10 +487,10 @@ export class MediaService {
         fileSize: Number(media.fileSize),
         verified: true,
       };
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       this.logger.error("Database Insert Error on confirm: ", dbError);
       throw new BadRequestException(
-        `Error guardando metadata: ${dbError.message}`,
+        `Error guardando metadata: ${errorMessage(dbError)}`,
       );
     }
   }

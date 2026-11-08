@@ -1,20 +1,12 @@
-const fs = require('fs');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-
-async function runSQL() {
-  const sql = fs.readFileSync('prisma/views.sql', 'utf8');
-  const statements = sql.split(';').filter(s => s.trim().length > 0);
-  
-  for (let s of statements) {
-    if (!s.trim().startsWith('--')) {
-      console.log(`Ejecutando: \n${s.substring(0, 50)}...`);
-      await prisma.$executeRawUnsafe(s);
-    }
-  }
-  console.log('Vista materializada e indice creados con éxito.');
-}
-
-runSQL()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+/**
+ * Legacy one-off materialized view creator: deliberately disabled.
+ * This script previously split prisma/views.sql on semicolons, ignored
+ * commented statement prefixes, and could execute DROP during an incident.
+ *
+ * Use a reviewed Prisma migration + the app's read-only readiness probe.
+ */
+process.stderr.write(
+  "create_mv.js is retired. Apply a reviewed Prisma migration on a staging " +
+    "restore before production; never DROP the master-sync view at startup.\n",
+);
+process.exitCode = 1;

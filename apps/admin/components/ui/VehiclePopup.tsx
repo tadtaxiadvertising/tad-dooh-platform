@@ -13,7 +13,6 @@ import {
   Phone,
   Calendar,
   AlertTriangle,
-  Car,
   Hash,
   Wifi,
   WifiOff,
@@ -21,7 +20,7 @@ import {
   Crosshair,
 } from "lucide-react";
 import clsx from "clsx";
-import { getDriverStatusInfo, formatTimeSince } from "@/utils/driverStatus";
+import { getDriverStatusInfo } from "@/utils/driverStatus";
 
 interface VehiclePopupProps {
   device: {

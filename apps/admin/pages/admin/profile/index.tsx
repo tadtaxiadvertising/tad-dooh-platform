@@ -1,7 +1,7 @@
+import { getErrorMessage } from "@/lib/error-message";
 import React, { useState } from "react";
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
-import { useRouter } from "next/router";
 import useSWR from "swr";
 import { getMyProfile, updateMyProfile } from "@tad/services";
 
@@ -13,7 +13,6 @@ import { User, Shield, Key, Mail, Save, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ProfilePage() {
-  const router = useRouter();
   const {
     data: profile,
     error,
@@ -43,10 +42,8 @@ export default function ProfilePage() {
       await updateMyProfile({ name });
       await mutate();
       toast.success("Perfil actualizado correctamente");
-    } catch (err: any) {
-      toast.error(
-        err.response?.data?.message || "Error al actualizar el perfil",
-      );
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || "Error al actualizar el perfil");
     } finally {
       setIsSavingProfile(false);
     }
@@ -70,10 +67,8 @@ export default function ProfilePage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (err: any) {
-      toast.error(
-        err.response?.data?.message || "Error al actualizar la contraseña",
-      );
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || "Error al actualizar la contraseña");
     } finally {
       setIsSavingPassword(false);
     }

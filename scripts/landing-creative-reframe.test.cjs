@@ -100,6 +100,7 @@ test("financial outputs only animate after a changed amount, never on mount", ()
 
 test("driver range outputs expose numeric quantities and hide decorative rates from assistive tech", () => {
   const lab = read("apps/driver/components/landing/DriverEarningsLab.tsx");
+  assert.match(collapseLayout(lab), /className=\{styles\.slots\} role="img" aria-label=/);
   assert.match(collapseLayout(lab), /className=\{styles\.value\}\s*>\s*\{value\}\s*<\/output>/);
   assert.match(collapseLayout(lab), /className=\{styles\.unit\} aria-hidden="true"\s*>\s*× RD\$500\s*<\/span>/);
   assert.doesNotMatch(lab, /<output[^>]+>[\s\S]{0,120}\$\{value\} × RD\$500/);

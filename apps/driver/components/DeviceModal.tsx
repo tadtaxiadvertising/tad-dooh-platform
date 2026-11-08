@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@tad/services";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Tablet,
@@ -24,6 +25,8 @@ interface DeviceModalProps {
     deviceId?: string;
     taxi_number?: string;
     taxiNumber?: string;
+    driverId?: string;
+    driver?: { id?: string };
     city?: string;
     status?: string;
   } | null;
@@ -43,8 +46,10 @@ const DeviceModal = React.memo(function DeviceModal({
     driverId: "",
   });
 
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [drivers, setDrivers] = useState<
+    { id: string; fullName: string; taxiNumber?: string }[]
+  >([]);
+  const [, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadDrivers = useCallback(async () => {
@@ -52,7 +57,9 @@ const DeviceModal = React.memo(function DeviceModal({
       const { getDrivers } = await import("@tad/services");
       const data = await getDrivers();
       setDrivers(data || []);
-    } catch (err) {}
+    } catch {
+      // Keep the existing driver list when the lookup is unavailable.
+    }
   }, []);
 
   useEffect(() => {
@@ -64,8 +71,7 @@ const DeviceModal = React.memo(function DeviceModal({
           city: device.city || "Santiago",
           status:
             device.status === "online" ? "ACTIVE" : device.status || "ACTIVE",
-          driverId:
-            (device as any).driverId || (device as any).driver?.id || "",
+          driverId: device.driverId || device.driver?.id || "",
         });
       } else {
         setFormData({
@@ -83,8 +89,7 @@ const DeviceModal = React.memo(function DeviceModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setLoading(true);
     setError(null);
 
@@ -99,14 +104,7 @@ const DeviceModal = React.memo(function DeviceModal({
       onSuccess();
       onClose();
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error && "response" in err
-          ? (err as { response: { data: { message: string } } }).response.data
-              .message
-          : err instanceof Error
-            ? err.message
-            : "Error al procesar la solicitud";
-      setError(errorMessage || "Error al procesar la solicitud");
+      setError(getErrorMessage(err) || "Error al procesar la solicitud");
     } finally {
       setLoading(false);
     }
@@ -121,9 +119,10 @@ const DeviceModal = React.memo(function DeviceModal({
       toast.success("PANTALLA ELIMINADA: Hardware purgado del inventario.");
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        "FALLA DE ELIMINACIÓN: " + (err.message || "Error desconocido"),
+        "FALLA DE ELIMINACIÓN: " +
+          (getErrorMessage(err) || "Error desconocido"),
       );
     } finally {
       setLoading(false);
@@ -157,7 +156,13 @@ const DeviceModal = React.memo(function DeviceModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleSubmit();
+          }}
+          className="p-6 space-y-5"
+        >
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center gap-3 animate-shake">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -278,8 +283,7 @@ const DeviceModal = React.memo(function DeviceModal({
             <AntigravityButton
               actionName="save_hardware"
               onAsyncClick={async () => {
-                const e = { preventDefault: () => {} } as any;
-                await handleSubmit(e);
+                await handleSubmit();
               }}
               variant="primary"
               className="flex-1 h-16 rounded-2xl"

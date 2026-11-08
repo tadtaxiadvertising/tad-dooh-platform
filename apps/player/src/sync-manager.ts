@@ -89,23 +89,28 @@ export class SyncManager {
       // Kill-switch check
       if (payload.blocked) {
         const reason = payload.reason || "awaiting_approval";
+        this.revokeOfflineLicense();
         this.onKillSwitch(reason);
         return;
+      }
+
+      // A matching media hash still requires a renewed offline license.
+      // Remote commands are also independent of whether creatives changed.
+      if (payload.licenseToken && payload.expiresAt) {
+        this.persistOfflineLicense(payload.licenseToken, payload.expiresAt);
+      }
+
+      if (payload.commands && payload.commands.length > 0) {
+        this.onCommands(payload.commands);
+        for (const cmd of payload.commands) {
+          this.acknowledgeCommand(cmd.id).catch(() => {});
+        }
       }
 
       // Delta check — no update needed
       if (!payload.update) {
         console.log("[SyncManager] Delta sync matches. No update needed.");
         return;
-      }
-
-      // Process commands
-      if (payload.commands && payload.commands.length > 0) {
-        this.onCommands(payload.commands);
-        // Acknowledge commands
-        for (const cmd of payload.commands) {
-          this.acknowledgeCommand(cmd.id).catch(() => {});
-        }
       }
 
       // Download + cache new assets
@@ -120,13 +125,6 @@ export class SyncManager {
 
       this.lastSyncHash = payload.sync_hash;
 
-      // Fix #4: Persistir licencia offline para validación anti-ghosting.
-      // Si el JWT expira tras 48h sin handshake del servidor, el Player debe
-      // activar el KillSwitch (pantalla negra "Conecte a Internet para Validar").
-      if (payload.licenseToken && payload.expiresAt) {
-        this.persistOfflineLicense(payload.licenseToken, payload.expiresAt);
-      }
-
       this.onPlaylistUpdate(assets, []);
     } catch (err) {
       console.error("[SyncManager] Full sync failed:", err);
@@ -137,15 +135,35 @@ export class SyncManager {
     if (!this.isOnline || !this.deviceId) return;
 
     try {
-      const response = await fetch(`${env.API_URL}/sync/${this.deviceId}`);
+      const response = await fetch(`${env.API_URL}/sync/${this.deviceId}`, {
+        cache: "no-store",
+      });
+      if ([402, 403, 404].includes(response.status)) {
+        const reason =
+          response.status === 402
+            ? "SUBSCRIPTION_UNPAID"
+            : response.status === 403
+              ? "DEVICE_DEACTIVATED"
+              : "DEVICE_NOT_FOUND_IN_CLUSTER";
+        this.revokeOfflineLicense();
+        this.onKillSwitch(reason);
+        return;
+      }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const manifest: SyncManifest = await response.json();
 
       // Kill-switch from manifest
       if (manifest.killSwitch) {
+        this.revokeOfflineLicense();
         this.onKillSwitch(manifest.killSwitchReason || "SUBSCRIPTION_UNPAID");
         return;
+      }
+
+      // The server issues a fresh license even when the media ETag matches.
+      // Persist that license before skipping the expensive media update.
+      if (manifest.licenseToken && manifest.expiresAt) {
+        this.persistOfflineLicense(manifest.licenseToken, manifest.expiresAt);
       }
 
       // ETag comparison
@@ -164,11 +182,6 @@ export class SyncManager {
       }
 
       this.lastSyncHash = manifest.etag;
-
-      // Fix #4: Persistir licencia offline del manifest
-      if (manifest.licenseToken && manifest.expiresAt) {
-        this.persistOfflineLicense(manifest.licenseToken, manifest.expiresAt);
-      }
 
       this.onPlaylistUpdate(assets, manifest.schedules || []);
     } catch (err) {
@@ -336,6 +349,17 @@ export class SyncManager {
   // ── Fix #4: Offline License Persistence & Self-Destruct ──
   // Persiste el JWT de licencia offline y su fecha de expiración en localStorage.
   // Inicia un validator que evalúa cada 5 min si la licencia sigue válida.
+  // Revocation changes authorization only; retain downloaded creatives so
+  // they can be re-used after the device is legitimately reauthorized.
+  private revokeOfflineLicense(): void {
+    this.offlineLicenseExpiresAt = null;
+    try {
+      localStorage.removeItem("TAD_OFFLINE_LICENSE");
+    } catch {
+      // A blocked device must still receive its kill switch if storage fails.
+    }
+  }
+
   private persistOfflineLicense(token: string, expiresAt: string): void {
     try {
       const expiresAtMs = new Date(expiresAt).getTime();

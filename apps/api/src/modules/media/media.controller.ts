@@ -1,18 +1,17 @@
 /// <reference types="multer" />
+/// <reference types="multer" />
 import {
   Controller,
   Post,
   Get,
   Delete,
-  UseInterceptors,
-  UploadedFile,
   BadRequestException,
   Body,
   Param,
   Patch,
   Query,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
+
 import { MediaService } from "./media.service";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
@@ -53,7 +52,9 @@ export class MediaController {
   }
 
   @Post("register-bypassed")
-  async registerBypassed(@Body() body: any) {
+  async registerBypassed(
+    @Body() body: Parameters<MediaService["registerBypassedMedia"]>[0],
+  ) {
     if (!body.filename || !body.storageKey || !body.publicUrl) {
       throw new BadRequestException(
         "Faltan campos (filename, storageKey, publicUrl)",

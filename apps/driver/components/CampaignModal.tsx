@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@tad/services";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   X,
@@ -109,18 +110,20 @@ export const CampaignModal = React.memo(function CampaignModal({
 
       // Initialize state from existing campaign data
       getCampaignById(campaignId)
-        .then((camp: any) => {
-          if (camp) {
-            setTargetAll(camp.targetAll ?? true);
-            if (camp.targetDrivers) {
-              setSelectedDrivers(camp.targetDrivers.map((d: any) => d.id));
+        .then(
+          (camp: { targetAll?: boolean; targetDrivers?: { id: string }[] }) => {
+            if (camp) {
+              setTargetAll(camp.targetAll ?? true);
+              if (camp.targetDrivers) {
+                setSelectedDrivers(camp.targetDrivers.map((d) => d.id));
+              }
             }
-          }
-        })
+          },
+        )
         .catch(console.error);
 
       getCampaignDevices(campaignId)
-        .then((data: any[]) => {
+        .then((data: { id: string }[]) => {
           if (Array.isArray(data)) {
             // Use internal ID (UUID) for consistency in the UI state
             setSelectedDevices(data.map((d) => d.id));
@@ -189,9 +192,11 @@ export const CampaignModal = React.memo(function CampaignModal({
       toast.success("Configuración de pantallas actualizada en la red");
       onSuccess?.();
       setTimeout(() => setScreensDone(false), 2000);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error guardando pantallas:", e);
-      toast.error("Fallo en la sincronización de hardware: " + e.message);
+      toast.error(
+        "Fallo en la sincronización de hardware: " + getErrorMessage(e),
+      );
     } finally {
       setSavingScreens(false);
     }

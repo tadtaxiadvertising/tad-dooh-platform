@@ -1,3 +1,5 @@
+import type { AdvertiserRecord } from "@/types/admin-api";
+import { getErrorMessage } from "@/lib/error-message";
 import { useState, useEffect } from "react";
 import {
   X,
@@ -16,7 +18,7 @@ import { AntigravityButton } from "@tad/ui";
 
 interface AdvertiserModalProps {
   isOpen: boolean;
-  initialData: any | null;
+  initialData: AdvertiserRecord | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -51,7 +53,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
         whatsapp: initialData.whatsapp || "",
         websiteUrl: initialData.websiteUrl || "",
         instagram: initialData.instagram || "",
-        status: initialData.status || "ACTIVE",
+        status: (initialData.status as "ACTIVE" | "INACTIVE") || "ACTIVE",
       });
     } else {
       setForm({
@@ -88,10 +90,8 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
       }
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || err.message || "Error al guardar.",
-      );
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || "Error al guardar.");
     }
   };
 

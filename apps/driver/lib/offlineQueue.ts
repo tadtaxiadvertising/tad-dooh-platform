@@ -1,3 +1,5 @@
+import { classifyOfflineQueueStatus } from "./offlineQueuePolicy";
+
 interface OfflineQueueItem {
   endpoint: string;
   id?: number;
@@ -30,7 +32,8 @@ const normalizePayload = (
     return payload;
   }
 
-  const { driverId: _driverId, ...rest } = payload;
+  const rest = { ...payload };
+  delete rest.driverId;
   return {
     ...rest,
     tipo: normalizeBankAccountType(rest.tipo),
@@ -78,8 +81,8 @@ export const initDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
 
-    request.onupgradeneeded = (event: any) => {
-      const db = event.target.result;
+    request.onupgradeneeded = () => {
+      const db = request.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, {
           keyPath: "id",
@@ -88,8 +91,8 @@ export const initDB = (): Promise<IDBDatabase> => {
       }
     };
 
-    request.onsuccess = (event: any) => resolve(event.target.result);
-    request.onerror = (event: any) => reject(event.target.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
   });
 };
 
@@ -151,26 +154,27 @@ export const syncOfflineQueue = async () => {
           body: JSON.stringify(normalizedPayload),
         });
 
-        const shouldDropItem =
-          response.ok ||
-          response.status === 409 ||
-          (response.status >= 400 &&
-            response.status < 500 &&
-            response.status !== 401 &&
-            response.status !== 402);
-
-        if (shouldDropItem && typeof item.id === "number") {
+        const disposition = classifyOfflineQueueStatus(response.status);
+        if (disposition === "ack" && typeof item.id === "number") {
           await deleteQueueItem(db, item.id);
           processed += 1;
           remaining -= 1;
           continue;
         }
 
-        if (response.status === 401 || response.status === 402) {
+        if (disposition === "pause") {
+          if (response.status === 409) {
+            // Preserve strict FIFO order: a later bank update may depend on
+            // the operation that is still awaiting reconciliation.
+            console.warn(
+              "[OfflineQueue] HTTP 409: action retained; FIFO sync paused.",
+            );
+          }
           break;
         }
       } catch (error) {
-        console.error("Failed to sync item:", item, error);
+        // Never log offline payloads: they can include financial or bank data.
+        console.error("[OfflineQueue] Transport failed; queued action retained.");
         break;
       }
     }

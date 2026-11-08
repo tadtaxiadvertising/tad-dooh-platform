@@ -3,7 +3,6 @@ import React from "react";
 import {
   Battery,
   Signal,
-  Smartphone,
   Clock,
   MapPin,
   Navigation,
@@ -15,17 +14,16 @@ import {
   Phone,
   Calendar,
   AlertTriangle,
-  Car,
   Hash,
   Wifi,
   WifiOff,
-  Circle,
 } from "lucide-react";
 import clsx from "clsx";
 
 interface VehiclePopupProps {
   device: {
-    deviceId: string;
+    deviceId?: string;
+    isOutsideFence?: boolean;
     taxiNumber?: string;
     city?: string;
     batteryLevel?: number | null;
@@ -116,7 +114,7 @@ export const VehiclePopup: React.FC<VehiclePopupProps> = ({
             </h4>
 
             {/* OUT OF RANGE alert */}
-            {(device as any).isOutsideFence && (
+            {device.isOutsideFence && (
               <div className="mb-2 flex items-center gap-2 px-2 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-500 animate-pulse">
                 <XCircle className="w-3 h-3" />
                 <span className="text-[8px] font-black uppercase tracking-widest">

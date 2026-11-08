@@ -9,17 +9,15 @@ import {
   Utensils,
   Sparkles,
   Briefcase,
-  ExternalLink,
   MessageCircle,
   Instagram,
   ChevronRight,
   Search,
-  ArrowRight,
   Activity,
 } from "lucide-react";
 import clsx from "clsx";
 
-const CATEGORY_ICONS: Record<string, any> = {
+const CATEGORY_ICONS: Record<string, typeof Sparkles> = {
   Gastronomía: Utensils,
   Retail: ShoppingBag,
   Servicios: Briefcase,

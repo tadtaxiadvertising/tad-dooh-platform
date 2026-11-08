@@ -6,6 +6,11 @@ on:
   pull_request:
     paths:
       - "apps/advertiser/**"
+      - "package.json"
+      - "pnpm-workspace.yaml"
+      - "pnpm-lock.yaml"
+      - "Dockerfile.advertiser"
+      - "scripts/pnpm-overrides*.cjs"
       - "apps/driver/**"
       - "scripts/landing*.cjs"
       - "scripts/driver-landing*.cjs"
@@ -29,15 +34,17 @@ jobs:
           submodules: false
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.34.9
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
+      - name: Check security override parity before install
+        run: node --test scripts/pnpm-overrides-contract.test.cjs
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Landing and driver regression logic
-        run: node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
+        run: node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/landing-cinematic.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
       - name: Consent regression logic
         run: node --test scripts/cookie-management.test.cjs
       - name: Type check advertiser landing
@@ -56,7 +63,7 @@ jobs:
           submodules: false
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.34.9
       - uses: actions/setup-node@v4
         with:
           node-version: 22

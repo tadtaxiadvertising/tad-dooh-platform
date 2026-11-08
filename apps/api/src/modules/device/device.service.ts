@@ -8,7 +8,7 @@ import { SyncDeviceDto } from "./dto/sync-device.dto";
 import { BulkSyncDto } from "./dto/bulk-sync.dto";
 import { CampaignService } from "../campaign/campaign.service";
 import { FinanceService } from "../finance/finance.service";
-import { throttledMap } from "../../utils/throttler.util";
+
 import { requireEnv } from "../../utils/env.util";
 import * as jwt from "jsonwebtoken";
 
@@ -145,7 +145,7 @@ export class DeviceService {
         },
       }),
       // 2. Count campaign assignments per device in one query
-      (this.prisma as any).deviceCampaign
+      this.prisma.deviceCampaign
         .groupBy({
           by: ["device_id"],
           _count: { campaign_id: true },
@@ -451,23 +451,44 @@ export class DeviceService {
       },
     });
 
-    if (pendingCommands.length > 0) {
-      this.logger.log(
-        `📤 Sending ${pendingCommands.length} pending commands to Device ${deviceId}`,
-      );
-      // Mark as PROCESSING so we don't send them multiple times if sync is fast
-      await this.prisma.deviceCommand.updateMany({
-        where: { id: { in: pendingCommands.map((c) => c.id) } },
-        data: { status: "PROCESSING" },
-      });
-    }
-
     // Capture device city for geofencing
     const deviceCity = device.city || "Santiago";
     const payload = await this.campaignService.getActiveSyncVideos(
       deviceId,
       deviceCity,
     );
+
+    // Assemble commands before changing their state, avoiding lost tasks
+    // when a persisted command has malformed JSON parameters.
+    const commands = pendingCommands.map((command) => ({
+      id: command.id,
+      type: command.commandType,
+      params: command.commandParams ? JSON.parse(command.commandParams) : {},
+    }));
+
+    if (pendingCommands.length > 0) {
+      await this.prisma.deviceCommand.updateMany({
+        where: {
+          id: { in: pendingCommands.map((command) => command.id) },
+          status: "PENDING",
+        },
+        data: { status: "PROCESSING" },
+      });
+    }
+
+    // Renew a signed offline license on every approved device handshake,
+    // even when the media hash has not changed.
+    const licenseToken = jwt.sign(
+      {
+        deviceId,
+        taxi: device.taxiNumber,
+        type: "OFFLINE_LICENSE",
+        iat: Math.floor(Date.now() / 1000),
+      },
+      this.JWT_SECRET,
+      { expiresIn: "48h" },
+    );
+    const expiresAt = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
 
     // ============================================
     // DELTA SYNC LOGIC
@@ -480,6 +501,10 @@ export class DeviceService {
         update: false,
         blocked: false,
         sync_hash: payload.sync_hash,
+        media_assets: [],
+        licenseToken,
+        expiresAt,
+        commands,
       };
     }
 
@@ -489,22 +514,14 @@ export class DeviceService {
         blocked: false,
         media_assets: [],
         sync_hash: "empty",
+        licenseToken,
+        expiresAt,
+        commands,
       };
     }
 
     this.logger.log(
       `📥 Device ${deviceId}: New sync payload available (${payload.sync_hash})`,
-    );
-
-    const licenseToken = jwt.sign(
-      {
-        deviceId,
-        taxi: device.taxiNumber,
-        type: "OFFLINE_LICENSE",
-        iat: Math.floor(Date.now() / 1000),
-      },
-      this.JWT_SECRET,
-      { expiresIn: "48h" },
     );
 
     this.logger.log(
@@ -514,20 +531,16 @@ export class DeviceService {
       update: true,
       blocked: false,
       licenseToken,
-      expiresAt: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+      expiresAt,
       sync_hash: payload.sync_hash,
       campaign_version: payload.version,
       media_assets: payload.media_assets,
       videos: payload.media_assets, // Alias for legacy/TS player compatibility
-      commands: pendingCommands.map((c) => ({
-        id: c.id,
-        type: c.commandType,
-        params: c.commandParams ? JSON.parse(c.commandParams) : {},
-      })),
+      commands,
     };
   }
 
-  async acknowledgeCommand(commandId: string, result: any) {
+  async acknowledgeCommand(commandId: string, result: unknown) {
     this.logger.log(
       `📥 Command ${commandId} acknowledged with result: ${JSON.stringify(result)}`,
     );

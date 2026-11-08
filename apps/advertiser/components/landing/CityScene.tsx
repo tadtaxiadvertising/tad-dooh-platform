@@ -1,9 +1,11 @@
-import type { LandingRole } from "../../lib/landing/model";
+import { CITIES, type DemoCity, type LandingRole } from "../../lib/landing/model";
 
 export default function CityScene({
   role = "advertiser",
+  city = "sd",
 }: {
   role?: LandingRole;
+  city?: DemoCity;
 }) {
   const scene =
     role === "driver"
@@ -47,12 +49,13 @@ export default function CityScene({
     <div
       className="landing-scene"
       data-perspective={role}
-      aria-label={`Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}`}
+      data-city={city}
+      aria-label={`Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}${role === "advertiser" ? `, escenario ${CITIES[city]}` : ""}`}
       role="img"
     >
       <div className="landing-scene-grid" />
       <div className="landing-scene-label">
-        <span /> {scene.label}
+        <span /> {role === "advertiser" ? `ESCENA · ${CITIES[city].toUpperCase()}` : scene.label}
       </div>
       <div className="landing-orbit landing-orbit-one" />
       <div className="landing-orbit landing-orbit-two" />

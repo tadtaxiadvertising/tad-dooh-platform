@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import type { GetServerSideProps } from "next";
 import { AdvertiserLayout } from "@/components/layout/AdvertiserLayout";
-import { CreditCard, Receipt, TrendingUp, ShieldCheck } from "lucide-react";
-import { motion } from "framer-motion";
+import { CreditCard, TrendingUp, ShieldCheck } from "lucide-react";
+import "framer-motion";
 import { BillingPortal } from "@/components/bi/BillingPortal";
 
 export const getServerSideProps: GetServerSideProps = async () => ({

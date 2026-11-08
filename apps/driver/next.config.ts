@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import path from "path";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import withPWAInit from "@ducanh2912/next-pwa";
 
 const withPWA = withPWAInit({
@@ -14,25 +14,16 @@ const withPWA = withPWAInit({
   register: false,
   cacheOnFrontEndNav: false,
   reloadOnOnline: false,
-  // NOTE (next-pwa v10+): `buildExcludes` is deprecated since v10; it now uses
-  // `exclude` inside `swConfig` for the PWA precache. `middleware-manifest.json`
-  // and `app-build-manifest.json` cannot be excluded because Next.js 15 needs them
-  // at runtime (`.next/server/middleware-manifest.json` is required). Keeping them
-  // in the precache is safe: the service worker only caches URLs listed in
-  // runtimeCaching. The `exclude` below targets only the PWA manifest files.
-  exclude: [
-    /app-build-manifest\.json$/,
-    /dynamic-css-manifest\.json$/,
-    /_next\/data\/.+\/.+\/manifest\.json$/,
-    /_next\/.*manifest.*\.json$/,
-  ],
+  // Los filtros de precache conservan los defaults de next-pwa 10.2.9.
+  // Una personalización de Workbox pertenece a workboxOptions; no elimina
+  // archivos del servidor ni sustituye las reglas runtimeCaching del SW.
   workboxOptions: {
     skipWaiting: true,
     disableDevLogs: true,
     cleanupOutdatedCaches: true,
     runtimeCaching: [
       {
-        urlPattern: ({ url, request }: { url: URL; request: any }) =>
+        urlPattern: ({ url, request }: { url: URL; request: Request }) =>
           request.method === "GET" &&
           (url.pathname.startsWith("/driver/dashboard") ||
             url.pathname.startsWith("/_next/static/") ||
@@ -58,7 +49,7 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // output: "standalone",
+  output: "standalone",
   transpilePackages: ["@tad/services", "@tad/ui", "@tad/store", "@tad/logging"],
   eslint: {
     ignoreDuringBuilds: true,

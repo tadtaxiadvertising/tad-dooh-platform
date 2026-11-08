@@ -10,13 +10,11 @@ import {
   EyeOff,
   BadgeCheck,
   FileText,
-  Building,
   UserCheck,
   ChevronDown,
   CreditCard,
   AlertCircle,
   CheckCircle2,
-  ArrowRight,
   ArrowLeft,
 } from "lucide-react";
 import clsx from "clsx";
@@ -209,7 +207,6 @@ FORMA DE PAGO:
 ];
 
 export default function RegistrationStep({
-  onNext,
   onPrev,
   onRegister,
   isLoading,

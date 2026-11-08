@@ -7,6 +7,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useDirectUpload } from "@/hooks/useDirectUpload";
+import type { UploadResult } from "@/hooks/useDirectUpload";
 
 // Reglas de negocio espejo del backend (validadas también en useDirectUpload)
 const MAX_SIZE_BYTES = 55 * 1024 * 1024; // 55MB
@@ -61,7 +62,7 @@ function verifyPlayableVideo(file: File): Promise<boolean> {
 export function VideoUpload({
   onUploadComplete,
 }: {
-  onUploadComplete?: (media: any) => void;
+  onUploadComplete?: (media: UploadResult) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -99,7 +100,7 @@ export function VideoUpload({
       fileInputRef.current = file;
       try {
         await upload(file);
-      } catch (err) {
+      } catch {
         // El hook maneja error internamente
       }
     },

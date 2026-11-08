@@ -1,15 +1,11 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import type { MapLocation } from "@/components/MapView";
+
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Head from "next/head";
-import axios from "axios";
+
 import clsx from "clsx";
 import {
   Navigation,
@@ -21,7 +17,6 @@ import {
   PlayCircle,
   Clock,
   Signal,
-  AlertTriangle,
   Building2,
   Car,
   Tablet,
@@ -32,7 +27,6 @@ import {
   Layers,
   Users,
   Wifi,
-  WifiOff,
   Sun,
   Moon,
   Flame,
@@ -40,7 +34,6 @@ import {
   ChevronRight,
   X,
   Filter,
-  CheckCircle2,
   Gauge as SpeedIcon,
 } from "lucide-react";
 import api, {
@@ -119,7 +112,7 @@ const isFreshTelemetry = (timestamp?: string | null) => {
   return Number.isFinite(ts) && Date.now() - ts <= OFFLINE_THRESHOLD_MS;
 };
 
-const applyFleetFreshness = (vehicles: any[]) =>
+const applyFleetFreshness = (vehicles: Device[]) =>
   vehicles.map((vehicle) => ({
     ...vehicle,
     // Online determination: trust backend isOnline OR fresh lastSeen OR recent realtime ping.
@@ -142,16 +135,17 @@ interface TelemetryPing {
   timestamp: string;
 }
 
-const normalizeTelemetryPing = (payload: any): TelemetryPing | null => {
-  if (!payload) return null;
-  const driverId = typeof payload.driverId === "string" ? payload.driverId : "";
-  const deviceId = typeof payload.deviceId === "string" ? payload.deviceId : "";
-  const lat = Number(payload.lat);
-  const lng = Number(payload.lng);
-  const speed = Number(payload.speed ?? 0);
-  const bearing = Number(payload.bearing ?? 0);
+const normalizeTelemetryPing = (payload: unknown): TelemetryPing | null => {
+  if (typeof payload !== "object" || payload === null) return null;
+  const fields = payload as Record<string, unknown>;
+  const driverId = typeof fields.driverId === "string" ? fields.driverId : "";
+  const deviceId = typeof fields.deviceId === "string" ? fields.deviceId : "";
+  const lat = Number(fields.lat);
+  const lng = Number(fields.lng);
+  const speed = Number(fields.speed ?? 0);
+  const bearing = Number(fields.bearing ?? 0);
   const timestamp =
-    typeof payload.timestamp === "string" ? payload.timestamp : "";
+    typeof fields.timestamp === "string" ? fields.timestamp : "";
 
   if (
     !driverId ||
@@ -286,13 +280,13 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
   const [mapTheme, setMapTheme] = useState<MapTheme>("dark");
   const [heatmapIntensity, setHeatmapIntensity] = useState(0.5);
   const [heatmapRadius, setHeatmapRadius] = useState(28);
-  const [heatmapData, setHeatmapData] = useState<any[]>([]);
+  const [heatmapData, setHeatmapData] = useState<unknown[]>([]);
   const [mapCenter, setMapCenter] = useState<[number, number]>([
     19.4544, -70.6923,
   ]);
   const [mapZoom, setMapZoom] = useState(13);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [recentPath, setRecentPath] = useState<any[]>([]);
+  const [recentPath, setRecentPath] = useState<unknown[]>([]);
 
   // Sidebar / filter state
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -383,7 +377,7 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
     });
   }, [enriched, segment, fleetFilter, selectedAdvertiser, searchQuery]);
 
-  const selectVehicle = useCallback(async (v: Device) => {
+  const selectVehicle = useCallback(async (v: MapLocation) => {
     if (!v.lastLat || !v.lastLng) return;
     setSelectedId(v.deviceId);
     setMapCenter([v.lastLat, v.lastLng]);
@@ -580,7 +574,7 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
         {/* Full map */}
         <div className="flex-1 relative min-h-0">
           <MapView
-            locations={visible as any}
+            locations={visible}
             heatmapData={heatmapData}
             mode={mapMode}
             center={mapCenter}
@@ -594,7 +588,7 @@ function GeoTab({ devices, campaigns }: GeoTabProps) {
               setSelectedId(null);
               setRecentPath([]);
             }}
-            onViewHistory={(v: any) => selectVehicle(v)}
+            onViewHistory={(v) => selectVehicle(v)}
             onSyncCommand={(deviceId: string) => {
               console.log("[TAD] WAKE_UP command requested for", deviceId);
             }}
@@ -1003,7 +997,7 @@ function FleetTab({ devices }: { devices: Device[] }) {
             className={clsx(
               "p-5 rounded-2xl border flex flex-col gap-1",
               k.color,
-              (k as any).bg || "bg-slate-800/30",
+              ("bg" in k ? k.bg : undefined) || "bg-slate-800/30",
             )}
           >
             <span

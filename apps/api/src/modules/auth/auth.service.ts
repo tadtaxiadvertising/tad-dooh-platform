@@ -330,7 +330,13 @@ export class AuthService {
 
     let resolvedRole: string | null = null;
     let entityId: string | null = null;
-    let profile: any = null;
+    let profile: {
+      role: string;
+      fullName?: string;
+      contactName?: string;
+      name?: string;
+      status?: string;
+    } | null = null;
 
     if (dto.intended_role === OAuthPortalRole.ADMIN) {
       const adminUser = await this.prisma.user.findUnique({ where: { email } });
@@ -522,7 +528,10 @@ export class AuthService {
 
     // Only update existing identities. Creating accounts with a shared bootstrap
     // password gives multiple users the same credential and is not safe.
-    const upsertUser = async (email: string, appMeta: Record<string, any>) => {
+    const upsertUser = async (
+      email: string,
+      appMeta: { role: string; entityId: string },
+    ) => {
       try {
         const existing = authUsersByEmail.get(email.toLowerCase());
         if (!existing) {
@@ -541,9 +550,10 @@ export class AuthService {
           );
         }
         synced++;
-      } catch (e: any) {
-        errors.push(`${email}: ${e.message}`);
-        this.logger.warn(`Exception syncing ${email}: ${e.message}`);
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        errors.push(`${email}: ${message}`);
+        this.logger.warn(`Exception syncing ${email}: ${message}`);
       }
     };
 

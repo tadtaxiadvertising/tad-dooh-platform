@@ -1,5 +1,6 @@
+import { getErrorMessage } from "@tad/services";
 import React, { useState } from "react";
-import Head from "next/head";
+import "next/head";
 import { useRouter } from "next/router";
 import useSWR from "swr";
 import { getMyProfile, updateMyProfile } from "@tad/services/api";
@@ -22,7 +23,7 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 });
 
 export default function AdvertiserProfilePage() {
-  const router = useRouter();
+  useRouter();
   const {
     data: profile,
     error,
@@ -52,10 +53,8 @@ export default function AdvertiserProfilePage() {
       await updateMyProfile({ name });
       await mutate();
       toast.success("Perfil actualizado correctamente");
-    } catch (err: any) {
-      toast.error(
-        err.response?.data?.message || "Error al actualizar el perfil",
-      );
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || "Error al actualizar el perfil");
     } finally {
       setIsSavingProfile(false);
     }
@@ -79,10 +78,8 @@ export default function AdvertiserProfilePage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (err: any) {
-      toast.error(
-        err.response?.data?.message || "Error al actualizar la contraseña",
-      );
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || "Error al actualizar la contraseña");
     } finally {
       setIsSavingPassword(false);
     }

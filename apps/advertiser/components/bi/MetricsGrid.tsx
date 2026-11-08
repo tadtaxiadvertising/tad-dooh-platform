@@ -2,7 +2,7 @@ import React from "react";
 import { BarChart3, Eye, TrendingUp } from "lucide-react";
 
 interface MetricsGridProps {
-  data?: any;
+  data?: { totalImpressions?: number; totalCompletions?: number };
 }
 
 export function MetricsGrid({ data }: MetricsGridProps) {

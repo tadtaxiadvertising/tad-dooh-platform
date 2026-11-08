@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3004",
     "build": "next build",
-    "start": "next start",
+    "start": "node .next/standalone/server.js",
     "lint": "eslint",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
@@ -14,7 +14,8 @@
     "test:e2e:gps": "playwright test tests/e2e/gps-batch-sync.spec.ts",
     "test:e2e:report": "playwright show-report",
     "test:e2e:ci": "playwright test --reporter=github",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:unit:offline": "node --experimental-strip-types --test tests/unit/offlineQueuePolicy.test.mjs"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
@@ -54,7 +55,7 @@
     "swr": "^2.4.1",
     "tailwind-merge": "^3.0.0",
     "tailwindcss": "^4.0.0",
-    "zod": "^3.23.8",
+    "zod": "^4.6.6",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

@@ -1,3 +1,4 @@
+import { getErrorMessage, getErrorStatus } from "@/lib/error-message";
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
@@ -30,12 +31,10 @@ import {
   Eye,
   CheckCircle,
   AlertTriangle,
-  HardDrive,
   ShieldCheck,
   Share2,
   Cpu,
   Trash2,
-  Smartphone,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useTabSync } from "@tad/ui";
@@ -67,7 +66,7 @@ export default function MediaPage() {
       name: string;
       advertiser: string;
       active: boolean;
-      mediaAssets?: { checksum: string; url: string }[];
+      mediaAssets?: { id?: string; checksum: string; url: string }[];
     }[]
   >([]);
   const [loading, setLoading] = useState(true);
@@ -87,15 +86,13 @@ export default function MediaPage() {
     Record<string, { active_devices?: string[] }>
   >({});
 
-  const [localPreviews, setLocalPreviews] = useState<Record<string, string>>(
-    {},
-  );
+  const [localPreviews] = useState<Record<string, string>>({});
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [title, setTitle] = useState("");
   const [duration, setDuration] = useState(30);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
-  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
+  const [, setSelectedDevices] = useState<string[]>([]);
   const [qrUrl, setQrUrl] = useState("");
   const [editingQr, setEditingQr] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -124,11 +121,7 @@ export default function MediaPage() {
 
   // TAREA B: Frontend Refactor - SWR Implementation for Fleet Summary
   // Eliminates individual GET /api/device/:id/slots calls.
-  const {
-    data: fleetSummary,
-    error: swrError,
-    isLoading: swrLoading,
-  } = useSWR("/fleet/summary", fetcher, {
+  const { data: fleetSummary } = useSWR("/fleet/summary", fetcher, {
     dedupingInterval: 60000,
     revalidateOnFocus: false,
   });
@@ -201,7 +194,7 @@ export default function MediaPage() {
   const getLinkedCampaigns = (mediaId: string, mediaUrl: string) => {
     return campaigns.filter((c) =>
       c.mediaAssets?.some(
-        (a: any) =>
+        (a) =>
           a.id === mediaId ||
           a.checksum === mediaId ||
           (mediaUrl &&
@@ -293,7 +286,7 @@ export default function MediaPage() {
             border: "1px solid #FFD400",
           },
         });
-      } catch (assetError: any) {
+      } catch (assetError: unknown) {
         console.warn("⚠️ ERROR_ASSET_LINKING:", assetError);
         toast.warning(
           "Video en la bóveda, enlace a campaña pendiente. Reintenta desde la página de campaña.",
@@ -314,9 +307,9 @@ export default function MediaPage() {
           await assignCampaignToDevices(selectedCampaign, allDeviceIds);
         }
         setUploadProgress(95);
-      } catch (assignErr: any) {
+      } catch (assignErr: unknown) {
         // Non-fatal: devices may already be assigned or targetAll handles it
-        console.warn("⚠️ FASE_3_ASSIGN_WARN:", assignErr.message);
+        console.warn("⚠️ FASE_3_ASSIGN_WARN:", getErrorMessage(assignErr));
       }
 
       setUploadProgress(100);
@@ -336,16 +329,15 @@ export default function MediaPage() {
         notifyChange("MEDIA");
         notifyChange("CAMPAIGNS");
       }, 500);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("CRITICAL_INGEST_FAILURE:", e);
-      const errorMsg =
-        e.response?.data?.message || e.message || "Error desconocido";
+      const errorMsg = getErrorMessage(e) || "Error desconocido";
 
-      if (e.response?.status === 401) {
+      if (getErrorStatus(e) === 401) {
         toast.error(
           "Credenciales expiradas. Por favor, inicie sesión nuevamente.",
         );
-      } else if (e.response?.status === 413) {
+      } else if (getErrorStatus(e) === 413) {
         toast.error("Archivo demasiado grande para el clúster actual.");
       } else {
         toast.error(`Falla en ingesta: ${errorMsg}`);
@@ -355,24 +347,6 @@ export default function MediaPage() {
       setUploadProgress((prev) => Math.max(0, prev - 20));
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleDelete = async (fileId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm("¿Purgar permanentemente este activo de la bóveda?")) return;
-    try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/media/${fileId}/delete`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("tad_admin_token")}`,
-        },
-      });
-      await loadData();
-      toast.success("Activo purgado de la bóveda");
-      notifyChange("MEDIA");
-    } catch (err) {
-      console.error(err);
     }
   };
 

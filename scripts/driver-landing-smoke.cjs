@@ -107,6 +107,57 @@ function recordErrors(page, errors) {
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
 }
 
+async function assertLabGeometry(page, label) {
+  const failures = await page.locator('#calculadora').evaluate(section => {
+    const layout = section.lastElementChild;
+    const controls = layout.firstElementChild;
+    const result = layout.lastElementChild;
+    const edge = section.getBoundingClientRect();
+    const failures = [];
+    for (const [name, element] of Object.entries({ layout, controls,
+      rangeNote: controls.lastElementChild, result })) {
+      const rect = element.getBoundingClientRect();
+      if (rect.left < edge.left - 1 || rect.right > edge.right + 1
+        || rect.left < -1 || rect.right > innerWidth + 1
+        || element.scrollWidth > element.clientWidth + 1) {
+        failures.push(`${name}: box ${rect.left.toFixed(2)}..${rect.right.toFixed(2)}, `
+          + `section ${edge.left.toFixed(2)}..${edge.right.toFixed(2)}, `
+          + `content ${element.scrollWidth}px of ${element.clientWidth}px`);
+      }
+    }
+    const breakdown = result.querySelector('output').nextElementSibling;
+    for (const row of breakdown.children) {
+      const label = row.firstElementChild.getBoundingClientRect();
+      const price = row.lastElementChild.getBoundingClientRect();
+      if (price.left < label.right - 1 && price.top < label.bottom - 1) {
+        failures.push('breakdown: a price overlaps its descriptive label');
+      }
+    }
+    // Inspect painted text fragments, not only their parent boxes: an ancestor
+    // with overflow:clip can otherwise conceal an over-wide grid or price.
+    for (const element of section.querySelectorAll('h2,h3,p,label,small,span,strong,output,dt,dd,a')) {
+      if (!element.getClientRects().length) continue;
+      const own = element.getBoundingClientRect();
+      for (const node of element.childNodes) {
+        if (node.nodeType !== Node.TEXT_NODE || !node.textContent.trim()) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        for (const rect of range.getClientRects()) {
+          if (rect.width < 1) continue;
+          if (rect.left < edge.left - 1 || rect.right > edge.right + 1
+            || rect.left < own.left - 1 || rect.right > own.right + 1
+            || rect.left < -1 || rect.right > innerWidth + 1) {
+            failures.push(`text ${node.textContent.trim().slice(0, 55)}: `
+              + `${rect.left.toFixed(2)}..${rect.right.toFixed(2)} outside its row or section`);
+          }
+        }
+      }
+    }
+    return failures;
+  });
+  assert.deepEqual(failures, [], `${label}: laboratory containers and painted text must fit without clipping.`);
+}
+
 async function main() {
   const base = localUrl(process.env.DRIVER_LANDING_BASE_URL);
   const screenshots = screenshotDirectory();
@@ -163,6 +214,28 @@ async function main() {
       }
       assert.equal(await page.locator('a[href="/register"]').count(), 0,
         'Run default smoke with NEXT_PUBLIC_LANDING_SIGNUP_ENABLED unset or false.');
+    });
+
+    await check('Driver cinematic chapters update with keyboard, keep one active option and restore', async () => {
+      const hero = page.locator('section[aria-labelledby="hero-title"]');
+      const choices = hero.locator('ul[aria-label="Explora las tres oportunidades para conductores"] button');
+      assert.equal(await choices.count(), 3);
+      const titles = new Set();
+      for (const [index, channel] of ['screen', 'sales', 'referrals'].entries()) {
+        const button = choices.nth(index);
+        await button.focus();
+        await button.press('Enter');
+        assert.equal(await button.getAttribute('aria-pressed'), 'true');
+        assert.equal(await hero.locator('ul[aria-label="Explora las tres oportunidades para conductores"] button[aria-pressed="true"]').count(), 1);
+        const scene = hero.locator('[data-channel="' + channel + '"]');
+        assert.equal(await scene.count(), 1);
+        titles.add(await scene.locator('strong').last().innerText());
+        assert.ok((await hero.locator('#driver-channel-summary').innerText()).trim().length > 40);
+        assert.ok((await button.evaluate(element => element.getBoundingClientRect().height)) >= 44);
+      }
+      assert.equal(titles.size, 3, 'Each chapter needs distinct explanatory media.');
+      await choices.first().click();
+      assert.equal(await hero.locator('[data-channel="screen"]').count(), 1);
     });
 
     await check('Three earning streams match independent fixtures through actual keyboard controls', async () => {
@@ -255,6 +328,7 @@ async function main() {
         await page.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
         await page.evaluate(() => { document.activeElement?.blur(); scrollTo(0, 0); });
         await assertNoHorizontalOverflow(page, `Driver ${width}px`);
+        await assertLabGeometry(page, `Driver ${width}px`);
         if (screenshots) await page.screenshot({ path: path.join(screenshots, `driver-landing-${width}.png`), fullPage: true });
       }
     });
@@ -266,6 +340,7 @@ async function main() {
         controlSelectors: ['section[aria-labelledby="hero-title"] a[href="#calculadora"]',
           'header a[href="/driver/login"]', '#driver-lab-ads', '#driver-lab-sales', '#driver-lab-referrals'],
         exerciseControls: async scenario => {
+          await assertLabGeometry(page, scenario);
           for (const id of ['driver-lab-ads', 'driver-lab-sales', 'driver-lab-referrals']) {
             const control = page.locator(`#${id}`);
             const original = Number(await control.inputValue());
@@ -277,6 +352,17 @@ async function main() {
             await setRangeWithKeyboard(control, original);
             assert.equal(monetaryAmount(await page.locator(amountSelector).innerText()), before);
           }
+          const original = [];
+          for (const id of ['driver-lab-ads', 'driver-lab-sales', 'driver-lab-referrals']) {
+            const control = page.locator(`#${id}`);
+            original.push([control, Number(await control.inputValue())]);
+            await setRangeWithKeyboard(control, Number(await control.getAttribute('max')));
+          }
+          assert.equal(monetaryAmount(await page.locator(amountSelector).innerText()), 107500,
+            `${scenario}: the largest educational UI example must remain complete.`);
+          await assertLabGeometry(page, `${scenario} maximum example`);
+          for (const [control, value] of original) await setRangeWithKeyboard(control, value);
+          await assertLabGeometry(page, `${scenario} restored example`);
         },
         capture: screenshots ? size => page.screenshot({
           path: path.join(screenshots, `driver-landing-${size.width}x${size.height}-css-zoom200-stress.png`),

@@ -3,12 +3,10 @@
  *
  * Permite cambiar de proveedor (AZUL, Stripe, Manual) sin tocar lógica de negocio
  */
-
 import { Module, Global } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ManualTransferProvider } from "./providers/manual-transfer.provider";
 import {
-  IPaymentProvider,
   PaymentProviderFactory,
   PaymentProviderType,
 } from "./interfaces/payment-provider.interface";

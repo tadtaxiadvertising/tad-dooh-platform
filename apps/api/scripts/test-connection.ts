@@ -1,7 +1,6 @@
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 import * as fs from "fs";
-import * as path from "path";
 
 async function testSync() {
   console.log("🚀 Iniciando prueba de conexión con Google Sheets...");

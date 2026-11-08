@@ -1,3 +1,4 @@
+import type { Prisma, Conversation, ConversationMessage } from "@prisma/client";
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { ConversationService } from "../conversation.service";
@@ -6,14 +7,38 @@ import { PrismaService } from "../../prisma/prisma.service";
 // Type annotation for mockPrisma to avoid circular reference
 interface MockPrisma {
   conversation: {
-    findUnique: any;
-    create: any;
-    update: any;
-    findMany: any;
-    count: any;
+    findUnique: jest.Mock<
+      Promise<Partial<Conversation> | null>,
+      [Prisma.ConversationFindUniqueArgs?]
+    >;
+    create: jest.Mock<
+      Promise<Partial<Conversation>>,
+      [Prisma.ConversationCreateArgs?]
+    >;
+    update: jest.Mock<
+      Promise<Partial<Conversation>>,
+      [Prisma.ConversationUpdateArgs?]
+    >;
+    findMany: jest.Mock<
+      Promise<Partial<Conversation>[]>,
+      [Prisma.ConversationFindManyArgs?]
+    >;
+    count: jest.Mock<Promise<number>, [Prisma.ConversationCountArgs?]>;
   };
-  conversationMessage: { create: any; findMany: any };
-  $transaction: any;
+  conversationMessage: {
+    create: jest.Mock<
+      Promise<Partial<ConversationMessage>>,
+      [Prisma.ConversationMessageCreateArgs?]
+    >;
+    findMany: jest.Mock<
+      Promise<Partial<ConversationMessage>[]>,
+      [Prisma.ConversationMessageFindManyArgs?]
+    >;
+  };
+  $transaction: jest.Mock<
+    Promise<unknown>,
+    [(prisma: MockPrisma) => Promise<unknown>]
+  >;
 }
 
 describe("ConversationService", () => {

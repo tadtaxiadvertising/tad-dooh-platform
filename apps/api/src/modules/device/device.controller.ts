@@ -28,6 +28,7 @@ export class DeviceController {
   constructor(private readonly deviceService: DeviceService) {}
 
   @Post("register")
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   async register(@Body() dto: RegisterDeviceDto) {
     const device = await this.deviceService.registerDevice(dto);

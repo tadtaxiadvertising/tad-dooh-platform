@@ -21,6 +21,7 @@ import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.in
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
 @Controller("conversations")
+@Roles(UserRole.ADMIN)
 export class ConversationController {
   private readonly logger = new Logger(ConversationController.name);
 
@@ -29,9 +30,11 @@ export class ConversationController {
   /**
    * POST /api/conversations — Crear o recuperar conversación por threadId
    * Idempotente por threadId único
+   * Solo accesible por administradores para prevenir creación o lectura no autorizada de conversaciones
    * Body: { platform, threadId, contactPhone?, contactName?, leadId?, driverId?, advertiserId?, metadata? }
    */
   @Post()
+  @Roles(UserRole.ADMIN)
   @UseInterceptors(IdempotencyInterceptor)
   async findOrCreate(@Body() body: CreateConversationInput) {
     if (!body.platform || !body.threadId) {

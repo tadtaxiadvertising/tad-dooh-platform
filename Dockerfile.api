@@ -12,7 +12,7 @@ COPY packages/ ./packages/
 COPY tsconfig.base.json ./
 
 # Scope install to API + shared packages
-RUN pnpm install --filter api... --filter @tad/impact-calculator...
+RUN pnpm install --frozen-lockfile --filter api... --filter @tad/impact-calculator...
 
 # 2. Copy all source files
 COPY . .

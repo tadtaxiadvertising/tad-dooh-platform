@@ -24,6 +24,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate lockfile snapshot references (no install required)
+        run: |
+          node --test scripts/check-pnpm-lockfile-snapshots.test.cjs
+          node scripts/check-pnpm-lockfile-snapshots.cjs
       - name: Print package-manager and workspace metadata
         run: |
           node --version

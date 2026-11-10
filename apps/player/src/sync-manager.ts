@@ -6,6 +6,7 @@ import type {
   MediaAsset,
   DeviceSyncPayload,
   DeviceCommand,
+  DeviceCommandResult,
   SyncManifest,
   CampaignSchedule,
 } from "./types";
@@ -39,7 +40,7 @@ export class SyncManager {
     schedules: CampaignSchedule[],
   ) => void;
   private onKillSwitch: (reason: string) => void;
-  private onCommands: (commands: DeviceCommand[]) => void;
+  private onCommands: (commands: DeviceCommand[]) => Promise<DeviceCommandResult[]>;
 
   constructor(
     cacheManager: CacheManager,
@@ -50,7 +51,7 @@ export class SyncManager {
         schedules: CampaignSchedule[],
       ) => void;
       onKillSwitch: (reason: string) => void;
-      onCommands: (commands: DeviceCommand[]) => void;
+      onCommands: (commands: DeviceCommand[]) => Promise<DeviceCommandResult[]>;
     },
   ) {
     this.cacheManager = cacheManager;
@@ -101,9 +102,22 @@ export class SyncManager {
       }
 
       if (payload.commands && payload.commands.length > 0) {
-        this.onCommands(payload.commands);
-        for (const cmd of payload.commands) {
-          this.acknowledgeCommand(cmd.id).catch(() => {});
+        // Dispatch is not proof of execution. Wait for the actual command
+        // result before ACK, and never ACK failures or unknown outcomes.
+        try {
+          const outcomes = await this.onCommands(payload.commands);
+          const delivered = new Set(payload.commands.map((cmd) => cmd.id));
+          for (const outcome of outcomes) {
+            if (outcome.success && delivered.has(outcome.id)) {
+              await this.acknowledgeCommand(outcome.id);
+            }
+          }
+        } catch {
+          // A command failure must not block playlist/media sync or erase
+          // offline content. The server keeps it pending reconciliation.
+          console.warn(
+            "[SyncManager] Command result unavailable; no execution ACK sent.",
+          );
         }
       }
 
@@ -257,13 +271,32 @@ export class SyncManager {
 
   private async acknowledgeCommand(commandId: string): Promise<void> {
     try {
-      await fetch(`${env.API_URL}/device/command/${commandId}/ack`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ result: { acknowledged: true } }),
-      });
+      // Do not treat an unverified HTTP response (including 401/403) as ACK.
+      // Device credentials must be provisioned via the secure pairing flow
+      // (#233); an OFFLINE_LICENSE obtained from public manifest is NOT auth.
+      const response = await fetch(
+        `${env.API_URL}/device/command/${encodeURIComponent(commandId)}/ack`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ success: true }),
+        },
+      );
+      if (!response.ok) {
+        console.warn(
+          `[SyncManager] Command execution ACK rejected (HTTP ${response.status}).`,
+        );
+        return;
+      }
+      const receipt: { acknowledged?: boolean } = await response.json();
+      if (!receipt.acknowledged) {
+        console.warn(
+          "[SyncManager] Command execution ACK not confirmed by server.",
+        );
+      }
     } catch {
-      /* non-critical */
+      // Unknown ACK outcome: never assume the server recorded execution.
+      console.warn("[SyncManager] Command execution ACK unavailable.");
     }
   }
 

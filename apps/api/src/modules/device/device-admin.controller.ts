@@ -14,6 +14,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { DeviceService } from "./device.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
+import { deviceIdentityWhere } from "../campaign/device-identity-lookup";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
 const KIOSK_COMMAND_TYPES = [
@@ -66,7 +67,7 @@ export class DeviceAdminController {
   @Get(":deviceId/campaigns")
   async getDeviceCampaigns(@Param("deviceId") paramId: string) {
     const device = await this.prisma.device.findFirst({
-      where: { OR: [{ id: paramId }, { deviceId: paramId }] },
+      where: deviceIdentityWhere(paramId),
       select: { id: true },
     });
 
@@ -93,7 +94,7 @@ export class DeviceAdminController {
   ) {
     // Find device by either UUID or Hardware ID
     const device = await this.prisma.device.findFirst({
-      where: { OR: [{ id: paramDeviceId }, { deviceId: paramDeviceId }] },
+      where: deviceIdentityWhere(paramDeviceId),
       select: { id: true, deviceId: true },
     });
 
@@ -189,7 +190,7 @@ export class DeviceAdminController {
   async deleteDevice(@Param("deviceId") deviceId: string) {
     // Find device by deviceId (hardware ID) or by UUID
     const device = await this.prisma.device.findFirst({
-      where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
+      where: deviceIdentityWhere(deviceId),
     });
     if (!device)
       return { success: false, message: "Dispositivo no encontrado" };
@@ -248,7 +249,7 @@ export class DeviceAdminController {
   async getDeviceProfile(@Param("deviceId") deviceId: string) {
     try {
       const device = await this.prisma.device.findFirst({
-        where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
+        where: deviceIdentityWhere(deviceId),
         include: {
           driver: true,
           campaigns: {
@@ -330,7 +331,7 @@ export class DeviceAdminController {
     },
   ) {
     const device = await this.prisma.device.findFirst({
-      where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
+      where: deviceIdentityWhere(deviceId),
       include: { driver: true },
     });
 
@@ -407,7 +408,7 @@ export class DeviceAdminController {
     }
 
     const device = await this.prisma.device.findFirst({
-      where: { OR: [{ id: deviceId }, { deviceId: deviceId }] },
+      where: deviceIdentityWhere(deviceId),
     });
     if (!device) throw new BadRequestException("Dispositivo no encontrado");
 

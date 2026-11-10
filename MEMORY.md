@@ -7,12 +7,11 @@
 - **Current work branch**: `feat/tad-cinematic-landing-20261108`
 
 ## Docker Build Gotchas (critical)
-- **pnpm 9.15.9** fails with `reference.startsWith is not a function` in `refToRelative` when resolving workspace filters.
-- **pnpm 10.34.9** fails with `ref.startsWith is not a function` in `parseDepRefs` when using `--filter api... --filter @tad/impact-calculator...` syntax.
-- **Fix**: Never use the `...` suffix on `--filter` commands in Dockerfiles. Use explicit filters:
-  - `RUN pnpm install --frozen-lockfile --filter api --filter @tad/impact-calculator`
-- **All Dockerfiles** (api, admin, driver, player, advertiser) now use `pnpm@10.34.9`.
-- **Always test the build locally** with `pnpm install --frozen-lockfile --filter api --filter @tad/impact-calculator` before pushing Docker changes.
+- Docker and CI pin `pnpm@10.34.9` for consistent lockfile behavior.
+- The EasyPanel API build failed on 2026-11-10 at `parseDepRefs` with `ref.startsWith is not a function`. **Root cause:** two `pnpm-lock.yaml` snapshot dependencies under `eslint-config-next@15.2.6` had importer-style nested `specifier/version` mappings instead of scalar dependency refs.
+- **Fix:** normalize those two snapshot values to their existing version strings; do not change workspace importer records or dependency versions. The error is **not caused by the presence or absence of the `...` filter suffix**.
+- After dependency changes, regenerate the lockfile with the pinned pnpm version, review the diff, and check snapshot dependency reference types.
+- Verify with `pnpm install --frozen-lockfile --filter api --filter @tad/impact-calculator` and a Docker build of `Dockerfile.api` before deploying.
 
 ## Environment
 - Windows 11; bash via git-bash/MSYS; MSYS path conversion disabled (use forward-slash paths for native tools).

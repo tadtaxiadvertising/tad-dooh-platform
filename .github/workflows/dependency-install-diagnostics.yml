@@ -38,4 +38,4 @@ jobs:
           pnpm install --frozen-lockfile --ignore-scripts --filter api... --filter @tad/impact-calculator... --reporter append-only
       - name: Verify complete workspace lockfile without lifecycle scripts
         run: |
-          pnpm install --frozen-lockfile --ignore-scripts --offline --reporter append-only
+          pnpm install --frozen-lockfile --ignore-scripts --reporter append-only

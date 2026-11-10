@@ -44,7 +44,7 @@ Rollback to a previously verified **image digest** with **rotated** runtime secr
 ## Confirmed observations (2026-11-10)
 
 - PR #243 merged; EasyPanel Docker build succeeded at 20:40:30 UTC.
-- Supabase project ACTIVE_HEALTHY; 23 migrations applied according to read-only query.
+- Supabase project ACTIVE_HEALTHY; all 23 migrations in main are applied in production (no missing, extra or failed Prisma migrations; read-only comparison).
 - public.mv_active_campaigns exists and is populated.
 - API process and external readiness: **not yet verified**; external network checks from the current environment failed to resolve/reach the host.
 - GitHub Actions jobs fail before runner allocation (runner_id 0, no steps, 0 ms billable); not evidence of application test failures.

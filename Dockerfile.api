@@ -3,7 +3,7 @@
 FROM node:22-alpine
 
 WORKDIR /app
-RUN apk add --no-cache openssl && npm install -g pnpm@9
+RUN apk add --no-cache openssl && npm install -g pnpm@10.34.9
 
 # 1. Install ALL deps for API + impact-calculator first (cached layer)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
@@ -11,8 +11,8 @@ COPY apps/ ./apps/
 COPY packages/ ./packages/
 COPY tsconfig.base.json ./
 
-# Scope install to API + shared packages
-RUN pnpm install --filter api... --filter @tad/impact-calculator...
+# Scope install to API + shared packages (no transitive filter suffix to avoid pnpm 10 parse bug)
+RUN pnpm install --frozen-lockfile --filter api --filter @tad/impact-calculator
 
 # 2. Copy all source files
 COPY . .

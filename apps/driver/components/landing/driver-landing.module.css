@@ -590,7 +590,7 @@
   }
 }
 
-/* Motion Experience 01: the approved taxi stays untouched; chapters explain the real path. */
+/* Motion Experience 01: the approved taxi stays untouched; chapters stay next to the controls on mobile. */
 .heroVisual { padding-bottom: 0; }
 .heroVisual figcaption {
   position: static;
@@ -636,9 +636,8 @@
   font-weight: 850;
   letter-spacing: .12em;
 }
-.heroVisual[data-channel="sales"] .heroVisualSteps li:nth-child(2),
-.heroVisual[data-channel="referrals"] .heroVisualSteps li:nth-child(2),
-.heroVisual[data-channel="screen"] .heroVisualSteps li:nth-child(2) {
+.heroVisualSteps { margin-top: 14px; }
+.heroVisualSteps li:nth-child(2) {
   background: #ffd40012;
   border-color: #ffd40050;
 }

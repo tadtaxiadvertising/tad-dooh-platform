@@ -131,6 +131,29 @@ async function assertHeroImage(page, base, label) {
   }));
   assert.equal(source.complete, true, `${label}: image must finish loading.`);
   assert.ok(source.width > 0 && source.height > 0, `${label}: image must decode to real pixels.`);
+  const alpha = await image.evaluate(element => {
+    // Inspect decoded pixels from the delivered variant, including Next's
+    // optimized response; a PNG extension or alpha channel alone proves nothing.
+    const canvas = document.createElement('canvas');
+    canvas.width = element.naturalWidth;
+    canvas.height = element.naturalHeight;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) throw new Error('Canvas is unavailable for the taxi transparency check.');
+    context.drawImage(element, 0, 0);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let transparent = 0;
+    let opaque = 0;
+    for (let index = 3; index < pixels.length; index += 4) {
+      if (pixels[index] === 0) transparent++;
+      if (pixels[index] >= 250) opaque++;
+    }
+    const total = canvas.width * canvas.height;
+    return { transparentRatio: transparent / total, opaqueRatio: opaque / total };
+  });
+  assert.ok(alpha.transparentRatio > 0.05,
+    `${label}: more than 5% of delivered pixels must be fully transparent; got ${alpha.transparentRatio}.`);
+  assert.ok(alpha.opaqueRatio > 0.05,
+    `${label}: more than 5% of delivered pixels must preserve opaque taxi/callout content; got ${alpha.opaqueRatio}.`);
   const requested = new URL(source.currentSrc, base);
   assert.equal(requested.origin, base.origin, `${label}: load the taxi from the local site.`);
   const media = new URL(requested.pathname === '/_next/image'

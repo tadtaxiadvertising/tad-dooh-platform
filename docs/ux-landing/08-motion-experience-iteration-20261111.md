@@ -14,7 +14,7 @@ Mejorar comunicación del producto, coherencia de la interacción y experiencia 
 
 ## Cambios aplicados
 
-1. **Driver:** se conservan el PNG estático aprobado, `next/image`, dimensiones, `sizes`, prioridad y `alt`. Los selectores Pantalla/Ventas/Referidos muestran ahora una secuencia compacta de tres hitos por capítulo junto a la foto. Los estados de aprobación se explican sin simular un saldo ni añadir una segunda tablet sobre la imagen.
+1. **Driver:** se conservan el PNG estático aprobado, `next/image`, dimensiones, `sizes`, prioridad y `alt`. Los selectores Pantalla/Ventas/Referidos muestran ahora una secuencia compacta de tres hitos inmediatamente debajo de los controles, visible al cambiar de opción también en móvil. La fotografía queda intacta a continuación. Los estados de aprobación se explican sin simular un saldo ni añadir una segunda tablet sobre la imagen.
 2. **Anunciante:** `CityScene` acepta `objective`, cambia el texto de la creatividad en función de `awareness / launch / local` y refleja los datos elegidos en sus atributos accesibles. Un selector de objetivo situado junto al hero usa exactamente el mismo estado del simulador de presupuesto inferior. La elección de ciudad desde el hero también registra el mismo evento de preview sin datos personales.
 3. **Copy:** se hace explícito el producto en el primer bloque del anunciante y se describe el acceso al portal sin prometer inventario.
 4. **Responsive y movimiento:** nuevos estilos fluidos y controles táctiles de 44 px; en móvil se anula la animación continua decorativa del taxi y tablet ilustrativos para preservar atención y minimizar trabajo de composición.

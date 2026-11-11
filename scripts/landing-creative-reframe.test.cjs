@@ -91,7 +91,7 @@ test("financial outputs only animate after a changed amount, never on mount", ()
     assert.match(source, /opacity:\s*0\.94/, name);
     assert.match(source, /typeof output\.animate !== "function"/, name);
     assert.match(source, /window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)\.matches/, name);
-    assert.doesNotMatch(source, /from ["\x27]framer-motion["\x27]/, name);
+    assert.doesNotMatch(source, /from ["']framer-motion["']/, name);
     assert.match(source, /animation\.cancel\(\)/, name);
   }
   assert.match(advertiser, /<h1 id="hero-title">/);

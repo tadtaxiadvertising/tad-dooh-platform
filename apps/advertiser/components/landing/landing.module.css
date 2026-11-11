@@ -311,7 +311,7 @@
 .landing :global(.landing-preview label) { color: #393c35; font-size: 14px; font-weight: 730; }
 .landing :global(.landing-preview label span) { color: #766100; }
 .landing :global(.landing-preview select) { background: #fffef9; color: #1a1a16; border: 1px solid #bdb9a8; border-radius: 11px; font-size: 14px; min-height: 48px; }
-.landing :global(.landing-preview input[type=range]) { accent-color: #b19400; min-height: 42px; }
+.landing :global(.landing-preview input[type=range]) { accent-color: #b19400; min-height: 44px; }
 .landing :global(.landing-range-labels) { color: #666456; font-size: 12px; }
 .landing :global(.landing-production-option) { background: #ffefae; border-color: #d4b42f; border-radius: 14px; min-height: 58px; }
 .landing :global(.landing-production-option input[type=checkbox]) { accent-color: #795f00; }

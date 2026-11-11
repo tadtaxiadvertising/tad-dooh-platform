@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
   ArrowRight,
@@ -64,7 +63,6 @@ export default function LandingPage() {
     setReferral(referralCodeFromSearch(window.location.search));
   }, []);
   const previousPreview = useRef("");
-  const reduceMotion = useReducedMotion();
   const links = landingLinks();
   const config = {
     screens,
@@ -79,9 +77,17 @@ export default function LandingPage() {
   useEffect(() => {
     if (previousBudgetTotal.current === quote.total) return;
     previousBudgetTotal.current = quote.total;
-    if (reduceMotion !== false || !budgetOutputRef.current) return;
     // A stable output avoids remounts, mount animation and keyboard focus loss.
-    const animation = budgetOutputRef.current.animate(
+    // Query motion preference at the moment the value changes; no animation SDK needed.
+    const output = budgetOutputRef.current;
+    if (
+      !output ||
+      typeof output.animate !== "function" ||
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) return;
+    const animation = output.animate(
       [
         { transform: "translateY(3px)", opacity: 0.94 },
         { transform: "translateY(0px)", opacity: 1 },
@@ -89,7 +95,7 @@ export default function LandingPage() {
       { duration: 180, easing: "ease-out" },
     );
     return () => animation.cancel();
-  }, [quote.total, reduceMotion]);
+  }, [quote.total]);
   const advertiserDestination = referral
     ? `${links.advertiser}?ref=${encodeURIComponent(referral)}`
     : links.advertiser;

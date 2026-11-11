@@ -160,3 +160,9 @@ Entrega: [PR #177](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/
 - PR #250 ya estaba fusionado. Nueva intervención aislada: `codex/driver-hero-image-update-20261111`, base `3aef4a8c`.
 - Nueva imagen horizontal adjunta por el usuario, preservada sin alteraciones; marco 3:2, dimensiones y sizes actualizados.
 - Evidencia y límites: [driver-hero-image-update.md](../ux-landing/driver-hero-image-update.md).
+
+## Taxi sin fondo — 2026-11-11
+
+- PR #251 ya fusionado; intervención en `codex/driver-transparent-taxi-20261111`, base `c2b0272c`.
+- ImageGen integrado produjo PNG con transparencia real. Se quitó también el marco opaco del hero y se añadió verificación de alfa de la variante entregada por Next.
+- Evidencia: [driver-transparent-taxi.md](../ux-landing/driver-transparent-taxi.md).

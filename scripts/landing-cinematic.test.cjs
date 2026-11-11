@@ -30,7 +30,8 @@ test("Driver chapters are reversible and do not change the earnings helper", () 
   assert.match(landing, /const \[channel, setChannel\] = useState<DriverChannel>\("screen"\)/);
   assert.match(landing, /aria-pressed=\{channel === item\.id\}/);
   assert.match(landing, /onClick=\{\(\) => setChannel\(item\.id\)\}/);
-  assert.match(landing, /<DriverHeroVisual channel=\{channel\}/);
+  assert.match(landing, /<DriverChannelJourney channel=\{channel\}/);
+  assert.match(landing, /<DriverHeroVisual \/>/);
   assert.match(landing, /id="driver-channel-summary"/);
   assert.match(landing, /aria-live="polite"/);
   for (const label of ["Pantalla", "Ventas", "Referidos"]) {

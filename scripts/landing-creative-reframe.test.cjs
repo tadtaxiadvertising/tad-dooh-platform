@@ -136,6 +136,7 @@ test("public landing financial disclosures stay readable on small screens", () =
 
   assert.match(advertiser, /\.landing :global\(\.landing-preview label\) \{[^}]*font-size:\s*14px/);
   assert.match(advertiser, /\.landing :global\(\.landing-preview select\) \{[^}]*font-size:\s*14px; min-height:\s*48px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-preview input\[type=range\]\) \{[^}]*min-height:\s*44px/);
   assert.match(advertiser, /\.landing :global\(\.landing-production-option span\) \{[^}]*font-size:\s*14px/);
   assert.match(advertiser, /\.landing :global\(\.landing-estimate-detail\) \{[^}]*font-size:\s*13px/);
   assert.match(advertiser, /\.landing :global\(\.landing-warning-details\) \{[^}]*font-size:\s*13px/);

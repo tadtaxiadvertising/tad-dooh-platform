@@ -120,3 +120,25 @@ test("driver sales and referrals distinguish simulator display limits from comme
   assert.match(lab, /max:\s*100/);
   assert.match(css, /\.rangeNote/);
 });
+
+
+test("public landing financial disclosures stay readable on small screens", () => {
+  const earnings = read("apps/driver/components/landing/driver-earnings-lab.module.css");
+  const advertiser = read("apps/advertiser/components/landing/landing.module.css");
+
+  // These are contract-critical labels and disclaimers, not decorative captions.
+  assert.match(earnings, /\.controlTitle small \{[^}]*font-size:\s*13px/);
+  assert.match(earnings, /\.control input\[type=range\] \{[^}]*min-height:\s*44px/);
+  assert.match(earnings, /\.breakdown div \{[^}]*font-size:\s*13px; flex-wrap: wrap/);
+  assert.match(earnings, /\.rateTable dd \{[^}]*font-size:\s*13px/);
+  assert.match(earnings, /\.notice \{[^}]*font-size:\s*13px/);
+  assert.match(earnings, /\.rangeNote \{[^}]*font-size:\s*13px; padding-inline: 2px/);
+
+  assert.match(advertiser, /\.landing :global\(\.landing-preview label\) \{[^}]*font-size:\s*14px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-preview select\) \{[^}]*font-size:\s*14px; min-height:\s*48px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-preview input\[type=range\]\) \{[^}]*min-height:\s*44px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-production-option span\) \{[^}]*font-size:\s*14px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-estimate-detail\) \{[^}]*font-size:\s*13px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-warning-details\) \{[^}]*font-size:\s*13px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-disclaimer\) \{[^}]*font-size:\s*13px/);
+});

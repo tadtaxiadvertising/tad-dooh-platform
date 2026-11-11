@@ -1,12 +1,20 @@
 import { CITIES, type DemoCity, type LandingRole } from "../../lib/landing/model";
+import { OBJECTIVES, type DemoObjective } from "../../lib/landing/content";
 
 export default function CityScene({
   role = "advertiser",
   city = "sd",
+  objective = "awareness",
 }: {
   role?: LandingRole;
   city?: DemoCity;
+  objective?: DemoObjective;
 }) {
+  const preview = {
+    awareness: { tag: "TU MARCA, PRESENTE", first: "tu marca.", second: "en camino.", note: "Una idea que acompaña el recorrido." },
+    launch: { tag: "UNA NOVEDAD", first: "algo nuevo.", second: "en la ciudad.", note: "Presenta lo nuevo durante el trayecto." },
+    local: { tag: "CERCA DE TU GENTE", first: "tu ciudad.", second: "tu historia.", note: "Conecta tu mensaje con lo local." },
+  }[objective];
   const scene =
     role === "driver"
       ? {
@@ -29,28 +37,23 @@ export default function CityScene({
         }
       : {
           label: "LA CIUDAD ES TU ESCENARIO",
-          tag: "EL PRÓXIMO DESTINO",
+          tag: preview.tag,
           title: (
             <>
-              puede ser
+              {preview.first}
               <br />
-              <em>tu marca.</em>
+              <em>{preview.second}</em>
             </>
           ),
-          note: (
-            <>
-              Una pantalla.
-              <br />
-              Muchas posibilidades.
-            </>
-          ),
+          note: <>{preview.note}</>,
         };
   return (
     <div
       className="landing-scene"
       data-perspective={role}
       data-city={city}
-      aria-label={`Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}${role === "advertiser" ? `, escenario ${CITIES[city]}` : ""}`}
+      data-objective={role === "advertiser" ? objective : undefined}
+      aria-label={`Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}${role === "advertiser" ? `, escenario ${CITIES[city]}, objetivo ${OBJECTIVES[objective]}` : ""}`}
       role="img"
     >
       <div className="landing-scene-grid" />
@@ -89,7 +92,7 @@ export default function CityScene({
         {scene.note}
       </div>
       <span className="landing-scene-caption">
-        REPRESENTACIÓN ILUSTRATIVA · SIN DATOS EN VIVO
+        VISTA CONCEPTUAL · NO REPRESENTA UNA CAMPAÑA PUBLICADA
       </span>
     </div>
   );

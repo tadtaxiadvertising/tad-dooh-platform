@@ -229,7 +229,10 @@ export default function LandingPage() {
                   key={choice}
                   type="button"
                   aria-pressed={city === choice}
-                  onClick={() => setCity(choice)}
+                  onClick={() => {
+                    setCity(choice);
+                    recordPreview({ city: choice });
+                  }}
                 >
                   {CITIES[choice]}
                 </button>
@@ -250,7 +253,25 @@ export default function LandingPage() {
               </li>
             </ol>
           </div>
-          <CityScene city={city} />
+          <div className="landing-hero-stage">
+            <CityScene city={city} objective={objective} />
+            <label className="landing-stage-objective" htmlFor="hero-campaign-objective">
+              <span>Cambia el mensaje en pantalla</span>
+              <select
+                id="hero-campaign-objective"
+                value={objective}
+                onChange={(event) => {
+                  const nextObjective = event.target.value as DemoObjective;
+                  setObjective(nextObjective);
+                  recordPreview({ objective: nextObjective });
+                }}
+              >
+                {Object.entries(OBJECTIVES).map(([value, title]) => (
+                  <option key={value} value={value}>{title}</option>
+                ))}
+              </select>
+            </label>
+          </div>
         </section>
         <noscript>
           <p className="landing-wrap landing-noscript">

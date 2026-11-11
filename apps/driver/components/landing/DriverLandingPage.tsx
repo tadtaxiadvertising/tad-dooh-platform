@@ -98,6 +98,7 @@ const CHANNELS = [
     cardEyebrow: "PUBLICIDAD A BORDO",
     cardTitle: "Tu taxi, conectado.",
     cardNote: "Una pantalla para mensajes aprobados.",
+    journey: ["Pantalla en el taxi", "Campañas elegibles", "Actividad validada"],
   },
   {
     id: "sales",
@@ -106,6 +107,7 @@ const CHANNELS = [
     cardEyebrow: "CONEXIONES COMERCIALES",
     cardTitle: "Conecta marcas con rutas.",
     cardNote: "Las ventas requieren revisión y aprobación.",
+    journey: ["Contactas una marca", "Venta aprobada", "Comisión validada"],
   },
   {
     id: "referrals",
@@ -114,12 +116,29 @@ const CHANNELS = [
     cardEyebrow: "RED DE CONDUCTORES",
     cardTitle: "Comparte el recorrido.",
     cardNote: "El registro por sí solo no genera un bono.",
+    journey: ["Invitas a un taxista", "Conductor activado", "Bono validado"],
   },
 ] as const;
 
 type DriverChannel = (typeof CHANNELS)[number]["id"];
 
-
+function DriverChannelJourney({ channel }: { channel: DriverChannel }) {
+  const selected = CHANNELS.find((item) => item.id === channel) ?? CHANNELS[0];
+  return (
+    <ol
+      className={styles.heroVisualSteps}
+      data-channel={channel}
+      aria-label={`Recorrido ilustrativo: ${selected.label.toLowerCase()}`}
+    >
+      {selected.journey.map((step, index) => (
+        <li key={step}>
+          <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+          <span>{step}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 function DriverHeroVisual() {
   return (
@@ -242,10 +261,10 @@ export default function DriverLandingPage() {
                 <span>en oportunidades de ingresos con TAD.</span>
               </h1>
               <p className={styles.heroDescription}>
-                Una pantalla publicitaria instalada detrás del reposacabezas del
-                copiloto muestra anuncios a tus pasajeros. Descubre oportunidades
-                de ingresos por campañas elegibles, ventas aprobadas y referidos
-                activados, sujetas a aprobación y condiciones.
+                La pantalla TAD se instala detrás del reposacabezas del
+                copiloto, frente a los pasajeros. Explora tres formas de obtener
+                compensaciones: campañas elegibles, ventas publicitarias aprobadas
+                y conductores referidos activados. Aplican condiciones y revisión.
               </p>
               <div className={styles.actions}>
                 <a className={styles.primaryButton} href="#calculadora">
@@ -293,6 +312,7 @@ export default function DriverLandingPage() {
               >
                 {selectedChannel.statement}
               </p>
+              <DriverChannelJourney channel={channel} />
             </div>
             <DriverHeroVisual />
           </section>

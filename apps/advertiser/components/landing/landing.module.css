@@ -491,3 +491,63 @@
 @media (prefers-reduced-motion: reduce) {
   .landing :global(.landing-hero-cities button) { transition: none !important; }
 }
+
+/* Motion Experience 01: one responsive, synchronized first-screen creative preview. */
+.landing :global(.landing-hero-stage) {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  min-width: 0;
+}
+.landing :global(.landing-hero-stage .landing-scene) { width: 100%; min-width: 0; }
+.landing :global(.landing-stage-objective) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding: 12px 16px;
+  background: #15171a;
+  border: 1px solid #ffffff33;
+  border-radius: 16px;
+  color: #e9e6dc;
+  font-size: 12px;
+  font-weight: 650;
+}
+.landing :global(.landing-stage-objective select) {
+  flex: 1 1 210px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  background: #23262a;
+  border: 1px solid #ffd40070;
+  border-radius: 10px;
+  color: #ffffff;
+  font: inherit;
+  cursor: pointer;
+}
+.landing :global(.landing-stage-objective select:focus-visible) {
+  outline: 3px solid #ffd400;
+  outline-offset: 3px;
+}
+.landing :global(.landing-screen-content > strong) {
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+.landing :global(.landing-scene-caption) { font-size: 9px; letter-spacing: .04em; }
+.landing :global(.landing-scene[data-objective="launch"] .landing-screen-content) {
+  background: #ffdf4b;
+}
+.landing :global(.landing-scene[data-objective="local"] .landing-screen-content) {
+  background: #f6d16f;
+}
+@media (max-width: 760px) {
+  .landing :global(.landing-hero-stage) { gap: 10px; }
+  .landing :global(.landing-stage-objective) { padding: 12px; }
+  /* Keep first mobile render static, reducing compositing work and motion clutter. */
+  .landing :global(.landing-taxi),
+  .landing :global(.landing-screen) { animation: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing :global(.landing-stage-objective select) { scroll-behavior: auto; }
+}

@@ -11,10 +11,10 @@ export const ROLE_CONTENT = {
   advertiser: {
     eyebrow: "TU NEGOCIO, EN EL RECORRIDO",
     headline: [
-      "La ciudad está en movimiento.",
-      "Tu marca también puede estarlo.",
+      "Tu marca,",
+      "en primera fila.",
     ],
-    lead: "Tu próxima campaña puede salir del feed y entrar al recorrido de cada día. Diseña una idea para pantallas a bordo de taxis, explora el presupuesto y conoce cada paso antes de contratar.",
+    lead: "Lleva tu mensaje a pantallas digitales a bordo de taxis. Visualiza una creatividad de ejemplo, explora tu presupuesto y descubre el proceso antes de contratar.",
     heroCta: "Explorar mi campaña",
     title: "Que tu marca salga a la calle.",
     description:
@@ -25,9 +25,9 @@ export const ROLE_CONTENT = {
       "Actividad y estimaciones con contexto",
     ],
     cta: "Ingresar como anunciante",
-    finalTitle: "Que tu siguiente idea tome las calles.",
+    finalTitle: "Tu próxima campaña puede comenzar aquí.",
     finalCopy:
-      "Llévala a tu portal para revisar las condiciones, la creatividad y la disponibilidad.",
+      "Accede al portal de anunciantes para revisar la creatividad, las condiciones y la disponibilidad. La simulación no reserva inventario.",
   },
   driver: {
     eyebrow: "TU RECORRIDO. OTRA POSIBILIDAD.",

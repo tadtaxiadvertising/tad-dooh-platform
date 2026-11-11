@@ -17,12 +17,12 @@ CSS inspeccionado desde `main`:
 ## Cambio mínimo seguro
 
 - **Driver:** eleva a 13 px las condiciones de compensación, notas, desglose, resúmenes y límites del simulador, incluida la regla móvil de `.rangeNote`. El selector nativo de rango tiene mínimo 44 px de altura. El desglose puede envolver el contenido para evitar cortes de cantidades con textos más grandes. Las áreas de números y el helper económico permanecen intactos.
-- **Anunciante:** sube a 14 px las etiquetas de inputs, selector y checkbox de producción; a 13 px resúmenes, condiciones, tasas y advertencias; a 12 px las etiquetas auxiliares del rango. Sin cambio de contraste, contratos, presupuesto, ni opt-in de producción creativa.
-- **Regresión:** `scripts/landing-creative-reframe.test.cjs` incluye 12 comprobaciones nuevas de mínimos de legibilidad y área táctil.
+- **Anunciante:** sube a 14 px las etiquetas de inputs, selector y checkbox de producción; a 13 px resúmenes, condiciones, tasas y advertencias; a 12 px las etiquetas auxiliares del rango, con área táctil mínima de 44 px también para los sliders del anunciante. Sin cambio de contraste, contratos, presupuesto, ni opt-in de producción creativa.
+- **Regresión:** `scripts/landing-creative-reframe.test.cjs` incluye 13 comprobaciones nuevas de mínimos de legibilidad y área táctil.
 
 ## Evidencia ejecutada / límites
 
-12/12 comprobaciones del nuevo test de CSS ejecutadas contra los textos de los archivos obtenidos directamente desde la rama GitHub, mediante una función JS aislada. No se ha ejecutado el test completo con `node --test` desde un checkout del monorepo; el entorno no tiene acceso a una copia con dependencias y GitHub Actions sigue bloqueado al preparar runners. Esta prueba **no valida la geometría real del browser, CSS Modules, WCAG ni rendimiento**.
+13/13 comprobaciones del nuevo test de CSS ejecutadas contra los textos de los archivos obtenidos directamente desde la rama GitHub, mediante una función JS aislada. No se ha ejecutado el test completo con `node --test` desde un checkout del monorepo; el entorno no tiene acceso a una copia con dependencias y GitHub Actions sigue bloqueado al preparar runners. Esta prueba **no valida la geometría real del browser, CSS Modules, WCAG ni rendimiento**.
 
 ### Verificación requerida en un runner habilitado
 

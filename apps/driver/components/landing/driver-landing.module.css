@@ -589,3 +589,62 @@
     font-size: 7px;
   }
 }
+
+/* Motion Experience 01: the approved taxi stays untouched; chapters explain the real path. */
+.heroVisual { padding-bottom: 0; }
+.heroVisual figcaption {
+  position: static;
+  display: block;
+  margin: 0;
+  padding: 5px 12px 16px;
+  text-align: center;
+  color: #d6d2c5;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.heroVisualSteps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  width: 100%;
+  margin: 0;
+  padding: 10px;
+  list-style: none;
+  background: #15171b;
+  border: 1px solid #ffffff29;
+  border-radius: 18px;
+}
+.heroVisualSteps li {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 9px;
+  padding: 12px 10px;
+  color: #e8e8e2;
+  background: #ffffff06;
+  border: 1px solid #ffffff13;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+.heroVisualSteps li > span:first-child {
+  color: #ffd400;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+.heroVisual[data-channel="sales"] .heroVisualSteps li:nth-child(2),
+.heroVisual[data-channel="referrals"] .heroVisualSteps li:nth-child(2),
+.heroVisual[data-channel="screen"] .heroVisualSteps li:nth-child(2) {
+  background: #ffd40012;
+  border-color: #ffd40050;
+}
+@media (max-width: 580px) {
+  .heroVisual { padding-bottom: 0; }
+  .heroVisual figcaption { font-size: 9px; padding: 4px 8px 12px; }
+  .heroVisualSteps { gap: 6px; padding: 7px; border-radius: 14px; }
+  .heroVisualSteps li { gap: 7px; padding: 11px 7px; font-size: 11px; }
+}

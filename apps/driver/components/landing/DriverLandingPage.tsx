@@ -131,7 +131,7 @@ function DriverHeroVisual() {
           width={1536}
           height={1024}
           priority
-          sizes="(max-width: 580px) calc(100vw - 54px), (max-width: 800px) 580px, (max-width: 1100px) 45vw, 580px"
+          sizes="(max-width: 580px) calc(100vw - 36px), (max-width: 800px) 600px, (max-width: 1100px) 45vw, 600px"
         />
       </div>
       <figcaption>PUBLICIDAD DIGITAL A BORDO · TAD</figcaption>

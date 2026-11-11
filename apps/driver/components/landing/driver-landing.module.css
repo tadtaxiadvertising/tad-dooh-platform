@@ -549,37 +549,17 @@
 }
 
 
-/* Driver taxi hero photograph: preserves the supplied TAD device visual without
-   carrying over the former SVG illustration. */
+/* Transparent taxi cutout: the image blends into the landing surface. */
 .heroVisual {
   position: relative;
   isolation: isolate;
   justify-self: center;
   width: min(100%, 600px);
   margin: 0;
-  padding: 10px 10px 38px;
-  border: 1px solid #ffd40072;
-  border-radius: 30px;
-  background:
-    radial-gradient(circle at 50% 14%, #ffd40029, transparent 42%),
-    linear-gradient(145deg, #26272b, #0b0d10 78%);
-  box-shadow: 0 30px 90px #000b, inset 0 1px 0 #ffffff24;
-}
-.heroVisual::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: -24px;
-  border-radius: inherit;
-  background: radial-gradient(ellipse at 50% 42%, #ffd40029, transparent 66%);
-  filter: blur(18px);
-  opacity: .72;
+  padding: 0 0 26px;
 }
 .heroVisualFrame {
-  overflow: hidden;
   aspect-ratio: 3 / 2;
-  border-radius: 22px;
-  background: #1a1a1c;
 }
 .heroVisualFrame :global(img) {
   display: block;
@@ -590,7 +570,7 @@
 .heroVisual figcaption {
   position: absolute;
   right: 22px;
-  bottom: 14px;
+  bottom: 0;
   left: 22px;
   color: #f7efce;
   font-size: 8px;
@@ -598,19 +578,13 @@
   letter-spacing: .15em;
   text-align: center;
 }
-@media (max-width: 800px) {
-  .heroVisual { width: min(100%, 600px); }
-}
 @media (max-width: 580px) {
   .heroVisual {
     width: 100%;
-    padding: 8px 8px 33px;
-    border-radius: 23px;
+    padding-bottom: 24px;
   }
-  .heroVisualFrame { border-radius: 16px; }
   .heroVisual figcaption {
     right: 15px;
-    bottom: 12px;
     left: 15px;
     font-size: 7px;
   }

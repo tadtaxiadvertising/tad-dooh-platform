@@ -49,3 +49,7 @@ Every interactive component requires:
 ## Driver hero — imagen horizontal actualizada (2026-11-11)
 
 El usuario sustituyó la referencia anterior por el PNG adjunto `ChatGPT Image Nov 11, 2026, 01_04_55 AM.png`. Se conserva el original de 1536 × 1024 en `public/tad-driver-taxi-headrest.png`; next/image mantiene la optimización de entrega. El marco usa 3:2 con contain y ocupa el ancho móvil disponible, hasta 600 px en escritorio/tablet. La imagen anterior se retira; no cambian el copy ni las interacciones. Evidencia vigente: [actualización de imagen](driver-hero-image-update.md).
+
+## Taxi Driver sin fondo (2026-11-11)
+
+El recorte transparente sustituye el fondo exterior de la fotografía. Se elimina el marco opaco y su resplandor, conservando ratio 3:2, caption y controles. No se añaden animaciones ni dependencias. El smoke verifica alfa real de la imagen optimizada. Ver [evidencia](driver-transparent-taxi.md).

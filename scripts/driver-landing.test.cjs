@@ -228,7 +228,7 @@ test('driver hero renders the local approved PNG through next/image with intrins
   assert.equal(image.width, taxiImage.width);
   assert.equal(image.height, taxiImage.height);
   assert.equal(image.priority, true);
-  assert.equal(image.sizes, '(max-width: 580px) calc(100vw - 54px), (max-width: 800px) 580px, (max-width: 1100px) 45vw, 580px');
+  assert.equal(image.sizes, '(max-width: 580px) calc(100vw - 36px), (max-width: 800px) 600px, (max-width: 1100px) 45vw, 600px');
   assert.match(image.alt, /taxi gris/i);
   assert.match(image.alt, /detrás del reposacabezas del copiloto/i);
   assert.match(image.alt, /pasajeros/i);

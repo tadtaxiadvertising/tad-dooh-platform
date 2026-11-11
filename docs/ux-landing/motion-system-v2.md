@@ -45,3 +45,7 @@ Every interactive component requires:
 - The image owns the taxi and circular screen callout; no overlay or duplicated animated screen. The frame uses the intrinsic ratio and contain. Hero headline scales to preserve readable copy and early access to the simulator CTA.
 - Existing opportunity buttons keep their pressed state and polite accessible summary. Image presentation adds no animation, listener, observer, or dependency; reduced motion and server-rendered content remain static.
 - Verification and performance evidence: [Driver hero #249](driver-hero-249-verification.md).
+
+## Driver hero — imagen horizontal actualizada (2026-11-11)
+
+El usuario sustituyó la referencia anterior por el PNG adjunto `ChatGPT Image Nov 11, 2026, 01_04_55 AM.png`. Se conserva el original de 1536 × 1024 en `public/tad-driver-taxi-headrest.png`; next/image mantiene la optimización de entrega. El marco usa 3:2 con contain y ocupa el ancho móvil disponible, hasta 600 px en escritorio/tablet. La imagen anterior se retira; no cambian el copy ni las interacciones. Evidencia vigente: [actualización de imagen](driver-hero-image-update.md).

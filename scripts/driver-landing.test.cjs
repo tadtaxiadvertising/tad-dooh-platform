@@ -181,26 +181,72 @@ test('driver index reexports the dedicated landing component', () => {
   assert.equal(importLog.length, 1);
 });
 
-test('driver landing uses native links so hovering cannot prefetch private pages', () => {
+function landingHarness(env = {}) {
   const jsx = (type, props) => ({ type, props: props || {} });
+  const Image = () => null;
+  const EarningsLab = () => null;
+  const taxiImage = { src: '/_next/static/media/tad-driver-taxi-headrest.fixture.webp',
+    width: 520, height: 779 };
   const imports = {
+    react: { useState: initial => [initial, () => {}] },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: Symbol('Fragment') },
     'next/head': { __esModule: true, default: () => null },
-    'next/image': { __esModule: true, default: () => null },
+    'next/image': { __esModule: true, default: Image },
     'lucide-react': new Proxy({}, { get: () => () => null }),
     './driver-landing.module.css': { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) },
-    './DriverEarningsLab': { __esModule: true, default: () => null },
+    './DriverEarningsLab': { __esModule: true, default: EarningsLab },
+    '../../public/tad-driver-taxi-headrest.webp': { __esModule: true, default: taxiImage },
   };
-  const Landing = loadTs('apps/driver/components/landing/DriverLandingPage.tsx', { imports }).default;
-  const tree = nodes(Landing());
+  const Landing = loadTs('apps/driver/components/landing/DriverLandingPage.tsx', { imports, env }).default;
+  return { tree: nodes(Landing()), Image, EarningsLab, taxiImage };
+}
+
+test('driver landing uses native links so hovering cannot prefetch private pages', () => {
+  const { tree } = landingHarness();
   const linkedNodes = tree.filter(node => typeof node.props.href === 'string');
-  for (const link of linkedNodes) assert.equal(link.type, 'a');
+  for (const link of linkedNodes) {
+    if (link.type === 'link') assert.equal(link.props.rel, 'canonical');
+    else assert.equal(link.type, 'a');
+  }
   for (const destination of ['/driver/login', '/politica-de-privacidad', '/terminos-de-servicio', '/politica-de-cookies', '/aviso-legal']) {
     assert.ok(linkedNodes.some(node => node.props.href === destination), destination);
   }
   assert.ok(linkedNodes.some(node => node.props.href === 'https://tad.anunciante.ibusiness.com.do/'),
     'Drivers can reach the advertiser experience without a third public profile.');
   assert.equal(linkedNodes.some(node => node.props.href === '/register'), false);
+});
+
+test('driver hero renders the local approved WebP through next/image with intrinsic dimensions and priority', () => {
+  const { tree, Image, taxiImage } = landingHarness();
+  const hero = tree.find(node => node.type === 'section' && node.props['aria-labelledby'] === 'hero-title');
+  const visual = hero.props.children.at(-1);
+  assert.equal(typeof visual.type, 'function');
+  const images = nodes(visual.type(visual.props)).filter(node => node.type === Image);
+  assert.equal(images.length, 1, 'Use one taxi image; the asset already includes its screen callout.');
+  const image = images[0].props;
+  assert.ok(image.src === taxiImage, 'Preserve the static import so Next emits a public media file.');
+  assert.equal(image.width, taxiImage.width);
+  assert.equal(image.height, taxiImage.height);
+  assert.equal(image.priority, true);
+  assert.equal(image.sizes, '(max-width: 580px) 86vw, (max-width: 800px) 340px, 400px');
+  assert.match(image.alt, /taxi gris/i);
+  assert.match(image.alt, /detrás del reposacabezas del copiloto/i);
+  assert.match(image.alt, /pasajeros/i);
+  const asset = fs.readFileSync(path.resolve(__dirname, '../apps/driver/public/tad-driver-taxi-headrest.webp'));
+  assert.equal(asset.toString('ascii', 0, 4), 'RIFF');
+  assert.equal(asset.toString('ascii', 8, 12), 'WEBP');
+  assert.equal(asset.readUInt32LE(4) + 8, asset.length, 'The checked-in WebP must be complete.');
+});
+
+test('driver landing forwards the signup feature flag and preserves its corresponding participation destination', () => {
+  for (const [value, enabled] of [[undefined, false], ['false', false], ['true', true]]) {
+    const { tree, EarningsLab } = landingHarness({ NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: value });
+    assert.equal(tree.find(node => node.type === EarningsLab).props.signupEnabled, enabled);
+    const hero = tree.find(node => node.type === 'section' && node.props['aria-labelledby'] === 'hero-title');
+    const links = nodes(hero).filter(node => node.type === 'a');
+    assert.equal(links[0].props.href, '#calculadora');
+    assert.equal(links[1].props.href, enabled ? '#como-participar' : '#condiciones');
+  }
 });
 
 test('driver preview applies the absolute 15-ad cap and models three streams separately', () => {

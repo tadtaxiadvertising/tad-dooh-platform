@@ -148,3 +148,9 @@ Entrega: [PR #177](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/
 - Skill motion-system-v2.md created
 - Merge conflicts in STATE.md cleaned
 - Next: responsive/mobile QA, then motion scenes
+
+## Driver hero #249 — 2026-11-11 (America/La_Paz)
+
+- Work isolated in `codex/driver-hero-249` from `origin/main` `4905b307`; the original checkout and its pending edits were preserved. PR #247 was already merged, followed by #248.
+- User confirmed that the PR #248 image is the approved asset. Extracted its exact bytes into a local WebP and restored the requested hero/SEO copy and copiloto description.
+- Scope and verification: [driver-hero-249-verification.md](../ux-landing/driver-hero-249-verification.md). No merge or deployment performed.

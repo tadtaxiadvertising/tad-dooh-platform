@@ -185,8 +185,8 @@ function landingHarness(env = {}) {
   const jsx = (type, props) => ({ type, props: props || {} });
   const Image = () => null;
   const EarningsLab = () => null;
-  const taxiImage = { src: '/_next/static/media/tad-driver-taxi-headrest.fixture.webp',
-    width: 520, height: 779 };
+  const taxiImage = { src: '/_next/static/media/tad-driver-taxi-headrest.fixture.png',
+    width: 1536, height: 1024 };
   const imports = {
     react: { useState: initial => [initial, () => {}] },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: Symbol('Fragment') },
@@ -195,7 +195,7 @@ function landingHarness(env = {}) {
     'lucide-react': new Proxy({}, { get: () => () => null }),
     './driver-landing.module.css': { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) },
     './DriverEarningsLab': { __esModule: true, default: EarningsLab },
-    '../../public/tad-driver-taxi-headrest.webp': { __esModule: true, default: taxiImage },
+    '../../public/tad-driver-taxi-headrest.png': { __esModule: true, default: taxiImage },
   };
   const Landing = loadTs('apps/driver/components/landing/DriverLandingPage.tsx', { imports, env }).default;
   return { tree: nodes(Landing()), Image, EarningsLab, taxiImage };
@@ -216,7 +216,7 @@ test('driver landing uses native links so hovering cannot prefetch private pages
   assert.equal(linkedNodes.some(node => node.props.href === '/register'), false);
 });
 
-test('driver hero renders the local approved WebP through next/image with intrinsic dimensions and priority', () => {
+test('driver hero renders the local approved PNG through next/image with intrinsic dimensions and priority', () => {
   const { tree, Image, taxiImage } = landingHarness();
   const hero = tree.find(node => node.type === 'section' && node.props['aria-labelledby'] === 'hero-title');
   const visual = hero.props.children.at(-1);
@@ -228,14 +228,19 @@ test('driver hero renders the local approved WebP through next/image with intrin
   assert.equal(image.width, taxiImage.width);
   assert.equal(image.height, taxiImage.height);
   assert.equal(image.priority, true);
-  assert.equal(image.sizes, '(max-width: 580px) 86vw, (max-width: 800px) 340px, 400px');
+  assert.equal(image.sizes, '(max-width: 580px) calc(100vw - 54px), (max-width: 800px) 580px, (max-width: 1100px) 45vw, 580px');
   assert.match(image.alt, /taxi gris/i);
   assert.match(image.alt, /detrás del reposacabezas del copiloto/i);
   assert.match(image.alt, /pasajeros/i);
-  const asset = fs.readFileSync(path.resolve(__dirname, '../apps/driver/public/tad-driver-taxi-headrest.webp'));
-  assert.equal(asset.toString('ascii', 0, 4), 'RIFF');
-  assert.equal(asset.toString('ascii', 8, 12), 'WEBP');
-  assert.equal(asset.readUInt32LE(4) + 8, asset.length, 'The checked-in WebP must be complete.');
+  const asset = fs.readFileSync(path.resolve(__dirname, '../apps/driver/public/tad-driver-taxi-headrest.png'));
+  assert.deepEqual([...asset.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.equal(asset.readUInt32BE(8), 13, 'PNG must start with its complete IHDR chunk.');
+  assert.equal(asset.toString('ascii', 12, 16), 'IHDR');
+  assert.equal(asset.readUInt32BE(16), image.width, 'The rendered width must match the actual PNG IHDR.');
+  assert.equal(asset.readUInt32BE(20), image.height, 'The rendered height must match the actual PNG IHDR.');
+  assert.equal(asset.readUInt32BE(asset.length - 12), 0);
+  assert.equal(asset.toString('ascii', asset.length - 8, asset.length - 4), 'IEND',
+    'The checked-in PNG must include its final chunk.');
 });
 
 test('driver landing forwards the signup feature flag and preserves its corresponding participation destination', () => {

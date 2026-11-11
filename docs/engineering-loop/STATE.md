@@ -154,3 +154,9 @@ Entrega: [PR #177](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/
 - Work isolated in `codex/driver-hero-249` from `origin/main` `4905b307`; the original checkout and its pending edits were preserved. PR #247 was already merged, followed by #248.
 - User confirmed that the PR #248 image is the approved asset. Extracted its exact bytes into a local WebP and restored the requested hero/SEO copy and copiloto description.
 - Scope and verification: [driver-hero-249-verification.md](../ux-landing/driver-hero-249-verification.md). No merge or deployment performed.
+
+## Imagen Driver actualizada — 2026-11-11
+
+- PR #250 ya estaba fusionado. Nueva intervención aislada: `codex/driver-hero-image-update-20261111`, base `3aef4a8c`.
+- Nueva imagen horizontal adjunta por el usuario, preservada sin alteraciones; marco 3:2, dimensiones y sizes actualizados.
+- Evidencia y límites: [driver-hero-image-update.md](../ux-landing/driver-hero-image-update.md).

@@ -23,18 +23,18 @@ const signupEnabled = process.env.NEXT_PUBLIC_LANDING_SIGNUP_ENABLED === "true";
 const benefits = [
   {
     icon: CarFront,
-    title: "Publicidad que va contigo",
-    text: "Conoce una forma de incorporar publicidad digital a bordo de tu taxi, sujeta a evaluación del vehículo y disponibilidad.",
+    title: "Tu taxi, una nueva oportunidad",
+    text: "Una pantalla orientada al pasajero, instalada detrás del reposacabezas del copiloto, muestra campañas elegibles según disponibilidad y condiciones.",
   },
   {
     icon: MonitorPlay,
-    title: "Un espacio para tu operación",
-    text: "Al tener una cuenta aprobada, accede al portal de conductor para consultar las herramientas habilitadas para tu perfil.",
+    title: "Tres maneras de participar",
+    text: "Explora compensaciones por publicidad en pantalla, comisiones por ventas aprobadas y bonos por referidos activados.",
   },
   {
     icon: ShieldCheck,
-    title: "Las condiciones, por delante",
-    text: "Revisa los requisitos, el proceso de aprobación y las condiciones económicas antes de decidir si quieres participar.",
+    title: "Sin promesas de ingresos fijos",
+    text: "Consulta las condiciones de cada programa, simula escenarios y solicita tu incorporación cuando el registro esté habilitado.",
   },
 ];
 
@@ -132,7 +132,7 @@ function TaxiIllustration({ channel }: { channel: DriverChannel }) {
         className={styles.taxi}
         viewBox="0 0 600 410"
         role="img"
-        aria-label="Ilustración de un taxi amarillo con una pantalla de publicidad digital a bordo; imagen conceptual"
+        aria-label="Ilustración conceptual de un taxi TAD con pantalla publicitaria para el pasajero, detrás del reposacabezas del copiloto"
       >
         <defs>
           <linearGradient id="driver-taxi-body" x1="0" y1="0" x2="0.7" y2="1">
@@ -262,10 +262,10 @@ export default function DriverLandingPage() {
   return (
     <>
       <Head>
-        <title>TAD para taxistas | Conoce cómo participar</title>
+        <title>TAD Driver | Convierte tus viajes en oportunidades de ingresos</title>
         <meta
           name="description"
-          content="Conoce TAD para taxistas: publicidad digital a bordo, requisitos de incorporación, proceso de revisión y acceso al portal de conductor. Consulta las condiciones antes de participar."
+          content="Conoce TAD Driver: publicidad en una pantalla detrás del reposacabezas del copiloto, oportunidades por campañas, ventas y referidos. Participación sujeta a aprobación."
         />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href="https://tad.driver.ibusiness.com.do/" />
@@ -352,18 +352,19 @@ export default function DriverLandingPage() {
                 <span aria-hidden="true" /> TAD · PUBLICIDAD EN MOVIMIENTO
               </p>
               <h1 id="hero-title">
-                La ciudad no se detiene.
+                Convierte tus viajes
                 <br />
-                <span>Tu taxi tampoco.</span>
+                <span>en oportunidades de ingresos con TAD.</span>
               </h1>
               <p className={styles.heroDescription}>
-                Tu recorrido puede conectar marcas con personas. Descubre tres
-                formas de generar ingresos elegibles, simula un escenario y
-                decide con las condiciones claras.
+                Una pantalla publicitaria instalada detrás del reposacabezas del copiloto
+                permite mostrar anuncios a tus pasajeros. Descubre cómo puedes
+                generar ingresos por campañas elegibles, ventas y referidos,
+                siempre sujeto a aprobación y condiciones.
               </p>
               <div className={styles.actions}>
                 <a className={styles.primaryButton} href="#calculadora">
-                  Simular mis oportunidades
+                  Calcula tus ingresos potenciales
                   <ArrowRight size={18} aria-hidden="true" />
                 </a>
                 <a
@@ -435,13 +436,13 @@ export default function DriverLandingPage() {
             <div className={styles.sectionHeading}>
               <p className={styles.eyebrow}>UNA FORMA DE CONECTAR</p>
               <h2 id="benefits-title">
-                Tu taxi puede ser parte
+                Tu taxi trabaja contigo.
                 <br />
-                de algo más.
+                Haz que cada ruta cuente.
               </h2>
               <p>
-                Una propuesta de publicidad pensada para el espacio a bordo. Tú
-                decides con información, antes de dar el siguiente paso.
+                Conoce las tres oportunidades de ingresos de TAD Driver y evalúa
+                los requisitos antes de solicitar tu incorporación.
               </p>
             </div>
             <div className={styles.benefitGrid}>

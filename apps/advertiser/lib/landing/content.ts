@@ -11,8 +11,8 @@ export const ROLE_CONTENT = {
   advertiser: {
     eyebrow: "TU NEGOCIO, EN EL RECORRIDO",
     headline: [
-      "Tu marca tiene",
-      "un asiento en primera fila.",
+      "Tu marca,",
+      "en primera fila.",
     ],
     lead: "Lleva tu mensaje a pantallas digitales a bordo de taxis. Visualiza una creatividad de ejemplo, explora tu presupuesto y descubre el proceso antes de contratar.",
     heroCta: "Explorar mi campaña",

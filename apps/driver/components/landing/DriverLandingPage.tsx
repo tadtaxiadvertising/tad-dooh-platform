@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
-import driverTaxi from "../../public/tad-driver-taxi-headrest.webp";
+import driverTaxi from "../../public/tad-driver-taxi-headrest.png";
 import {
   ArrowDown,
   ArrowRight,
@@ -128,10 +128,10 @@ function DriverHeroVisual() {
         <Image
           src={driverTaxi}
           alt="Taxi gris TAD con ampliación de la pantalla publicitaria detrás del reposacabezas del copiloto, orientada hacia los pasajeros"
-          width={520}
-          height={779}
+          width={1536}
+          height={1024}
           priority
-          sizes="(max-width: 580px) 86vw, (max-width: 800px) 340px, 400px"
+          sizes="(max-width: 580px) calc(100vw - 54px), (max-width: 800px) 580px, (max-width: 1100px) 45vw, 580px"
         />
       </div>
       <figcaption>PUBLICIDAD DIGITAL A BORDO · TAD</figcaption>

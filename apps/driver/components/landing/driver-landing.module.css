@@ -555,7 +555,7 @@
   position: relative;
   isolation: isolate;
   justify-self: center;
-  width: min(100%, 400px);
+  width: min(100%, 600px);
   margin: 0;
   padding: 10px 10px 38px;
   border: 1px solid #ffd40072;
@@ -577,7 +577,7 @@
 }
 .heroVisualFrame {
   overflow: hidden;
-  aspect-ratio: 520 / 779;
+  aspect-ratio: 3 / 2;
   border-radius: 22px;
   background: #1a1a1c;
 }
@@ -599,11 +599,11 @@
   text-align: center;
 }
 @media (max-width: 800px) {
-  .heroVisual { width: min(100%, 340px); }
+  .heroVisual { width: min(100%, 600px); }
 }
 @media (max-width: 580px) {
   .heroVisual {
-    width: min(86vw, 310px);
+    width: 100%;
     padding: 8px 8px 33px;
     border-radius: 23px;
   }

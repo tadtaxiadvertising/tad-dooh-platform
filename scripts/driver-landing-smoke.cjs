@@ -136,7 +136,7 @@ async function assertHeroImage(page, base, label) {
   const media = new URL(requested.pathname === '/_next/image'
     ? requested.searchParams.get('url') : requested.href, base);
   assert.equal(media.origin, base.origin);
-  assert.match(media.pathname, /^\/_next\/static\/media\/tad-driver-taxi-headrest\.[^/]+\.webp$|^\/tad-driver-taxi-headrest\.webp$/,
+  assert.match(media.pathname, /^\/_next\/static\/media\/tad-driver-taxi-headrest\.[^/]+\.png$|^\/tad-driver-taxi-headrest\.png$/,
     `${label}: the browser must load the checked-in taxi asset, not an inline or remote substitute.`);
   assert.match(source.alt, /detrás del reposacabezas del copiloto/i);
   await image.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest' }));

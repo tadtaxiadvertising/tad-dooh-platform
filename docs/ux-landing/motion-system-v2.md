@@ -38,3 +38,10 @@ Every interactive component requires:
 - Do NOT modify wallet/payout/payroll logic in motion PRs
 - Production ON by default only if backend contract confirms; landing uses `includeProduction=false`
 - No secrets in screenshots/logs
+
+## Driver hero — issue #249 (2026-11-11)
+
+- Static approved PR #248 WebP, confirmed by the user in this implementation session; exact source pixels preserved (520 × 779, 16,258 bytes). Static Next image import emits cacheable media and responsive variants with priority loading.
+- The image owns the taxi and circular screen callout; no overlay or duplicated animated screen. The frame uses the intrinsic ratio and contain. Hero headline scales to preserve readable copy and early access to the simulator CTA.
+- Existing opportunity buttons keep their pressed state and polite accessible summary. Image presentation adds no animation, listener, observer, or dependency; reduced motion and server-rendered content remain static.
+- Verification and performance evidence: [Driver hero #249](driver-hero-249-verification.md).

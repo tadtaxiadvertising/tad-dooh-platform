@@ -122,10 +122,27 @@ const CHANNELS = [
 
 type DriverChannel = (typeof CHANNELS)[number]["id"];
 
-function DriverHeroVisual({ channel }: { channel: DriverChannel }) {
+function DriverChannelJourney({ channel }: { channel: DriverChannel }) {
   const selected = CHANNELS.find((item) => item.id === channel) ?? CHANNELS[0];
   return (
-    <figure className={styles.heroVisual} data-channel={channel}>
+    <ol
+      className={styles.heroVisualSteps}
+      data-channel={channel}
+      aria-label={`Recorrido ilustrativo: ${selected.label.toLowerCase()}`}
+    >
+      {selected.journey.map((step, index) => (
+        <li key={step}>
+          <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+          <span>{step}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function DriverHeroVisual() {
+  return (
+    <figure className={styles.heroVisual}>
       <div className={styles.heroVisualFrame}>
         <Image
           src={driverTaxi}
@@ -137,17 +154,6 @@ function DriverHeroVisual({ channel }: { channel: DriverChannel }) {
         />
       </div>
       <figcaption>PUBLICIDAD DIGITAL A BORDO · TAD</figcaption>
-      <ol
-        className={styles.heroVisualSteps}
-        aria-label={`Recorrido ilustrativo: ${selected.label.toLowerCase()}`}
-      >
-        {selected.journey.map((step, index) => (
-          <li key={step}>
-            <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-            <span>{step}</span>
-          </li>
-        ))}
-      </ol>
     </figure>
   );
 }
@@ -306,8 +312,9 @@ export default function DriverLandingPage() {
               >
                 {selectedChannel.statement}
               </p>
+              <DriverChannelJourney channel={channel} />
             </div>
-            <DriverHeroVisual channel={channel} />
+            <DriverHeroVisual />
           </section>
 
           <div className={styles.promiseBar}>

@@ -20,15 +20,18 @@ export default function CreativePreview() {
     if (!file) return;
     setError("");
     if (!TYPES.has(file.type)) {
+      setMedia(null);
       setError("Formato no admitido. Selecciona JPG, PNG, WebP, MP4 o WebM.");
       return;
     }
     if (file.size === 0 || file.size > MAX_BYTES) {
+      setMedia(null);
       setError("Selecciona un archivo de hasta 30 MB que no esté vacío.");
       return;
     }
     setMedia({ url: URL.createObjectURL(file), type: file.type.startsWith("video/") ? "video" : "image", name: file.name });
     setFit("contain");
+    if (input.current) input.current.value = "";
   }
 
   function clear() {
@@ -66,7 +69,7 @@ export default function CreativePreview() {
           <div className={styles.step}>01 / SUBE TU CREATIVIDAD</div>
           <h3>Haz la prueba con tu anuncio.</h3>
           <p>Elige el archivo que deseas mostrar. Podrás ajustar su encuadre antes de continuar.</p>
-          <div className={styles.dropzone} data-dragging={dragging} onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={e => { e.preventDefault(); setDragging(false); }} onDrop={e => { e.preventDefault(); setDragging(false); choose(e.dataTransfer.files[0]); }}>
+          <div className={styles.dropzone} data-dragging={dragging} onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={e => { e.preventDefault(); if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false); }} onDrop={e => { e.preventDefault(); setDragging(false); choose(e.dataTransfer.files[0]); }}>
             <label htmlFor="creative-preview-file">Seleccionar imagen o video</label>
             <input id="creative-preview-file" ref={input} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={e => choose(e.target.files?.[0])} aria-describedby="creative-preview-help" />
             <small id="creative-preview-help">También puedes arrastrar un archivo aquí. JPG, PNG, WebP, MP4 o WebM · Máximo 30 MB.</small>

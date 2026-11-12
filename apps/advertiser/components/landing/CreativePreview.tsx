@@ -1,47 +1,87 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import styles from "./creative-preview.module.css";
 
 const MAX_BYTES = 30 * 1024 * 1024;
-const ACCEPTED = new Set(["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"]);
+const TYPES = new Set(["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"]);
+type Preview = { url: string; type: "image" | "video"; name: string };
 
 export default function CreativePreview() {
-  const [media, setMedia] = useState<{ url: string; type: "image" | "video"; name: string } | null>(null);
+  const [media, setMedia] = useState<Preview | null>(null);
   const [error, setError] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [fit, setFit] = useState<"contain" | "cover">("contain");
+  const [dragging, setDragging] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => () => { if (media) URL.revokeObjectURL(media.url); }, [media]);
 
-  function onFile(file?: File) {
-    setError("");
+  function choose(file?: File) {
     if (!file) return;
-    if (!ACCEPTED.has(file.type)) {
-      setError("Usa JPG, PNG, WebP, MP4 o WebM.");
+    setError("");
+    if (!TYPES.has(file.type)) {
+      setError("Formato no admitido. Selecciona JPG, PNG, WebP, MP4 o WebM.");
       return;
     }
-    if (file.size > MAX_BYTES || file.size === 0) {
-      setError("El archivo debe tener entre 1 byte y 30 MB.");
+    if (file.size === 0 || file.size > MAX_BYTES) {
+      setError("Selecciona un archivo de hasta 30 MB que no esté vacío.");
       return;
     }
     setMedia({ url: URL.createObjectURL(file), type: file.type.startsWith("video/") ? "video" : "image", name: file.name });
+    setFit("contain");
+  }
+
+  function clear() {
+    setMedia(null);
+    setError("");
+    if (input.current) input.current.value = "";
   }
 
   return (
-    <section aria-labelledby="creative-preview-title" style={{ padding: "clamp(20px, 4vw, 48px)", borderRadius: 24, background: "#161616", color: "#fff", marginBlock: 32 }}>
-      <h2 id="creative-preview-title" style={{ fontSize: "clamp(1.5rem, 3vw, 2.5rem)", marginBottom: 12 }}>Mira tu anuncio dentro de un taxi TAD</h2>
-      <p style={{ color: "#ddd", maxWidth: 650, marginBottom: 20 }}>Prueba una imagen o video en una representación de la pantalla detrás del copiloto. La vista previa permanece en tu dispositivo; no publica ni sube tu anuncio.</p>
-      <label htmlFor="creative-preview-file" style={{ display: "inline-block", background: "#facc15", color: "#111", padding: "12px 18px", borderRadius: 12, fontWeight: 700, cursor: "pointer" }}>Elegir imagen o video</label>
-      <input ref={inputRef} id="creative-preview-file" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(event) => onFile(event.target.files?.[0])} style={{ display: "block", marginTop: 10, maxWidth: "100%" }} aria-describedby="creative-preview-help" />
-      <p id="creative-preview-help" style={{ fontSize: 13, color: "#ccc" }}>Formatos: JPG, PNG, WebP, MP4, WebM · Máximo 30 MB.</p>
-      {error && <p role="alert" style={{ color: "#ffb4b4" }}>{error}</p>}
-      <div style={{ marginTop: 24, maxWidth: 680, marginInline: "auto", padding: "clamp(12px, 4vw, 32px)", background: "#303030", borderRadius: 24 }}>
-        <p style={{ textAlign: "center", fontSize: 13, color: "#ddd", marginBottom: 12 }}>VISTA ILUSTRATIVA · PANTALLA ORIENTADA AL PASAJERO</p>
-        <div style={{ padding: 10, borderRadius: 16, background: "#050505", border: "4px solid #666", aspectRatio: "16 / 9", display: "grid", placeItems: "center", overflow: "hidden" }}>
-          {media?.type === "image" ? <img src={media.url} alt="Vista previa local de tu anuncio" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : media?.type === "video" ? <video key={media.url} src={media.url} controls playsInline preload="metadata" aria-label="Vista previa de video" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <div style={{ textAlign: "center", color: "#facc15", fontWeight: 800, fontSize: "clamp(24px, 6vw, 56px)" }}>TAD ▶</div>}
-        </div>
-        {media && <p style={{ marginTop: 12, overflowWrap: "anywhere", fontSize: 13 }}>Vista previa: {media.name}</p>}
+    <section className={styles.section} aria-labelledby="creative-preview-title">
+      <div className={styles.intro}>
+        <p className={styles.eyebrow}>ESTUDIO CREATIVO · DEMOSTRACIÓN GRATUITA</p>
+        <h2 id="creative-preview-title">Tu marca, <span>en el recorrido.</span></h2>
+        <p>Sube una imagen o video y descubre cómo se vería en una pantalla TAD frente al pasajero. Sin registro y sin enviar el archivo a nuestros servidores.</p>
       </div>
-      <p style={{ fontSize: 12, color: "#bbb", marginTop: 14 }}>Esta demostración no verifica compatibilidad final con el Player. Las creatividades deben pasar revisión y validación antes de publicarse.</p>
+      <div className={styles.layout}>
+        <div className={styles.stage}>
+          <div className={styles.stageHeader}><span className={styles.liveDot} /> VISTA PREVIA EN EL TAXI <span>16:9 · ILUSTRATIVA</span></div>
+          <div className={styles.cabin}>
+            <div className={styles.headrest} aria-hidden="true" />
+            <div className={styles.screen}>
+              {media?.type === "image" ? (
+                <img src={media.url} alt="Vista previa de la creatividad seleccionada" style={{ objectFit: fit }} />
+              ) : media?.type === "video" ? (
+                <video key={media.url} src={media.url} controls playsInline preload="metadata" aria-label="Reproducir video de prueba" style={{ objectFit: fit }} onError={() => setError("El navegador no pudo reproducir este video. Comprueba el códec o prueba otro archivo.")} />
+              ) : (
+                <div className={styles.placeholder}><strong>TAD<span>▶</span></strong><small>Tu anuncio puede estar aquí</small></div>
+              )}
+            </div>
+            <div className={styles.mount} aria-hidden="true" />
+          </div>
+          <p className={styles.stageCaption}>Pantalla instalada detrás del reposacabezas del copiloto, orientada hacia los pasajeros. Recreación conceptual, no fotografía de una instalación real.</p>
+        </div>
+        <div className={styles.editor}>
+          <div className={styles.step}>01 / SUBE TU CREATIVIDAD</div>
+          <h3>Haz la prueba con tu anuncio.</h3>
+          <p>Elige el archivo que deseas mostrar. Podrás ajustar su encuadre antes de continuar.</p>
+          <div className={styles.dropzone} data-dragging={dragging} onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={e => { e.preventDefault(); setDragging(false); }} onDrop={e => { e.preventDefault(); setDragging(false); choose(e.dataTransfer.files[0]); }}>
+            <label htmlFor="creative-preview-file">Seleccionar imagen o video</label>
+            <input id="creative-preview-file" ref={input} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={e => choose(e.target.files?.[0])} aria-describedby="creative-preview-help" />
+            <small id="creative-preview-help">También puedes arrastrar un archivo aquí. JPG, PNG, WebP, MP4 o WebM · Máximo 30 MB.</small>
+          </div>
+          {media && <div className={styles.selected}><span title={media.name}>{media.name}</span><button type="button" onClick={clear}>Quitar</button></div>}
+          {error && <p role="alert" className={styles.error}>{error}</p>}
+          <div className={styles.step}>02 / AJUSTA LA PRESENTACIÓN</div>
+          <div className={styles.fitControls} role="group" aria-label="Encuadre de la creatividad">
+            <button type="button" aria-pressed={fit === "contain"} onClick={() => setFit("contain")}>Mostrar completa</button>
+            <button type="button" aria-pressed={fit === "cover"} onClick={() => setFit("cover")}>Llenar pantalla</button>
+          </div>
+          <p className={styles.privacy}>Tu archivo permanece en este navegador. Esta prueba no crea una campaña, no confirma inventario ni garantiza compatibilidad con el reproductor final.</p>
+          <a className={styles.cta} href="#experiencia">Calcular mi campaña <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
     </section>
   );
 }

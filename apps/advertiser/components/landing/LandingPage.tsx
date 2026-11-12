@@ -303,8 +303,9 @@ export default function LandingPage() {
               </label>
             </div>
             <p className="landing-stage-privacy">
-              Vista previa ilustrativa. Este campo no guarda tu nombre de marca ni
-              lo incluye en eventos de analítica.
+              La pantalla TAD va detrás del reposacabezas del copiloto,
+              orientada al pasajero. Esta escena es ilustrativa; el nombre de
+              tu marca no se guarda ni se incluye en los eventos de esta demo.
             </p>
           </div>
         </section>

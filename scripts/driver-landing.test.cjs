@@ -219,8 +219,14 @@ test('driver landing uses native links so hovering cannot prefetch private pages
 test('driver hero renders the local approved PNG through next/image with intrinsic dimensions and priority', () => {
   const { tree, Image, taxiImage } = landingHarness();
   const hero = tree.find(node => node.type === 'section' && node.props['aria-labelledby'] === 'hero-title');
-  const visual = hero.props.children.at(-1);
-  assert.equal(typeof visual.type, 'function');
+  const [intro, visual, opportunityChoices] = hero.props.children;
+  assert.equal(intro.type, 'div', 'Lead copy must be first in reading order.');
+  assert.equal(typeof visual.type, 'function', 'The approved taxi follows the intro.');
+  assert.equal(opportunityChoices.type, 'div', 'Opportunity chapters follow the taxi.');
+  assert.ok(nodes(opportunityChoices).some(node =>
+    node.type === 'ul' &&
+    node.props['aria-label'] === 'Explora las tres oportunidades para conductores'),
+    'Three opportunities remain directly interactive and visible after the taxi.');
   const images = nodes(visual.type(visual.props)).filter(node => node.type === Image);
   assert.equal(images.length, 1, 'Use one taxi image; the asset already includes its screen callout.');
   const image = images[0].props;

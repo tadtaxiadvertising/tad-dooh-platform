@@ -263,8 +263,10 @@ async function main() {
       await brand.fill('<img src=x onerror=1>');
       assert.ok((await screen.innerText()).includes('<img src=x onerror=1>'));
       assert.equal(await scene.locator('img').count(), 0, 'Brand text must not become markup.');
-      await brand.fill('M'.repeat(40));
-      assert.equal((await brand.inputValue()).length, 24, 'Brand input must be bounded.');
+      await brand.fill('M'.repeat(24));
+      await brand.press('End');
+      await brand.press('N');
+      assert.equal(await brand.inputValue(), 'M'.repeat(24), 'Typing past the limit must be blocked.');
       await brand.fill('');
       assert.equal(await scene.getAttribute('data-brand-custom'), null);
       await objective.selectOption('awareness');

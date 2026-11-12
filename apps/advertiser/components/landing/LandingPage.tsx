@@ -54,6 +54,8 @@ const money = formatRD;
 export default function LandingPage() {
   const [city, setCity] = useState<DemoCity>("sd");
   const [objective, setObjective] = useState<DemoObjective>("awareness");
+  // Editable in this browser session only; deliberately absent from analytics snapshots.
+  const [brandName, setBrandName] = useState("");
   const [screens, setScreens] = useState(3);
   const [months, setMonths] = useState(2);
   // Explicit consent, not an automatic upsell: same default as public onboarding.
@@ -260,8 +262,9 @@ export default function LandingPage() {
             </ol>
           </div>
           <div className="landing-hero-stage">
-            <CityScene city={city} objective={objective} />
-            <label className="landing-stage-objective" htmlFor="hero-campaign-objective">
+            <CityScene city={city} objective={objective} brandName={brandName} />
+            <div className="landing-stage-controls" role="group" aria-label="Personalizar creatividad ilustrativa">
+              <label className="landing-stage-objective" htmlFor="hero-campaign-objective">
               <span>Cambia el mensaje en pantalla</span>
               <select
                 id="hero-campaign-objective"
@@ -276,7 +279,23 @@ export default function LandingPage() {
                   <option key={value} value={value}>{title}</option>
                 ))}
               </select>
-            </label>
+              </label>
+              <label className="landing-stage-brand" htmlFor="hero-brand-name">
+                <span>Tu marca en esta pantalla (opcional)</span>
+                <input
+                  id="hero-brand-name"
+                  type="text"
+                  autoComplete="off"
+                  maxLength={24}
+                  placeholder="Ej. Mi negocio"
+                  value={brandName}
+                  onChange={(event) => setBrandName(event.target.value)}
+                />
+              </label>
+            </div>
+            <p className="landing-stage-privacy">
+              Vista previa ilustrativa. Este campo no guarda tu nombre de marca ni lo incluye en eventos de analítica.
+            </p>
           </div>
         </section>
         <noscript>

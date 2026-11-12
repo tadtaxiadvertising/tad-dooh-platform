@@ -51,6 +51,12 @@ export default function CityScene({
           ),
           note: <>{preview.note}</>,
         };
+  const sceneAriaLabel =
+    `Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}` +
+    (role === "advertiser"
+      ? `, escenario ${CITIES[city]}, objetivo ${OBJECTIVES[objective]}` +
+        (displayBrand ? `, marca de ejemplo ${displayBrand}` : "")
+      : "");
   return (
     <div
       className="landing-scene"
@@ -58,7 +64,7 @@ export default function CityScene({
       data-city={city}
       data-objective={role === "advertiser" ? objective : undefined}
       data-brand-custom={role === "advertiser" && displayBrand ? "true" : undefined}
-      aria-label={`Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}${role === "advertiser" ? `, escenario ${CITIES[city]}, objetivo ${OBJECTIVES[objective]}` : ""}${role === "advertiser" && displayBrand ? `, marca de ejemplo ${displayBrand}` : ""}`}
+      aria-label={sceneAriaLabel}
       role="img"
     >
       <div className="landing-scene-grid" />

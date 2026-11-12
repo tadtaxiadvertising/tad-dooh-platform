@@ -57,6 +57,7 @@ export default function CityScene({
       data-perspective={role}
       data-city={city}
       data-objective={role === "advertiser" ? objective : undefined}
+      data-brand-custom={role === "advertiser" && displayBrand ? "true" : undefined}
       aria-label={`Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}${role === "advertiser" ? `, escenario ${CITIES[city]}, objetivo ${OBJECTIVES[objective]}` : ""}${role === "advertiser" && displayBrand ? `, marca de ejemplo ${displayBrand}` : ""}`}
       role="img"
     >

@@ -285,6 +285,9 @@ export default function DriverLandingPage() {
                 <ShieldCheck size={15} aria-hidden="true" /> Incorporación e instalación
                 sujetas a revisión, disponibilidad y condiciones del programa.
               </p>
+            </div>
+            <DriverHeroVisual />
+            <div className={styles.heroExperience}>
               <ul
                 className={styles.heroChannels}
                 aria-label="Explora las tres oportunidades para conductores"
@@ -314,7 +317,6 @@ export default function DriverLandingPage() {
               </p>
               <DriverChannelJourney channel={channel} />
             </div>
-            <DriverHeroVisual />
           </section>
 
           <div className={styles.promiseBar}>

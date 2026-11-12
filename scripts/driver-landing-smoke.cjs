@@ -438,6 +438,25 @@ async function main() {
         await assertNoHorizontalOverflow(page, `Driver ${width}px`);
         await assertLabGeometry(page, `Driver ${width}px`);
         await assertHeroImage(page, base, `Driver ${width}px`);
+        if (width <= 800) {
+          const order = await page.locator('section[aria-labelledby="hero-title"]').evaluate(hero => {
+            const cta = hero.querySelector('a[href="#calculadora"]');
+            const taxi = hero.querySelector('figure');
+            const choices = hero.querySelector('ul[aria-label="Explora las tres oportunidades para conductores"]');
+            if (!cta || !taxi || !choices) return null;
+            return {
+              ctaBottom: cta.getBoundingClientRect().bottom,
+              taxiTop: taxi.getBoundingClientRect().top,
+              taxiBottom: taxi.getBoundingClientRect().bottom,
+              choicesTop: choices.getBoundingClientRect().top,
+            };
+          });
+          assert.ok(order, `Driver ${width}px: missing CTA, taxi or earning choices.`);
+          assert.ok(order.taxiTop >= order.ctaBottom - 2,
+            `Driver ${width}px: approved taxi must follow the primary CTA.`);
+          assert.ok(order.choicesTop >= order.taxiBottom - 2,
+            `Driver ${width}px: earning chapters must follow the taxi image.`);
+        }
         await page.evaluate(() => scrollTo(0, 0));
         if (screenshots) await page.screenshot({ path: path.join(screenshots, `driver-landing-${width}.png`), fullPage: true });
       }

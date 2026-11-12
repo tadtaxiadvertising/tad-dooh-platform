@@ -245,6 +245,27 @@ async function main() {
       assert.equal(await page.locator('#campaign-city').inputValue(), 'sd');
     });
 
+    await check('Illustrative brand preview updates locally without changing the campaign price', async () => {
+      const brand = page.locator('#hero-brand-name');
+      const screen = page.locator('.landing-screen-content > strong');
+      const scene = page.locator('.landing-scene');
+      const objective = page.locator('#hero-campaign-objective');
+      const totalBefore = await panel.locator('#budget-total').innerText();
+      assert.equal(await brand.inputValue(), '');
+      assert.equal(await brand.getAttribute('maxlength'), '24');
+      await brand.fill('Café TAD');
+      assert.ok((await screen.innerText()).includes('Café TAD'));
+      assert.match(await scene.getAttribute('aria-label'), /marca de ejemplo Café TAD/);
+      assert.equal(await panel.locator('#budget-total').innerText(), totalBefore);
+      await objective.selectOption('launch');
+      assert.equal(await panel.locator('#campaign-objective').inputValue(), 'launch');
+      assert.ok((await screen.innerText()).includes('Café TAD'));
+      await brand.fill('');
+      assert.equal(await scene.getAttribute('data-brand-custom'), null);
+      await objective.selectOption('awareness');
+      assert.equal(await panel.locator('#budget-total').innerText(), totalBefore);
+    });
+
     await check('Campaign story has four controllable keyboard steps', async () => {
       const story = page.locator('#recorrido-campana');
       const steps = story.locator('button[aria-pressed]');

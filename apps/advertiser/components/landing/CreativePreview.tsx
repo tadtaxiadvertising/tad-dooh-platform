@@ -29,6 +29,7 @@ export default function CreativePreview() {
       setError("Selecciona un archivo de hasta 30 MB que no esté vacío.");
       return;
     }
+    // This only validates browser-provided metadata; server-side validation remains mandatory.
     setMedia({ url: URL.createObjectURL(file), type: file.type.startsWith("video/") ? "video" : "image", name: file.name });
     setFit("contain");
     if (input.current) input.current.value = "";

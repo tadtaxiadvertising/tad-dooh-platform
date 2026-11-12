@@ -50,3 +50,18 @@ test('driver educational preview validates the final total after adding capped a
   assert.equal(previewDriverEarnings(0, count, 0).illustrativeTotalRD, count * 500);
   assert.throws(() => previewDriverEarnings(15, count, 0), RangeError);
 });
+
+
+test('driver preview clearly separates monthly campaigns from approved one-time events', () => {
+  const lab = fs.readFileSync(
+    path.resolve(__dirname, '../apps/driver/components/landing/DriverEarningsLab.tsx'),
+    'utf8',
+  );
+  assert.match(lab, /Ejemplo combinado: un mes de anuncios y bonos por eventos/);
+  assert.match(lab, /Los ingresos de pantalla se ilustran por mes/);
+  assert.match(lab, /referidos son bonos por eventos aprobados/);
+  assert.match(lab, /no se repiten\s+automáticamente en meses siguientes/);
+  assert.match(lab, /result\.recurringMonthlyExampleRD/);
+  assert.match(lab, /result\.oneTimeEventsExampleRD/);
+  assert.doesNotMatch(lab, /Total bruto del ejemplo, en un mismo período/);
+});

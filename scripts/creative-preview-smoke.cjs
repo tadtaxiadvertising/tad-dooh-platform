@@ -33,6 +33,8 @@ assert.equal(base.pathname, '/');
     assert.equal(await page.getByAltText('Vista previa de la creatividad seleccionada').count(), 0);
     await input.setInputFiles({ name: 'bad.txt', mimeType: 'text/plain', buffer: Buffer.from('bad') });
     assert.match(await page.getByRole('alert').innerText(), /Formato no admitido/);
+    await input.setInputFiles({ name: 'sample.png', mimeType: 'image/png', buffer: Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000b49444154789c636000020000050001a5f645400000000049454e44ae426082', 'hex') });
+    assert.equal(await page.getByAltText('Vista previa de la creatividad seleccionada').count(), 1, 'Same file can be selected again');
     assert.equal(await page.locator('body').evaluate(el => el.scrollWidth <= window.innerWidth), true, 'Mobile overflow');
     assert.deepEqual(requests, [], 'Preview must not send requests');
     await context.close();

@@ -34,6 +34,7 @@ import {
   FIXED_FREQUENCY_SECONDS,
 } from "../advertiser/simulatorPricing";
 import CampaignJourney from "./CampaignJourney";
+import CreativePreview from "./CreativePreview";
 import CityScene from "./CityScene";
 import LandingAnalytics from "./LandingAnalytics";
 import styles from "./landing.module.css";
@@ -332,6 +333,7 @@ export default function LandingPage() {
             </span>
           </div>
         </div>
+        <div className="landing-wrap"><CreativePreview /></div>
         <div id="como-funciona" className="landing-wrap landing-story-wrap">
           <CampaignJourney
             onStepView={(step) =>

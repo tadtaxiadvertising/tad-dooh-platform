@@ -263,22 +263,31 @@ export default function LandingPage() {
           </div>
           <div className="landing-hero-stage">
             <CityScene city={city} objective={objective} brandName={brandName} />
-            <div className="landing-stage-controls" role="group" aria-label="Personalizar creatividad ilustrativa">
-              <label className="landing-stage-objective" htmlFor="hero-campaign-objective">
-              <span>Cambia el mensaje en pantalla</span>
-              <select
-                id="hero-campaign-objective"
-                value={objective}
-                onChange={(event) => {
-                  const nextObjective = event.target.value as DemoObjective;
-                  setObjective(nextObjective);
-                  recordPreview({ objective: nextObjective });
-                }}
+            <div
+              className="landing-stage-controls"
+              role="group"
+              aria-label="Personalizar creatividad ilustrativa"
+            >
+              <label
+                className="landing-stage-objective"
+                htmlFor="hero-campaign-objective"
               >
-                {Object.entries(OBJECTIVES).map(([value, title]) => (
-                  <option key={value} value={value}>{title}</option>
-                ))}
-              </select>
+                <span>Cambia el mensaje en pantalla</span>
+                <select
+                  id="hero-campaign-objective"
+                  value={objective}
+                  onChange={(event) => {
+                    const nextObjective = event.target.value as DemoObjective;
+                    setObjective(nextObjective);
+                    recordPreview({ objective: nextObjective });
+                  }}
+                >
+                  {Object.entries(OBJECTIVES).map(([value, title]) => (
+                    <option key={value} value={value}>
+                      {title}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="landing-stage-brand" htmlFor="hero-brand-name">
                 <span>Tu marca en esta pantalla (opcional)</span>
@@ -294,7 +303,8 @@ export default function LandingPage() {
               </label>
             </div>
             <p className="landing-stage-privacy">
-              Vista previa ilustrativa. Este campo no guarda tu nombre de marca ni lo incluye en eventos de analítica.
+              Vista previa ilustrativa. Este campo no guarda tu nombre de marca ni
+              lo incluye en eventos de analítica.
             </p>
           </div>
         </section>

@@ -649,7 +649,7 @@
 }
 
 /* Product-first hero: source order follows mobile reading order (intro → real taxi → opportunities). */
-.heroExperience { min-width: 0; }
+.heroExperience { position: relative; z-index: 1; min-width: 0; }
 @media (min-width: 801px) {
   .hero {
     grid-template-rows: auto auto;

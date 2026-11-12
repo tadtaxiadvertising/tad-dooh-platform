@@ -164,7 +164,7 @@ export default function DriverEarningsLab({
             <span>SIMULACIÓN EDUCATIVA</span>
           </div>
           <p className={styles.resultEyebrow}>
-            Total bruto del ejemplo, en un mismo período
+            Ejemplo combinado: un mes de anuncios y bonos por eventos
           </p>
           <output
             ref={earningsOutputRef}
@@ -188,6 +188,11 @@ export default function DriverEarningsLab({
             </div>
           </div>
           <div className={styles.explainer}>
+            <p>
+              Los ingresos de pantalla se ilustran por mes; las ventas y los
+              referidos son bonos por eventos aprobados y no se repiten
+              automáticamente en meses siguientes.
+            </p>
             <p>
               <strong>Mensual por anuncios:</strong>{" "}
               {money(result.recurringMonthlyExampleRD)}

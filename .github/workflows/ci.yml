@@ -221,6 +221,8 @@ jobs:
             dockerfile: Dockerfile.api
           - image: admin
             dockerfile: Dockerfile.admin
+          - image: advertiser
+            dockerfile: Dockerfile.advertiser
           - image: driver
             dockerfile: Dockerfile.driver
           - image: player

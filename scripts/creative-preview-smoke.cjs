@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 'use strict';
-// Run against an already running isolated advertiser frontend:
 // LANDING_BASE_URL=http://127.0.0.1:3003 node scripts/creative-preview-smoke.cjs
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');

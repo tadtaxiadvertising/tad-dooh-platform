@@ -647,3 +647,58 @@
   .heroVisualSteps { gap: 6px; padding: 7px; border-radius: 14px; }
   .heroVisualSteps li { gap: 7px; padding: 11px 7px; font-size: 11px; }
 }
+
+/* Product-first hero: source order follows mobile reading order (intro → real taxi → opportunities). */
+.heroExperience { position: relative; z-index: 1; min-width: 0; }
+@media (min-width: 801px) {
+  .hero {
+    grid-template-rows: auto auto;
+    align-items: start;
+    row-gap: 0;
+  }
+  .heroCopy {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+  }
+  .heroVisual {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+  .heroExperience {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+  }
+  .heroExperience .heroChannels { margin-top: 22px; }
+}
+@media (max-width: 800px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    align-items: start;
+    gap: 20px;
+  }
+  .heroCopy { grid-column: 1; grid-row: 1; }
+  .heroVisual {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    margin-block: 0;
+  }
+  .heroExperience {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .heroExperience .heroChannels {
+    margin-top: 0;
+  }
+}
+@media (max-width: 580px) {
+  .hero { gap: 14px; }
+  .heroVisual { max-width: 100%; }
+  .heroExperience .heroChannels {
+    padding-top: 15px;
+  }
+}

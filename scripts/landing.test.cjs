@@ -417,3 +417,28 @@ test('App Router analytics adapter loads only after opt-in and removes script/ti
   consent.saveCookieConsent({ essential: true, functional: false, analytics: true, advertisement: false });
   assert.equal(activeScripts.size, 0, 'Unmounting must detach preference listeners.');
 });
+
+
+test('advertiser brand editor is local-only and never alters the budget or analytics payload', () => {
+  const harness = landingComponentHarness();
+  harness.consent.saveCookieConsent({
+    essential: true, functional: false, analytics: true, advertisement: false,
+  });
+  harness.render();
+  const initialTotal = harness.control('budget-total').children;
+  const brand = harness.control('hero-brand-name');
+  assert.equal(brand.value, '');
+  assert.equal(brand.maxLength, 24);
+  brand.onChange({ target: { value: 'Café TAD' } });
+  harness.render();
+  assert.equal(harness.control('hero-brand-name').value, 'Café TAD');
+  assert.equal(harness.control('budget-total').children, initialTotal);
+  assert.equal(harness.events.length, 0, 'Typing a brand must not send analytics.');
+
+  harness.control('campaign-city').onChange({ target: { value: 'stgo' } });
+  harness.render();
+  assert.deepEqual(harness.events.map(event => event.data), [
+    { ...defaultPreview, city: 'stgo' },
+  ], 'Normal preview telemetry must not contain the typed brand.');
+  assert.equal(harness.control('hero-brand-name').value, 'Café TAD');
+});

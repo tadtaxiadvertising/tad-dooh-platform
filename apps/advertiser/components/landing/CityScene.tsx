@@ -5,11 +5,15 @@ export default function CityScene({
   role = "advertiser",
   city = "sd",
   objective = "awareness",
+  brandName = "",
 }: {
   role?: LandingRole;
   city?: DemoCity;
   objective?: DemoObjective;
+  brandName?: string;
 }) {
+  // Text is for this illustrative preview only: no persistence or analytics.
+  const displayBrand = brandName.trim().replace(/\s+/g, " ").slice(0, 24);
   const preview = {
     awareness: { tag: "TU MARCA, PRESENTE", first: "tu marca.", second: "en camino.", note: "Una idea que acompaña el recorrido." },
     launch: { tag: "UNA NOVEDAD", first: "algo nuevo.", second: "en la ciudad.", note: "Presenta lo nuevo durante el trayecto." },
@@ -40,20 +44,27 @@ export default function CityScene({
           tag: preview.tag,
           title: (
             <>
-              {preview.first}
+              {displayBrand || preview.first}
               <br />
               <em>{preview.second}</em>
             </>
           ),
           note: <>{preview.note}</>,
         };
+  const sceneAriaLabel =
+    `Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}` +
+    (role === "advertiser"
+      ? `, escenario ${CITIES[city]}, objetivo ${OBJECTIVES[objective]}` +
+        (displayBrand ? `, marca de ejemplo ${displayBrand}` : "")
+      : "");
   return (
     <div
       className="landing-scene"
       data-perspective={role}
       data-city={city}
       data-objective={role === "advertiser" ? objective : undefined}
-      aria-label={`Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}${role === "advertiser" ? `, escenario ${CITIES[city]}, objetivo ${OBJECTIVES[objective]}` : ""}`}
+      data-brand-custom={role === "advertiser" && displayBrand ? "true" : undefined}
+      aria-label={sceneAriaLabel}
       role="img"
     >
       <div className="landing-scene-grid" />

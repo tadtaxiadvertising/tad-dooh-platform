@@ -551,3 +551,67 @@
 @media (prefers-reduced-motion: reduce) {
   .landing :global(.landing-stage-objective select) { scroll-behavior: auto; }
 }
+
+/* Local preview editor: meaningful interaction without external assets, uploads or analytics. */
+.landing :global(.landing-stage-controls) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+.landing :global(.landing-stage-controls > label) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #ffffff33;
+  background: #15171a;
+  color: #e9e6dc;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.landing :global(.landing-stage-controls input),
+.landing :global(.landing-stage-controls select) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 12px;
+  background: #23262a;
+  border: 1px solid #ffd40070;
+  border-radius: 10px;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+}
+.landing :global(.landing-stage-controls input::placeholder) { color: #bcbab0; opacity: 1; }
+.landing :global(.landing-stage-controls input:focus-visible),
+.landing :global(.landing-stage-controls select:focus-visible) {
+  outline: 3px solid #ffd400;
+  outline-offset: 2px;
+}
+.landing :global(.landing-stage-privacy) {
+  margin: 0;
+  padding: 0 3px;
+  color: #c3c5c9;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.landing :global(.landing-scene[data-brand-custom="true"] .landing-screen-content > strong) {
+  font-size: clamp(21px, 2.5vw, 30px);
+  overflow-wrap: anywhere;
+  letter-spacing: -.045em;
+}
+@media (max-width: 580px) {
+  .landing :global(.landing-stage-controls) { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing :global(.landing-stage-controls input),
+  .landing :global(.landing-stage-controls select) { transition: none !important; }
+}

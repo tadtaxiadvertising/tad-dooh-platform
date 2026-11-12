@@ -102,3 +102,22 @@ test("hero previews illustrate meaningful selections without changing commercial
   assert.match(advertiser, /setIncludeProduction\] = useState\(false\)/);
   assert.match(driver, /<DriverEarningsLab signupEnabled=\{signupEnabled\} \/>/);
 });
+
+
+test("in-car brand preview stays local, bounded and understandable without changing payment rules", () => {
+  const landing = read("apps/advertiser/components/landing/LandingPage.tsx");
+  const scene = read("apps/advertiser/components/landing/CityScene.tsx");
+  const css = read("apps/advertiser/components/landing/landing.module.css");
+  assert.match(landing, /const \[brandName, setBrandName\] = useState\(""\)/);
+  assert.match(landing, /<CityScene city=\{city\} objective=\{objective\} brandName=\{brandName\}/);
+  assert.match(landing, /id="hero-brand-name"/);
+  assert.match(landing, /autoComplete="off"/);
+  assert.match(landing, /maxLength=\{24\}/);
+  assert.match(landing, /onChange=\{\(event\) => setBrandName\(event.target.value\)\}/);
+  assert.match(scene, /displayBrand = brandName\.trim\(\)\.replace/);
+  assert.match(scene, /displayBrand \|\| preview.first/);
+  assert.match(css, /landing-stage-controls input:focus-visible/);
+  assert.match(css, /grid-template-columns: minmax\(0, 1fr\)/);
+  assert.doesNotMatch(landing, /recordPreview\(\{[^}]*brandName/);
+  assert.match(landing, /setIncludeProduction\] = useState\(false\)/);
+});

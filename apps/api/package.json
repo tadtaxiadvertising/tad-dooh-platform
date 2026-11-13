@@ -74,7 +74,7 @@
     "passport-custom": "^1.1.1",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
-    "pdfmake": "^0.3.7",
+    "pdfmake": "^0.3.14",
     "pg": "^8.20.0",
     "prisma": "^5.22.0",
     "qrcode": "^1.5.4",

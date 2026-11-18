@@ -134,6 +134,7 @@ jobs:
           node --test scripts/ci-e2e-isolation.test.cjs
           node --test scripts/ci-docker-matrix.test.cjs scripts/ghcr-api-promotion-contract.test.cjs scripts/tracked-postgres-secrets-guard.test.cjs
           node --test scripts/api-entrypoint-env.test.cjs
+          node --test scripts/api-health-route-contract.test.cjs scripts/check-api-readiness.test.cjs
           node --test apps/api/scripts/master-sync-migration.contract.test.cjs
           node --test apps/api/scripts/device-command-ack.contract.test.cjs
           node --experimental-strip-types --test apps/api/scripts/device-scope.test.mjs

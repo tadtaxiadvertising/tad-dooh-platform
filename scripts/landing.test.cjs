@@ -266,7 +266,9 @@ test('public advertiser onboarding remains available for new accounts and status
     __dirname, '../apps/advertiser/pages/advertiser/pending-review.tsx'), 'utf8');
   const middleware = fs.readFileSync(path.join(
     __dirname, '../apps/advertiser/middleware.ts'), 'utf8');
-  assert.ok(!middleware.match(/PUBLIC_PATHS[\\s\\S]{0,350}["']\\/advertiser\\/pending-review/),
+  const publicPaths = middleware.slice(middleware.indexOf("const PUBLIC_PATHS"),
+    middleware.indexOf("interface TrustedAdvertiserSession"));
+  assert.ok(!publicPaths.includes('"/advertiser/pending-review"'),
     'The pending-review screen must not be publicly bypassable');
   assert.ok(middleware.includes('"/advertiser/onboarding"'),
     'New advertisers retain access to signup');

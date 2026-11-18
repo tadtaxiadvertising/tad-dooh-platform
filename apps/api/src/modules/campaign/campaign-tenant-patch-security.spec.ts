@@ -116,6 +116,18 @@ describe("Campaign tenant patch and list authorization", () => {
     expect(updateCampaign).toHaveBeenCalledWith("campaign-1", links);
   });
 
+  it("fails closed for unexpected PATCH roles before campaign lookup", async () => {
+    await expect(
+      controller.updateCampaign(
+        "campaign-1",
+        { websiteUrl: "https://example.test" },
+        req(UserRole.DRIVER),
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(getCampaignById).not.toHaveBeenCalled();
+    expect(updateCampaign).not.toHaveBeenCalled();
+  });
+
   it("preserves an ADMIN's existing unrestricted edit workflow", async () => {
     const administrativeEdit = {
       advertiser_id: "advertiser-B",

@@ -55,7 +55,7 @@ function execute(environment) {
       input: boundary + script,
       encoding: "utf8",
       cwd: dir,
-      env: { PATH: "", ...environment },
+      env: { PATH: "", TAD_APPROVE_MANUAL_MIGRATION: "YES", ...environment },
       timeout: 4000,
     });
     assert.equal(result.error, undefined);
@@ -86,6 +86,13 @@ for (const missing of Object.keys(fixtures)) {
     assert.doesNotMatch(result.output, /\[fixture\] target checked|migration invoked/);
   });
 }
+
+test("manual migration requires explicit YES even with complete database configuration", () => {
+  const result = execute({ ...fixtures, TAD_APPROVE_MANUAL_MIGRATION: "NO" });
+  assert.equal(result.status, 1);
+  assert.match(result.output, /explicit TAD_APPROVE_MANUAL_MIGRATION=YES required/);
+  assert.doesNotMatch(result.output, /target checked|migration invoked/);
+});
 
 test("an unverified Supabase target blocks migration", () => {
   const result = execute({ ...fixtures, TAD_TEST_PREFLIGHT_FAIL: "1" });

@@ -1,4 +1,7 @@
 import "reflect-metadata";
+import { plainToInstance } from "class-transformer";
+import { validate } from "class-validator";
+import { CompleteOAuthAdvertiserProfileDto } from "./dto/complete-oauth-advertiser-profile.dto";
 import {
   BadRequestException,
   ConflictException,
@@ -63,6 +66,25 @@ describe("Verified OAuth advertiser profile completion (no account creation)", (
       },
     });
     expect(createAuthUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed DTOs before any profile mutation", async () => {
+    const valid = plainToInstance(CompleteOAuthAdvertiserProfileDto, {
+      companyName: "Empresa", contactName: "Contacto",
+      phone: "+1 809 555 0100",
+    });
+    expect(await validate(valid)).toEqual([]);
+    for (const invalid of [
+      { companyName: "", contactName: "Persona" },
+      { companyName: "Empresa", contactName: "" },
+      { companyName: "Empresa", contactName: "Persona", phone: "<script>" },
+      { companyName: "X".repeat(121), contactName: "Persona" },
+    ]) {
+      expect((await validate(plainToInstance(
+        CompleteOAuthAdvertiserProfileDto, invalid,
+      ))).length).toBeGreaterThan(0);
+    }
+    expect(updateMany).not.toHaveBeenCalled();
   });
 
   it("never honors caller-provided approval, advertiser ID or financial fields", async () => {

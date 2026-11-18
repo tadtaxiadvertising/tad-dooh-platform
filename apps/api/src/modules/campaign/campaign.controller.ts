@@ -83,6 +83,20 @@ type CampaignCoverageDevice = Pick<
   "lastHeartbeat" | "lastSeen" | "lastSync"
 >;
 
+/**
+ * Advertisers may keep their own QR / commerce links current, but must never
+ * change ownership, active status, pricing, targeting or device assignments.
+ * Admin campaign edits use the original full DTO and retain existing behavior.
+ */
+const ALLOWED_ADVERTISER_CAMPAIGN_PATCH_FIELDS = new Set([
+  "whatsapp",
+  "instagram",
+  "facebook",
+  "websiteUrl",
+  "pedidosYaUrl",
+  "uberEatsUrl",
+]);
+
 @Controller("campaigns")
 @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
 export class CampaignController {
@@ -172,13 +186,41 @@ export class CampaignController {
   ) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
+    if (role !== UserRole.ADMIN && role !== UserRole.ADVERTISER) {
+      throw new ForbiddenException("Rol no autorizado para editar campañas.");
+    }
     const campaign = await this.campaignService.getCampaignById(id);
     if (!campaign) throw new NotFoundException("Campaña no encontrada");
 
-    if (role === "ADVERTISER" && campaign.advertiserId !== entityId) {
-      throw new ForbiddenException(
-        "No tienes permisos para editar esta campaña",
-      );
+    if (role === UserRole.ADVERTISER) {
+      if (!entityId || campaign.advertiserId !== entityId) {
+        throw new ForbiddenException(
+          "No tienes permisos para editar esta campaña",
+        );
+      }
+
+      // Fail closed on any unexpected/privileged property, even if the
+      // current CampaignService happens to ignore it. A client must not
+      // smuggle "active", "advertiser_id", "budget" or target_devices.
+      if (!dto || typeof dto !== "object" || Array.isArray(dto)) {
+        throw new ForbiddenException(
+          "Solo se permite editar enlaces comerciales de la campaña.",
+        );
+      }
+      const entries = Object.entries(dto);
+      if (
+        entries.length === 0 ||
+        entries.some(
+          ([field, value]) =>
+            !ALLOWED_ADVERTISER_CAMPAIGN_PATCH_FIELDS.has(field) ||
+            typeof value !== "string" ||
+            value.length > 2048,
+        )
+      ) {
+        throw new ForbiddenException(
+          "Solo se permite editar enlaces comerciales de la campaña.",
+        );
+      }
     }
 
     return this.campaignService.updateCampaign(id, dto);
@@ -265,7 +307,12 @@ export class CampaignController {
   async getAllCampaigns(@Req() req: AuthenticatedRequest) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
-    if (role === "ADVERTISER" && entityId) {
+    if (role === UserRole.ADVERTISER) {
+      // Never fall through to the admin-wide campaign listing if an
+      // advertiser's validated identity is incomplete or missing.
+      if (typeof entityId !== "string" || !entityId.trim()) {
+        throw new ForbiddenException("Perfil de anunciante inválido.");
+      }
       return this.prisma.campaign.findMany({
         where: { advertiserId: entityId },
         include: {
@@ -274,6 +321,9 @@ export class CampaignController {
         },
         orderBy: { createdAt: "desc" },
       });
+    }
+    if (role !== UserRole.ADMIN) {
+      throw new ForbiddenException("Rol no autorizado para consultar campañas.");
     }
     return this.campaignService.getAllCampaigns();
   }

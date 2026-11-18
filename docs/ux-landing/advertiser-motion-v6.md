@@ -112,3 +112,12 @@ authorized checkout is required before calling the implementation verified.
 - The long-standing landing CSS contains multiple override layers. Follow-up
   consolidation should be a separate small PR after screenshots and behavior
   are approved, not bundled with a time-sensitive UI release.
+
+
+## QA local: reparación del montaje de assets standalone (2026-11-18)
+
+Hallazgo: `ln -sfn SOURCE TARGET` **no sustituye** un directorio `TARGET` existente; crea un symlink *dentro* del directorio. En la salida Next standalone puede dejar `/_next/static` o `public` en una ruta equivocada y producir falsos errores de carga o imágenes durante el smoke.
+
+Cambio mínimo: `scripts/advertiser-motion-v6-local-qa.sh` valida que existan assets compilados y copia contenidos con `cp -R SOURCE/. TARGET/` a los directorios efectivos. No toca producción, datos operativos ni repositorios de imágenes externos.
+
+Regresión: `scripts/advertiser-standalone-assets.test.cjs` ejecuta el bloque de staging real contra archivos y carpetas temporales, incluso si los destinos ya existen, y prueba repetición e inexistencia de assets. En el entorno local aislado de esta revisión se ejecutaron **13/13 pruebas PASS** de los scripts del release gate y del montaje de assets, además de `bash -n` del bloque modificado. No se certificó un build de Next ni Chromium del monorepo completo.

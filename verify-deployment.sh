@@ -18,6 +18,7 @@ DRIVER_URL="${DRIVER_URL:-https://tad.driver.ibusiness.com.do}"
 DRIVE_URL="${DRIVE_URL:-https://tad.drive.ibusiness.com.do}" # Optional alias for the driver portal
 PLAYER_URL="${PLAYER_URL:-https://tad.player.ibusiness.com.do}"
 ADMIN_URL="${ADMIN_URL:-https://tad.adm.ibusiness.com.do}"
+ADVERTISER_URL="https://tad.anunciante.ibusiness.com.do" # Canonical release fingerprint is intentionally fixed
 
 PASSED=0
 FAILED=0
@@ -80,6 +81,7 @@ echo
 echo "1. DNS"
 check_domain "API" "$API_URL"
 check_domain "Admin" "$ADMIN_URL"
+check_domain "Advertiser" "$ADVERTISER_URL"
 check_domain "Driver (canónico)" "$DRIVER_URL"
 check_domain "Drive (alias)" "$DRIVE_URL"
 check_domain "Player" "$PLAYER_URL"
@@ -89,6 +91,7 @@ echo "2. HTTPS / respuesta HTTP"
 if command -v curl >/dev/null 2>&1; then
   check_https "API health" "${API_URL%/}/api/health"
   check_https "Admin" "$ADMIN_URL"
+  check_https "Advertiser" "$ADVERTISER_URL"
   check_https "Driver (canónico)" "$DRIVER_URL"
   check_https "Drive (alias)" "$DRIVE_URL"
   check_https "Player health" "${PLAYER_URL%/}/health"
@@ -98,13 +101,27 @@ if command -v curl >/dev/null 2>&1; then
   check_cors_origin "$DRIVER_URL"
   check_cors_origin "$DRIVE_URL"
   check_cors_origin "$PLAYER_URL"
-  check_cors_origin "https://tad.anunciante.ibusiness.com.do"
+  check_cors_origin "$ADVERTISER_URL"
 else
   warn "curl no está instalado; se omiten las comprobaciones HTTPS."
 fi
 echo
 
-echo "4. Configuración local (solo archivos existentes)"
+echo "4. Versión pública del anunciante (verificación semántica, no basta HTTP 200)"
+if command -v node >/dev/null 2>&1 && [[ -f "$ROOT_DIR/scripts/advertiser-release-drift.cjs" ]]; then
+  node "$ROOT_DIR/scripts/advertiser-release-drift.cjs"
+  release_status=$?
+  case "$release_status" in
+    0) pass "Advertiser entrega TAD Motion V6 en el dominio público" ;;
+    2) fail "Advertiser entrega HTML anterior o no reconocido" "Revisa en EasyPanel el servicio tad-advertiser, rama main, Dockerfile.advertiser, commit activo y caché del proxy. No reinicies API/Player." ;;
+    *) fail "No se pudo verificar la versión pública del anunciante" "Consulta DNS/TLS/HTTP del dominio y los logs del servicio advertiser; no interpretes este fallo como una versión antigua." ;;
+  esac
+else
+  warn "Node.js o el verificador de release no están disponibles; no se confirmó la versión pública del anunciante."
+fi
+echo
+
+echo "5. Configuración local (solo archivos existentes)"
 env_files_found=0
 for app in admin driver player; do
   env_file="$ENV_ROOT/$app/.env"
@@ -123,7 +140,7 @@ if [[ "$env_files_found" -eq 0 ]]; then
 fi
 echo
 
-echo "5. Resumen"
+echo "6. Resumen"
 printf "  OK: %s | Fallos: %s | Advertencias: %s\n" "$PASSED" "$FAILED" "$WARNINGS"
 if [[ "$FAILED" -gt 0 ]]; then
   echo "Resultado: verificación fallida."

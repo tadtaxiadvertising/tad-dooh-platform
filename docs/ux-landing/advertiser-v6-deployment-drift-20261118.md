@@ -52,3 +52,20 @@ Ese script ahora exige que la compilación local entregue el fingerprint V6 **an
 ## Estado
 
 **Evidencia suficiente de release drift; causa raíz por confirmar con el despliegue activo.** La implementación del verificador es un cambio no destructivo y no significa que el dominio se haya actualizado.
+
+
+## Revisión de infraestructura del 18 de noviembre de 2026
+
+Se inspeccionó el proyecto de Railway `discerning-commitment` a través de su conexión de solo lectura.
+
+- Contiene un servicio `tad-dooh-platform` cuyo origen es `tadtaxiadvertising/tad-dooh-platform` en rama `main`.
+- Su Dockerfile configurado es **`Dockerfile.api`**, no `Dockerfile.advertiser`.
+- El único dominio registrado para ese servicio es `tad-dooh-platform-production.up.railway.app`; el dominio **`tad.anunciante.ibusiness.com.do` no está asociado** a ese servicio.
+- El despliegue del merge #277 pasó a estado SUCCESS; el merge #278 lanzó otro despliegue. Estos estados corresponden al servicio de Railway descrito, **no prueban que el anunciante en EasyPanel se haya actualizado**.
+- El repositorio identifica `tad-advertiser`, `Dockerfile.advertiser` y puerto interno 3000 como configuración esperada para el anunciante en EasyPanel; verificar el servicio real antes de modificarlo.
+
+No se cambió la configuración de Railway ni el DNS. La intervención necesaria debe dirigirse al despliegue real del anunciante, tras verificar el commit activo y su ruta de proxy.
+
+### Integración con el verificador general
+
+`bash verify-deployment.sh` ahora incluye el dominio del anunciante en DNS/HTTPS y ejecuta `scripts/advertiser-release-drift.cjs` para detectar despliegues que devuelven HTTP 200 pero siguen sirviendo una versión antigua. Un 200 sin los dos marcadores semánticos **no es un resultado exitoso**.

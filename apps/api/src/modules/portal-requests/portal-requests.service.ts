@@ -12,6 +12,19 @@ export class PortalRequestsService {
     private readonly supabase: SupabaseService,
   ) {}
 
+  /**
+   * A referenced campaign must belong to the authenticated advertiser.
+   * A matching request body advertiserId is NOT evidence of ownership.
+   */
+  async advertiserOwnsCampaign(campaignId: string, advertiserId: string): Promise<boolean> {
+    if (!campaignId || !advertiserId) return false;
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { advertiserId: true },
+    });
+    return campaign?.advertiserId === advertiserId;
+  }
+
   async create(data: {
     advertiserId?: string;
     driverId?: string;

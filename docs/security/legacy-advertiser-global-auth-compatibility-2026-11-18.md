@@ -51,3 +51,16 @@ pnpm --filter api exec jest --runInBand \
 5. Desplegar API antes del siguiente build de advertiser, preservando rollback; no aplicar cambios a tablets, base de datos, wallets o facturación.
 
 **Estado:** corrección en rama separada; pendiente de QA integral, aprobación y despliegue.
+
+
+## Seguimiento de coherencia del inicio de sesión — 18 de noviembre de 2026
+
+**Evidencia adicional:** `AdvertisersService.verifyAdvertiserSession()` admite únicamente anunciantes `ACTIVE` y `PENDING_REVIEW`. Sin embargo, `AdvertisersService.login()` seguía firmando y devolviendo un JWT válido tras comprobar la contraseña **sin verificar el estado actual del anunciante**. Una cuenta `SUSPENDED` recibía el token, pero la navegación y la API lo rechazaban inmediatamente; esto genera una falsa sesión iniciada.
+
+Se añadió un control de estado **después de verificar contraseña y antes de firmar el JWT**, para aceptar solamente `ACTIVE` y `PENDING_REVIEW`. Se conserva el error genérico de credenciales ante contraseña incorrecta (no revelar el estado con una clave inválida). No cambian el emisor del token, las cookies, la estrategia OAuth, la RBAC ni las rutas públicas.
+
+Nueva prueba Jest `apps/api/src/modules/advertisers/advertisers-login-status.spec.ts`: login de ambos estados permitidos, comprobación de token firmado/aceptado por el validador actual y denegación de estados suspendidos/desconocidos, contraseña incorrecta y cuenta inexistente. El gate local de QA incluye la suite.
+
+**Verificación hecha:** 7/7 escenarios ejecutados sobre el cuerpo real del método TS (anotaciones eliminadas, hashing y firma simulados), incluyendo la condición «token no firmado» para los cinco casos de rechazo. **No equivale a ejecutar Jest, bcrypt/jwt reales, NestJS ni el despliegue.** No se deben emitir afirmaciones de verificación integral hasta ejecutar `bash scripts/advertiser-offer-local-gate.sh`.
+
+**Dependencia operativa separada:** el servicio Railway `tad-dooh-platform` no cuenta con variables de seguridad y se encuentra sin réplicas funcionales. Incidente #260; no confundirlo con EasyPanel ni aprovisionar secretos de forma improvisada.

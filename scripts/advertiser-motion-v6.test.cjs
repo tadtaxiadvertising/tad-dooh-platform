@@ -58,3 +58,44 @@ test("narrative does not convert illustrative telemetry into guaranteed exposure
   }
   assert.doesNotMatch(story, /retorno garantizado|impresiones verificadas|usuarios alcanzados: [0-9]/i);
 });
+
+
+test("animated opacity layers are not read as three simultaneous screen-reader chapters", () => {
+  assert.match(story, /className=\{styles\.chapterWindow\}[\s\S]*?aria-hidden="true"/);
+  assert.match(story, /className=\{styles\.accessibleSummary\}/);
+  assert.match(story, /<li key=\{chapter\.number\}>/);
+  assert.match(story, /aria-label="De tu idea a la ciudad: recorrido publicitario ilustrativo"/);
+  for (const stage of ["taxi", "tablet", "report"]) {
+    assert.ok(story.includes('data-tad-stage="' + stage + '"'), stage + " QA marker absent");
+  }
+});
+
+function rgb(hex) {
+  return hex.match(/[a-f0-9]{2}/ig).map(value => parseInt(value, 16) / 255);
+}
+function brightness(hex) {
+  const [r, g, b] = rgb(hex).map(value =>
+    value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contrast(foreground, background) {
+  const a = brightness(foreground);
+  const b = brightness(background);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+test("white editorial text tones meet WCAG AA contrast", () => {
+  const values = [
+    ["motion headline accent", "#806300", "#ffffff", 3],
+    ["motion chapter numbers", "#765d00", "#ffffff", 4.5],
+    ["static cards' chapter labels", "#765d00", "#f5f5f2", 4.5],
+    ["hero small-step counters", "#765c00", "#ffffff", 4.5],
+    ["creative studio body", "#5e5e56", "#f7f7f2", 4.5],
+  ];
+  for (const [label, foreground, background, minimum] of values) {
+    assert.ok(contrast(foreground, background) >= minimum,
+      label + " must be at least " + minimum + ":1");
+  }
+  assert.match(storyCss, /\.sticky \{ top: 90px; height: calc\(100svh - 90px\); min-height: 0; \}/);
+  assert.match(storyCss, /\.section \{ scroll-margin-top: 90px; \}/);
+});

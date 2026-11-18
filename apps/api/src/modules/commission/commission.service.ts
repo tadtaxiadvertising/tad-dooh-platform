@@ -511,8 +511,8 @@ export class CommissionService {
   }
 
   /**
-   * Paga un lote aprobado (APPROVED → PAID)
-   * Genera las órdenes de pago reales (transferencias bancarias).
+   * Legacy payout endpoint is suspended until bank-confirmed reconciliation
+   * can update each beneficiary and its ledger idempotently.
    */
   async paySettlementBatch(
     batchId: string,

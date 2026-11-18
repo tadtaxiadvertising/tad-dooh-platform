@@ -83,7 +83,7 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
   );
   const thirdCaption = useTransform(
     scrollYProgress,
-    [0.69, 0.84, 1],
+    [0.66, 0.79, 1],
     [0, 1, 1],
   );
   const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
@@ -98,7 +98,7 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
       className={styles.section}
       data-motion-ready={ready ? "true" : undefined}
       data-reduced-motion={reducedMotion ? "true" : undefined}
-      aria-labelledby="motion-story-title"
+      aria-label="De tu idea a la ciudad: recorrido publicitario ilustrativo"
     >
       <div className={styles.sticky}>
         <div className={styles.topline}>
@@ -117,7 +117,7 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
             </h2>
             <div
               className={styles.chapterWindow}
-              aria-label="Tres capítulos del recorrido publicitario"
+              aria-hidden="true"
             >
               {scenes.map((chapter, index) => (
                 <motion.div
@@ -134,6 +134,14 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
                 </motion.div>
               ))}
             </div>
+            <ol className={styles.accessibleSummary}>
+              {scenes.map((chapter) => (
+                <li key={chapter.number}>
+                  <strong>{chapter.title}</strong>
+                  <p>{chapter.description}</p>
+                </li>
+              ))}
+            </ol>
             <a className={styles.link} href="#creative-preview-title">
               Prueba tu creatividad <span aria-hidden="true">↗</span>
             </a>

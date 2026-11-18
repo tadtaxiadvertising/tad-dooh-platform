@@ -779,3 +779,7 @@
     }
   }
 }
+
+/* WCAG AA small-label contrast: decorative yellow stays bright, text turns ink-gold. */
+.landing :global(.landing-hero-steps li > span) { color: #765c00; }
+.landing :global(.landing-card-top .landing-badge) { color: #443903; }

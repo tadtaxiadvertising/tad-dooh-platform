@@ -31,3 +31,10 @@ node ./scripts/check-supabase-target.cjs
 # Prisma's datasource uses DATABASE_URL; temporarily point ONLY this
 # subprocess at the verified direct/session migration connection.
 DATABASE_URL="$DIRECT_URL" pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+# Prisma migrate deploy applies *pending* SQL only. It does not detect drift
+# when migration history says "applied" but critical tables/columns are absent.
+# Do not report success or start the API if the read-only schema inspection
+# finds missing tables/columns, UUID/TEXT mismatches or broken relations.
+# This query uses information_schema metadata only (no customer records).
+DATABASE_URL="$DIRECT_URL" node ./scripts/check-prisma-drift.cjs

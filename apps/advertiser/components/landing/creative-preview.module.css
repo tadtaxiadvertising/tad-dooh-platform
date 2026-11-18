@@ -30,3 +30,9 @@
 .privacy { color:#686861!important; }
 .cta:hover,.dropzone label:hover { background:#ffe272; }
 @media(max-width:420px){.section{border-radius:22px}}
+
+/* Anchor lands below the sticky public navigation, including mobile zoom. */
+.section :global(#creative-preview-title) { scroll-margin-top: 110px; }
+@media (max-width: 760px) {
+  .section :global(#creative-preview-title) { scroll-margin-top: 88px; }
+}

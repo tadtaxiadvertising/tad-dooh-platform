@@ -62,6 +62,7 @@ node --test \
   scripts/landing-creative-reframe.test.cjs \
   scripts/landing-cinematic.test.cjs \
   scripts/advertiser-motion-v6.test.cjs \
+  scripts/advertiser-release-drift.test.cjs \
   scripts/driver-landing.test.cjs \
   scripts/driver-preview-arithmetic.test.cjs \
   scripts/advertiser-onboarding-presentation.test.cjs \
@@ -121,6 +122,11 @@ done
 
 export NODE_PATH="$ROOT/apps/advertiser/node_modules:$ROOT/apps/driver/node_modules"
 export LANDING_BASE_URL="http://127.0.0.1:$PORT/"
+node scripts/advertiser-release-drift.cjs "$LANDING_BASE_URL" > "$OUT/release-fingerprint.json" || {
+  cat "$OUT/release-fingerprint.json" >&2
+  echo "The locally built release is not Motion V6; refusing to claim browser QA." >&2
+  exit 1
+}
 export LANDING_SCREENSHOT_DIR="$OUT/screenshots"
 node scripts/landing-v3-smoke.cjs > "$OUT/browser.log" 2>&1 || {
   tail -n 100 "$OUT/browser.log" >&2

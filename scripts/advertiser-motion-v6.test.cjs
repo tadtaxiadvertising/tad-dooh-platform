@@ -27,8 +27,10 @@ test("motion scrub includes reversible stages and a non-pinned reduced-motion fa
   assert.match(story, /useTransform\(/);
   assert.match(story, /useReducedMotion\(/);
   assert.match(story, /offset: \["start start", "end end"\]/);
-  assert.match(story, /data-reduced-motion=\{reduceMotion/);
+  assert.match(story, /data-reduced-motion=\{reducedMotion/);
   assert.match(story, /className=\{styles\.staticSequence\}/);
+  assert.match(story, /data-motion-ready=\{ready/);
+  assert.match(storyCss, /section:not\(\[data-motion-ready/);
   assert.match(storyCss, /position:sticky/);
   assert.match(storyCss, /@media\(max-width:900px\),\(max-height:690px\)/);
   assert.match(storyCss, /@media\(prefers-reduced-motion:reduce\)/);

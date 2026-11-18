@@ -290,6 +290,69 @@ test('pending Supabase OAuth advertiser is also routed to verified status screen
   assert.equal((await harness.run('/advertiser/pending-review', token, 'oauth')).kind, 'next');
 });
 
+test('new OAuth advertiser reaches protected profile completion, never duplicate signup', async () => {
+  const token = 'new-oauth-fixture';
+  const harness = middlewareHarness({
+    supabaseToken: token,
+    oauthDatabaseStatus: 'PENDING_ONBOARDING',
+    supabaseUser: { app_metadata: { role: 'ADVERTISER' } },
+  });
+  for (const pathname of [
+    '/', '/advertiser/dashboard', '/advertiser/login',
+    '/advertiser/pending-review',
+  ]) {
+    assert.deepEqual(await harness.run(pathname, token, 'oauth'), {
+      kind: 'redirect',
+      destination: 'http://127.0.0.1:3003/advertiser/oauth/complete-profile',
+    });
+  }
+  assert.equal((await harness.run('/advertiser/oauth/complete-profile', token, 'oauth')).kind,
+    'next', 'Existing OAuth profile route must not cause redirect loops');
+  assert.equal(harness.backendCalls(), 5);
+});
+
+test('OAuth profile completion screen requires verified PENDING_ONBOARDING and is read-only until submit', async () => {
+  const token = 'existing-oauth-fixture';
+  const active = middlewareHarness({
+    supabaseToken: token, oauthDatabaseStatus: 'ACTIVE',
+    supabaseUser: { app_metadata: { role: 'ADVERTISER' } },
+  });
+  assert.deepEqual(await active.run('/advertiser/oauth/complete-profile', token, 'oauth'), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/dashboard',
+  });
+  const reviewed = middlewareHarness({
+    supabaseToken: token, oauthDatabaseStatus: 'PENDING_REVIEW',
+    supabaseUser: { app_metadata: { role: 'ADVERTISER' } },
+  });
+  assert.deepEqual(await reviewed.run('/advertiser/oauth/complete-profile', token, 'oauth'), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/pending-review',
+  });
+  const guest = middlewareHarness();
+  assert.deepEqual(await guest.run('/advertiser/oauth/complete-profile'), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+  const source = fs.readFileSync(path.join(__dirname,
+    '../apps/advertiser/pages/advertiser/oauth/complete-profile.tsx'), 'utf8');
+  const callback = fs.readFileSync(path.join(__dirname,
+    '../packages/ui/components/AuthCallback.tsx'), 'utf8');
+  assert.ok(source.includes('/api/proxy/onboarding/advertiser/oauth/profile'));
+  assert.ok(!source.includes('createUser('));
+  assert.ok(!source.includes('/api/proxy/onboarding/advertiser"'));
+  assert.ok(callback.includes("'/advertiser/oauth/complete-profile'"));
+  const appShell = fs.readFileSync(path.join(
+    __dirname, '../apps/advertiser/pages/_app.tsx'), 'utf8');
+  assert.ok(appShell.includes('router.pathname === "/advertiser/oauth/complete-profile"'));
+  assert.ok(appShell.includes('router.pathname === "/advertiser/pending-review"'));
+  assert.ok(appShell.includes('if (isPublic || isProtectedStatusPage)'));
+  // These pages are layoutless but NOT marked public in the middleware.
+  const middleware = fs.readFileSync(path.join(
+    __dirname, '../apps/advertiser/middleware.ts'), 'utf8');
+  const publicEntries = middleware.slice(middleware.indexOf('const PUBLIC_PATHS'),
+    middleware.indexOf('interface TrustedAdvertiserSession'));
+  assert.ok(!publicEntries.includes('"/advertiser/oauth/complete-profile"'));
+  assert.ok(!publicEntries.includes('"/advertiser/pending-review"'));
+});
+
 test('public advertiser onboarding remains available for new accounts and status is read-only', () => {
   const screen = fs.readFileSync(path.join(
     __dirname, '../apps/advertiser/pages/advertiser/pending-review.tsx'), 'utf8');

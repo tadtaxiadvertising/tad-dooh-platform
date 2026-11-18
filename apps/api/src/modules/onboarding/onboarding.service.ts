@@ -5,6 +5,8 @@ import {
   ConflictException,
   BadRequestException,
   InternalServerErrorException,
+  UnauthorizedException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { SupabaseService } from "../supabase/supabase.service";
@@ -17,6 +19,7 @@ import {
 
 import { OnboardAdvertiserDto } from "./dto/onboard-advertiser.dto";
 import { OnboardAdvertiserQuoteDto } from "./dto/onboard-advertiser-quote.dto";
+import { CompleteOAuthAdvertiserProfileDto } from "./dto/complete-oauth-advertiser-profile.dto";
 import { calculateAdvertiserOffer } from "@tad/impact-calculator";
 
 @Injectable()
@@ -239,6 +242,84 @@ export class OnboardingService {
         "Error al procesar el registro. Intente de nuevo.",
       );
     }
+  }
+
+  /**
+   * Idempotent PROFILE completion for an EXISTING verified Google OAuth
+   * advertiser. This is not commercial approval, campaign creation, or payment.
+   * Only PENDING_ONBOARDING can advance to PENDING_REVIEW.
+   *
+   * The identity is injected by the API's global authentication guard.
+   */
+  async completeOAuthAdvertiserProfile(
+    identity: { role?: string; entityId?: string | null; email?: string },
+    data: CompleteOAuthAdvertiserProfileDto,
+  ) {
+    if (
+      identity?.role !== "ADVERTISER" ||
+      typeof identity.entityId !== "string" || !identity.entityId.trim() ||
+      typeof identity.email !== "string" || !identity.email.trim()
+    ) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+
+    const companyName = typeof data?.companyName === "string"
+      ? data.companyName.trim() : "";
+    const contactName = typeof data?.contactName === "string"
+      ? data.contactName.trim() : "";
+    const phone = data?.phone === undefined
+      ? undefined : (typeof data.phone === "string" ? data.phone.trim() : "");
+    if (
+      companyName.length < 2 || companyName.length > 120 ||
+      contactName.length < 2 || contactName.length > 120 ||
+      (phone !== undefined && !/^[+0-9 ()-]{7,25}$/.test(phone))
+    ) {
+      throw new BadRequestException("Los datos del perfil no son válidos.");
+    }
+
+    const where = { id: identity.entityId };
+    const advertiser = await this.prisma.advertiser.findUnique({
+      where,
+      select: { id: true, email: true, status: true },
+    });
+    if (
+      !advertiser ||
+      advertiser.id !== identity.entityId ||
+      advertiser.email.trim().toLowerCase() !== identity.email.trim().toLowerCase()
+    ) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+    if (advertiser.status === "PENDING_REVIEW") {
+      // Safe retry: never create another identity or overwrite a submitted
+      // profile. Approval remains reserved for an authorized operator.
+      return { advertiserId: advertiser.id, status: "PENDING_REVIEW" as const };
+    }
+    if (advertiser.status !== "PENDING_ONBOARDING") {
+      throw new ForbiddenException("Esta cuenta no requiere completar el perfil.");
+    }
+
+    const result = await this.prisma.advertiser.updateMany({
+      where: { id: advertiser.id, status: "PENDING_ONBOARDING" },
+      data: {
+        companyName,
+        contactName,
+        ...(phone !== undefined ? { phone } : {}),
+        status: "PENDING_REVIEW",
+      },
+    });
+    if (result.count === 1) {
+      return { advertiserId: advertiser.id, status: "PENDING_REVIEW" as const };
+    }
+
+    // Concurrent identical requests must not create duplicated accounts.
+    const latest = await this.prisma.advertiser.findUnique({
+      where,
+      select: { status: true },
+    });
+    if (latest?.status === "PENDING_REVIEW") {
+      return { advertiserId: advertiser.id, status: "PENDING_REVIEW" as const };
+    }
+    throw new ConflictException("El estado de la cuenta cambió. Vuelve a iniciar sesión.");
   }
 
   /**

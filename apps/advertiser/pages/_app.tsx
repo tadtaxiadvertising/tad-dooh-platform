@@ -47,8 +47,14 @@ function AppWrapper({
   }, [router.pathname]);
 
   const content = <Component {...pageProps} />;
+  // A minimal shell is not a public authorization bypass. Both status pages
+  // are protected by Next middleware and verified against the current API DB
+  // account state. Avoid dashboard Layout side-effects for incomplete users.
+  const isProtectedStatusPage =
+    router.pathname === "/advertiser/pending-review" ||
+    router.pathname === "/advertiser/oauth/complete-profile";
 
-  if (isPublic) {
+  if (isPublic || isProtectedStatusPage) {
     return <AuthProvider>{content}</AuthProvider>;
   }
 

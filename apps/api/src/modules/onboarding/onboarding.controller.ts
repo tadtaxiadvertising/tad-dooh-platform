@@ -5,6 +5,7 @@ import {
   Body,
   ForbiddenException,
   UseGuards,
+  Req,
 } from "@nestjs/common";
 import { OnboardingService } from "./onboarding.service";
 import { Public } from "../auth/decorators/public.decorator";
@@ -13,6 +14,7 @@ import { TenantGuard } from "../auth/guards/tenant.guard";
 
 import { OnboardAdvertiserDto } from "./dto/onboard-advertiser.dto";
 import { OnboardAdvertiserQuoteDto } from "./dto/onboard-advertiser-quote.dto";
+import { CompleteOAuthAdvertiserProfileDto } from "./dto/complete-oauth-advertiser-profile.dto";
 import { Throttle } from "@nestjs/throttler";
 
 @Controller("onboarding")
@@ -35,6 +37,24 @@ export class OnboardingController {
   @Post("advertiser")
   async onboard(@Body() data: OnboardAdvertiserDto) {
     return this.onboardingService.onboardAdvertiser(data);
+  }
+
+  /**
+   * Completes only the logged-in OAuth user's EXISTING advertiser profile.
+   * Never accepts advertiserId, status, approval or payment details from client.
+   */
+  @Roles(UserRole.ADVERTISER)
+  @Throttle({ default: { limit: 6, ttl: 60000 } })
+  @Post("advertiser/oauth/profile")
+  async completeOAuthProfile(
+    @Req() request: {
+      user?: { role?: string; entityId?: string | null; email?: string };
+    },
+    @Body() data: CompleteOAuthAdvertiserProfileDto,
+  ) {
+    return this.onboardingService.completeOAuthAdvertiserProfile(
+      request.user || {}, data,
+    );
   }
 
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)

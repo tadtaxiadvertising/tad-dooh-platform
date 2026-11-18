@@ -14,7 +14,8 @@
     "components/onboarding/SimulatorStep.tsx",
     "components/onboarding/OnboardingWizard.tsx",
     "lib/landing/**/*.ts",
-    "middleware.ts"
+    "middleware.ts",
+    "pages/advertiser/oauth/complete-profile.tsx"
   ],
   "exclude": [
     "node_modules",

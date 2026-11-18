@@ -561,6 +561,35 @@ async function main() {
         await rejectCookies(normalPage);
         await assertAmountFeedback(normalPage, { outputSelector: '#budget-total',
           inputSelector: '#campaign-screens', nextValue: 4, nextAmount: 20000 });
+
+        // Real scroll in both directions, not just source-level assertions.
+        const motionStory = normalPage.locator('#motion-story');
+        assert.equal(await motionStory.count(), 1);
+        await normalPage.waitForFunction(() =>
+          document.querySelector('#motion-story')?.getAttribute('data-motion-ready') === 'true');
+        const motionOpacityAt = async (fraction, stage) => {
+          await normalPage.evaluate(async ratio => {
+            const element = document.querySelector('#motion-story');
+            if (!element) throw new Error('Missing public scroll story.');
+            document.documentElement.style.scrollBehavior = 'auto';
+            const start = scrollY + element.getBoundingClientRect().top;
+            const span = element.getBoundingClientRect().height - innerHeight;
+            window.scrollTo(0, start + Math.max(1, span) * ratio);
+            await new Promise(resolve => requestAnimationFrame(() =>
+              requestAnimationFrame(resolve)));
+          }, fraction);
+          return normalPage.locator('[data-tad-stage="' + stage + '"]').evaluate(
+            element => Number.parseFloat(getComputedStyle(element).opacity));
+        };
+        for (const [fraction, dominant] of [[0.07, 'taxi'], [0.52, 'tablet'], [0.92, 'report'], [0.07, 'taxi']]) {
+          const opacity = await motionOpacityAt(fraction, dominant);
+          assert.ok(opacity >= 0.7, dominant + ' should be the visible stage at progress ' + fraction + ': ' + opacity);
+        }
+        const stickyTop = await normalPage.locator('#motion-story > div:first-child')
+          .evaluate(element => Number.parseFloat(getComputedStyle(element).top));
+        assert.ok(stickyTop >= 88 && stickyTop <= 92,
+          'Pinned narrative must respect the 90px sticky navigation.');
+
         await assertNoSideEffects(normal, normalEvidence);
       } finally { await normal.close(); }
     });
@@ -581,6 +610,11 @@ async function main() {
             await assertOpaque(staticPage.locator(selector), `Advertiser no-JS ${width}px ${selector}`);
           }
           await assertAdvertiserLinks(staticPage);
+          const chapters = staticPage.locator('#motion-story article');
+          assert.equal(await chapters.count(), 3,
+            'No-JS browser must retain all narrative chapters.');
+          assert.equal(await chapters.first().isVisible(), true,
+            'No-JS narrative may not disappear on any supported viewport.');
           await assertNoHorizontalOverflow(staticPage, `Advertiser no-JS ${width}px`);
           if (screenshots) await staticPage.screenshot({
             path: path.join(screenshots, `landing-v5-${width}-advertiser-no-js.png`), fullPage: true });

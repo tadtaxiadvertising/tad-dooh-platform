@@ -783,6 +783,13 @@ export class AdvertisersService {
       throw new UnauthorizedException("Credenciales inválidas");
     }
 
+    // Align token issuance with verifyAdvertiserSession(): suspended/unknown
+    // advertisers must not receive a signed token that every protected route
+    // will immediately reject. Validate after password to avoid enumeration.
+    if (!["ACTIVE", "PENDING_REVIEW"].includes(user.status)) {
+      throw new UnauthorizedException("Cuenta de anunciante no habilitada.");
+    }
+
     const payload = {
       sub: user.id,
       email: user.email,

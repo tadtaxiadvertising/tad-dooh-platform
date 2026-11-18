@@ -183,6 +183,16 @@ test('simulator keeps live model quotes, deliberate production opt-in and existi
   const assertQuote = page => {
     const amount = page.find('output', output => output['aria-label'] === 'Presupuesto ilustrativo');
     assert.equal(text(amount.children), pricing.estimateCampaign(config).total.toLocaleString());
+    assert.equal(pricing.estimateCampaign(config).screensCost,
+      pricing.SCREEN_MONTHLY_RATE * config.screens * config.months,
+      'Displayed monthly unit rate must reconcile to the illustrative subtotal');
+    const unitLabels = page.elements
+      .filter(element => element.type === 'span')
+      .map(element => text(element.props.children));
+    assert.ok(unitLabels.some(label =>
+      label.startsWith('Pantallas (') &&
+      label.includes(`RD${pricing.SCREEN_MONTHLY_RATE.toLocaleString()}`)),
+    'Onboarding must display the same unit rate used to calculate the subtotal');
     assert.ok(page.html.includes('conciliación'), 'Quote must disclose pending commercial reconciliation');
     assert.ok(page.html.includes('ilustrativ'), 'Quote must remain educational');
   };

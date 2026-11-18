@@ -29,7 +29,7 @@ describe("AdvertiserAccountStatusGuard — direct API status authorization", () 
 
   function context(
     handler: Function,
-    user: Record<string, unknown> | undefined = identity,
+    user: Record<string, unknown> | null = identity,
     controller: Function = AdvertisersController,
   ): ExecutionContext {
     return {
@@ -149,7 +149,7 @@ describe("AdvertiserAccountStatusGuard — direct API status authorization", () 
 
   it("does not grant auth to anonymous requests (earlier AuthGuard must reject)", async () => {
     await expect(guard.canActivate(context(
-      AdvertisersController.prototype.findOne, undefined,
+      AdvertisersController.prototype.findOne, null,
     ))).resolves.toBe(true);
     expect(checkStatus).not.toHaveBeenCalled();
   });

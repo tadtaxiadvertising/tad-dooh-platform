@@ -264,6 +264,8 @@ function landingComponentHarness() {
       '../../lib/landing/content': loadTs('apps/advertiser/lib/landing/content.ts'),
       '../advertiser/simulatorPricing': pricing,
       './CampaignJourney': { default: 'CampaignJourney' },
+      './CreativePreview': { default: 'CreativePreview' },
+      './TaxiScrollStory': { default: 'TaxiScrollStory' },
       './CityScene': { default: 'CityScene' },
       './LandingAnalytics': { default: 'LandingAnalytics' },
       './landing.module.css': { default: {} },

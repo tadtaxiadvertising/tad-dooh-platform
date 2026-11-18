@@ -8,6 +8,7 @@ import { createServerClient } from "@supabase/ssr";
 
 const LOGIN_PATH = "/advertiser/login";
 const DASHBOARD_PATH = "/advertiser/dashboard";
+const PENDING_REVIEW_PATH = "/advertiser/pending-review";
 const EXPECTED_ROLE = "ADVERTISER";
 const PUBLIC_PATHS = new Set([
   LOGIN_PATH,
@@ -198,8 +199,15 @@ export async function middleware(request: NextRequest) {
   }
 
   if (session.status === "PENDING_REVIEW") {
-    if (isLanding) return NextResponse.next();
-    return NextResponse.redirect(new URL("/advertiser/onboarding", request.url));
+    // This account already exists. Never redirect it to the PUBLIC
+    // registration form, which would attempt to create it a second time.
+    if (isLanding || pathname === PENDING_REVIEW_PATH) return response;
+    return NextResponse.redirect(new URL(PENDING_REVIEW_PATH, request.url));
+  }
+
+  // A newly approved advertiser should not remain on the pending screen.
+  if (pathname === PENDING_REVIEW_PATH) {
+    return NextResponse.redirect(new URL(DASHBOARD_PATH, request.url));
   }
 
   if (isLanding || isLogin) {

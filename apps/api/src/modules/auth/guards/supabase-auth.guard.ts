@@ -137,6 +137,9 @@ export class SupabaseAuthGuard implements CanActivate {
       try {
         const verified =
           await this.advertisersService.verifyAdvertiserSession(token);
+        if (typeof tokenClaims.email !== "string" || !tokenClaims.email) {
+          throw new UnauthorizedException("Sesión de anunciante inválida.");
+        }
         request.user = {
           id: verified.advertiserId,
           email: tokenClaims.email, // signature and DB email already verified

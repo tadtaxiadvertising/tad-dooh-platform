@@ -127,8 +127,8 @@ export class AdvertisersService {
   ): Promise<{ role: "ADVERTISER"; advertiserId: string; status: string }> {
     if (
       identity?.role !== "ADVERTISER" ||
-      typeof identity.entityId !== "string" || !identity.entityId ||
-      typeof identity.email !== "string" || !identity.email
+      typeof identity.entityId !== "string" || !identity.entityId.trim() ||
+      typeof identity.email !== "string" || !identity.email.trim()
     ) {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
     }
@@ -138,6 +138,7 @@ export class AdvertisersService {
     });
     if (
       !advertiser ||
+      advertiser.id !== identity.entityId ||
       advertiser.email.trim().toLowerCase() !== identity.email.trim().toLowerCase() ||
       !["ACTIVE", "PENDING_REVIEW"].includes(advertiser.status)
     ) {

@@ -467,7 +467,7 @@ export function calculateAdvertiserOffer(input: AdvertiserOfferInput): Advertise
   const unitPrice = getSource("screen-monthly-rate-rd")?.value;
   const creativePrice = getSource("creative-production-fee")?.value;
   if (
-    typeof unitPrice !== "number" || !Number.isSafeInteger(unitPrice) || unitPrice < 0 ||
+    typeof unitPrice !== "number" || !Number.isSafeInteger(unitPrice) || unitPrice <= 0 ||
     typeof creativePrice !== "number" || !Number.isSafeInteger(creativePrice) || creativePrice < 0
   ) {
     throw new Error("Missing or invalid advertiser price source");

@@ -69,3 +69,23 @@ No se cambió la configuración de Railway ni el DNS. La intervención necesaria
 ### Integración con el verificador general
 
 `bash verify-deployment.sh` ahora incluye el dominio del anunciante en DNS/HTTPS y ejecuta `scripts/advertiser-release-drift.cjs` para detectar despliegues que devuelven HTTP 200 pero siguen sirviendo una versión antigua. Un 200 sin los dos marcadores semánticos **no es un resultado exitoso**.
+
+
+## Comprobación focalizada sin GitHub Actions
+
+El verificador general se puede ejecutar ahora en modo específico para anunciantes:
+
+```bash
+bash verify-deployment.sh --advertiser-only
+```
+
+El modo focalizado **solo** verifica DNS del dominio canónico del anunciante, HTTPS y el fingerprint semántico V6; no contacta a API, Driver, Admin ni Player. El comando **falla con salida 1** si encuentra contenido anterior, falla HTTP/DNS o falta alguna herramienta necesaria (`node`, `curl` o el propio script de fingerprint), y devuelve **2** para argumentos incorrectos. Se eliminaron los falsos positivos cuando faltan herramientas de diagnóstico.
+
+Los ocho casos de regresión de este modo se definen en `scripts/advertiser-deployment-check.test.cjs`. Utilizan un directorio temporal y comandos simulados (`getent`, `curl`, `node`) para probar el comportamiento sin tráfico externo. Para ejecutar la suite en un checkout que tenga Node 22:
+
+```bash
+bash -n verify-deployment.sh
+node --test scripts/advertiser-release-gate.test.cjs scripts/advertiser-deployment-check.test.cjs scripts/advertiser-release-drift.test.cjs
+```
+
+El chequeo de fingerprint confirma **contenido de versión**, no integridad de un despliegue completo. Si la salida sigue marcando versión antigua mientras GitHub main tiene V6, inspeccionar el servicio real `tad-advertiser` en EasyPanel y su commit efectivo antes de lanzar un redeploy o modificar proxy/caché.

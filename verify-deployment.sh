@@ -6,6 +6,18 @@
 # ============================================================================
 set -uo pipefail
 
+# Target only the advertiser, or all TAD domains by default.
+if (( $# > 1 )); then
+  echo "Uso: bash verify-deployment.sh [--advertiser-only]" >&2
+  exit 2
+fi
+MODE="${1:-all}"
+case "$MODE" in
+  all|--advertiser-only) ;;
+  *) echo "Uso: bash verify-deployment.sh [--advertiser-only]" >&2; exit 2 ;;
+esac
+
+
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
@@ -73,6 +85,47 @@ check_cors_origin() {
   fi
 }
 
+check_advertiser_release() {
+  if ! command -v node >/dev/null 2>&1; then
+    fail "No se verificó la versión del anunciante" "Node.js es obligatorio; no se puede aprobar el release sin él."
+    return
+  fi
+  if [[ ! -f "$ROOT_DIR/scripts/advertiser-release-drift.cjs" ]]; then
+    fail "No se verificó la versión del anunciante" "Falta scripts/advertiser-release-drift.cjs en este checkout."
+    return
+  fi
+  node "$ROOT_DIR/scripts/advertiser-release-drift.cjs"
+  local release_status=$?
+  case "$release_status" in
+    0) pass "Advertiser entrega TAD Motion V6 en el dominio público" ;;
+    2) fail "Advertiser entrega HTML anterior o no reconocido" "Revisa EasyPanel tad-advertiser: rama main, Dockerfile.advertiser, commit activo y proxy. No reinicies API/Player." ;;
+    *) fail "No se pudo verificar la versión pública del anunciante" "Revisa DNS, TLS, HTTP y logs de tad-advertiser. No implica una versión antigua." ;;
+  esac
+}
+
+check_result() {
+  echo
+  printf 'Resumen: OK: %s | Fallos: %s | Advertencias: %s\n' "$PASSED" "$FAILED" "$WARNINGS"
+  if (( FAILED > 0 )); then
+    echo "Resultado: verificación fallida."
+    exit 1
+  fi
+  echo "Resultado: sin fallos detectados en las comprobaciones ejecutadas."
+}
+
+if [[ "$MODE" == "--advertiser-only" ]]; then
+  echo "TAD Advertiser — verificación de despliegue"
+  check_domain "Advertiser" "$ADVERTISER_URL"
+  if command -v curl >/dev/null 2>&1; then
+    check_https "Advertiser" "$ADVERTISER_URL"
+  else
+    fail "No se verificó HTTPS del anunciante" "curl es obligatorio."
+  fi
+  check_advertiser_release
+  check_result
+  exit 0
+fi
+
 echo
 echo "TAD DOOH Platform — verificación de despliegue"
 echo "Raíz del repositorio: $ROOT_DIR"
@@ -103,22 +156,12 @@ if command -v curl >/dev/null 2>&1; then
   check_cors_origin "$PLAYER_URL"
   check_cors_origin "$ADVERTISER_URL"
 else
-  warn "curl no está instalado; se omiten las comprobaciones HTTPS."
+  fail "No se verificó HTTPS" "curl es obligatorio para validar la publicación."
 fi
 echo
 
 echo "4. Versión pública del anunciante (verificación semántica, no basta HTTP 200)"
-if command -v node >/dev/null 2>&1 && [[ -f "$ROOT_DIR/scripts/advertiser-release-drift.cjs" ]]; then
-  node "$ROOT_DIR/scripts/advertiser-release-drift.cjs"
-  release_status=$?
-  case "$release_status" in
-    0) pass "Advertiser entrega TAD Motion V6 en el dominio público" ;;
-    2) fail "Advertiser entrega HTML anterior o no reconocido" "Revisa en EasyPanel el servicio tad-advertiser, rama main, Dockerfile.advertiser, commit activo y caché del proxy. No reinicies API/Player." ;;
-    *) fail "No se pudo verificar la versión pública del anunciante" "Consulta DNS/TLS/HTTP del dominio y los logs del servicio advertiser; no interpretes este fallo como una versión antigua." ;;
-  esac
-else
-  warn "Node.js o el verificador de release no están disponibles; no se confirmó la versión pública del anunciante."
-fi
+check_advertiser_release
 echo
 
 echo "5. Configuración local (solo archivos existentes)"
@@ -140,10 +183,4 @@ if [[ "$env_files_found" -eq 0 ]]; then
 fi
 echo
 
-echo "6. Resumen"
-printf "  OK: %s | Fallos: %s | Advertencias: %s\n" "$PASSED" "$FAILED" "$WARNINGS"
-if [[ "$FAILED" -gt 0 ]]; then
-  echo "Resultado: verificación fallida."
-  exit 1
-fi
-echo "Resultado: sin fallos detectados en las comprobaciones ejecutadas."
+check_result

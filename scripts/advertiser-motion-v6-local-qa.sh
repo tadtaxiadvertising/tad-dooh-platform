@@ -101,9 +101,22 @@ test -f "$TARGET/server.js" || {
   echo "Next standalone output missing at $TARGET/server.js" >&2
   exit 1
 }
-mkdir -p "$TARGET/.next"
-ln -sfn "$ROOT/apps/advertiser/.next/static" "$TARGET/.next/static"
-ln -sfn "$ROOT/apps/advertiser/public" "$TARGET/public"
+# BEGIN local-standalone-assets
+# Copy files into their served paths even when Next already created directories.
+# "ln -sfn" without -T nests the link inside an existing directory and can
+# make QA report missing assets despite a correct Next production build.
+test -d "$ROOT/apps/advertiser/.next/static" || {
+  echo "Missing Next build static assets" >&2
+  exit 1
+}
+test -d "$ROOT/apps/advertiser/public" || {
+  echo "Missing advertiser public assets" >&2
+  exit 1
+}
+mkdir -p "$TARGET/.next/static" "$TARGET/public"
+cp -R "$ROOT/apps/advertiser/.next/static/." "$TARGET/.next/static/"
+cp -R "$ROOT/apps/advertiser/public/." "$TARGET/public/"
+# END local-standalone-assets
 
 echo "[5/5] Local-only Chromium smoke including scroll reversal and no-JS"
 (

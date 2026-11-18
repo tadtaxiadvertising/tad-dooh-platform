@@ -3,6 +3,13 @@
 # docker-entrypoint.sh; never use Prisma db push against a shared schema.
 set -eu
 
+# Manual operations must be intentionally approved, not triggered by a
+# legacy script name in an unattended deployment.
+if [ "${TAD_APPROVE_MANUAL_MIGRATION:-}" != "YES" ]; then
+  echo "[migration] REFUSED: explicit TAD_APPROVE_MANUAL_MIGRATION=YES required." >&2
+  exit 1
+fi
+
 # Validate presence and print variable NAMES only; do not log URLs or tokens.
 if [ -z "${DATABASE_URL:-}" ]; then
   echo "[migration] REFUSED: DATABASE_URL is required." >&2

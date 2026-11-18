@@ -153,6 +153,7 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
               <span>{CITIES[city].toUpperCase()}</span>
             </div>
             <motion.div
+              data-tad-stage="taxi"
               className={styles.taxiScene}
               style={{ opacity: taxiOpacity, x: taxiX, scale: taxiScale }}
             >
@@ -176,6 +177,7 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
               </span>
             </motion.div>
             <motion.div
+              data-tad-stage="tablet"
               className={styles.tabletScene}
               style={{ opacity: tabletOpacity, scale: tabletScale }}
             >
@@ -194,6 +196,7 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
               </span>
             </motion.div>
             <motion.div
+              data-tad-stage="report"
               className={styles.reportScene}
               style={{ opacity: reportOpacity, y: reportY }}
             >

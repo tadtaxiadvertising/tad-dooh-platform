@@ -229,12 +229,50 @@ test('verified legacy login redirects guests and permits only signed active acco
   assert.equal(harness.backendCalls(), 3);
 });
 
-test('verified legacy session marked PENDING_REVIEW cannot view private dashboard', async () => {
+test('verified pending advertiser is routed to status, never to a new-account registration form', async () => {
   const token = 'signed-pending-fixture';
   const harness = middlewareHarness({ legacyToken: token, legacyStatus: 'PENDING_REVIEW' });
-  assert.deepEqual(await harness.run('/advertiser/dashboard', token), {
-    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/onboarding',
+  for (const pathname of [
+    '/advertiser/dashboard', '/advertiser/login', '/advertiser/billing',
+  ]) {
+    assert.deepEqual(await harness.run(pathname, token), {
+      kind: 'redirect',
+      destination: 'http://127.0.0.1:3003/advertiser/pending-review',
+    });
+  }
+  const pending = await harness.run('/advertiser/pending-review', token);
+  assert.equal(pending.kind, 'next', 'Never create a self-redirect loop');
+  assert.equal((await harness.run('/', token)).kind, 'next');
+});
+
+test('pending-review status page requires verified identity and cannot leak into active account', async () => {
+  const activeToken = 'signed-active-fixture';
+  const active = middlewareHarness({ legacyToken: activeToken });
+  assert.deepEqual(await active.run('/advertiser/pending-review', activeToken), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/dashboard',
   });
+  const guest = middlewareHarness();
+  assert.deepEqual(await guest.run('/advertiser/pending-review'), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+  const forged = fixtureToken('ADVERTISER');
+  assert.deepEqual(await guest.run('/advertiser/pending-review', forged), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+});
+
+test('public advertiser onboarding remains available for new accounts and status is read-only', () => {
+  const screen = fs.readFileSync(path.join(
+    __dirname, '../apps/advertiser/pages/advertiser/pending-review.tsx'), 'utf8');
+  const middleware = fs.readFileSync(path.join(
+    __dirname, '../apps/advertiser/middleware.ts'), 'utf8');
+  assert.ok(!middleware.match(/PUBLIC_PATHS[\\s\\S]{0,350}["']\\/advertiser\\/pending-review/),
+    'The pending-review screen must not be publicly bypassable');
+  assert.ok(middleware.includes('"/advertiser/onboarding"'),
+    'New advertisers retain access to signup');
+  assert.ok(screen.includes('noindex,nofollow'));
+  assert.ok(screen.includes('No necesitas crear otra'));
+  assert.ok(!screen.includes('POST /api/'));
 });
 
 test('trusted Supabase OAuth identity permits advertiser but not unknown roles', async () => {

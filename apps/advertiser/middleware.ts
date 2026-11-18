@@ -1,6 +1,5 @@
 import {
   AUTH_COOKIE_MAX_AGE,
-  readAccessTokenCookie,
 } from "@tad/services/session-cookies";
 import { isPublicLegalPath } from "@tad/services/cookie-consent";
 import { NextResponse } from "next/server";
@@ -190,6 +189,11 @@ export async function middleware(request: NextRequest) {
   if (!session) {
     // Public landing/login remain accessible when identity providers fail.
     if (isLanding || isLogin) return NextResponse.next();
+    return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+  }
+
+  // A valid JWT does not authorize access to suspended or unknown states.
+  if (session.status !== "ACTIVE" && session.status !== "PENDING_REVIEW") {
     return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
   }
 

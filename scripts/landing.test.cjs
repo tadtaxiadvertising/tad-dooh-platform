@@ -19,11 +19,13 @@ function loadTs(relativePath, options = {}) {
     return imports[name];
   };
   const execute = new Function('exports', 'require', 'module', 'process', 'window',
-    'document', 'navigator', 'Event', 'setTimeout', 'clearTimeout', 'URL', 'atob', compiled);
+    'document', 'navigator', 'Event', 'setTimeout', 'clearTimeout', 'URL', 'atob', 'fetch', 'AbortSignal', compiled);
   execute(mod.exports, requireStub, mod, { env: options.env || {} }, options.window,
     options.document, options.navigator || {}, Event,
     options.setTimeout || (() => { throw new Error('Unexpected real timer.'); }),
-    options.clearTimeout || (() => {}), URL, atob);
+    options.clearTimeout || (() => {}), URL, atob,
+    options.fetch || (async () => { throw new Error('Unexpected network call in fixture'); }),
+    AbortSignal);
   return mod.exports;
 }
 
@@ -128,32 +130,65 @@ test('landing links retain relative advertiser login and gate onboarding explici
     .landingLinks().signupEnabled, false);
 });
 
-function middlewareHarness() {
+function middlewareHarness(options = {}) {
   let supabaseCalls = 0;
+  let backendCalls = 0;
   const legal = loadTs('packages/services/cookie-consent.ts');
-  const middleware = loadTs('apps/advertiser/middleware.ts', { imports: {
-    '@tad/services/session-cookies': {
-      AUTH_COOKIE_MAX_AGE: 604800,
-      readAccessTokenCookie: cookies => cookies.find(cookie => cookie.name === 'fixture-session')?.value || null,
+  const middleware = loadTs('apps/advertiser/middleware.ts', {
+    env: {
+      NEXT_PUBLIC_SUPABASE_URL: 'https://fixture.supabase.invalid',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-fixture',
+      BACKEND_INTERNAL_URL: 'http://api.fixture.local:3000',
     },
-    '@tad/services/cookie-consent': { isPublicLegalPath: legal.isPublicLegalPath },
-    'next/server': { NextResponse: {
-      next: () => ({ kind: 'next', cookies: { set() {} } }),
-      redirect: url => ({ kind: 'redirect', destination: url.href }),
-    } },
-    '@supabase/ssr': { createServerClient() {
-      supabaseCalls++;
-      throw new Error('Network clients are forbidden in this fixture.');
-    } },
-  } }).middleware;
+    fetch: async (target, init) => {
+      backendCalls++;
+      assert.equal(String(target), 'http://api.fixture.local:3000/api/v1/advertisers/session');
+      assert.equal(init.redirect, 'error');
+      assert.equal(init.cache, 'no-store');
+      if (options.backendDown) throw new Error('API offline');
+      const suppliedToken = init.headers.Authorization?.slice(7);
+      if (!options.legacyToken || suppliedToken !== options.legacyToken) {
+        return { ok: false, status: 401 };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          role: 'ADVERTISER',
+          advertiserId: 'advertiser-verified',
+          status: options.legacyStatus || 'ACTIVE',
+        }),
+      };
+    },
+    imports: {
+      '@tad/services/session-cookies': { AUTH_COOKIE_MAX_AGE: 604800 },
+      '@tad/services/cookie-consent': { isPublicLegalPath: legal.isPublicLegalPath },
+      'next/server': { NextResponse: {
+        next: () => ({ kind: 'next', cookies: { set() {} } }),
+        redirect: url => ({ kind: 'redirect', destination: url.href }),
+      } },
+      '@supabase/ssr': { createServerClient() {
+        supabaseCalls++;
+        if (!options.supabaseUser) throw new Error('Supabase unavailable');
+        return { auth: { getUser: async () => ({
+          data: { user: options.supabaseUser }, error: null,
+        }) } };
+      } },
+    },
+  }).middleware;
   return {
-    async run(pathname, token) {
+    async run(pathname, token, sessionKind = 'legacy') {
       const url = new URL(pathname, 'http://127.0.0.1:3003');
-      const cookies = token ? [{ name: 'fixture-session', value: token }] : [];
-      return middleware({ url: url.href, nextUrl: url, headers: new Headers(),
-        cookies: { getAll: () => cookies, set() {} } });
+      const cookies = token ? [{
+        name: sessionKind === 'oauth' ? 'sb-fixture-auth-token' : 'sb-access-token',
+        value: token,
+      }] : [];
+      return middleware({
+        url: url.href, nextUrl: url, headers: new Headers(),
+        cookies: { getAll: () => cookies, set() {} },
+      });
     },
     calls: () => supabaseCalls,
+    backendCalls: () => backendCalls,
   };
 }
 
@@ -161,21 +196,18 @@ function fixtureToken(role) {
   return `fixture.${Buffer.from(JSON.stringify({ app_metadata: { role } })).toString('base64url')}.signature`;
 }
 
-test('real middleware allows the guest root and retains advertiser root dashboard redirect', async () => {
+test('guest landing stays public; forged advertiser claims cannot redirect to private pages', async () => {
   const harness = middlewareHarness();
-  assert.equal((await harness.run('/')).kind, 'next');
-  assert.equal((await harness.run('/', 'malformed')).kind, 'next');
-  assert.equal((await harness.run('/', fixtureToken('DRIVER'))).kind, 'next');
-  assert.deepEqual(await harness.run('/', fixtureToken('ADVERTISER')), {
-    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/dashboard',
-  });
+  for (const token of [undefined, 'malformed', fixtureToken('DRIVER'), fixtureToken('ADVERTISER')]) {
+    assert.equal((await harness.run('/', token)).kind, 'next');
+  }
   assert.equal(harness.calls(), 0);
 });
 
-test('real middleware still protects private pages for guests and malformed sessions', async () => {
+test('private routes fail closed for guest and unsigned advertiser JWT claims', async () => {
   const harness = middlewareHarness();
   for (const pathname of ['/advertiser/dashboard', '/advertiser/campaigns', '/advertiser/billing']) {
-    for (const token of [undefined, 'malformed']) {
+    for (const token of [undefined, 'malformed', fixtureToken('ADVERTISER')]) {
       assert.deepEqual(await harness.run(pathname, token), {
         kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
       });
@@ -184,13 +216,80 @@ test('real middleware still protects private pages for guests and malformed sess
   assert.equal(harness.calls(), 0);
 });
 
-test('real middleware keeps legal pages public without broadening their path prefix', async () => {
+test('verified legacy login redirects guests and permits only signed active accounts', async () => {
+  const token = 'signed-legacy-fixture';
+  const harness = middlewareHarness({ legacyToken: token });
+  assert.deepEqual(await harness.run('/', token), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/dashboard',
+  });
+  assert.equal((await harness.run('/advertiser/dashboard', token)).kind, 'next');
+  assert.deepEqual(await harness.run('/advertiser/login', token), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/dashboard',
+  });
+  assert.equal(harness.backendCalls(), 3);
+});
+
+test('verified legacy session marked PENDING_REVIEW cannot view private dashboard', async () => {
+  const token = 'signed-pending-fixture';
+  const harness = middlewareHarness({ legacyToken: token, legacyStatus: 'PENDING_REVIEW' });
+  assert.deepEqual(await harness.run('/advertiser/dashboard', token), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/onboarding',
+  });
+});
+
+test('trusted Supabase OAuth identity permits advertiser but not unknown roles', async () => {
+  const token = 'canonical-oauth-cookie-fixture';
+  const trusted = middlewareHarness({ supabaseUser: {
+    app_metadata: { role: 'ADVERTISER', status: 'ACTIVE' },
+  } });
+  assert.equal((await trusted.run('/advertiser/dashboard', token, 'oauth')).kind, 'next');
+  assert.equal(trusted.calls(), 1);
+  assert.equal(trusted.backendCalls(), 0);
+  const wrongRole = middlewareHarness({ supabaseUser: {
+    app_metadata: { role: 'DRIVER' },
+  } });
+  assert.deepEqual(await wrongRole.run('/advertiser/dashboard', token, 'oauth'), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+});
+
+test('suspended OAuth sessions cannot enter advertiser private routes', async () => {
+  const harness = middlewareHarness({ supabaseUser: {
+    app_metadata: { role: 'ADVERTISER', status: 'SUSPENDED' },
+  } });
+  assert.deepEqual(await harness.run(
+    '/advertiser/dashboard', 'suspended-supabase-cookie', 'oauth',
+  ), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+});
+
+test('Supabase or backend failures never downgrade to unsigned JWT authorization', async () => {
+  const token = fixtureToken('ADVERTISER');
+  const harness = middlewareHarness({ backendDown: true });
+  assert.deepEqual(await harness.run('/advertiser/dashboard', token), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+  const canonical = middlewareHarness();
+  assert.deepEqual(await canonical.run('/advertiser/dashboard', token, 'oauth'), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+});
+
+test('real middleware keeps onboarding and legal pages publicly accessible', async () => {
   const harness = middlewareHarness();
-  for (const pathname of ['/politica-de-cookies', '/politica-de-privacidad', '/terminos-de-servicio', '/aviso-legal']) {
+  for (const pathname of [
+    '/politica-de-cookies', '/politica-de-privacidad',
+    '/terminos-de-servicio', '/aviso-legal',
+    '/advertiser/onboarding', '/advertiser/auth/callback',
+  ]) {
     assert.equal((await harness.run(pathname)).kind, 'next');
-    assert.equal((await harness.run(`${pathname}/private`)).kind, 'redirect');
+  }
+  for (const pathname of ['/politica-de-cookies/private', '/advertiser/onboarding/private']) {
+    assert.equal((await harness.run(pathname)).kind, 'redirect');
   }
   assert.equal(harness.calls(), 0);
+  assert.equal(harness.backendCalls(), 0);
 });
 
 test('Next redirect configuration no longer shadows the root and preserves proxy/login aliases', async () => {

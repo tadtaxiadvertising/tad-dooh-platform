@@ -29,6 +29,7 @@ pnpm --filter @tad/impact-calculator run build
 
 echo "[2/5] Execute real TypeScript-based source and SSR regression tests"
 node --test \
+  scripts/landing.test.cjs \
   scripts/advertiser-driver-offer.test.cjs \
   scripts/advertiser-referral-capture.test.cjs \
   scripts/advertiser-estimate-pricing.test.cjs \
@@ -38,6 +39,7 @@ echo "[3/5] Execute API service and controller Jest tests with local Prisma mock
 pnpm --filter api exec jest --runInBand \
   src/modules/campaign/campaign-pricing.spec.ts \
   src/modules/advertisers/advertisers-referral.spec.ts \
+  src/modules/advertisers/advertisers-session.spec.ts \
   src/modules/onboarding/onboarding.service.spec.ts \
   src/modules/onboarding/onboarding.controller.spec.ts \
   src/modules/onboarding/dto/onboard-advertiser.dto.spec.ts

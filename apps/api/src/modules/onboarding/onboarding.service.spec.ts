@@ -231,13 +231,13 @@ describe("OnboardingService verified driver referral pricing", () => {
   });
 
   it("validates a driver code in DB and discounts only the screens by 40%", async () => {
-    prisma.driver.findUnique.mockResolvedValue({ id: "verified-driver-1" });
+    prisma.driver.findUnique.mockResolvedValue({ id: "verified-driver-1", isSimulated: false });
     const quote = await service.quoteAdvertiser({
       expectedScreens: 3, campaignMonths: 2, includeProduction: true,
       referralCode: "DRIVER_TEST_1",
     });
     expect(prisma.driver.findUnique).toHaveBeenCalledWith({
-      where: { referralCode: "DRIVER_TEST_1" }, select: { id: true },
+      where: { referralCode: "DRIVER_TEST_1" }, select: { id: true, isSimulated: true },
     });
     expect(quote.discountPercent).toBe(40);
     expect(quote.effectiveMonthlyScreenRate).toBe(1500);
@@ -256,8 +256,26 @@ describe("OnboardingService verified driver referral pricing", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+
+  it("rejects simulated drivers as financial referral codes", async () => {
+    prisma.driver.findUnique.mockResolvedValue({
+      id: "simulated-driver", isSimulated: true,
+    });
+    await expect(service.quoteAdvertiser({
+      expectedScreens: 1,
+      campaignMonths: 1,
+      includeProduction: false,
+      referralCode: "SIMULATED_DRIVER_CODE",
+    })).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.onboardAdvertiser({
+      ...base, referralCode: "SIMULATED_DRIVER_CODE",
+    })).rejects.toBeInstanceOf(BadRequestException);
+    expect(createUser).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it("persists verified attribution and recalculated campaign budget, not client budget", async () => {
-    prisma.driver.findUnique.mockResolvedValue({ id: "verified-driver-1" });
+    prisma.driver.findUnique.mockResolvedValue({ id: "verified-driver-1", isSimulated: false });
     const tx = {
       advertiser: { create: jest.fn().mockResolvedValue({
         id: "adv-new", companyName: "Company",

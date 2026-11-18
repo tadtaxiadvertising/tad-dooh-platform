@@ -84,3 +84,19 @@ test("driver referral links lead to the actual advertiser onboarding route", () 
   assert.ok(source.includes("https://tad.anunciante.ibusiness.com.do/advertiser/onboarding?ref="));
   assert.ok(!source.includes("https://tad.anunciante.ibusiness.com.do/register?ref="));
 });
+
+test("zero-valued screen tariff fails closed rather than allowing free recommendations", () => {
+  const sources = loadTS("packages/impact-calculator/sources.ts");
+  const impact = loadTS("packages/impact-calculator/index.ts", { "./sources": sources });
+  const rate = sources.getSource("screen-monthly-rate-rd");
+  assert.ok(rate);
+  const original = rate.value;
+  try {
+    rate.value = 0;
+    assert.throws(() => impact.calculateAdvertiserOffer({
+      screens: 1, months: 1, includeProduction: false, verifiedDriverCode: false,
+    }), /Missing or invalid advertiser price source/);
+  } finally {
+    rate.value = original;
+  }
+});

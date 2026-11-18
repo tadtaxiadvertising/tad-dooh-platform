@@ -50,10 +50,11 @@ export class OnboardingService {
     const referrer = referralCode
       ? await this.prisma.driver.findUnique({
           where: { referralCode },
-          select: { id: true },
+          // Simulated/test fleet records cannot unlock financial offers.
+          select: { id: true, isSimulated: true },
         })
       : null;
-    if (referralCode && !referrer) {
+    if (referralCode && (!referrer || referrer.isSimulated)) {
       throw new BadRequestException("Código de conductor no válido.");
     }
 

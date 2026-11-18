@@ -21,7 +21,10 @@ Both manual npm scripts call a single `apps/api/scripts/migrate-safe.sh` wrapper
 2. Checks `DATABASE_URL`, `SUPABASE_URL` and `DIRECT_URL` presence without logging values.
 3. Runs existing `node ./scripts/check-supabase-target.cjs` to verify matching Supabase project identifiers and reject unverified or wrong-project hosts.
 4. Uses `DATABASE_URL="$DIRECT_URL" pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma` only for the migration subprocess, keeping runtime `DATABASE_URL` unchanged.
-5. Propagates failure and does not start the application if migration fails. No `db push`, `--accept-data-loss`, schema reset, automatic token generation or hidden retry.
+5. After `migrate deploy` returns successfully, uses the existing read-only `check-prisma-drift.cjs` against `DIRECT_URL` to compare all Prisma-model tables, columns, identifier types and relation types with PostgreSQL metadata. If the schema still differs, it returns nonzero and `start:migrate` does **not** start the application.
+6. Propagates migration/verification failures. No `db push`, `--accept-data-loss`, schema reset, automatic token generation or hidden retry.
+
+**Important transactional limitation:** `migrate deploy` can already have committed SQL migrations before this *postcondition* discovers drift. A failed postcheck does **not** roll those migrations back and must not be described as a no-write outcome. Run only after snapshot, independent schema review and staging tests. The drift script reads `information_schema` metadata, not customer rows, and never prints connection strings.
 
 The normal official Docker entrypoint remains unchanged and uses its own existing target check and `migrate deploy`. This patch concerns manual/legacy npm entry points only.
 
@@ -49,7 +52,7 @@ node --test scripts/api-entrypoint-env.test.cjs apps/api/scripts/check-supabase-
 pnpm --filter api run build
 ```
 
-The first suite uses a POSIX shell and mocks `node`/`pnpm` with **synthetic** connection strings. It verifies explicit opt-in, absence of required environment variables, refusal of incorrect target, correct direct URL only, and propagation of failed migration status. It never connects to a database. Tests are included in CI, which still must be repaired (#147) before merge or deployment.
+The first suite uses a POSIX shell and mocks `node`/`pnpm` with **synthetic** connection strings. It verifies explicit opt-in, absent variables, target rejection, correct direct URL, propagation of failed migrations, clean post-migration parity and a failing post-migration drift check. It never connects to a database. Tests are included in CI, which still must be repaired (#147) before merge or deployment.
 
 ### Out-of-scope risk
 

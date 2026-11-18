@@ -37,6 +37,7 @@ node --test \
 echo "[3/5] Execute API service and controller Jest tests with local Prisma mocks"
 pnpm --filter api exec jest --runInBand \
   src/modules/campaign/campaign-pricing.spec.ts \
+  src/modules/advertisers/advertisers-referral.spec.ts \
   src/modules/onboarding/onboarding.service.spec.ts \
   src/modules/onboarding/onboarding.controller.spec.ts \
   src/modules/onboarding/dto/onboard-advertiser.dto.spec.ts

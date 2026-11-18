@@ -1,6 +1,7 @@
 import {
   calculateImpactLegacy,
   calculateImpact,
+  getSource,
   ImpactOutput,
 } from "@tad/impact-calculator";
 
@@ -23,9 +24,21 @@ export interface CampaignEstimate {
   impressions: number;
 }
 
-/** Constantes de compatibilidad (para no romper imports existentes) */
-export const SCREEN_MONTHLY_RATE = 1500; // ADVERTISER_COST_PER_CAMPAIGN_RD per business-rules.ts
-export const PRODUCTION_FEE = 1500; // Aligned with business-rules commercial contract
+/**
+ * Reference prices displayed by the illustrative onboarding simulator.
+ * Must match calculateImpact() (packages/impact-calculator/sources.ts).
+ * These values are NOT contractual rates: the backend currently has a
+ * separate BUSINESS_RULES tariff pending commercial reconciliation.
+ */
+function requireIllustrativeRate(sourceId: string): number {
+  const value = getSource(sourceId)?.value;
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new Error(`Invalid illustrative pricing source: ${sourceId}`);
+  }
+  return value;
+}
+export const SCREEN_MONTHLY_RATE = requireIllustrativeRate("screen-monthly-rate-rd");
+export const PRODUCTION_FEE = requireIllustrativeRate("creative-production-fee");
 export const DAILY_ACTIVE_HOURS = 10;
 export const ATTENTION_RATE = 0.4;
 export const FIXED_FREQUENCY_SECONDS = 30;

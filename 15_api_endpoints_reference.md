@@ -396,13 +396,13 @@
 
 | Method | Route | Auth | Description | Key Params |
 | --- | --- | --- | --- | --- |
-| `POST` | `/portal-requests` | `@Public` | Submit request (support, feature, etc.) | body |
-| `GET` | `/portal-requests` | JWT | List all requests | — |
-| `GET` | `/portal-requests/advertiser/:advertiserId` | `@Public` | Requests by advertiser | `advertiserId` |
-| `GET` | `/portal-requests/driver/:driverId` | `@Public` | Requests by driver | `driverId` |
-| `GET` | `/portal-requests/:id` | JWT | Single request detail | `id` |
-| `PUT` | `/portal-requests/:id` | JWT | Update request (admin notes) | `id` + body |
-| `DELETE` | `/portal-requests/:id` | JWT | Delete request | `id` |
+| `POST` | `/portal-requests` | ADMIN / ADVERTISER / DRIVER | Create request with owner taken from authenticated session; campaign references require advertiser ownership | body + Bearer |
+| `GET` | `/portal-requests` | ADMIN | List all requests | — |
+| `GET` | `/portal-requests/advertiser/:advertiserId` | ADMIN / owning ADVERTISER | Requests by advertiser; `TenantGuard` checks `:advertiserId` | `advertiserId` |
+| `GET` | `/portal-requests/driver/:driverId` | ADMIN / owning DRIVER | Requests by driver; `TenantGuard` checks `:driverId` | `driverId` |
+| `GET` | `/portal-requests/:id` | ADMIN | Single request detail | `id` |
+| `PUT` | `/portal-requests/:id` | ADMIN | Update request (admin notes / approval, P0 review #299) | `id` + body |
+| `DELETE` | `/portal-requests/:id` | ADMIN | Delete request | `id` |
 
 ---
 

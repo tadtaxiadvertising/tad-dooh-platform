@@ -282,14 +282,21 @@ export function calculateImpact(input: ImpactInput): ImpactOutput {
       "Cálculo basado en benchmarks internacionales (sin datos operativos RD propios). Incertidumbre alta: ~±40-60%.",
     );
   }
-  if (calibration.staleSourcesCount > 0) {
+  // Public warnings must describe the exact sources used by THIS estimate,
+  // not deprecated historical entries in the global calibration catalog.
+  // A date expires after its final UTC calendar day; never silently renew it.
+  const todayUTC = new Date().toISOString().slice(0, 10);
+  const expiredUsedSources = sourcesUsed.filter(
+    (source) => source.stale === true || source.expiresAt < todayUTC,
+  );
+  if (expiredUsedSources.length > 0) {
     warnings.push(
-      `${calibration.staleSourcesCount} fuente(s) vencida(s) — revisar sources.ts`,
+      `${expiredUsedSources.length} fuente(s) utilizada(s) vencida(s) — revisar vigencia de los benchmarks`,
     );
+    expiredUsedSources.forEach((source) => {
+      warnings.push(`Fuente vencida: ${source.id} (${source.studyName})`);
+    });
   }
-  sourcesUsed.forEach((s) => {
-    if (s.stale) warnings.push(`Fuente vencida: ${s.id} (${s.studyName})`);
-  });
 
   return {
     screensCost,

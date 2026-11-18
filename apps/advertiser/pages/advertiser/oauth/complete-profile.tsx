@@ -1,5 +1,6 @@
 import Head from "next/head";
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@tad/services";
 

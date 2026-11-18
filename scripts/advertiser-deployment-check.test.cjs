@@ -22,7 +22,7 @@ function verifyFixture(options = {}) {
     const filename = path.join(bin, name);
     fs.writeFileSync(filename, "#!/bin/sh\n" + source + "\n", { mode: 0o755 });
   };
-  executable("dirname", 'value="$1"; printf "%s\\n" "${value%/*}"');
+  executable("dirname", 'if [ "$1" = "--" ]; then shift; fi; value="$1"; printf "%s\\n" "${value%/*}"');
   if (options.dns !== false) executable("getent", "exit 0");
   if (options.withCurl !== false) executable("curl", 'printf "200"');
   if (options.withNode !== false) executable("node", "exit " + String(options.releaseStatus ?? 0));

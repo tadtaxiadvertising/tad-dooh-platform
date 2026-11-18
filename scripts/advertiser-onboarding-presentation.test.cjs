@@ -191,7 +191,7 @@ test('simulator keeps live model quotes, deliberate production opt-in and existi
       .map(element => text(element.props.children));
     assert.ok(unitLabels.some(label =>
       label.startsWith('Pantallas (') &&
-      label.includes(`RD${pricing.SCREEN_MONTHLY_RATE.toLocaleString()}`)),
+      label.includes(`RD$${pricing.SCREEN_MONTHLY_RATE.toLocaleString()}`)),
     'Onboarding must display the same unit rate used to calculate the subtotal');
     assert.ok(page.html.includes('conciliación'), 'Quote must disclose pending commercial reconciliation');
     assert.ok(page.html.includes('ilustrativ'), 'Quote must remain educational');

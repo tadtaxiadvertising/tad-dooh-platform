@@ -61,6 +61,28 @@ const mediaSafeSelect = {
   qrUrl: true,
 };
 
+/**
+ * Only operational coverage data belongs in advertiser-facing API responses.
+ * Never query or serialize Device.authToken, GPS coordinates, or driver PII.
+ * Admin campaign screens use id, deviceId, taxiNumber, city and sync dates.
+ */
+const campaignCoverageDeviceSelect = {
+  id: true,
+  deviceId: true,
+  taxiNumber: true,
+  city: true,
+  status: true,
+  lastHeartbeat: true,
+  lastSeen: true,
+  lastSync: true,
+} as const;
+
+type CampaignCoverageDevice = Pick<
+  Device,
+  "id" | "deviceId" | "taxiNumber" | "city" | "status" |
+  "lastHeartbeat" | "lastSeen" | "lastSync"
+>;
+
 @Controller("campaigns")
 @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
 export class CampaignController {
@@ -268,14 +290,24 @@ export class CampaignController {
   // 1. Mapa de Calor / Distribución por Campaña
   @Get("stats/:id/distribution")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getCampaignDistribution(@Param("id") id: string) {
+  async getCampaignDistribution(
+    @Param("id") id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     try {
       const campaign = await this.prisma.campaign.findUnique({
         where: { id },
-        select: { name: true },
+        select: { name: true, advertiserId: true },
       });
 
       if (!campaign) throw new NotFoundException("Campaña no encontrada");
+      // Validate tenancy before fetching assignments or device information.
+      if (
+        req.user?.role === UserRole.ADVERTISER &&
+        campaign.advertiserId !== req.user.entityId
+      ) {
+        throw new ForbiddenException("No tienes permisos para ver esta distribución");
+      }
 
       const distributions = await this.prisma.deviceCampaign.findMany({
         where: { campaign_id: id },
@@ -290,6 +322,7 @@ export class CampaignController {
         const deviceIds = v1Dist.map((v) => v.deviceId);
         const devices = await this.prisma.device.findMany({
           where: { deviceId: { in: deviceIds } },
+          select: campaignCoverageDeviceSelect,
         });
 
         const assignedTaxis = devices.map((d) => ({
@@ -323,6 +356,7 @@ export class CampaignController {
         where: {
           id: { in: deviceUuids.filter((id): id is string => Boolean(id)) },
         },
+        select: campaignCoverageDeviceSelect,
       });
 
       const assignedTaxis = devices.map((d) => ({
@@ -393,6 +427,7 @@ export class CampaignController {
       const allDevices = await this.prisma.device.findMany({
         where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
         orderBy: { lastSeen: "desc" },
+        select: campaignCoverageDeviceSelect,
       });
 
       return allDevices.map((d) => ({
@@ -406,7 +441,7 @@ export class CampaignController {
     const assignments = await this.prisma.deviceCampaign.findMany({
       where: { campaign_id: campaignId },
       include: {
-        device: true,
+        device: { select: campaignCoverageDeviceSelect },
       },
     });
     console.log(
@@ -420,6 +455,7 @@ export class CampaignController {
           campaigns: { some: { id: campaignId } },
         },
       },
+      select: campaignCoverageDeviceSelect,
     });
     console.log(
       `[CAMPAIGN_DEBUG] Driver targeted devices found: ${targetedDriverDevices.length}`,
@@ -428,7 +464,7 @@ export class CampaignController {
     // Merge both (avoid duplicates)
     const deviceMap = new Map<
       string,
-      Device & { assigned_at: Date | null; assignment_type: string }
+      CampaignCoverageDevice & { assigned_at: Date | null; assignment_type: string }
     >();
 
     for (const a of assignments) {

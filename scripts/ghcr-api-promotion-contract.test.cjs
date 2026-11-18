@@ -24,6 +24,9 @@ test("image promotion is manual-only, main-only and tied to current head SHA", (
 test("publication requires executed and successful exact-SHA CI, not a green-looking label", () => {
   assert.match(workflow, /head_sha: sha, event: 'push'/);
   assert.match(workflow, /run\.head_sha === sha/);
+  assert.match(workflow, /run\.path === trustedPaths\[name\]/);
+  assert.match(workflow, /\.github\/workflows\/ci\.yml/);
+  assert.match(workflow, /\.github\/workflows\/docker-image\.yml/);
   assert.match(workflow, /run\.head_branch === 'main'/);
   assert.match(workflow, /latest\.conclusion !== 'success'/);
   assert.match(workflow, /'CI Quality Gates'/);

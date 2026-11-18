@@ -44,6 +44,10 @@ Staging acceptance matrix: new test Google account must reach the protected comp
 
 **Deploy API before advertiser** (status lookup + profile endpoint first), then frontend + callback, with advertiser image rollback first. Confirm no 401/429/503 bursts and monitor p95 at 10× load; do not cache business status without a revocation strategy.
 
+## Security boundary not covered by this PR
+
+A route-level Next middleware decision is **not** protection for direct API clients. Although the new completion endpoint checks identity, ownership and allowable state, other existing advertiser API endpoints guarded by `@Roles(ADVERTISER)` and `TenantGuard` may not enforce `Advertiser.status` on each operation. This is recorded in issue #294 as a separate P1 policy review: determine the exact allowed statuses for campaign, billing, profile and reporting operations, then add DB-backed server-side authorization with tests for suspended/pending OAuth tokens, explicit onboarding exceptions, IDOR and 10× read load. Do not claim all advertiser APIs are status-gated after this PR.
+
 ## Known separate work
 
 - #294: OAuth DB status authority remains P1 until real build and production/staging verification. This PR completes first-time Google OAuth registration without reverting DB-based status authorization.

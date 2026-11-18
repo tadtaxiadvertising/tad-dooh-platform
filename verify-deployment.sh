@@ -99,7 +99,7 @@ check_advertiser_release() {
   case "$release_status" in
     0) pass "Advertiser entrega TAD Motion V6 en el dominio público" ;;
     2) fail "Advertiser entrega HTML anterior o no reconocido" "Revisa EasyPanel tad-advertiser: rama main, Dockerfile.advertiser, commit activo y proxy. No reinicies API/Player." ;;
-    *) fail "No se pudo verificar la versión del anunciante" "Revisa DNS, TLS, HTTP y logs de tad-advertiser. No implica una versión antigua." ;;
+    *) fail "No se pudo verificar la versión pública del anunciante" "Revisa DNS, TLS, HTTP y logs de tad-advertiser. No implica una versión antigua." ;;
   esac
 }
 
@@ -183,5 +183,4 @@ if [[ "$env_files_found" -eq 0 ]]; then
 fi
 echo
 
-echo "6. Resumen"
 check_result

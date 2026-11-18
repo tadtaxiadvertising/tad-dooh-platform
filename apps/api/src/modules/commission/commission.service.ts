@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ConflictException,
   Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
@@ -179,34 +180,52 @@ export class CommissionService {
       const commission = await tx.commission.findUnique({
         where: { id: commissionId },
       });
-
       if (!commission) {
         throw new NotFoundException(`Commission ${commissionId} not found`);
       }
-
       if (commission.status !== CommissionStatus.PENDING) {
-        throw new BadRequestException(
-          `Commission ${commissionId} is not in PENDING status (current: ${commission.status})`,
+        throw new ConflictException(
+          `Commission ${commissionId} is already in ${commission.status} status`,
         );
       }
 
-      // Actualizar comisión a APPROVED
-      const updated = await tx.commission.update({
-        where: { id: commissionId },
+      // PostgreSQL compare-and-set is the concurrency gate. A transaction
+      // alone with findUnique() followed by update() does not prevent two
+      // concurrent admins from both incrementing the wallet.
+      const changed = await tx.commission.updateMany({
+        where: { id: commissionId, status: CommissionStatus.PENDING },
         data: {
           status: CommissionStatus.APPROVED,
           approvedAt: new Date(),
           approvedBy,
         },
       });
+      if (changed.count !== 1) {
+        throw new ConflictException(
+          `Commission ${commissionId} was processed concurrently`,
+        );
+      }
 
-      // Actualizar ledger a COMPLETED
-      await tx.financialTransaction.updateMany({
-        where: { reference: commission.reference },
+      // Fail closed: never grant wallet balance without advancing exactly
+      // one matching, still-pending source ledger entry in the SAME tx.
+      // A missing/mismatched/previously completed ledger must be reconciled.
+      const ledger = await tx.financialTransaction.updateMany({
+        where: {
+          reference: commission.reference,
+          type: "OUTGOING",
+          category: "OPEX_COMMISSION",
+          entityId: commission.driverId,
+          amount: commission.amount,
+          status: "PENDING",
+        },
         data: { status: "COMPLETED" },
       });
+      if (ledger.count !== 1) {
+        throw new ConflictException(
+          `Commission ${commissionId} ledger requires reconciliation`,
+        );
+      }
 
-      // Incrementar wallet del conductor
       await tx.wallet.upsert({
         where: { driverId: commission.driverId },
         update: { availableBalance: { increment: commission.amount } },
@@ -216,10 +235,13 @@ export class CommissionService {
         },
       });
 
+      const updated = await tx.commission.findUnique({
+        where: { id: commissionId },
+      });
+      if (!updated) throw new NotFoundException(`Commission ${commissionId} not found`);
       this.logger.log(
-        `[COMMISSION] Approved commission ${commissionId}, wallet incremented`,
+        `[COMMISSION] Approved commission ${commissionId}, wallet credited once`,
       );
-
       return updated;
     });
   }
@@ -232,23 +254,26 @@ export class CommissionService {
     const commission = await this.prisma.commission.findUnique({
       where: { id: commissionId },
     });
-
     if (!commission) {
       throw new NotFoundException(`Commission ${commissionId} not found`);
     }
-
     if (commission.status !== CommissionStatus.APPROVED) {
-      throw new BadRequestException(
-        `Commission ${commissionId} must be APPROVED before marking PAID (current: ${commission.status})`,
+      throw new ConflictException(
+        `Commission ${commissionId} must be APPROVED before marking PAID`,
       );
     }
 
-    return this.prisma.commission.update({
+    const changed = await this.prisma.commission.updateMany({
+      where: { id: commissionId, status: CommissionStatus.APPROVED },
+      data: { status: CommissionStatus.PAID, paidAt },
+    });
+    if (changed.count !== 1) {
+      throw new ConflictException(
+        `Commission ${commissionId} was changed concurrently`,
+      );
+    }
+    return this.prisma.commission.findUniqueOrThrow({
       where: { id: commissionId },
-      data: {
-        status: CommissionStatus.PAID,
-        paidAt,
-      },
     });
   }
 
@@ -261,28 +286,26 @@ export class CommissionService {
     reason: string,
     revokedBy: string,
   ) {
-    this.logger.warn(
-      `[COMMISSION] Revoking commission ${commissionId}: ${reason}`,
-    );
+    this.logger.warn(`[COMMISSION] Revoking commission ${commissionId}: ${reason}`);
 
     return this.prisma.$transaction(async (tx) => {
       const commission = await tx.commission.findUnique({
         where: { id: commissionId },
       });
-
       if (!commission) {
         throw new NotFoundException(`Commission ${commissionId} not found`);
       }
-
-      if (commission.status === CommissionStatus.REVOKED) {
-        throw new BadRequestException(
-          `Commission ${commissionId} already revoked`,
+      if (
+        ![CommissionStatus.PENDING, CommissionStatus.APPROVED, CommissionStatus.PAID]
+          .includes(commission.status as CommissionStatus)
+      ) {
+        throw new ConflictException(
+          `Commission ${commissionId} cannot be revoked from ${commission.status}`,
         );
       }
 
-      // Marcar comisión como REVOKED
-      await tx.commission.update({
-        where: { id: commissionId },
+      const changed = await tx.commission.updateMany({
+        where: { id: commissionId, status: commission.status },
         data: {
           status: CommissionStatus.REVOKED,
           revokedAt: new Date(),
@@ -290,8 +313,12 @@ export class CommissionService {
           revocationReason: reason,
         },
       });
+      if (changed.count !== 1) {
+        throw new ConflictException(
+          `Commission ${commissionId} was changed concurrently`,
+        );
+      }
 
-      // Si ya estaba APROBADA/PAGADA, crear entrada compensatoria en ledger
       if (
         [CommissionStatus.APPROVED, CommissionStatus.PAID].includes(
           commission.status as CommissionStatus,
@@ -299,7 +326,7 @@ export class CommissionService {
       ) {
         await tx.financialTransaction.create({
           data: {
-            type: "INCOMING", // Reversión: entrada positiva para la empresa
+            type: "INCOMING",
             category: "OPEX_COMMISSION_REVERSAL",
             amount: commission.amount,
             netAmount: commission.amount,
@@ -311,17 +338,15 @@ export class CommissionService {
           },
         });
 
-        // Revertir wallet si ya se había abonado
-        if (commission.status === CommissionStatus.PAID) {
-          await tx.wallet.update({
-            where: { driverId: commission.driverId },
-            data: { availableBalance: { decrement: commission.amount } },
-          });
-        }
+        // Wallet credit occurs at APPROVED, not PAID. Reversal of EITHER
+        // state must debit that same credit once; old code only debited PAID.
+        await tx.wallet.update({
+          where: { driverId: commission.driverId },
+          data: { availableBalance: { decrement: commission.amount } },
+        });
       }
 
       this.logger.log(`[COMMISSION] Revoked commission ${commissionId}`);
-
       return { success: true };
     });
   }

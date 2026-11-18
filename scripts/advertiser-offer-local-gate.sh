@@ -29,6 +29,7 @@ pnpm --filter @tad/impact-calculator run build
 
 echo "[2/5] Execute real TypeScript-based source and SSR regression tests"
 node --test \
+  scripts/landing.test.cjs \
   scripts/advertiser-driver-offer.test.cjs \
   scripts/advertiser-referral-capture.test.cjs \
   scripts/advertiser-estimate-pricing.test.cjs \

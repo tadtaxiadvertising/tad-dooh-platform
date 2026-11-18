@@ -186,6 +186,9 @@ export class CampaignController {
   ) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
+    if (role !== UserRole.ADMIN && role !== UserRole.ADVERTISER) {
+      throw new ForbiddenException("Rol no autorizado para editar campañas.");
+    }
     const campaign = await this.campaignService.getCampaignById(id);
     if (!campaign) throw new NotFoundException("Campaña no encontrada");
 

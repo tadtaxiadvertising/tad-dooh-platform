@@ -50,7 +50,12 @@ describe("Advertiser server-issued session verification", () => {
     const expired = jwt.sign(legacyPayload, secret, {
       algorithm: "HS256", expiresIn: -5,
     });
-    for (const token of ["not-a-jwt", unsigned, expired, "a".repeat(8200)]) {
+    const none = [
+      Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url"),
+      Buffer.from(JSON.stringify(legacyPayload)).toString("base64url"),
+      "",
+    ].join(".");
+    for (const token of ["not-a-jwt", none, unsigned, expired, "a".repeat(8200)]) {
       await expect(service.verifyAdvertiserSession(token)).rejects
         .toBeInstanceOf(UnauthorizedException);
     }
@@ -63,7 +68,7 @@ describe("Advertiser server-issued session verification", () => {
       sign({ app_metadata: { role: "DRIVER", entityId: "advertiser-1" } }),
       sign({ app_metadata: { role: "ADVERTISER", entityId: "someone-else" } }),
       sign({ purpose: "reset" }),
-      sign({ sub: null }),
+      sign({ sub: "" }),
     ];
     for (const token of invalid) {
       await expect(service.verifyAdvertiserSession(token)).rejects

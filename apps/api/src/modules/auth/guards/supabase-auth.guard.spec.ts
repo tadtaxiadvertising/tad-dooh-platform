@@ -1,6 +1,7 @@
 import { ExecutionContext, UnauthorizedException } from "@nestjs/common";
 import * as jwt from "jsonwebtoken";
 import { SupabaseAuthGuard } from "./supabase-auth.guard";
+import { TenantGuard } from "./tenant.guard";
 
 describe("SupabaseAuthGuard token purpose isolation", () => {
   const secret = "unit-test-only-secret-with-at-least-32-chars";
@@ -316,6 +317,39 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     );
     expect(request.user).toBeUndefined();
     expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("preserves TenantGuard ownership: same advertiser allowed, other advertiser denied", async () => {
+    const token = jwt.sign(legacyPayload, secret, { expiresIn: "1h" });
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    const tenantGuard = new TenantGuard();
+
+    // Set only the route parameter, exactly as Nest does after authentication.
+    const tenantContext = {
+      getHandler: () => function getPortal() {},
+      getClass: () => class AdvertiserPortalController {},
+      switchToHttp: () => ({
+        getRequest: () => ({
+          ...request,
+          params: { id: "advertiser-1" },
+        }),
+      }),
+    } as unknown as ExecutionContext;
+    expect(tenantGuard.canActivate(tenantContext)).toBe(true);
+
+    const otherTenantContext = {
+      getHandler: () => function getOtherPortal() {},
+      getClass: () => class AdvertiserPortalController {},
+      switchToHttp: () => ({
+        getRequest: () => ({
+          ...request,
+          params: { id: "another-advertiser" },
+        }),
+      }),
+    } as unknown as ExecutionContext;
+    expect(() => tenantGuard.canActivate(otherTenantContext))
+      .toThrow(UnauthorizedException);
   });
 
   it("rejects otherwise trusted legacy claims without an email", async () => {

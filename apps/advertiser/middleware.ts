@@ -1,6 +1,5 @@
 import {
   AUTH_COOKIE_MAX_AGE,
-  readAccessTokenCookie,
 } from "@tad/services/session-cookies";
 import { isPublicLegalPath } from "@tad/services/cookie-consent";
 import { NextResponse } from "next/server";

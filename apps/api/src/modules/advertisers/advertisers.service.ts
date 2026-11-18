@@ -105,7 +105,8 @@ export class AdvertisersService {
     });
     if (
       !advertiser ||
-      advertiser.email.trim().toLowerCase() !== claims.email.trim().toLowerCase()
+      advertiser.email.trim().toLowerCase() !== claims.email.trim().toLowerCase() ||
+      !["ACTIVE", "PENDING_REVIEW"].includes(advertiser.status)
     ) {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
     }

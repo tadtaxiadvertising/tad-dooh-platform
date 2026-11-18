@@ -192,6 +192,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
   }
 
+  // A valid JWT does not authorize access to suspended or unknown states.
+  if (session.status !== "ACTIVE" && session.status !== "PENDING_REVIEW") {
+    return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+  }
+
   if (session.status === "PENDING_REVIEW") {
     if (isLanding) return NextResponse.next();
     return NextResponse.redirect(new URL("/advertiser/onboarding", request.url));

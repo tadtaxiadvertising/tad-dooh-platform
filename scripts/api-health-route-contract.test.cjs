@@ -22,12 +22,20 @@ test("every public health path is excluded explicitly from /api/v1 global prefix
     main.indexOf("// SHELTER C-I1"),
   );
   assert.ok(prefix.includes('app.setGlobalPrefix("api/v1"'));
-  for (const route of ["health", "health/db", "health/full", "health/ready"]) {
+  for (const route of ["health", "health/full", "health/ready"]) {
     assert.ok(
       prefix.includes(`{ path: "${route}", method: RequestMethod.GET }`),
       `Missing exact public health route: ${route}`,
     );
   }
+});
+
+test("DB metrics are not added to the root public health exclusions", () => {
+  const prefix = main.slice(
+    main.indexOf('app.setGlobalPrefix("api/v1"'),
+    main.indexOf("// SHELTER C-I1"),
+  );
+  assert.ok(!prefix.includes('{ path: "health/db", method: RequestMethod.GET }'));
 });
 
 test("/health/ready is public but does not expose internal database metrics", () => {

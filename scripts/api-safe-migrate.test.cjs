@@ -24,15 +24,34 @@ const migrateMarker = "[fixture] migration invoked";
 // The real migrate-safe.sh executes with a real POSIX shell. Node/pnpm
 // are fixture-only function overrides: NO network or production connection.
 const boundary = `node() {
-  if [ "$#" -ne 1 ] || [ "\${1-}" != "./scripts/check-supabase-target.cjs" ]; then
-    echo "[fixture] incorrect preflight" >&2
+  if [ "$#" -ne 1 ]; then
+    echo "[fixture] unexpected Node args" >&2
     return 91
   fi
-  if [ "\${TAD_TEST_PREFLIGHT_FAIL:-}" = "1" ]; then
-    echo "[fixture] target mismatch" >&2
-    return 19
-  fi
-  echo "[fixture] target checked"
+  case "\${1-}" in
+    "./scripts/check-supabase-target.cjs")
+      if [ "\${TAD_TEST_PREFLIGHT_FAIL:-}" = "1" ]; then
+        echo "[fixture] target mismatch" >&2
+        return 19
+      fi
+      echo "[fixture] target checked"
+      ;;
+    "./scripts/check-prisma-drift.cjs")
+      if [ "\${DATABASE_URL:-}" != "\${DIRECT_URL:-}" ]; then
+        echo "[fixture] drift check used wrong database" >&2
+        return 93
+      fi
+      if [ "\${TAD_TEST_DRIFT_FAIL:-}" = "1" ]; then
+        echo "[fixture] schema drift detected" >&2
+        return 31
+      fi
+      echo "[fixture] schema verified"
+      ;;
+    *)
+      echo "[fixture] unexpected Node command" >&2
+      return 91
+      ;;
+  esac
 }
 pnpm() {
   if [ "$#" -ne 5 ] || [ "\${1-}" != "exec" ] ||
@@ -44,7 +63,7 @@ pnpm() {
     return 92
   fi
   echo "[fixture] migration invoked"
-  return 23
+  return "\${TAD_TEST_MIGRATE_STATUS:-23}"
 }
 `;
 
@@ -107,4 +126,23 @@ test("only direct DB URL reaches versioned migrate deploy, and failure propagate
   assert.match(result.output, /\[fixture\] target checked/);
   assert.ok(result.output.includes(migrateMarker));
   assert.doesNotMatch(result.output, /db push|accept-data-loss/);
+  assert.doesNotMatch(result.output, /schema verified|schema drift detected/);
+});
+
+test("successful migration is not declared complete until schema parity passes", () => {
+  const result = execute({ ...fixtures, TAD_TEST_MIGRATE_STATUS: "0" });
+  assert.equal(result.status, 0);
+  assert.match(result.output, /migration invoked/);
+  assert.match(result.output, /schema verified/);
+});
+
+test("post-migration missing schema fails closed instead of returning success", () => {
+  const result = execute({
+    ...fixtures,
+    TAD_TEST_MIGRATE_STATUS: "0",
+    TAD_TEST_DRIFT_FAIL: "1",
+  });
+  assert.equal(result.status, 31);
+  assert.match(result.output, /schema drift detected/);
+  assert.match(result.output, /migration invoked/);
 });

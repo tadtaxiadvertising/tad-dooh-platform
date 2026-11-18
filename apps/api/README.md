@@ -258,8 +258,8 @@ npm run start:dev          # NestJS watch mode (hot reload)
 npm run start:prod         # Ejecuta dist/main.js; no migra
 
 # Solo con aprobación operativa, backup y revisión del destino Supabase:
-npm run deploy:migrate     # Valida DATABASE_URL/SUPABASE_URL/DIRECT_URL y usa prisma migrate deploy
-npm run start:migrate      # Misma migración versionada + inicio (NO db push)
+TAD_APPROVE_MANUAL_MIGRATION=YES npm run deploy:migrate  # Validación de destino + migraciones versionadas
+TAD_APPROVE_MANUAL_MIGRATION=YES npm run start:migrate   # Igual + inicio (NO db push)
 # Nunca ejecutar sobre un esquema distinto por suposición.
 
 # Build

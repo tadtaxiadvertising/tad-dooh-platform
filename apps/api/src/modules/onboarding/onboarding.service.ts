@@ -16,6 +16,8 @@ import {
 } from "../../common/constants/business-rules";
 
 import { OnboardAdvertiserDto } from "./dto/onboard-advertiser.dto";
+import { OnboardAdvertiserQuoteDto } from "./dto/onboard-advertiser-quote.dto";
+import { calculateAdvertiserOffer } from "@tad/impact-calculator";
 
 @Injectable()
 // TAD DOOH v12.1 - Atomic Onboarding (30s Frequency Policy)
@@ -26,6 +28,50 @@ export class OnboardingService {
     private prisma: PrismaService,
     private supabaseService: SupabaseService,
   ) {}
+
+  /**
+   * Price decisions are based solely on a driver actually found in PostgreSQL.
+   * Never trust "discount", "eligible" or "budget" fields submitted by clients.
+   */
+  private async verifiedOffer(data: OnboardAdvertiserQuoteDto) {
+    const { referralCode, expectedScreens, campaignMonths, includeProduction } = data;
+    if (
+      !Number.isSafeInteger(expectedScreens) || expectedScreens < 1 || expectedScreens > 100 ||
+      !Number.isSafeInteger(campaignMonths ?? 1) ||
+      (campaignMonths ?? 1) < 1 || (campaignMonths ?? 1) > 12 ||
+      (includeProduction !== undefined && typeof includeProduction !== "boolean")
+    ) {
+      throw new BadRequestException("Configuración de campaña no válida.");
+    }
+    if (referralCode !== undefined &&
+      (typeof referralCode !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(referralCode))) {
+      throw new BadRequestException("Código de conductor no válido.");
+    }
+    const referrer = referralCode
+      ? await this.prisma.driver.findUnique({
+          where: { referralCode },
+          select: { id: true },
+        })
+      : null;
+    if (referralCode && !referrer) {
+      throw new BadRequestException("Código de conductor no válido.");
+    }
+
+    return {
+      referrerId: referrer?.id ?? null,
+      quote: calculateAdvertiserOffer({
+        screens: expectedScreens,
+        months: campaignMonths ?? 1,
+        includeProduction: includeProduction ?? false,
+        verifiedDriverCode: Boolean(referrer),
+      }),
+    };
+  }
+
+  async quoteAdvertiser(data: OnboardAdvertiserQuoteDto) {
+    const { quote } = await this.verifiedOffer(data);
+    return quote;
+  }
 
   async onboardAdvertiser(data: OnboardAdvertiserDto) {
     const {
@@ -70,6 +116,10 @@ export class OnboardingService {
       );
     }
 
+    // Resolve and price the offer BEFORE identity provisioning; invalid codes
+    // must not create a Supabase user or a campaign.
+    const { referrerId, quote } = await this.verifiedOffer(data);
+
     // Check if email already exists
     const existing = await this.prisma.advertiser.findUnique({
       where: { email },
@@ -111,6 +161,7 @@ export class OnboardingService {
             // NUEVO: Status de onboarding — no ACTIVE directo
             // Permite al dashboard detectar onboarding incompleto
             status: "PENDING_REVIEW",
+            referredBy: referrerId,
           },
         });
 
@@ -122,7 +173,8 @@ export class OnboardingService {
             name: `Lanzamiento - ${companyName}`,
             advertiser: companyName,
             advertiserId: advertiser.id,
-            budget: Number(budget),
+            // Persist the authoritative pre-tax estimate, not a client budget.
+            budget: quote.subtotal,
             targetImpressions,
             startDate: new Date(),
             endDate: new Date(
@@ -159,6 +211,7 @@ export class OnboardingService {
           advertiserId: advertiser.id,
           campaignId: campaign.id,
           companyName: advertiser.companyName,
+          quote,
         };
       });
       return result;
@@ -180,7 +233,7 @@ export class OnboardingService {
         );
       }
       this.logger.error("Advertiser onboarding transaction failed");
-      if (error instanceof ConflictException) throw error;
+      if (error instanceof ConflictException || error instanceof BadRequestException) throw error;
       throw new InternalServerErrorException(
         "Error al procesar el registro. Intente de nuevo.",
       );

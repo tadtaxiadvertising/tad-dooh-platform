@@ -12,12 +12,26 @@ import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 import { TenantGuard } from "../auth/guards/tenant.guard";
 
 import { OnboardAdvertiserDto } from "./dto/onboard-advertiser.dto";
+import { OnboardAdvertiserQuoteDto } from "./dto/onboard-advertiser-quote.dto";
+import { Throttle } from "@nestjs/throttler";
 
 @Controller("onboarding")
 export class OnboardingController {
   constructor(private readonly onboardingService: OnboardingService) {}
 
+  /**
+   * Read-only public quote. The server alone resolves referral eligibility;
+   * no caller-supplied discount or driver identity is accepted.
+   */
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @Post("advertiser/quote")
+  async quote(@Body() data: OnboardAdvertiserQuoteDto) {
+    return this.onboardingService.quoteAdvertiser(data);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post("advertiser")
   async onboard(@Body() data: OnboardAdvertiserDto) {
     return this.onboardingService.onboardAdvertiser(data);

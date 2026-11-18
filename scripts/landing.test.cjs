@@ -142,12 +142,19 @@ function middlewareHarness(options = {}) {
     },
     fetch: async (target, init) => {
       backendCalls++;
-      assert.equal(String(target), 'http://api.fixture.local:3000/api/v1/advertisers/session');
+      assert.ok([
+        'http://api.fixture.local:3000/api/v1/advertisers/session',
+        'http://api.fixture.local:3000/api/v1/advertisers/session/status',
+      ].includes(String(target)), 'No unexpected backend or untrusted URL');
       assert.equal(init.redirect, 'error');
       assert.equal(init.cache, 'no-store');
       if (options.backendDown) throw new Error('API offline');
       const suppliedToken = init.headers.Authorization?.slice(7);
-      if (!options.legacyToken || suppliedToken !== options.legacyToken) {
+      const isOAuth = String(target).endsWith('/session/status');
+      if (isOAuth ? (
+        options.oauthApiDenied || !options.supabaseToken ||
+        suppliedToken !== options.supabaseToken
+      ) : (!options.legacyToken || suppliedToken !== options.legacyToken)) {
         return { ok: false, status: 401 };
       }
       return {
@@ -155,7 +162,8 @@ function middlewareHarness(options = {}) {
         json: async () => ({
           role: 'ADVERTISER',
           advertiserId: 'advertiser-verified',
-          status: options.legacyStatus || 'ACTIVE',
+          status: isOAuth ? (options.oauthDatabaseStatus || 'ACTIVE')
+            : (options.legacyStatus || 'ACTIVE'),
         }),
       };
     },
@@ -169,9 +177,16 @@ function middlewareHarness(options = {}) {
       '@supabase/ssr': { createServerClient() {
         supabaseCalls++;
         if (!options.supabaseUser) throw new Error('Supabase unavailable');
-        return { auth: { getUser: async () => ({
-          data: { user: options.supabaseUser }, error: null,
-        }) } };
+        return { auth: {
+          getUser: async () => ({
+            data: { user: options.supabaseUser }, error: null,
+          }),
+          getSession: async () => ({
+            data: { session: options.supabaseToken
+              ? { access_token: options.supabaseToken } : null },
+            error: null,
+          }),
+        } };
       } },
     },
   }).middleware;
@@ -263,9 +278,11 @@ test('pending-review status page requires verified identity and cannot leak into
 
 test('pending Supabase OAuth advertiser is also routed to verified status screen', async () => {
   const token = 'oauth-pending-fixture';
-  const harness = middlewareHarness({ supabaseUser: {
-    app_metadata: { role: 'ADVERTISER', status: 'PENDING_REVIEW' },
-  } });
+  const harness = middlewareHarness({
+    supabaseToken: token, oauthDatabaseStatus: 'PENDING_REVIEW',
+    // Metadata deliberately absent: PostgreSQL is the source of truth.
+    supabaseUser: { app_metadata: { role: 'ADVERTISER' } },
+  });
   assert.deepEqual(await harness.run('/advertiser/dashboard', token, 'oauth'), {
     kind: 'redirect',
     destination: 'http://127.0.0.1:3003/advertiser/pending-review',
@@ -291,12 +308,14 @@ test('public advertiser onboarding remains available for new accounts and status
 
 test('trusted Supabase OAuth identity permits advertiser but not unknown roles', async () => {
   const token = 'canonical-oauth-cookie-fixture';
-  const trusted = middlewareHarness({ supabaseUser: {
-    app_metadata: { role: 'ADVERTISER', status: 'ACTIVE' },
-  } });
+  const trusted = middlewareHarness({
+    supabaseToken: token,
+    oauthDatabaseStatus: 'ACTIVE',
+    supabaseUser: { app_metadata: { role: 'ADVERTISER' } },
+  });
   assert.equal((await trusted.run('/advertiser/dashboard', token, 'oauth')).kind, 'next');
   assert.equal(trusted.calls(), 1);
-  assert.equal(trusted.backendCalls(), 0);
+  assert.equal(trusted.backendCalls(), 1, 'OAuth status checked against DB-backed API');
   const wrongRole = middlewareHarness({ supabaseUser: {
     app_metadata: { role: 'DRIVER' },
   } });
@@ -306,11 +325,51 @@ test('trusted Supabase OAuth identity permits advertiser but not unknown roles',
 });
 
 test('suspended OAuth sessions cannot enter advertiser private routes', async () => {
-  const harness = middlewareHarness({ supabaseUser: {
-    app_metadata: { role: 'ADVERTISER', status: 'SUSPENDED' },
-  } });
+  const harness = middlewareHarness({
+    supabaseToken: 'suspended-supabase-cookie',
+    oauthDatabaseStatus: 'SUSPENDED',
+    supabaseUser: { app_metadata: { role: 'ADVERTISER', status: 'ACTIVE' } },
+  });
   assert.deepEqual(await harness.run(
     '/advertiser/dashboard', 'suspended-supabase-cookie', 'oauth',
+  ), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+});
+
+test('OAuth authorization rejects DB suspension despite stale ACTIVE auth metadata', async () => {
+  const token = 'oauth-suspended-test';
+  const harness = middlewareHarness({
+    supabaseToken: token,
+    oauthDatabaseStatus: 'SUSPENDED',
+    supabaseUser: { app_metadata: { role: 'ADVERTISER', status: 'ACTIVE' } },
+  });
+  assert.deepEqual(await harness.run('/advertiser/dashboard', token, 'oauth'), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+  assert.equal(harness.backendCalls(), 1);
+});
+
+test('OAuth authorization denies absent status API, invalid token, and fake metadata', async () => {
+  const token = 'verified-oauth-fixture';
+  for (const options of [
+    { oauthApiDenied: true },
+    { backendDown: true },
+    { oauthDatabaseStatus: 'UNKNOWN' },
+  ]) {
+    const harness = middlewareHarness({
+      ...options, supabaseToken: token,
+      supabaseUser: { app_metadata: { role: 'ADVERTISER', status: 'ACTIVE' } },
+    });
+    assert.deepEqual(await harness.run('/advertiser/dashboard', token, 'oauth'), {
+      kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+    });
+  }
+  const withoutAccessToken = middlewareHarness({
+    supabaseUser: { app_metadata: { role: 'ADVERTISER', status: 'ACTIVE' } },
+  });
+  assert.deepEqual(await withoutAccessToken.run(
+    '/advertiser/dashboard', token, 'oauth',
   ), {
     kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
   });

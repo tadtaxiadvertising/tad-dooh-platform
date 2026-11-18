@@ -55,6 +55,42 @@ function advertiserSessionVerificationUrl(): string | null {
 }
 
 /**
+ * Server-to-server check of CURRENT business status for a verified OAuth user.
+ * Identity verification occurs again in the API's global SupabaseAuthGuard.
+ * Never authorize based on app_metadata.status (may be absent or stale).
+ */
+async function verifyOAuthAdvertiserStatus(
+  accessToken: string,
+): Promise<TrustedAdvertiserSession | null> {
+  if (!accessToken || accessToken.length > 8192) return null;
+  const base = advertiserSessionVerificationUrl();
+  if (!base) return null;
+  const url = base + "/status";
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Authorization: "Bearer " + accessToken },
+      redirect: "error",
+      cache: "no-store",
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return null;
+    const data: unknown = await res.json();
+    if (
+      !data || typeof data !== "object" ||
+      !("role" in data) || data.role !== EXPECTED_ROLE ||
+      !("status" in data) ||
+      !["ACTIVE", "PENDING_REVIEW"].includes(String(data.status)) ||
+      !("advertiserId" in data) || typeof data.advertiserId !== "string" ||
+      !data.advertiserId
+    ) return null;
+    return { role: EXPECTED_ROLE, status: String(data.status) };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * The legacy password login issues a signed API JWT (not a Supabase session).
  * Only the API has the signing secret; the advertiser app must not decode the
  * token and trust its role. Ask the issuer to verify signature, expiry,
@@ -133,16 +169,17 @@ async function verifiedSession(request: NextRequest): Promise<{
         });
         const { data, error } = await supabase.auth.getUser();
         if (!error && data?.user?.app_metadata?.role === EXPECTED_ROLE) {
-          return {
-            session: {
-              role: EXPECTED_ROLE,
-              status:
-                typeof data.user.app_metadata?.status === "string"
-                  ? data.user.app_metadata.status
-                  : "ACTIVE",
-            },
-            response,
-          };
+          // getUser verifies the Supabase identity. getSession provides the
+          // bearer token; the API independently verifies it and checks the
+          // current advertiser row before returning a commercial status.
+          // getSession alone is NOT an authentication or authorization check.
+          const { data: currentSession, error: sessionError } =
+            await supabase.auth.getSession();
+          const token = currentSession?.session?.access_token;
+          if (!sessionError && typeof token === "string" && token) {
+            const trusted = await verifyOAuthAdvertiserStatus(token);
+            if (trusted) return { session: trusted, response };
+          }
         }
       } catch {
         // Offline or invalid Supabase session: do NOT trust its JWT payload.

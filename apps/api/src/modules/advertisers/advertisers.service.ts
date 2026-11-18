@@ -117,6 +117,40 @@ export class AdvertisersService {
     };
   }
 
+  /**
+   * Current commercial account status for a SUPABASE-VERIFIED identity.
+   * Never use JWT metadata or a caller-supplied advertiser ID as the source
+   * of authorization. Nest global auth guard supplies verified user data.
+   */
+  async verifyOAuthAdvertiserStatus(
+    identity: { role?: string; entityId?: string | null; email?: string },
+  ): Promise<{ role: "ADVERTISER"; advertiserId: string; status: string }> {
+    if (
+      identity?.role !== "ADVERTISER" ||
+      typeof identity.entityId !== "string" || !identity.entityId.trim() ||
+      typeof identity.email !== "string" || !identity.email.trim()
+    ) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+    const advertiser = await this.prisma.advertiser.findUnique({
+      where: { id: identity.entityId },
+      select: { id: true, email: true, status: true },
+    });
+    if (
+      !advertiser ||
+      advertiser.id !== identity.entityId ||
+      advertiser.email.trim().toLowerCase() !== identity.email.trim().toLowerCase() ||
+      !["ACTIVE", "PENDING_REVIEW"].includes(advertiser.status)
+    ) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+    return {
+      role: "ADVERTISER",
+      advertiserId: advertiser.id,
+      status: advertiser.status,
+    };
+  }
+
   async findAll() {
     return this.prisma.advertiser.findMany({
       include: {

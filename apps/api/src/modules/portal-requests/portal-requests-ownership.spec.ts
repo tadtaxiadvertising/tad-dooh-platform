@@ -3,7 +3,7 @@ import { PortalRequestsService } from "./portal-requests.service";
 describe("PortalRequestsService campaign ownership before request creation", () => {
   const findUnique = jest.fn();
   const prisma = { campaign: { findUnique } };
-  const service = new PortalRequestsService(prisma as never, {} as never);
+  const service = new PortalRequestsService(prisma as never);
 
   beforeEach(() => {
     jest.resetAllMocks();

@@ -41,6 +41,8 @@ export interface PortalRequestRecord {
   id: string;
   advertiserId?: string;
   driverId?: string;
+  campaignId?: string | null;
+  adminNotes?: string | null;
   title: string;
   status: string;
   description?: string;

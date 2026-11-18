@@ -48,6 +48,7 @@ pnpm --filter api exec jest --runInBand \
   src/modules/auth/guards/tenant.guard.spec.ts \
   src/modules/portal-requests/portal-requests.controller.spec.ts \
   src/modules/portal-requests/portal-requests-ownership.spec.ts \
+  src/modules/portal-requests/portal-requests-approval.spec.ts \
   src/modules/onboarding/onboarding.service.spec.ts \
   src/modules/onboarding/onboarding.controller.spec.ts \
   src/modules/onboarding/dto/onboard-advertiser.dto.spec.ts

@@ -297,6 +297,14 @@ export class CampaignService {
       });
     });
 
+    // An advertiser-created campaign is only a REVIEW REQUEST, not sellable
+    // inventory. Do not reserve slots, notify drivers, enqueue FORCE_SYNC or
+    // broadcast a tablet wake-up until a separate commercial/payment approval
+    // workflow has explicitly authorized publication.
+    if (result.status === "PENDING_REVIEW") {
+      return result;
+    }
+
     // TAD-ADMIN: Distribución Inteligente de Inventario
     // Si no se pasaron dispositivos pero hay ciudad, auto-asignamos usando prioridad ORO > PLATA > BASE
     let devicesToAssign = dto.target_devices || [];

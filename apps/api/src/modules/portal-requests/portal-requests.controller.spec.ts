@@ -1,5 +1,7 @@
 import "reflect-metadata";
 import { ForbiddenException } from "@nestjs/common";
+import { GUARDS_METADATA } from "@nestjs/common/constants";
+import { TenantGuard } from "../auth/guards/tenant.guard";
 import { IS_PUBLIC_KEY } from "../auth/decorators/public.decorator";
 import { ROLES_KEY, UserRole } from "../auth/decorators/roles.decorator";
 import { PortalRequestsController } from "./portal-requests.controller";
@@ -35,6 +37,20 @@ describe("Portal requests authenticated tenant ownership", () => {
     expect(Reflect.getMetadata(ROLES_KEY, handler)).toEqual([
       UserRole.ADMIN, UserRole.ADVERTISER, UserRole.DRIVER,
     ]);
+  });
+
+  it("keeps advertiser/driver listing endpoints protected by RBAC and TenantGuard", () => {
+    const handlers = [
+      { action: PortalRequestsController.prototype.findByAdvertiser,
+        roles: [UserRole.ADMIN, UserRole.ADVERTISER] },
+      { action: PortalRequestsController.prototype.findByDriver,
+        roles: [UserRole.ADMIN, UserRole.DRIVER] },
+    ];
+    for (const { action, roles } of handlers) {
+      expect(Reflect.getMetadata(IS_PUBLIC_KEY, action)).not.toBe(true);
+      expect(Reflect.getMetadata(ROLES_KEY, action)).toEqual(roles);
+      expect(Reflect.getMetadata(GUARDS_METADATA, action)).toContain(TenantGuard);
+    }
   });
 
   it("binds advertiser requests to verified entityId even when body omits it", async () => {

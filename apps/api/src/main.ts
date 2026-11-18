@@ -52,6 +52,11 @@ async function bootstrap() {
         { path: "api/health", method: RequestMethod.GET },
         { path: "api/v1", method: RequestMethod.GET },
         { path: "health", method: RequestMethod.GET },
+        // Explicit exclusions: a plain "health" only matches GET /health,
+        // not subroutes. Do not add a broad exclusion for API endpoints.
+        { path: "health/db", method: RequestMethod.GET },
+        { path: "health/full", method: RequestMethod.GET },
+        { path: "health/ready", method: RequestMethod.GET },
       ],
     });
 

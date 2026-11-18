@@ -5,6 +5,7 @@
     "next-env.d.ts",
     "app/page.tsx",
     "app/layout.tsx",
+    "pages/advertiser/onboarding.tsx",
     "components/landing/**/*.tsx",
     "components/onboarding/BenefitsStep.tsx",
     "components/onboarding/SimulatorStep.tsx",

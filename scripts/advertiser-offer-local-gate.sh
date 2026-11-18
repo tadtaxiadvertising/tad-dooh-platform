@@ -39,6 +39,7 @@ echo "[3/5] Execute API service and controller Jest tests with local Prisma mock
 pnpm --filter api exec jest --runInBand \
   src/modules/campaign/campaign-pricing.spec.ts \
   src/modules/campaign/campaign-coverage-security.spec.ts \
+  src/modules/campaign/campaign-tenant-patch-security.spec.ts \
   src/modules/advertisers/advertisers-referral.spec.ts \
   src/modules/advertisers/advertisers-session.spec.ts \
   src/modules/advertisers/advertisers-oauth-status.spec.ts \

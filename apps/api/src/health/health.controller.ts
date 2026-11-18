@@ -56,10 +56,12 @@ export class HealthController {
       status: db.connected && db.masterSyncViewReady ? "up" : "degraded",
       timestamp: new Date().toISOString(),
       service: "tad-backend-api",
-      node_env: process.env.NODE_ENV,
-      db,
-      memory: process.memoryUsage(),
-      uptime: process.uptime(),
+      // Public staging/readiness diagnostics require two booleans only.
+      // Do not disclose memory usage, connection counts or server internals.
+      db: {
+        connected: db.connected === true,
+        masterSyncViewReady: db.masterSyncViewReady === true,
+      },
     };
   }
 }

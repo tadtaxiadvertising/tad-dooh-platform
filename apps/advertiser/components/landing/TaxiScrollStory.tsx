@@ -55,7 +55,7 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
   const displayBrand = brandName.trim().replace(/\s+/g, " ").slice(0, 24) || "TU MARCA";
 
   return (
-    <section ref={sectionRef} className={styles.section} data-reduced-motion={reduceMotion ? "true" : undefined} aria-labelledby="motion-story-title">
+    <section id="motion-story" ref={sectionRef} className={styles.section} data-reduced-motion={reduceMotion ? "true" : undefined} aria-labelledby="motion-story-title">
       <div className={styles.sticky}>
         <div className={styles.topline}>
           <span>TAD / EXPERIENCIA EN MOVIMIENTO</span>

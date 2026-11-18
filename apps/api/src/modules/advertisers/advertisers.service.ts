@@ -140,7 +140,7 @@ export class AdvertisersService {
       !advertiser ||
       advertiser.id !== identity.entityId ||
       advertiser.email.trim().toLowerCase() !== identity.email.trim().toLowerCase() ||
-      !["ACTIVE", "PENDING_REVIEW"].includes(advertiser.status)
+      !["ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING"].includes(advertiser.status)
     ) {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
     }

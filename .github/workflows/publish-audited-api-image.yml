@@ -65,13 +65,19 @@ jobs:
               },
             };
 
+            // Refuse a different workflow merely impersonating a display name.
+            const trustedPaths = {
+              'CI Quality Gates': '.github/workflows/ci.yml',
+              'Docker Image CI': '.github/workflows/docker-image.yml',
+            };
             const { data } = await github.rest.actions.listWorkflowRunsForRepo({
               owner, repo, head_sha: sha, event: 'push', per_page: 100,
             });
             for (const [name, requiredJobs] of Object.entries(requiredWorkflows)) {
               const matching = data.workflow_runs
-                .filter(run => run.name === name && run.head_sha === sha &&
-                  run.head_branch === 'main' && run.event === 'push')
+                .filter(run => run.name === name && run.path === trustedPaths[name] &&
+                  run.head_sha === sha && run.head_branch === 'main' &&
+                  run.event === 'push')
                 .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
               const latest = matching[0];
               if (!latest || latest.status !== 'completed' || latest.conclusion !== 'success') {

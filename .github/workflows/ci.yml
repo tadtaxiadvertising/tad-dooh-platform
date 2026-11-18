@@ -132,7 +132,7 @@ jobs:
           node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
           node --test scripts/simulator-key-security.test.cjs scripts/next-security-contract.test.cjs
           node --test scripts/ci-e2e-isolation.test.cjs
-          node --test scripts/ci-docker-matrix.test.cjs scripts/ghcr-api-promotion-contract.test.cjs
+          node --test scripts/ci-docker-matrix.test.cjs scripts/ghcr-api-promotion-contract.test.cjs scripts/tracked-postgres-secrets-guard.test.cjs
           node --test scripts/api-entrypoint-env.test.cjs
           node --test apps/api/scripts/master-sync-migration.contract.test.cjs
           node --test apps/api/scripts/device-command-ack.contract.test.cjs

@@ -100,3 +100,20 @@
 @media (max-width: 900px) {
   .section { scroll-margin-top: 78px; }
 }
+
+/* Optional mobile motion: transform-only (never dim essential text). */
+@keyframes tadCardRise {
+  from { transform: translate3d(0, 14px, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@supports (animation-timeline: view()) {
+  @media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
+    .staticCard {
+      animation-name: tadCardRise;
+      animation-duration: 1ms;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
+    }
+  }
+}

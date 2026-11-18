@@ -64,3 +64,51 @@ fallback. The focused CI workflow includes both.
 **Merge gate:** production-equivalent build, TypeScript, lint, browser screenshots,
 accessibility and mobile manual review must pass. Do not merge from screenshots
 or static source checks alone.
+
+
+## Stabilization — 2026-11-18
+
+### Verified directly from repository source (not GitHub Actions)
+
+- WCAG contrast calculation for five critical light-theme pairs:
+  headline gold `#806300` on white **5.67:1**;
+  small chapter gold `#765d00` on white **6.29:1**;
+  static-card captions on `#f5f5f2` **5.76:1**;
+  hero step labels on white **6.36:1**;
+  studio body on `#f7f7f2` **6.08:1**.
+- Source inspections establish three stage markers, the preserved
+  financial simulator, local-only creative preview and no new network calls.
+- Animation-only chapters are `aria-hidden` and have a separate screen-reader
+  chapter list. Static chapters serve mobile, reduced motion and no-JS.
+- Sticky section now reserves **90px** for the public desktop navbar; anchored
+  creative preview reserves space and small viewports use static cards.
+- Twenty-eight isolated source/contrast assertions passed in the connector
+  execution environment. This is not a Next.js compilation result.
+
+### Independent local QA (no GitHub plan/minutes)
+
+From an authorized local checkout with dependencies already installed:
+
+```bash
+bash scripts/advertiser-motion-v6-local-qa.sh
+```
+
+It runs regression tests, strict landing TypeScript, scoped ESLint,
+a synthetic-config production Next build, then a local-only Chromium
+smoke with forward/reverse scroll and no-JS/mobile checks. Screenshots and
+logs are written to an output directory outside the repo; no credentials
+or production traffic are required.
+
+**Caveat:** This session cannot clone the private repository or install
+the workspace in its isolated container. Therefore the browser/build
+gate has **not** been executed here. A passing script result from an
+authorized checkout is required before calling the implementation verified.
+
+### Remaining risks
+
+- The app's existing Next configuration ignores build-time TypeScript/lint
+  failures. The independent script runs those gates explicitly; do not infer
+  type safety from `next build` alone.
+- The long-standing landing CSS contains multiple override layers. Follow-up
+  consolidation should be a separate small PR after screenshots and behavior
+  are approved, not bundled with a time-sensitive UI release.

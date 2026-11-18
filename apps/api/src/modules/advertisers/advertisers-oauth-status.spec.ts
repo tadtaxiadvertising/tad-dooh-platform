@@ -57,7 +57,7 @@ describe("Authoritative OAuth advertiser status", () => {
       });
   });
 
-  it.each(["SUSPENDED", "DISABLED", "PENDING_ONBOARDING", "UNKNOWN"])(
+  it.each(["SUSPENDED", "DISABLED", "UNKNOWN"])(
     "denies %s accounts, not silently authorizing ACTIVE",
     async status => {
       findUnique.mockResolvedValue({
@@ -67,6 +67,18 @@ describe("Authoritative OAuth advertiser status", () => {
         .rejects.toBeInstanceOf(UnauthorizedException);
     },
   );
+
+  it("returns PENDING_ONBOARDING only for its verified owner to finish the existing profile", async () => {
+    findUnique.mockResolvedValue({
+      id: "advertiser-own", email: "own@example.test",
+      status: "PENDING_ONBOARDING",
+    });
+    await expect(service.verifyOAuthAdvertiserStatus(identity))
+      .resolves.toEqual({
+        role: "ADVERTISER", advertiserId: "advertiser-own",
+        status: "PENDING_ONBOARDING",
+      });
+  });
 
   it("refuses deleted users and email/ownership mismatch", async () => {
     findUnique.mockResolvedValueOnce(null);

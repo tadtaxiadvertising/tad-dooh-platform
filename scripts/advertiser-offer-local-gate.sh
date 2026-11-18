@@ -38,6 +38,7 @@ node --test \
 echo "[3/5] Execute API service and controller Jest tests with local Prisma mocks"
 pnpm --filter api exec jest --runInBand \
   src/modules/campaign/campaign-pricing.spec.ts \
+  src/modules/commission/commission-settlement-approval.spec.ts \
   src/modules/commission/commission-atomic-ledger.spec.ts \
   src/modules/campaign/campaign-coverage-security.spec.ts \
   src/modules/campaign/campaign-pending-inventory.spec.ts \

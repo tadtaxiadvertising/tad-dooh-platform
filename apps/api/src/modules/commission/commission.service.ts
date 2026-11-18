@@ -509,114 +509,50 @@ export class CommissionService {
    */
   async approveSettlementBatch(batchId: string, approvedBy: string) {
     this.logger.log(`[SETTLEMENT] Approving batch ${batchId} by ${approvedBy}`);
-
     return this.prisma.$transaction(async (tx) => {
-      const batch = await tx.settlementBatch.findUnique({
-        where: { id: batchId },
-      });
-
+      const batch = await tx.settlementBatch.findUnique({ where: { id: batchId } });
       if (!batch) {
         throw new NotFoundException(`Settlement batch ${batchId} not found`);
       }
-
       if (batch.status !== "DRAFT") {
-        throw new BadRequestException(
-          `Batch ${batchId} is not in DRAFT status`,
-        );
+        throw new ConflictException(`Settlement batch ${batchId} already processed`);
       }
-
-      // Marcar comisiones como PAID
-      await tx.commission.updateMany({
-        where: { settlementBatchId: batchId },
-        data: {
-          status: CommissionStatus.PAID,
-          paidAt: new Date(),
-        },
+      // APPROVED is a review decision, not evidence of an external payout.
+      // Never change member commission statuses or paidAt at this stage.
+      const claimed = await tx.settlementBatch.updateMany({
+        where: { id: batchId, status: "DRAFT" },
+        data: { status: "APPROVED", approvedAt: new Date(), approvedBy },
       });
-
-      // Actualizar lote a APPROVED
-      const updated = await tx.settlementBatch.update({
+      if (claimed.count !== 1) {
+        throw new ConflictException(`Settlement batch ${batchId} approved concurrently`);
+      }
+      const updated = await tx.settlementBatch.findUniqueOrThrow({
         where: { id: batchId },
-        data: {
-          status: "APPROVED",
-          approvedAt: new Date(),
-          approvedBy,
-        },
       });
-
-      this.logger.log(
-        `[SETTLEMENT] Batch ${batchId} approved, ${batch.commissionsCount} commissions marked PAID`,
-      );
-
+      this.logger.log(`[SETTLEMENT] Batch ${batchId} approved (not paid)`);
       return this.mapBatchToOutput(updated);
     });
   }
 
   /**
-   * Paga un lote aprobado (APPROVED → PAID)
-   * Genera las órdenes de pago reales (transferencias bancarias).
+   * Legacy payout endpoint is suspended until bank-confirmed reconciliation
+   * can update each beneficiary and its ledger idempotently.
    */
   async paySettlementBatch(
     batchId: string,
     paidBy: string,
     referenceNum?: string,
   ) {
-    this.logger.log(`[SETTLEMENT] Paying batch ${batchId} by ${paidBy}`);
-
-    return this.prisma.$transaction(async (tx) => {
-      const batch = await tx.settlementBatch.findUnique({
-        where: { id: batchId },
-      });
-
-      if (!batch) {
-        throw new NotFoundException(`Settlement batch ${batchId} not found`);
-      }
-
-      if (batch.status !== "APPROVED") {
-        throw new BadRequestException(
-          `Batch ${batchId} must be APPROVED before paying`,
-        );
-      }
-
-      const referents = batch.referents as unknown as SettlementReferent[];
-
-      // Procesar pago por referente
-      for (const ref of referents) {
-        // Crear registro de pago en financialTransaction
-        await tx.financialTransaction.create({
-          data: {
-            type: "OUTGOING",
-            category: "OPEX_COMMISSION_PAYOUT",
-            amount: ref.netAmount,
-            netAmount: ref.netAmount,
-            taxAmount: ref.withholding,
-            entityId: ref.driverId,
-            reference:
-              referenceNum ||
-              `SETTLE-${batch.period}-${ref.driverId.slice(0, 8)}`,
-            note: `Pago liquidación comisiones ${batch.period} - ${ref.commissions.length} comisiones`,
-            status: "COMPLETED",
-          },
-        });
-
-        // Notificar al conductor (fire-and-forget)
-        // await this.notificationsService.sendDriverNotification(...)
-      }
-
-      const updated = await tx.settlementBatch.update({
-        where: { id: batchId },
-        data: {
-          status: "PAID",
-          paidAt: new Date(),
-          paidBy,
-          paymentReference: referenceNum,
-        },
-      });
-
-      this.logger.log(`[SETTLEMENT] Batch ${batchId} marked as PAID`);
-
-      return this.mapBatchToOutput(updated);
-    });
+    // #309: This method never confirmed a bank transfer; it wrote PAID and
+    // COMPLETED directly, and reused a unique reference across beneficiaries.
+    // Preserve its contract for callers, but fail closed before any DB write.
+    void batchId;
+    void paidBy;
+    void referenceNum;
+    throw new ConflictException(
+      "Pago de liquidaciones suspendido en esta ruta: requiere confirmación " +
+        "bancaria por beneficiario y conciliación financiera.",
+    );
   }
 
   /**

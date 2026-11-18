@@ -758,3 +758,24 @@
   .landing :global(.landing-hero-copy > *) { animation: none !important; }
   .landing :global(.landing-faq summary > span) { transition: none !important; }
 }
+
+
+/* Progressive editorial reveals — native scroll timeline when supported.
+   Older engines keep the content fully visible. No JavaScript scroll hijacking. */
+@keyframes advertiserSectionReveal {
+  from { opacity: .45; transform: translate3d(0, 24px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .landing :global(.landing-section-heading),
+    .landing :global(.landing-steps article),
+    .landing :global(.landing-faq > div:first-child) {
+      animation-name: advertiserSectionReveal;
+      animation-duration: 1ms;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 28%;
+    }
+  }
+}

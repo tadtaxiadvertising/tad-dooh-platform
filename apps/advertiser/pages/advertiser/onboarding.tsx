@@ -108,7 +108,7 @@ export default function AdvertiserOnboarding() {
           }),
         });
         if (!res.ok) {
-          if (res.status >= 400 && res.status < 500) {
+          if (res.status === 400) {
             if (!abort.signal.aborted) setQuoteStatus("invalid");
             return;
           }

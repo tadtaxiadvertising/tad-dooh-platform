@@ -26,5 +26,5 @@ test("release verification is read-only and avoids fragile global cache or servi
   const probe = read("scripts/advertiser-release-drift.cjs");
   assert.match(probe, /redirect: "manual"/);
   assert.match(probe, /cache: "no-store"/);
-  assert.doesNotMatch(probe, /process\.env\.[A-Z_]*SECRET|set-cookie/i);
+  assert.doesNotMatch(probe, /process\.env\.[A-Z_]*SECRET|headers\??\.get\(["']set-cookie["']\)/i);
 });

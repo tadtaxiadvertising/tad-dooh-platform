@@ -337,6 +337,44 @@ test('suspended OAuth sessions cannot enter advertiser private routes', async ()
   });
 });
 
+test('OAuth authorization rejects DB suspension despite stale ACTIVE auth metadata', async () => {
+  const token = 'oauth-suspended-test';
+  const harness = middlewareHarness({
+    supabaseToken: token,
+    oauthDatabaseStatus: 'SUSPENDED',
+    supabaseUser: { app_metadata: { role: 'ADVERTISER', status: 'ACTIVE' } },
+  });
+  assert.deepEqual(await harness.run('/advertiser/dashboard', token, 'oauth'), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+  assert.equal(harness.backendCalls(), 1);
+});
+
+test('OAuth authorization denies absent status API, invalid token, and fake metadata', async () => {
+  const token = 'verified-oauth-fixture';
+  for (const options of [
+    { oauthApiDenied: true },
+    { backendDown: true },
+    { oauthDatabaseStatus: 'UNKNOWN' },
+  ]) {
+    const harness = middlewareHarness({
+      ...options, supabaseToken: token,
+      supabaseUser: { app_metadata: { role: 'ADVERTISER', status: 'ACTIVE' } },
+    });
+    assert.deepEqual(await harness.run('/advertiser/dashboard', token, 'oauth'), {
+      kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+    });
+  }
+  const withoutAccessToken = middlewareHarness({
+    supabaseUser: { app_metadata: { role: 'ADVERTISER', status: 'ACTIVE' } },
+  });
+  assert.deepEqual(await withoutAccessToken.run(
+    '/advertiser/dashboard', token, 'oauth',
+  ), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+});
+
 test('Supabase or backend failures never downgrade to unsigned JWT authorization', async () => {
   const token = fixtureToken('ADVERTISER');
   const harness = middlewareHarness({ backendDown: true });

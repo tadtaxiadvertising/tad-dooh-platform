@@ -255,11 +255,11 @@ export default function RequestsPage() {
                     <>
                       {canApprove(req) && (
                         <button
-                        onClick={() => handleAction(req.id, "APPROVED")}
-                        title="Aprobar Petición"
-                        className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-500/5 group-hover:scale-110"
-                      >
-                        <CheckCircle2 className="w-6 h-6" />
+                          onClick={() => handleAction(req.id, "APPROVED")}
+                          title="Aprobar solicitud general"
+                          className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-500/5 group-hover:scale-110"
+                        >
+                          <CheckCircle2 className="w-6 h-6" />
                         </button>
                       )}
                       <button

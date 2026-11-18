@@ -56,6 +56,66 @@ export class AdvertisersService {
     private configService: ConfigService,
   ) {}
 
+  /**
+   * Read-only verification of legacy advertiser sessions issued by login().
+   *
+   * The Next middleware MUST NOT trust JWT.decode(), even when the upstream
+   * identity provider is unreachable. Only a correctly signed, unexpired
+   * advertiser token tied to an existing advertiser passes this check.
+   * Never return credentials or the raw token.
+   */
+  async verifyAdvertiserSession(token: string): Promise<{
+    role: "ADVERTISER";
+    advertiserId: string;
+    status: string;
+  }> {
+    const secret =
+      this.configService.get<string>("SUPABASE_JWT_SECRET") ||
+      this.configService.get<string>("JWT_SECRET");
+
+    if (!secret || typeof token !== "string" || token.length > 8192) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+
+    let claims: jwt.JwtPayload;
+    try {
+      const decoded = jwt.verify(token, secret, { algorithms: ["HS256"] });
+      if (typeof decoded === "string") {
+        throw new Error("Unstructured JWT");
+      }
+      claims = decoded;
+    } catch {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+
+    if (
+      claims.role !== "ADVERTISER" ||
+      claims.app_metadata?.role !== "ADVERTISER" ||
+      typeof claims.sub !== "string" || !claims.sub ||
+      claims.app_metadata?.entityId !== claims.sub ||
+      typeof claims.email !== "string" || !claims.email ||
+      claims.purpose !== undefined
+    ) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+
+    const advertiser = await this.prisma.advertiser.findUnique({
+      where: { id: claims.sub },
+      select: { id: true, email: true, status: true },
+    });
+    if (
+      !advertiser ||
+      advertiser.email.trim().toLowerCase() !== claims.email.trim().toLowerCase()
+    ) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+    return {
+      role: "ADVERTISER",
+      advertiserId: advertiser.id,
+      status: advertiser.status,
+    };
+  }
+
   async findAll() {
     return this.prisma.advertiser.findMany({
       include: {

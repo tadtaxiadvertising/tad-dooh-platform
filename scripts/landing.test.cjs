@@ -339,6 +339,18 @@ test('OAuth profile completion screen requires verified PENDING_ONBOARDING and i
   assert.ok(!source.includes('createUser('));
   assert.ok(!source.includes('/api/proxy/onboarding/advertiser"'));
   assert.ok(callback.includes("'/advertiser/oauth/complete-profile'"));
+  const appShell = fs.readFileSync(path.join(
+    __dirname, '../apps/advertiser/pages/_app.tsx'), 'utf8');
+  assert.ok(appShell.includes('router.pathname === "/advertiser/oauth/complete-profile"'));
+  assert.ok(appShell.includes('router.pathname === "/advertiser/pending-review"'));
+  assert.ok(appShell.includes('if (isPublic || isProtectedStatusPage)'));
+  // These pages are layoutless but NOT marked public in the middleware.
+  const middleware = fs.readFileSync(path.join(
+    __dirname, '../apps/advertiser/middleware.ts'), 'utf8');
+  const publicEntries = middleware.slice(middleware.indexOf('const PUBLIC_PATHS'),
+    middleware.indexOf('interface TrustedAdvertiserSession'));
+  assert.ok(!publicEntries.includes('"/advertiser/oauth/complete-profile"'));
+  assert.ok(!publicEntries.includes('"/advertiser/pending-review"'));
 });
 
 test('public advertiser onboarding remains available for new accounts and status is read-only', () => {

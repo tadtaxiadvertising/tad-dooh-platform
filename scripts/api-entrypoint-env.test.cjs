@@ -26,7 +26,19 @@ const fixtures = Object.freeze({
 
 // Only the migration boundary is substituted. The production entrypoint and its
 // set -eu behavior execute unchanged in a real shell. No pnpm executable runs.
-const migrationBoundary = `pnpm() {
+const migrationBoundary = `node() {
+  if [ "$#" -ne 1 ] || [ "\${1-}" != "./scripts/check-supabase-target.cjs" ]; then
+    printf '%s\\n' '[test] unexpected Node command'
+    return 92
+  fi
+  if [ "\${TAD_TEST_PREFLIGHT_FAIL:-}" = "1" ]; then
+    printf '%s\\n' '[test] Supabase target rejected'
+    return 18
+  fi
+  printf '%s\\n' '[test] Supabase target verified'
+  return 0
+}
+pnpm() {
   if [ "$#" -ne 5 ] || [ "\${1-}" != "exec" ] || [ "\${2-}" != "prisma" ] || [ "\${3-}" != "migrate" ] || [ "\${4-}" != "deploy" ] || [ "\${5-}" != "--schema=./prisma/schema.prisma" ]; then
     printf '%s\\n' '[test] unexpected migration command'
     return 91
@@ -127,7 +139,11 @@ for (const [description, environment] of [
 }
 
 test("the real API entrypoint reports missing DIRECT_URL safely after JWT validation", () => {
-  const { status, output } = runEntrypoint({ JWT_SECRET: fixtures.JWT_SECRET });
+  const { status, output } = runEntrypoint({
+    JWT_SECRET: fixtures.JWT_SECRET,
+    DATABASE_URL: fixtures.DATABASE_URL,
+    SUPABASE_URL: fixtures.SUPABASE_URL,
+  });
   assert.equal(status, 1);
   assert.match(output, /\[entrypoint\] JWT_SECRET=SET/);
   assert.match(output, /FATAL: DIRECT_URL is required/);
@@ -136,6 +152,43 @@ test("the real API entrypoint reports missing DIRECT_URL safely after JWT valida
     "SUPABASE_URL",
     "DIRECT_URL",
   ]);
+  assert.equal(output.includes(migrationMarker), false);
+  assertNoNodeStart(output);
+});
+
+test("the real entrypoint rejects missing runtime DATABASE_URL before Prisma preflight", () => {
+  const { status, output } = runEntrypoint({
+    JWT_SECRET: fixtures.JWT_SECRET,
+    SUPABASE_URL: fixtures.SUPABASE_URL,
+    DIRECT_URL: fixtures.DIRECT_URL,
+  });
+  assert.equal(status, 1);
+  assert.match(output, /FATAL: DATABASE_URL is required/);
+  assert.equal(output.includes(migrationMarker), false);
+  assert.doesNotMatch(output, /Applying Prisma migrations/);
+  assertNoNodeStart(output);
+});
+
+test("the real entrypoint rejects missing SUPABASE_URL before Prisma preflight", () => {
+  const { status, output } = runEntrypoint({
+    JWT_SECRET: fixtures.JWT_SECRET,
+    DATABASE_URL: fixtures.DATABASE_URL,
+    DIRECT_URL: fixtures.DIRECT_URL,
+  });
+  assert.equal(status, 1);
+  assert.match(output, /FATAL: SUPABASE_URL is required/);
+  assert.equal(output.includes(migrationMarker), false);
+  assert.doesNotMatch(output, /Applying Prisma migrations/);
+  assertNoNodeStart(output);
+});
+
+test("the real entrypoint rejects target-check failure before any migration", () => {
+  const { status, output } = runEntrypoint({
+    ...fixtures,
+    TAD_TEST_PREFLIGHT_FAIL: "1",
+  });
+  assert.equal(status, 18);
+  assert.match(output, /\[test\] Supabase target rejected/);
   assert.equal(output.includes(migrationMarker), false);
   assertNoNodeStart(output);
 });

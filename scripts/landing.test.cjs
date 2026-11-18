@@ -253,6 +253,17 @@ test('trusted Supabase OAuth identity permits advertiser but not unknown roles',
   });
 });
 
+test('suspended OAuth sessions cannot enter advertiser private routes', async () => {
+  const harness = middlewareHarness({ supabaseUser: {
+    app_metadata: { role: 'ADVERTISER', status: 'SUSPENDED' },
+  } });
+  assert.deepEqual(await harness.run(
+    '/advertiser/dashboard', 'suspended-supabase-cookie', 'oauth',
+  ), {
+    kind: 'redirect', destination: 'http://127.0.0.1:3003/advertiser/login',
+  });
+});
+
 test('Supabase or backend failures never downgrade to unsigned JWT authorization', async () => {
   const token = fixtureToken('ADVERTISER');
   const harness = middlewareHarness({ backendDown: true });

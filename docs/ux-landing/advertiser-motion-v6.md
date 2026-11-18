@@ -27,6 +27,8 @@ runtime dependencies.
 - `CampaignJourney`, `CreativePreview`, `simulatorPricing`: unchanged
   computational contracts and local-first preview behavior.
 
+Simple editorial entrances additionally use native CSS view timelines only where supported; otherwise their text remains visible.
+
 ## Motion behavior
 
 | Context | Intended outcome |

@@ -43,6 +43,20 @@ describe("HealthController master-sync readiness", () => {
     const result = await controller.checkFull();
     expect(result.status).toBe("degraded");
   });
+  it("public /health/full exposes only safe DB flags, never process memory or connection count", async () => {
+    metrics.mockResolvedValue({
+      connected: true,
+      activeConnections: 42,
+      masterSyncViewReady: true,
+    });
+    const response = await controller.checkFull();
+    expect(response.db).toEqual({ connected: true, masterSyncViewReady: true });
+    expect(response).not.toHaveProperty("memory");
+    expect(response).not.toHaveProperty("uptime");
+    expect(response).not.toHaveProperty("node_env");
+    expect(response.db).not.toHaveProperty("activeConnections");
+  });
+
   it("returns minimal HTTP readiness success only when DB and master-sync view pass", async () => {
     metrics.mockResolvedValue({
       connected: true,

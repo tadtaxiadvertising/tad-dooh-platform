@@ -16,6 +16,10 @@
 - Tests Jest: `campaign-pricing.spec.ts` cubre RD$0, RD$1,500, RD$2,500, RD$3,000, RD$5,000, límite de inventario y presupuestos inválidos; `onboarding.service.spec.ts` cubre los códigos de prueba simulados.
 - `scripts/advertiser-offer-local-gate.sh` ejecuta tests Node/Jest, build compartido, API, TS estricto del anunciante y build Next con URL de fixture. No ejecuta consultas a la BD real ni depende de GitHub Actions.
 
+### Flujo alternativo de registro legacy
+
+La ruta pública `POST /advertisers` también resuelve `referralCode` y atribuye `referredBy` en `AdvertisersService.create`. No calcula descuentos directamente, pero una atribución simulada podría participar después en comisiones de referidos. Se aplica la misma exclusión `isSimulated` a este flujo, con prueba dedicada `advertisers-referral.spec.ts`.
+
 ## Resultados observados y limitaciones
 
 Se ejecutaron sobre las **fuentes reales de la rama** 10 escenarios de lógica aislada (0 fallos): 4 casos de verificación por código (sin código, válido, simulado, inexistente) y 6 importes de simulación. Son controles de comportamiento puntuales, no sustituyen los tests Jest ni un build de la aplicación.

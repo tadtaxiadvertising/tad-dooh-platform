@@ -18,6 +18,7 @@ import { AdvertisersService } from "./advertisers.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 import { TenantGuard } from "../auth/guards/tenant.guard";
+import { AllowAdvertiserStatuses } from "../auth/decorators/advertiser-status.decorator";
 import { Throttle } from "@nestjs/throttler";
 
 @Controller("advertisers")
@@ -88,6 +89,7 @@ export class AdvertisersController {
    */
   @Get("session/status")
   @Roles(UserRole.ADVERTISER)
+  @AllowAdvertiserStatuses("ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING")
   @Throttle({ default: { limit: 120, ttl: 60000 } })
   async verifyOAuthStatus(
     @Req() request: { user?: { role?: string; entityId?: string | null; email?: string } },

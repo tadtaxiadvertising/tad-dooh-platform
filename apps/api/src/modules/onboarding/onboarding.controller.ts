@@ -11,6 +11,7 @@ import { OnboardingService } from "./onboarding.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 import { TenantGuard } from "../auth/guards/tenant.guard";
+import { AllowAdvertiserStatuses } from "../auth/decorators/advertiser-status.decorator";
 
 import { OnboardAdvertiserDto } from "./dto/onboard-advertiser.dto";
 import { OnboardAdvertiserQuoteDto } from "./dto/onboard-advertiser-quote.dto";
@@ -44,6 +45,7 @@ export class OnboardingController {
    * Never accepts advertiserId, status, approval or payment details from client.
    */
   @Roles(UserRole.ADVERTISER)
+  @AllowAdvertiserStatuses("PENDING_ONBOARDING", "PENDING_REVIEW")
   @Throttle({ default: { limit: 6, ttl: 60000 } })
   @Post("advertiser/oauth/profile")
   async completeOAuthProfile(

@@ -615,3 +615,167 @@
   .landing :global(.landing-stage-controls input),
   .landing :global(.landing-stage-controls select) { transition: none !important; }
 }
+
+
+/* Advertiser Motion V6 — white editorial canvas. Scoped to the public landing:
+   no global theme changes to onboarding, auth or private advertiser pages. */
+.landing {
+  --ink: #151515;
+  --yellow: #fdcb01;
+  background: #ffffff;
+  color: #171717;
+}
+.landing :global(.landing-header) {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  height: 90px;
+  background: #ffffffed;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: #e5e4df;
+}
+.landing :global(.landing-brand) { color: #161616; }
+.landing :global(.landing-brand > span) { color: #c59b00; }
+.landing :global(.landing-nav) { color: #4e4e4b; font-size: 13px; font-weight: 650; }
+.landing :global(.landing-nav a:hover),
+.landing :global(.landing-footer a:hover) { color: #9c7b00; }
+.landing :global(.landing-access) { color: #151515; border-color: #d1d1c9; background: #f8f8f5; font-weight: 750; }
+.landing :global(.landing-access:hover) { background: #fdcb01; border-color: #fdcb01; }
+.landing :global(.landing-hero) { min-height: calc(100svh - 90px); padding-block: clamp(40px, 5vw, 92px); }
+.landing :global(.landing-eyebrow) { color: #77766d; }
+.landing :global(h1) {
+  color: #141414;
+  font-size: clamp(46px, 5.35vw, 78px);
+  letter-spacing: -.072em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+.landing :global(h1 > span) { color: #ac8700; }
+.landing :global(.landing-lead) { color: #5f5f59; font-size: 15px; line-height: 1.8; }
+.landing :global(.landing-text-link) { color: #242422; }
+.landing :global(.landing-text-link:hover) { color: #9d7a00; }
+.landing :global(.landing-hero-proof) { color: #6f706a; }
+.landing :global(.landing-hero-proof svg) { color: #806600; }
+.landing :global(.landing-hero-steps) { border-color: #deded8; }
+.landing :global(.landing-hero-steps li) { color: #57574f; }
+.landing :global(.landing-hero-steps li > span) { color: #ac8700; }
+.landing :global(.landing-hero-cities > span) { color: #6c6c63; }
+.landing :global(.landing-hero-cities button) { color: #292924; background: #fff; border-color: #c7c7c0; }
+.landing :global(.landing-hero-cities button:hover) { border-color: #b89400; }
+.landing :global(.landing-hero-cities button[aria-pressed="true"]) { background: #fdcb01; color: #141414; border-color: #d0a700; }
+.landing :global(.landing-stage-controls > label),
+.landing :global(.landing-stage-objective) { background: #f5f5f1; border-color: #dcdcD6; color: #3b3b34; }
+.landing :global(.landing-stage-controls input),
+.landing :global(.landing-stage-controls select),
+.landing :global(.landing-stage-objective select) {
+  background: #fff;
+  border-color: #c5c4ba;
+  color: #1a1a18;
+}
+.landing :global(.landing-stage-controls input::placeholder) { color: #7c7b72; }
+.landing :global(.landing-stage-privacy) { color: #72726a; }
+.landing :global(.landing-scene) {
+  border-color: #e2c75a;
+  box-shadow: 0 25px 65px #24221c26;
+}
+.landing :global(.landing-strip) { background: #fdcb01; }
+.landing :global(.landing-strip span) { color: #242119; }
+.landing :global(.landing-story-wrap) {
+  background: #f6f6f2;
+  border: 1px solid #e3e3da;
+  box-shadow: none;
+  margin-top: clamp(50px, 6vw, 85px);
+}
+.landing :global(h2) { color: #171717; }
+.landing :global(h2 span) { color: #987900; }
+.landing :global(.landing-section-heading > p) { color: #60605b; }
+.landing :global(.landing-campaign-panel) {
+  background: linear-gradient(145deg, #f7f6f0, #eeeee7);
+  border: 1px solid #dedbd0;
+  box-shadow: 0 22px 60px #1414140c;
+}
+.landing :global(.landing-panel-copy h3) { color: #161616; }
+.landing :global(.landing-panel-copy .landing-eyebrow) { color: #8c6e00; }
+.landing :global(.landing-panel-copy > p:not(.landing-eyebrow)),
+.landing :global(.landing-panel-copy li) { color: #57574f; }
+.landing :global(.landing-panel-copy li svg) { color: #a27e00; }
+.landing :global(.landing-signup) { color: #876b00; }
+.landing :global(.landing-button-light) { background: #181818; color: #fff; }
+.landing :global(.landing-button-light:hover) { background: #333; }
+.landing :global(.landing-preview) { box-shadow: 0 16px 42px #1010100b; background: #fff; border-color: #e5e3d9; }
+.landing :global(.landing-steps article) { background: #f7f7f3; border-color: #e1e1dc; }
+.landing :global(.landing-steps h3) { color: #1b1b1b; }
+.landing :global(.landing-steps p) { color: #63635d; }
+.landing :global(.landing-steps article > div) { color: #9c7b00; }
+.landing :global(.landing-steps article:hover) { border-color: #c7a100; }
+.landing :global(.landing-faq) { border-color: #e0e0db; }
+.landing :global(.landing-faq details) { border-color: #deded8; }
+.landing :global(.landing-faq summary) { color: #171717; }
+.landing :global(.landing-faq details p),
+.landing :global(.landing-faq > div > p:last-child) { color: #686862; }
+.landing :global(.landing-faq summary > span) { color: #a27e00; transition: transform 180ms ease; }
+.landing :global(.landing-final) {
+  background: radial-gradient(circle at 90% 12%, #fdcb012e, transparent 55%), #141414;
+  color: #fff;
+  box-shadow: 0 22px 75px #16161619;
+}
+.landing :global(.landing-final h2) { color: #fff; }
+.landing :global(.landing-final h2 span) { color: #fdcb01; }
+.landing :global(.landing-footer) { border-color: #deded8; }
+.landing :global(.landing-footer > p),
+.landing :global(.landing-footer > small),
+.landing :global(.landing-footer nav) { color: #676760; }
+.landing :global(.landing-mobile-menu summary) { color: #1b1b1b; }
+.landing :global(.landing-mobile-menu > nav) { background: #fff; border-color: #d3b12e; box-shadow: 0 22px 40px #0002; }
+.landing :global(.landing-mobile-menu > nav a) { color: #242424; }
+.landing :global(.landing-mobile-menu > nav a:hover) { color: #6e5700; background: #fff6cf; }
+@media (prefers-reduced-motion: no-preference) {
+  .landing :global(.landing-hero-copy > .landing-eyebrow),
+  .landing :global(.landing-hero-copy > h1),
+  .landing :global(.landing-hero-copy > .landing-lead),
+  .landing :global(.landing-hero-copy > .landing-hero-actions) {
+    animation: advertiserHeroIn 700ms both cubic-bezier(.2,.75,.25,1);
+  }
+  .landing :global(.landing-hero-copy > h1) { animation-delay: 90ms; }
+  .landing :global(.landing-hero-copy > .landing-lead) { animation-delay: 180ms; }
+  .landing :global(.landing-hero-copy > .landing-hero-actions) { animation-delay: 270ms; }
+}
+@keyframes advertiserHeroIn {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@media (max-width: 760px) {
+  .landing :global(.landing-header) { height: 78px; }
+  .landing :global(.landing-hero) { min-height: auto; padding-block: 48px 62px; }
+  .landing :global(h1) { font-size: clamp(40px, 9.2vw, 64px); letter-spacing: -.062em; }
+  .landing :global(.landing-hero-cities) { margin-top: 20px; }
+}
+@media (max-width: 380px) {
+  .landing :global(h1) { font-size: clamp(37px, 10vw, 44px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing :global(.landing-hero-copy > *) { animation: none !important; }
+  .landing :global(.landing-faq summary > span) { transition: none !important; }
+}
+
+
+/* Progressive editorial reveals — native scroll timeline when supported.
+   Older engines keep the content fully visible. No JavaScript scroll hijacking. */
+@keyframes advertiserSectionReveal {
+  from { opacity: .45; transform: translate3d(0, 24px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .landing :global(.landing-section-heading),
+    .landing :global(.landing-steps article),
+    .landing :global(.landing-faq > div:first-child) {
+      animation-name: advertiserSectionReveal;
+      animation-duration: 1ms;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 28%;
+    }
+  }
+}

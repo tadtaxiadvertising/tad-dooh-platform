@@ -212,6 +212,18 @@ async function main() {
         /TAD Taxi Advertising/i, 'The accessible brand name must include its visible desktop tagline.');
     });
 
+    await check('Advertiser white motion narrative has accessible reduced-motion chapters', async () => {
+      const story = page.locator('#motion-story');
+      assert.equal(await story.count(), 1, 'The scroll story must have one anchor.');
+      assert.equal(await story.evaluate(element => getComputedStyle(element).backgroundColor),
+        'rgb(255, 255, 255)', 'The narrative should sit on the white page canvas.');
+      assert.equal(await story.locator('article').count(), 3, 'All three chapters must remain in the DOM.');
+      assert.equal(await story.locator('article').first().isVisible(), true,
+        'Reduced-motion visitors must receive a readable static sequence.');
+      assert.equal(await story.locator('a[href="#creative-preview-title"]').last().isVisible(), true,
+        'The static sequence must retain its CTA.');
+    });
+
     await check('Fresh visitor may reject optional cookies', async () => {
       const policy = page.getByRole('link', { name: 'Ver política e inventario', exact: true });
       assert.match(await policy.evaluate(element => getComputedStyle(element).textDecorationLine),

@@ -35,6 +35,7 @@ import {
 } from "../advertiser/simulatorPricing";
 import CampaignJourney from "./CampaignJourney";
 import CreativePreview from "./CreativePreview";
+import TaxiScrollStory from "./TaxiScrollStory";
 import CityScene from "./CityScene";
 import LandingAnalytics from "./LandingAnalytics";
 import styles from "./landing.module.css";
@@ -214,7 +215,7 @@ export default function LandingPage() {
               </a>
               <a
                 className="landing-text-link"
-                href="#recorrido-campana"
+                href="#motion-story"
                 onClick={() => cta("campaign_story")}
               >
                 Ver cómo funciona <ArrowRight size={17} aria-hidden="true" />
@@ -333,6 +334,7 @@ export default function LandingPage() {
             </span>
           </div>
         </div>
+        <TaxiScrollStory city={city} brandName={brandName} />
         <div className="landing-wrap"><CreativePreview /></div>
         <div id="como-funciona" className="landing-wrap landing-story-wrap">
           <CampaignJourney

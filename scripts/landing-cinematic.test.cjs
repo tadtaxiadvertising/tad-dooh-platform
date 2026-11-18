@@ -91,7 +91,7 @@ test("hero previews illustrate meaningful selections without changing commercial
   for (const objective of ["awareness", "launch", "local"]) {
     assert.match(scene, new RegExp(objective + ":"));
   }
-  assert.match(content, /en primera fila/);
+  assert.match(content, /Va a su encuentro\./);
   assert.match(advertiserCss, /landing-stage-objective select:focus-visible/);
   assert.match(driver, /selected\.journey\.map/);
   for (const phrase of ["Campañas elegibles", "Venta aprobada", "Conductor activado"]) {

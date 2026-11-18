@@ -261,12 +261,26 @@ test('pending-review status page requires verified identity and cannot leak into
   });
 });
 
+test('pending Supabase OAuth advertiser is also routed to verified status screen', async () => {
+  const token = 'oauth-pending-fixture';
+  const harness = middlewareHarness({ supabaseUser: {
+    app_metadata: { role: 'ADVERTISER', status: 'PENDING_REVIEW' },
+  } });
+  assert.deepEqual(await harness.run('/advertiser/dashboard', token, 'oauth'), {
+    kind: 'redirect',
+    destination: 'http://127.0.0.1:3003/advertiser/pending-review',
+  });
+  assert.equal((await harness.run('/advertiser/pending-review', token, 'oauth')).kind, 'next');
+});
+
 test('public advertiser onboarding remains available for new accounts and status is read-only', () => {
   const screen = fs.readFileSync(path.join(
     __dirname, '../apps/advertiser/pages/advertiser/pending-review.tsx'), 'utf8');
   const middleware = fs.readFileSync(path.join(
     __dirname, '../apps/advertiser/middleware.ts'), 'utf8');
-  assert.ok(!middleware.match(/PUBLIC_PATHS[\\s\\S]{0,350}["']\\/advertiser\\/pending-review/),
+  const publicPaths = middleware.slice(middleware.indexOf("const PUBLIC_PATHS"),
+    middleware.indexOf("interface TrustedAdvertiserSession"));
+  assert.ok(!publicPaths.includes('"/advertiser/pending-review"'),
     'The pending-review screen must not be publicly bypassable');
   assert.ok(middleware.includes('"/advertiser/onboarding"'),
     'New advertisers retain access to signup');

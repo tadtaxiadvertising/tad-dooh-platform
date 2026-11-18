@@ -38,6 +38,7 @@ describe("CampaignService pending-review device assignment gate", () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     findAdvertiser.mockResolvedValue({ companyName: "Marca real" });
     campaignCount.mockResolvedValue(0);
     createRecord.mockImplementation(async ({ data }) => ({

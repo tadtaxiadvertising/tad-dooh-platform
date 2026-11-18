@@ -71,6 +71,21 @@ export default function RequestsPage() {
     }
   };
 
+  const handleSaveNotes = async (id: string) => {
+    setProcessing(true);
+    try {
+      await updatePortalRequest(id, { adminNotes });
+      loadRequests();
+      setSelectedRequest(null);
+      setAdminNotes("");
+      alert("Notas guardadas sin aprobar ni ejecutar la solicitud.");
+    } catch (err: unknown) {
+      alert("Error: " + (getErrorMessage(err) || "No se pudieron guardar las notas"));
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const filteredRequests = requests.filter((r) => {
     const isOfPortalType =
       portalType === "ADVERTISER" ? !!r.advertiserId : !!r.driverId;
@@ -246,7 +261,10 @@ export default function RequestsPage() {
 
                 <div className="flex items-center gap-4">
                   <button
-                    onClick={() => setSelectedRequest(req)}
+                    onClick={() => {
+                      setSelectedRequest(req);
+                      setAdminNotes(req.adminNotes || "");
+                    }}
                     className="px-8 py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-tad-yellow transition-all"
                   >
                     Revisar Detalles
@@ -413,6 +431,15 @@ export default function RequestsPage() {
                   Aprobar solicitud
                 </button>
               </div>
+              {!canApprove(selectedRequest) && selectedRequest.status === "PENDING" && (
+                <button
+                  disabled={processing}
+                  onClick={() => handleSaveNotes(selectedRequest.id)}
+                  className="w-full rounded-2xl border border-tad-yellow/30 bg-tad-yellow/10 px-5 py-3 text-xs font-bold text-tad-yellow hover:bg-tad-yellow/20 disabled:opacity-30"
+                >
+                  Guardar notas sin aprobar
+                </button>
+              )}
               {!canApprove(selectedRequest) && selectedRequest.status === "PENDING" && (
                 <p role="alert" className="text-amber-300 text-xs font-medium relative z-10">
                   Aprobación automática suspendida para esta solicitud: requiere revisión

@@ -318,6 +318,17 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     expect(getUser).not.toHaveBeenCalled();
   });
 
+  it("rejects otherwise trusted legacy claims without an email", async () => {
+    const { email: _omitted, ...withoutEmail } = legacyPayload;
+    const token = jwt.sign(withoutEmail, secret, { expiresIn: "1h" });
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(verifyAdvertiserSession).toHaveBeenCalledWith(token);
+    expect(request.user).toBeUndefined();
+  });
+
   it("does not double-verify legacy sessions on public routes", async () => {
     const token = jwt.sign(legacyPayload, secret, { expiresIn: "1h" });
     const { context, request } = contextFor(token, true);

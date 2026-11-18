@@ -30,7 +30,7 @@ The normal official Docker entrypoint remains unchanged and uses its own existin
 
 ## Required operator preconditions
 
-- **Never approve just because the migration script exits correctly.** First confirm authoritative runtime DB identity: the connected `us-west-2` Supabase project had missing `commissions`, `settlement_batches` and `portal_requests` despite 23 Prisma history rows; it is **not confirmed** to be EasyPanel's real production target.
+- **Never approve just because the migration script exits correctly.** Read-only verification on 2026-11-18 compared all 52 Prisma models with the connected `us-west-2` Supabase project's `public` schema: **29 mapped tables exist and 23 are missing**, including `commissions`, `commission_ledger`, `settlement_batches`, `portal_requests`, `users` and `payment_intents`, although all 23 repository Prisma migrations appear marked applied. This project is **not confirmed** as EasyPanel's actual production database. `migrate deploy` alone cannot reconstruct missing previously-applied objects.
 - Review every pending SQL migration for destructive operations; plan additive **EXPAND → MIGRATE → CONTRACT** steps. Take a verified backup/snapshot and rehearse on staging with representative data.
 - Ensure the previously exposed database credential has been rotated (#244) and both runtime/migration URLs updated in a secure secrets store. Do not paste URLs or passwords into issue comments or shell commands.
 - Run `pnpm exec prisma migrate status --schema=./prisma/schema.prisma` from `apps/api` on the verified staging connection (using the correct controlled environment). Review drift before applying.

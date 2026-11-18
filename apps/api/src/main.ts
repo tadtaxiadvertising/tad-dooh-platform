@@ -52,6 +52,11 @@ async function bootstrap() {
         { path: "api/health", method: RequestMethod.GET },
         { path: "api/v1", method: RequestMethod.GET },
         { path: "health", method: RequestMethod.GET },
+        // Explicit exclusions: "health" does not match GET /health/full.
+        // Do not expose /health/db to unauthenticated root probes; it includes
+        // operational connection counts and remains under /api/v1.
+        { path: "health/full", method: RequestMethod.GET },
+        { path: "health/ready", method: RequestMethod.GET },
       ],
     });
 

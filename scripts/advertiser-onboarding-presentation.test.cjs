@@ -193,7 +193,16 @@ test('simulator keeps live model quotes, deliberate production opt-in and existi
       label.startsWith('Pantallas (') &&
       label.includes(`RD$${pricing.SCREEN_MONTHLY_RATE.toLocaleString()}`)),
     'Onboarding must display the same unit rate used to calculate the subtotal');
-    assert.ok(page.html.includes('conciliación'), 'Quote must disclose pending commercial reconciliation');
+    // TAD commercial rate is confirmed: RD$2,500 base and a 40% discount
+    // only after a real driver's code is verified by the server.
+    assert.ok(page.html.includes('La tarifa base es RD$2,500'), 'Display the confirmed base rate');
+    assert.ok(page.html.includes('sin ITBIS'), 'Disclose pre-tax amounts');
+    assert.ok(page.html.includes('verificación del código por el servidor'),
+      'Driver discount may not be granted from a URL alone');
+    assert.ok(page.html.includes('La producción creativa opcional'),
+      'Creative production must be quoted separately');
+    assert.ok(page.html.includes('no contrata, cobra ni reserva pantallas'),
+      'An illustrative simulation cannot activate a contract or charge');
     assert.ok(page.html.includes('ilustrativ'), 'Quote must remain educational');
   };
   let page = render(simulator, props());

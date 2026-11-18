@@ -40,3 +40,12 @@ La tarifa histórica de RD$1,500 aparece también en reportes, BI, facturación 
 La duración comercial del descuento (toda la campaña, primera campaña o primer mes) tampoco se ha cerrado explícitamente. Hasta su confirmación, no automatizar cargos con reglas deducidas de un modelo ilustrativo. Todas las campañas de nuevo onboarding permanecen en estado pendiente de revisión/pago.
 
 **Estado:** implementado en rama, pendiente de verificación integral y de aprobación de merge.
+
+
+## Regresión de contrato editorial tras merge #285/#286
+
+El test de renderizado SSR `scripts/advertiser-onboarding-presentation.test.cjs` seguía exigiendo la cadena `conciliación` en el componente `SimulatorStep`. Desde #285 el texto visible explica la **tarifa comercial confirmada RD$2,500**, la exigencia de verificación del código del conductor, la separación de creatividad y el carácter no contractual del simulador. El componente **ya no incluye** la cadena anterior. Por tanto, esa aserción antigua habría rechazado el HTML correcto.
+
+En la rama de corrección, el test exige cinco afirmaciones presentes en el componente real: tarifa base, `sin ITBIS`, verificación por servidor, producción opcional y ausencia de contratación/cobro automático. Se verificó la existencia de cada cadena en el componente GitHub actualizado, su presencia como aserción y la sintaxis JavaScript de la prueba (**5/5 comprobaciones de contrato PASS**). No se ejecutó React SSR/Jest/TS completo: falta checkout con dependencias; no marcar el test E2E como aprobado.
+
+**No se modifica el cálculo, API, tarifa, descuento, ledger, facturación ni el diseño visual.**

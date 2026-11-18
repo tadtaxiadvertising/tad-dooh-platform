@@ -73,7 +73,7 @@ export class AdvertisersController {
   @Throttle({ default: { limit: 120, ttl: 60000 } })
   @Get("session")
   async verifySession(@Headers("authorization") authorization?: string) {
-    const match = /^Bearer ([^\\s]+)$/.exec(authorization || "");
+    const match = /^Bearer ([^\s]+)$/.exec(authorization || "");
     if (!match) {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
     }

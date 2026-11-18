@@ -26,6 +26,7 @@ describe("OnboardingController security boundary", () => {
   const tenantGuard = new TenantGuard();
   const service = {
     onboardAdvertiser: jest.fn(),
+    quoteAdvertiser: jest.fn(),
     completeOnboarding: jest.fn(),
   };
   const controller = new OnboardingController(
@@ -33,6 +34,23 @@ describe("OnboardingController security boundary", () => {
   );
 
   beforeEach(() => jest.clearAllMocks());
+
+  it("exposes a public read-only quote delegated to server verification", async () => {
+    const handler = OnboardingController.prototype.quote;
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, handler)).toBe(true);
+    service.quoteAdvertiser.mockResolvedValue({
+      baseMonthlyScreenRate: 2500,
+      effectiveMonthlyScreenRate: 1500,
+      discountPercent: 40,
+    });
+    const request = {
+      expectedScreens: 1, campaignMonths: 1, includeProduction: false,
+      referralCode: "DRIVER_TEST_1",
+    };
+    const response = await controller.quote(request);
+    expect(service.quoteAdvertiser).toHaveBeenCalledWith(request);
+    expect(response.discountPercent).toBe(40);
+  });
 
   it("keeps initial registration public", () => {
     expect(

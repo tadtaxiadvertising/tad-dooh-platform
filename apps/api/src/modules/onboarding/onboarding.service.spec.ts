@@ -4,6 +4,7 @@ import { OnboardingService } from "./onboarding.service";
 describe("OnboardingService password safety", () => {
   const prisma = {
     advertiser: { findUnique: jest.fn() },
+    driver: { findUnique: jest.fn() },
     $transaction: jest.fn(),
   };
   const createUser = jest.fn();
@@ -176,5 +177,134 @@ describe("OnboardingService password safety", () => {
       { status: 500 },
     );
     expect(deleteUser).toHaveBeenCalledWith("auth-created-1");
+  });
+});
+
+
+describe("OnboardingService verified driver referral pricing", () => {
+  const prisma = {
+    advertiser: { findUnique: jest.fn() },
+    driver: { findUnique: jest.fn() },
+    $transaction: jest.fn(),
+  };
+  const createUser = jest.fn();
+  const deleteUser = jest.fn();
+  const supabase = {
+    getClient: jest.fn(() => ({ auth: { admin: { createUser, deleteUser } } })),
+  };
+  const service = new OnboardingService(prisma as never, supabase as never);
+  const base = {
+    name: "Test",
+    companyName: "Company",
+    email: "driver-code-test@example.com",
+    phone: "8095550101",
+    password: "password123",
+    budget: 1, // Client must never be able to set the financial price.
+    expectedScreens: 3,
+    campaignMonths: 2,
+    includeProduction: true,
+    targetCity: "Santiago",
+  };
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    prisma.advertiser.findUnique.mockResolvedValue(null);
+    prisma.driver.findUnique.mockResolvedValue(null);
+    createUser.mockResolvedValue({
+      data: { user: { id: "new-auth-1" } },
+      error: null,
+    });
+    deleteUser.mockResolvedValue({ error: null });
+  });
+
+  it("returns RD$2500 base with no referral; does not provision an identity", async () => {
+    const quote = await service.quoteAdvertiser({
+      expectedScreens: 3,
+      campaignMonths: 2,
+      includeProduction: false,
+    });
+    expect(quote.baseMonthlyScreenRate).toBe(2500);
+    expect(quote.discountAmount).toBe(0);
+    expect(quote.subtotal).toBe(15000);
+    expect(prisma.driver.findUnique).not.toHaveBeenCalled();
+    expect(createUser).not.toHaveBeenCalled();
+  });
+
+  it("validates a driver code in DB and discounts only the screens by 40%", async () => {
+    prisma.driver.findUnique.mockResolvedValue({ id: "verified-driver-1" });
+    const quote = await service.quoteAdvertiser({
+      expectedScreens: 3, campaignMonths: 2, includeProduction: true,
+      referralCode: "DRIVER_TEST_1",
+    });
+    expect(prisma.driver.findUnique).toHaveBeenCalledWith({
+      where: { referralCode: "DRIVER_TEST_1" }, select: { id: true },
+    });
+    expect(quote.discountPercent).toBe(40);
+    expect(quote.effectiveMonthlyScreenRate).toBe(1500);
+    expect(quote.discountAmount).toBe(6000);
+    expect(quote.productionFee).toBe(2500);
+    expect(quote.subtotal).toBe(11500);
+    expect(createUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects unknown codes before creating Auth identities or campaigns", async () => {
+    await expect(service.onboardAdvertiser({
+      ...base, referralCode: "unknown-driver",
+    })).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.driver.findUnique).toHaveBeenCalled();
+    expect(createUser).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("persists verified attribution and recalculated campaign budget, not client budget", async () => {
+    prisma.driver.findUnique.mockResolvedValue({ id: "verified-driver-1" });
+    const tx = {
+      advertiser: { create: jest.fn().mockResolvedValue({
+        id: "adv-new", companyName: "Company",
+      }) },
+      campaign: { create: jest.fn().mockResolvedValue({ id: "camp-new" }) },
+      video: { create: jest.fn() },
+    };
+    prisma.$transaction.mockImplementation(async (callback: (tx: unknown) => unknown) =>
+      callback(tx));
+    const result = await service.onboardAdvertiser({
+      ...base, referralCode: "DRIVER_TEST_1",
+    });
+    expect(tx.advertiser.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "PENDING_REVIEW",
+          referredBy: "verified-driver-1",
+        }),
+      }),
+    );
+    expect(tx.campaign.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          budget: 11500,
+          campaignMonths: 2,
+          includeProduction: true,
+          status: "PENDING_PAYMENT",
+        }),
+      }),
+    );
+    expect(result).toEqual(expect.objectContaining({
+      advertiserId: "adv-new",
+      campaignId: "camp-new",
+      quote: expect.objectContaining({
+        subtotal: 11500, discountPercent: 40,
+      }),
+    }));
+  });
+
+  it("a spoofed client discount flag never makes an unverified code eligible", async () => {
+    const quote = await service.quoteAdvertiser({
+      expectedScreens: 1,
+      campaignMonths: 1,
+      includeProduction: false,
+      verifiedDriverCode: true,
+    } as never);
+    expect(quote.verifiedDriverCode).toBe(false);
+    expect(quote.subtotal).toBe(2500);
   });
 });

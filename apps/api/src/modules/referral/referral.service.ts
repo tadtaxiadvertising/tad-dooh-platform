@@ -16,7 +16,7 @@ export class ReferralService {
     if (!driver) throw new NotFoundException("Driver not found");
 
     const code = driver.referralCode;
-    const url = `https://tad.anunciante.ibusiness.com.do/register?ref=${code}`;
+    const url = `https://tad.anunciante.ibusiness.com.do/advertiser/onboarding?ref=${code}`;
 
     return {
       driverId,
@@ -95,7 +95,7 @@ export class ReferralService {
     }
 
     const code = driver.referralCode;
-    const advertiserUrl = `https://tad.anunciante.ibusiness.com.do/register?ref=${code}`;
+    const advertiserUrl = `https://tad.anunciante.ibusiness.com.do/advertiser/onboarding?ref=${code}`;
     const driverUrl = `https://tad.driver.ibusiness.com.do/onboarding?ref=${code}`;
 
     return {

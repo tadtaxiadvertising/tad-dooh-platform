@@ -225,3 +225,41 @@ test('simulator keeps live model quotes, deliberate production opt-in and existi
   assert.equal(next, 1);
   assert.equal(prev, 1);
 });
+
+
+test('driver code discount appears only after server quote verification', () => {
+  const impact = loadSource(path.join(ROOT, 'packages/impact-calculator/index.ts'));
+  const config = { screens: 3, months: 2, frequencySeconds: 30, includeProduction: true };
+  const offer = impact.calculateAdvertiserOffer({
+    screens: config.screens, months: config.months,
+    includeProduction: true, verifiedDriverCode: true,
+  });
+  let changedCode = null;
+  const props = {
+    config, onChange() {}, onNext() {}, onPrev() {},
+    referralCode: 'DRIVER_TEST_1',
+    onReferralCodeChange(code) { changedCode = code; },
+  };
+  const pending = render(simulator, {
+    ...props, verifiedOffer: offer, quoteStatus: 'checking',
+  });
+  const amountOf = page => text(page.find('output',
+    node => node['aria-label'] === 'Presupuesto ilustrativo').children);
+  assert.equal(amountOf(pending), pricing.estimateCampaign(config).total.toLocaleString(),
+    'The offer must not be displayed while verification is pending');
+  const verified = render(simulator, {
+    ...props, verifiedOffer: offer, quoteStatus: 'verified',
+  });
+  assert.equal(amountOf(verified), offer.subtotal.toLocaleString());
+  assert.ok(verified.html.includes('40 %'));
+  assert.ok(verified.html.includes('6,000'), 'The verified discount must be itemized');
+  assert.ok(verified.html.includes('Código verificado'));
+  const invalid = render(simulator, {
+    ...props, verifiedOffer: null, quoteStatus: 'invalid',
+  });
+  assert.equal(amountOf(invalid), pricing.estimateCampaign(config).total.toLocaleString());
+  assert.ok(invalid.html.includes('Código no válido'));
+  verified.find('input', node => node.id === 'advertiser-driver-code')
+    .onChange({ target: { value: 'DRIVER_TEST_2' } });
+  assert.equal(changedCode, 'DRIVER_TEST_2');
+});

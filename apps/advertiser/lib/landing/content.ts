@@ -69,6 +69,10 @@ export const ROLE_FAQS: Record<
 > = {
   advertiser: [
     [
+      "¿Cuánto cuesta una pantalla y qué descuento ofrece el conductor?",
+      "La tarifa base es RD$2,500 por pantalla y mes, antes de impuestos. Un código válido de conductor TAD aplica un descuento del 40 % al importe de pantallas: RD$1,500 por pantalla y mes. El código se valida en el servidor durante el registro; la producción creativa opcional se cotiza por separado.",
+    ],
+    [
       "¿Este presupuesto ya contrata una campaña?",
       "No. El ejemplo ayuda a preparar una idea. Las pantallas, condiciones, contenido y disponibilidad se confirman durante la revisión en el portal autorizado.",
     ],

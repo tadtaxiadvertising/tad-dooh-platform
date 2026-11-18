@@ -10,6 +10,9 @@ import {
   IsInt,
   IsObject,
   ValidateNested,
+  IsBoolean,
+  Matches,
+  Max,
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -54,6 +57,7 @@ export class OnboardAdvertiserDto {
 
   @IsInt()
   @Min(1)
+  @Max(100)
   expectedScreens: number;
 
   @IsString()
@@ -62,11 +66,18 @@ export class OnboardAdvertiserDto {
 
   @IsInt()
   @Min(1)
+  @Max(12)
   @IsOptional()
   campaignMonths?: number;
 
+  @IsBoolean()
   @IsOptional()
   includeProduction?: boolean;
+
+  @IsString()
+  @Matches(/^[A-Za-z0-9_-]{1,64}$/)
+  @IsOptional()
+  referralCode?: string;
 
   @IsObject()
   @IsOptional()

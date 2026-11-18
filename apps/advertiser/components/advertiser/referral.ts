@@ -13,7 +13,9 @@ export function captureReferralCode(): string | null {
     if (refs.length > 0) {
       if (refs.length !== 1 || !SAFE_CODE.test(refs[0])) return null;
       cachedReferralCode = refs[0];
-      sessionStorage.setItem(REFERRAL_STORAGE_KEY, refs[0]);
+      try { sessionStorage.setItem(REFERRAL_STORAGE_KEY, refs[0]); } catch {
+        /* Storage disabled: keep the code for this browser session in memory. */
+      }
       return refs[0];
     }
     const candidate = cachedReferralCode || sessionStorage.getItem(REFERRAL_STORAGE_KEY);

@@ -97,9 +97,10 @@ export class AdvertisersService {
     if (data.referralCode) {
       const driver = await this.prisma.driver.findUnique({
         where: { referralCode: data.referralCode },
-        select: { id: true },
+        select: { id: true, isSimulated: true },
       });
-      if (driver) {
+      // Do not attribute potential paid referrals to internal test drivers.
+      if (driver && !driver.isSimulated) {
         referredByDriverId = driver.id;
         this.logger.log(
           `🔗 Advertiser ${data.companyName} referred by Driver ${driver.id}`,

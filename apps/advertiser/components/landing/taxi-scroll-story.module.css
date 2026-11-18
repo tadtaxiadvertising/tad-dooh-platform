@@ -69,3 +69,34 @@
 .section:not([data-motion-ready="true"]) .staticPicture { margin:16px 0; display:grid; place-items:center; min-height:155px; border-radius:14px; background:#f6d02a; font-size:clamp(22px,5vw,45px); font-weight:900; letter-spacing:-.05em; overflow-wrap:anywhere; text-align:center; padding:10px; }
 .section:not([data-motion-ready="true"]) .staticCard h3 { font-size:clamp(21px,4.4vw,30px); line-height:1.2; letter-spacing:-.03em; margin:15px 0 10px; }
 .section:not([data-motion-ready="true"]) .staticCard p { color:#65655f; font-size:13px; line-height:1.7; margin:0; }
+
+/* Stabilization: fixed nav must not occlude sticky content or anchor targets. */
+.section { scroll-margin-top: 90px; }
+.sticky { top: 90px; height: calc(100svh - 90px); min-height: 0; }
+/* Screen-reader chapters are always available when the animated stage is shown.
+   Do not hide this content using display:none, opacity:0 or aria-hidden. */
+.accessibleSummary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+}
+.words h2 em, .staticSequence h2 em { color: #806300; }
+.chapterNumber { color: #765d00; }
+.staticCard > span { color: #765d00; }
+.reportHeader small { color: #66665f; }
+.staticPicture {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: center;
+  padding: 12px;
+}
+@media (max-width: 900px) {
+  .section { scroll-margin-top: 78px; }
+}

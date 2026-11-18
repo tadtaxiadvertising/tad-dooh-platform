@@ -9,6 +9,7 @@ import {
   BadRequestException,
   UnauthorizedException,
   Headers,
+  Req,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -78,6 +79,20 @@ export class AdvertisersController {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
     }
     return this.advertisersService.verifyAdvertiserSession(match[1]);
+  }
+
+  /**
+   * OAuth-only, trusted-identity account status. The global SupabaseAuthGuard
+   * verifies the bearer session; advertiserId and role are never accepted in
+   * route params or request body. Must appear BEFORE dynamic /:id routes.
+   */
+  @Get("session/status")
+  @Roles(UserRole.ADVERTISER)
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
+  async verifyOAuthStatus(
+    @Req() request: { user?: { role?: string; entityId?: string | null; email?: string } },
+  ) {
+    return this.advertisersService.verifyOAuthAdvertiserStatus(request.user || {});
   }
 
   /**

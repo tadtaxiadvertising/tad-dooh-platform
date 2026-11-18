@@ -48,7 +48,7 @@ test("advertiser-only passes with DNS, HTTPS and V6 fingerprint without other se
 
 for (const [name, options, phrase] of [
   ["older public HTML", { releaseStatus: 2 }, /HTML anterior o no reconocido/],
-  ["transport or HTTP error", { releaseStatus: 3 }, /No se pudo verificar la versión/],
+  ["transport or HTTP error", { releaseStatus: 3 }, /No se pudo verificar la versión pública/],
   ["missing Node", { withNode: false }, /Node.js es obligatorio/],
   ["missing curl", { withCurl: false }, /curl es obligatorio/],
   ["missing probe file", { withProbe: false }, /Falta scripts\/advertiser-release-drift/],

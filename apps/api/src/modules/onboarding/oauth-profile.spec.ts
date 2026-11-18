@@ -65,6 +65,29 @@ describe("Verified OAuth advertiser profile completion (no account creation)", (
     expect(createAuthUser).not.toHaveBeenCalled();
   });
 
+  it("never honors caller-provided approval, advertiser ID or financial fields", async () => {
+    const hostile = {
+      ...form,
+      advertiserId: "other-advertiser",
+      status: "ACTIVE",
+      role: "ADMIN",
+      budget: 0,
+      referredBy: "driver-fixture",
+    };
+    await expect(service.completeOAuthAdvertiserProfile(identity, hostile))
+      .resolves.toMatchObject({ status: "PENDING_REVIEW" });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: "advertiser-1", status: "PENDING_ONBOARDING" },
+      data: {
+        companyName: "Compañía Ejemplo",
+        contactName: "María Pérez",
+        phone: "+1 809 555 0100",
+        status: "PENDING_REVIEW",
+      },
+    });
+    expect(createAuthUser).not.toHaveBeenCalled();
+  });
+
   it("is idempotent: a submitted profile is not overwritten by retries", async () => {
     findUnique.mockResolvedValue({
       id: "advertiser-1", email: "owner@example.test",

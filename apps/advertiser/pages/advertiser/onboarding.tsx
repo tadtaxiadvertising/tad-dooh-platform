@@ -264,7 +264,10 @@ export default function AdvertiserOnboarding() {
             onNext={nextStep}
             onPrev={prevStep}
             referralCode={referralCode}
-            onReferralCodeChange={setReferralCode}
+            onReferralCodeChange={(code) => {
+              setReferralCode(code);
+              if (!code) clearReferralCode();
+            }}
             verifiedOffer={verifiedOffer}
             quoteStatus={effectiveQuoteStatus}
           />

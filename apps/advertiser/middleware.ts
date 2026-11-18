@@ -9,6 +9,7 @@ import { createServerClient } from "@supabase/ssr";
 const LOGIN_PATH = "/advertiser/login";
 const DASHBOARD_PATH = "/advertiser/dashboard";
 const PENDING_REVIEW_PATH = "/advertiser/pending-review";
+const OAUTH_PROFILE_PATH = "/advertiser/oauth/complete-profile";
 const EXPECTED_ROLE = "ADVERTISER";
 const PUBLIC_PATHS = new Set([
   LOGIN_PATH,
@@ -80,7 +81,7 @@ async function verifyOAuthAdvertiserStatus(
       !data || typeof data !== "object" ||
       !("role" in data) || data.role !== EXPECTED_ROLE ||
       !("status" in data) ||
-      !["ACTIVE", "PENDING_REVIEW"].includes(String(data.status)) ||
+      !["ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING"].includes(String(data.status)) ||
       !("advertiserId" in data) || typeof data.advertiserId !== "string" ||
       !data.advertiserId
     ) return null;
@@ -235,6 +236,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
   }
 
+  if (session.status === "PENDING_ONBOARDING") {
+    // Identity exists through Supabase Google OAuth. Complete that existing
+    // profile with a protected API update; never return to public signup.
+    if (pathname === OAUTH_PROFILE_PATH) return response;
+    return NextResponse.redirect(new URL(OAUTH_PROFILE_PATH, request.url));
+  }
+
   if (session.status === "PENDING_REVIEW") {
     // This account already exists. Never redirect it to the PUBLIC
     // registration form, which would attempt to create it a second time.
@@ -243,7 +251,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // A newly approved advertiser should not remain on the pending screen.
-  if (pathname === PENDING_REVIEW_PATH) {
+  if (pathname === PENDING_REVIEW_PATH || pathname === OAUTH_PROFILE_PATH) {
     return NextResponse.redirect(new URL(DASHBOARD_PATH, request.url));
   }
 

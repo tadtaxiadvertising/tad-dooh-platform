@@ -66,6 +66,7 @@ node --test \
   scripts/advertiser-release-gate.test.cjs \
   scripts/advertiser-deployment-check.test.cjs \
   scripts/advertiser-standalone-assets.test.cjs \
+  scripts/advertiser-estimate-pricing.test.cjs \
   scripts/driver-landing.test.cjs \
   scripts/driver-preview-arithmetic.test.cjs \
   scripts/advertiser-onboarding-presentation.test.cjs \

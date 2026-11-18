@@ -44,6 +44,7 @@ pnpm --filter api exec jest --runInBand \
   src/modules/onboarding/oauth-profile.spec.ts \
   src/modules/advertisers/advertisers-login-status.spec.ts \
   src/modules/auth/guards/supabase-auth.guard.spec.ts \
+  src/modules/auth/guards/advertiser-account-status.guard.spec.ts \
   src/modules/onboarding/onboarding.service.spec.ts \
   src/modules/onboarding/onboarding.controller.spec.ts \
   src/modules/onboarding/dto/onboard-advertiser.dto.spec.ts

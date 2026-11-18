@@ -1,6 +1,7 @@
 import { ExecutionContext, UnauthorizedException } from "@nestjs/common";
 import * as jwt from "jsonwebtoken";
 import { SupabaseAuthGuard } from "./supabase-auth.guard";
+import { TenantGuard } from "./tenant.guard";
 
 describe("SupabaseAuthGuard token purpose isolation", () => {
   const secret = "unit-test-only-secret-with-at-least-32-chars";
@@ -17,11 +18,18 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     ),
   };
   const reflector = { getAllAndOverride: jest.fn() };
+  const verifyAdvertiserSession = jest.fn();
+  const advertisersService = { verifyAdvertiserSession };
 
   let guard: SupabaseAuthGuard;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    verifyAdvertiserSession.mockResolvedValue({
+      role: "ADVERTISER",
+      advertiserId: "advertiser-1",
+      status: "ACTIVE",
+    });
     getUser.mockResolvedValue({
       data: { user: null },
       error: { message: "invalid session" },
@@ -31,6 +39,7 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
       reflector as never,
       supabase as never,
       config as never,
+      advertisersService as never,
     );
   });
 
@@ -262,4 +271,117 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     });
     expect(getUser).toHaveBeenCalledWith(token);
   });
+  const legacyPayload = {
+    sub: "advertiser-1",
+    email: "advertiser@example.test",
+    role: "ADVERTISER",
+    app_metadata: { role: "ADVERTISER", entityId: "advertiser-1" },
+  };
+
+  it("accepts signed legacy advertiser sessions via the existing DB-backed verifier", async () => {
+    const token = jwt.sign(legacyPayload, secret, { expiresIn: "1h" });
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(verifyAdvertiserSession).toHaveBeenCalledWith(token);
+    expect(request.user).toEqual({
+      id: "advertiser-1",
+      email: "advertiser@example.test",
+      role: "ADVERTISER",
+      entityId: "advertiser-1",
+    });
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects forged legacy advertiser JWTs even if unsigned claims say ADVERTISER", async () => {
+    const token = jwt.sign(legacyPayload, "different-secret", { expiresIn: "1h" });
+    verifyAdvertiserSession.mockRejectedValueOnce(
+      new UnauthorizedException("Session invalid"),
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(verifyAdvertiserSession).toHaveBeenCalledWith(token);
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects revoked and suspended legacy sessions before tenant checks", async () => {
+    const token = jwt.sign(legacyPayload, secret, { expiresIn: "1h" });
+    verifyAdvertiserSession.mockRejectedValueOnce(
+      new UnauthorizedException("Advertiser suspended"),
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("preserves TenantGuard ownership: same advertiser allowed, other advertiser denied", async () => {
+    const token = jwt.sign(legacyPayload, secret, { expiresIn: "1h" });
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    const tenantGuard = new TenantGuard();
+
+    // Set only the route parameter, exactly as Nest does after authentication.
+    const tenantContext = {
+      getHandler: () => function getPortal() {},
+      getClass: () => class AdvertiserPortalController {},
+      switchToHttp: () => ({
+        getRequest: () => ({
+          ...request,
+          params: { id: "advertiser-1" },
+        }),
+      }),
+    } as unknown as ExecutionContext;
+    expect(tenantGuard.canActivate(tenantContext)).toBe(true);
+
+    const otherTenantContext = {
+      getHandler: () => function getOtherPortal() {},
+      getClass: () => class AdvertiserPortalController {},
+      switchToHttp: () => ({
+        getRequest: () => ({
+          ...request,
+          params: { id: "another-advertiser" },
+        }),
+      }),
+    } as unknown as ExecutionContext;
+    expect(() => tenantGuard.canActivate(otherTenantContext))
+      .toThrow(UnauthorizedException);
+  });
+
+  it("rejects otherwise trusted legacy claims without an email", async () => {
+    const { email: _omitted, ...withoutEmail } = legacyPayload;
+    const token = jwt.sign(withoutEmail, secret, { expiresIn: "1h" });
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(verifyAdvertiserSession).toHaveBeenCalledWith(token);
+    expect(request.user).toBeUndefined();
+  });
+
+  it("does not double-verify legacy sessions on public routes", async () => {
+    const token = jwt.sign(legacyPayload, secret, { expiresIn: "1h" });
+    const { context, request } = contextFor(token, true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(verifyAdvertiserSession).not.toHaveBeenCalled();
+    expect(request.user).toBeUndefined();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("never routes hardware pairing tokens with fabricated advertiser fields through legacy auth", async () => {
+    const token = jwt.sign({ ...legacyPayload, type: "pairing" }, secret, {
+      expiresIn: "5m",
+    });
+    const { context } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(verifyAdvertiserSession).not.toHaveBeenCalled();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
 });

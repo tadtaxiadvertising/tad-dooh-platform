@@ -9,6 +9,7 @@ import { Reflector } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { SupabaseService } from "../../supabase/supabase.service";
+import { AdvertisersService } from "../../advertisers/advertisers.service";
 import * as jwt from "jsonwebtoken";
 import { AuthUser } from "../auth.types";
 
@@ -42,6 +43,7 @@ export class SupabaseAuthGuard implements CanActivate {
     private reflector: Reflector,
     private supabaseService: SupabaseService,
     private configService: ConfigService,
+    private advertisersService: AdvertisersService,
   ) {
     this.isDev = process.env.NODE_ENV === "development";
     this.allowDevBypass = this.isDev && process.env.ALLOW_DEV_BYPASS === "true";
@@ -117,6 +119,37 @@ export class SupabaseAuthGuard implements CanActivate {
         throw new UnauthorizedException("Token de sesión no válido.");
       }
       return;
+    }
+
+    // Legacy password login intentionally issues an API-signed advertiser JWT
+    // with no Supabase session_id / "authenticated" audience. Route only this
+    // exact untrusted SHAPE to the independently signed+DB-backed verifier.
+    // Decoding claims here is solely a dispatch hint, NEVER authorization.
+    // Invalid/expired tokens fail closed without falling back to Supabase.
+    const looksLikeLegacyAdvertiser =
+      tokenClaims?.role === "ADVERTISER" &&
+      tokenClaims?.app_metadata?.role === "ADVERTISER" &&
+      tokenClaims.session_id === undefined;
+    if (looksLikeLegacyAdvertiser) {
+      // Public endpoints perform their own optional/business validation.
+      // Avoid double DB reads on /advertisers/session, which verifies itself.
+      if (!strict) return;
+      try {
+        const verified =
+          await this.advertisersService.verifyAdvertiserSession(token);
+        if (typeof tokenClaims.email !== "string" || !tokenClaims.email) {
+          throw new UnauthorizedException("Sesión de anunciante inválida.");
+        }
+        request.user = {
+          id: verified.advertiserId,
+          email: tokenClaims.email, // signature and DB email already verified
+          role: verified.role,
+          entityId: verified.advertiserId,
+        };
+        return;
+      } catch {
+        throw new UnauthorizedException("Sesión de anunciante inválida.");
+      }
     }
 
     // --- CACHE LOOKUP ---

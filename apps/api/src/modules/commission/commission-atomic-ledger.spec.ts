@@ -239,21 +239,37 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
     expect(walletUpdateMany).not.toHaveBeenCalled();
   });
 
-  it("marks APPROVED as PAID with a conditional update only", async () => {
-    findUnique.mockResolvedValue({ ...commission, status: CommissionStatus.APPROVED });
-    await service.markCommissionPaid("commission-1");
-    expect(updateMany).toHaveBeenCalledWith({
-      where: { id: "commission-1", status: CommissionStatus.APPROVED },
-      data: { status: CommissionStatus.PAID, paidAt: expect.any(Date) },
-    });
-    expect(walletUpsert).not.toHaveBeenCalled();
+  it.each([
+    CommissionStatus.PENDING,
+    CommissionStatus.APPROVED,
+    CommissionStatus.PAID,
+    CommissionStatus.REVOKED,
+  ])(
+    "blocks individual PAID status for %s without bank reconciliation",
+    async (status) => {
+      findUnique.mockResolvedValue({ ...commission, status });
+      await expect(
+        service.markCommissionPaid("commission-1"),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(findUnique).not.toHaveBeenCalled();
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(findUniqueOrThrow).not.toHaveBeenCalled();
+      expect(ledgerUpdateMany).not.toHaveBeenCalled();
+      expect(ledgerCreate).not.toHaveBeenCalled();
+      expect(walletUpsert).not.toHaveBeenCalled();
+      expect(walletUpdateMany).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects a caller-supplied paidAt without checking or writing a database", async () => {
+    await expect(
+      service.markCommissionPaid("commission-1", new Date("2026-11-01T12:00:00.000Z")),
+    ).rejects.toThrow("confirmación bancaria");
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(findUnique).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(ledgerCreate).not.toHaveBeenCalled();
+    expect(walletUpdateMany).not.toHaveBeenCalled();
   });
 
-  it("rejects a mark-paid race after a competing revocation", async () => {
-    findUnique.mockResolvedValue({ ...commission, status: CommissionStatus.APPROVED });
-    updateMany.mockResolvedValue({ count: 0 });
-    await expect(service.markCommissionPaid("commission-1"))
-      .rejects.toBeInstanceOf(ConflictException);
-    expect(findUniqueOrThrow).not.toHaveBeenCalled();
-  });
 });

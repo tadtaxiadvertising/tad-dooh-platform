@@ -435,6 +435,8 @@ export class CommissionService {
   ): Promise<SettlementBatch> {
     const { month, year, generatedBy } = input;
     const periodKey = `${year}-${String(month).padStart(2, "0")}`;
+    const periodStart = new Date(year, month - 1, 1);
+    const periodEnd = new Date(year, month, 1);
 
     this.logger.log(
       `[SETTLEMENT] Generating monthly settlement for ${periodKey}`,
@@ -447,6 +449,21 @@ export class CommissionService {
       });
 
       if (existingBatch) {
+        // Existing period snapshots are immutable. Do not silently return
+        // a stale batch when later-approved commissions remain unbatched.
+        // The operator must explicitly reconcile/rebuild the period.
+        const unbatchedApproved = await tx.commission.count({
+          where: {
+            status: CommissionStatus.APPROVED,
+            createdAt: { gte: periodStart, lt: periodEnd },
+            settlementBatchId: null,
+          },
+        });
+        if (unbatchedApproved > 0) {
+          throw new ConflictException(
+            `Settlement ${periodKey} has approved commissions outside its batch; reconciliation required`,
+          );
+        }
         this.logger.warn(
           `[SETTLEMENT] Batch for ${periodKey} already exists, returning existing`,
         );
@@ -457,10 +474,7 @@ export class CommissionService {
       const commissions = await tx.commission.findMany({
         where: {
           status: CommissionStatus.APPROVED,
-          createdAt: {
-            gte: new Date(year, month - 1, 1),
-            lt: new Date(year, month, 1),
-          },
+          createdAt: { gte: periodStart, lt: periodEnd },
           settlementBatchId: null,
         },
         include: {
@@ -470,26 +484,12 @@ export class CommissionService {
       });
 
       if (commissions.length === 0) {
-        this.logger.log(
-          `[SETTLEMENT] No approved commissions for ${periodKey}`,
+        // Do not permanently seal the period as APPROVED with zero members.
+        // A PENDING or late-arriving commission may become APPROVED later;
+        // keeping the unique period unclaimed lets the operator retry.
+        throw new ConflictException(
+          `Settlement ${periodKey} has no approved commissions; retry after approvals`,
         );
-        // Crear lote vacío para marcar periodo como procesado
-        const emptyBatch = await tx.settlementBatch.create({
-          data: {
-            period: periodKey,
-            status: "APPROVED",
-            grossTotal: 0,
-            netTotal: 0,
-            withholdings: 0,
-            referentsCount: 0,
-            commissionsCount: 0,
-            generatedBy,
-            approvedAt: new Date(),
-            approvedBy: generatedBy,
-            createdAt: new Date(),
-          },
-        });
-        return this.mapBatchToOutput(emptyBatch);
       }
 
       // 3. Agrupar por referente (driverId)
@@ -603,6 +603,32 @@ export class CommissionService {
       }
       if (batch.status !== "DRAFT") {
         throw new ConflictException(`Settlement batch ${batchId} already processed`);
+      }
+      // Approving a DRAFT freezes the operator's financial snapshot.
+      // New APPROVED commissions for the same calendar period may have
+      // appeared after generation. Never approve totals that omit them.
+      const periodMatch = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(batch.period);
+      if (!periodMatch) {
+        throw new ConflictException(
+          `Settlement batch ${batchId} has an invalid period; reconcile first`,
+        );
+      }
+      const periodYear = Number(periodMatch[1]);
+      const periodMonth = Number(periodMatch[2]);
+      const unbatchedApproved = await tx.commission.count({
+        where: {
+          status: CommissionStatus.APPROVED,
+          createdAt: {
+            gte: new Date(periodYear, periodMonth - 1, 1),
+            lt: new Date(periodYear, periodMonth, 1),
+          },
+          settlementBatchId: null,
+        },
+      });
+      if (unbatchedApproved > 0) {
+        throw new ConflictException(
+          `Settlement ${batch.period} has approved commissions outside its batch; reconcile before approval`,
+        );
       }
       // APPROVED is a review decision, not evidence of an external payout.
       // Never change member commission statuses or paidAt at this stage.

@@ -6,11 +6,15 @@ describe("Commission settlement must not claim bank payment during review", () =
   const findUniqueOrThrow = jest.fn();
   const updateMany = jest.fn();
   const commissionUpdateMany = jest.fn();
+  const countUnbatched = jest.fn();
   const financialCreate = jest.fn();
 
   const tx = {
     settlementBatch: { findUnique, findUniqueOrThrow, updateMany },
-    commission: { updateMany: commissionUpdateMany },
+    commission: {
+      updateMany: commissionUpdateMany,
+      count: countUnbatched,
+    },
     financialTransaction: { create: financialCreate },
   };
   const prisma = {
@@ -47,12 +51,14 @@ describe("Commission settlement must not claim bank payment during review", () =
       approvedAt: new Date("2026-11-18T13:00:00.000Z"),
     });
     updateMany.mockResolvedValue({ count: 1 });
+    countUnbatched.mockResolvedValue(0);
   });
 
   it("approves only the batch with a DRAFT compare-and-set", async () => {
     const result = await service.approveSettlementBatch("batch-1", "admin-1");
     expect(result.status).toBe("APPROVED");
     expect(result.paidAt).toBeNull();
+    expect(countUnbatched).toHaveBeenCalledTimes(1);
     expect(updateMany).toHaveBeenCalledWith({
       where: { id: "batch-1", status: "DRAFT" },
       data: {
@@ -63,6 +69,38 @@ describe("Commission settlement must not claim bank payment during review", () =
     });
     expect(commissionUpdateMany).not.toHaveBeenCalled();
     expect(financialCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses to approve a DRAFT batch when new APPROVED commissions remain unbatched", async () => {
+    countUnbatched.mockResolvedValue(2);
+    await expect(
+      service.approveSettlementBatch("batch-1", "admin-1"),
+    ).rejects.toThrow("approved commissions outside its batch");
+
+    expect(countUnbatched).toHaveBeenCalledWith({
+      where: {
+        status: "APPROVED",
+        createdAt: {
+          gte: new Date(2026, 10, 1),
+          lt: new Date(2026, 11, 1),
+        },
+        settlementBatchId: null,
+      },
+    });
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(commissionUpdateMany).not.toHaveBeenCalled();
+    expect(financialCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a corrupt stored period before approving or modifying the batch", async () => {
+    findUnique.mockResolvedValue({ ...draft, period: "2026-13" });
+
+    await expect(
+      service.approveSettlementBatch("batch-1", "admin-1"),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(countUnbatched).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalled();
   });
 
   it("does not create a payment transaction or alter commission statuses", async () => {

@@ -43,12 +43,13 @@ describe("QrScan referral statistics tenant isolation", () => {
     expect(adminStats).not.toHaveBeenCalled();
   });
 
-  it.each([
+  const deniedRequests: Array<[{ user?: AuthUser }, string]> = [
     [{ user: undefined }, "missing principal"],
     [req(UserRole.DRIVER), "driver missing entity ID"],
     [req(UserRole.DRIVER, ""), "driver empty entity ID"],
     [req("ADVERTISER", "driver-1"), "unprivileged role"],
-  ])("rejects %s (%s) before accessing any statistics", async (request) => {
+  ];
+  it.each(deniedRequests)("rejects %s (%s) before accessing any statistics", async (request) => {
     await expect(
       controller.getReferralStats("REF-OTHER", undefined, request),
     ).rejects.toBeInstanceOf(ForbiddenException);
@@ -74,7 +75,7 @@ describe("QrScan referral statistics tenant isolation", () => {
 
     beforeEach(() => {
       jest.resetAllMocks();
-      driverRead.mockImplementation(async ({ where }) =>
+      driverRead.mockImplementation(async ({ where }: { where: { id: string; referralCode: string } }) =>
         where.id === "driver-1" && where.referralCode === "REF-OWN"
           ? { id: "driver-1" }
           : null,

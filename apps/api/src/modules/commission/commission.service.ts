@@ -492,10 +492,25 @@ export class CommissionService {
         return this.mapBatchToOutput(emptyBatch);
       }
 
-      // 3. Agrupar por referente (driverId)
+      // 3. Agrupar por referente (driverId) usando centavos enteros.
+      // Legacy rows may predate positive-cent input validation: fail closed
+      // rather than publishing an invalid amount in a financial snapshot.
       const byReferent = new Map<string, SettlementReferent>();
+      const grossCentsByReferent = new Map<string, number>();
 
       for (const c of commissions) {
+        const amountCents = Math.round(c.amount * 100);
+        if (
+          !Number.isFinite(c.amount) ||
+          c.amount <= 0 ||
+          !Number.isSafeInteger(amountCents) ||
+          amountCents / 100 !== c.amount
+        ) {
+          throw new ConflictException(
+            `Commission ${c.id} has an invalid amount; reconcile before settlement`,
+          );
+        }
+
         const key = c.driverId;
         if (!byReferent.has(key)) {
           byReferent.set(key, {
@@ -516,23 +531,52 @@ export class CommissionService {
           createdAt: c.createdAt,
           relatedEntityId: this.relatedEntityId(c.metadata),
         });
-        ref.grossAmount += c.amount;
+        const grossCents = (grossCentsByReferent.get(key) ?? 0) + amountCents;
+        if (!Number.isSafeInteger(grossCents)) {
+          throw new ConflictException(
+            `Settlement ${periodKey} exceeds the safe cent range`,
+          );
+        }
+        grossCentsByReferent.set(key, grossCents);
+        ref.grossAmount = grossCents / 100;
       }
 
-      // 4. Calcular retenciones (10% según BUSINESS_RULES.REFERRAL_RETENTION_RATE)
-      let totalGross = 0;
-      let totalWithholdings = 0;
+      // 4. Calcular la retención por referente al centavo más cercano.
+      // Math.round(grossAmount * rate) incorrectly rounded to whole pesos.
+      let totalGrossCents = 0;
+      let totalWithholdingCents = 0;
 
       for (const ref of byReferent.values()) {
-        ref.withholding = Math.round(
-          ref.grossAmount * BUSINESS_RULES.REFERRAL_RETENTION_RATE,
+        const grossCents = grossCentsByReferent.get(ref.driverId)!;
+        const withholdingCents = Math.round(
+          grossCents * BUSINESS_RULES.REFERRAL_RETENTION_RATE,
         );
-        ref.netAmount = ref.grossAmount - ref.withholding;
-        totalGross += ref.grossAmount;
-        totalWithholdings += ref.withholding;
+        if (
+          !Number.isSafeInteger(withholdingCents) ||
+          withholdingCents < 0 ||
+          withholdingCents > grossCents
+        ) {
+          throw new ConflictException(
+            `Settlement ${periodKey} has invalid withholding amounts`,
+          );
+        }
+        ref.withholding = withholdingCents / 100;
+        ref.netAmount = (grossCents - withholdingCents) / 100;
+        totalGrossCents += grossCents;
+        totalWithholdingCents += withholdingCents;
+        if (
+          !Number.isSafeInteger(totalGrossCents) ||
+          !Number.isSafeInteger(totalWithholdingCents)
+        ) {
+          throw new ConflictException(
+            `Settlement ${periodKey} exceeds the safe cent range`,
+          );
+        }
       }
 
-      const totalNet = totalGross - totalWithholdings;
+      const totalGross = totalGrossCents / 100;
+      const totalWithholdings = totalWithholdingCents / 100;
+      const totalNet = (totalGrossCents - totalWithholdingCents) / 100;
 
       // 5. Crear lote de liquidación
       const batch = await tx.settlementBatch.create({

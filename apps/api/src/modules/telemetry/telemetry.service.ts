@@ -202,22 +202,31 @@ export class TelemetryService {
     verified?: boolean;
     clientTimestamp?: string;
   }) {
+    // The fallback catch block must use the same trusted normalization.
+    const eventType =
+      data.eventType === "END" ? "play_confirm" : data.eventType;
     try {
       // Use raw SQL with ON CONFLICT for deduplication:
       // Same device + video + same-minute timestamp = duplicate
       const timestamp = data.clientTimestamp
         ? new Date(data.clientTimestamp)
         : new Date();
-
+      // Persist authenticated playback completion in the canonical form
+      // queried by finance, verified metrics and advertiser reports.
       const result = await this.prisma.$executeRawUnsafe(
         `INSERT INTO playback_events (id, device_id, event_type, video_id, lat, lng, timestamp, is_simulated, verified)
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5,
                  date_trunc('minute', $6::timestamp),
                  false, $7)
          ON CONFLICT (device_id, video_id, timestamp)
-         DO NOTHING`,
+         DO UPDATE SET
+           event_type = EXCLUDED.event_type,
+           verified = EXCLUDED.verified
+         WHERE EXCLUDED.event_type = 'play_confirm'
+           AND (playback_events.event_type <> 'play_confirm'
+             OR playback_events.verified = false)`,
         data.deviceId,
-        data.eventType,
+        eventType,
         data.videoId,
         data.lat ?? null,
         data.lng ?? null,
@@ -244,7 +253,7 @@ export class TelemetryService {
           data: {
             deviceId: data.deviceId,
             videoId: data.videoId,
-            eventType: data.eventType,
+            eventType,
             lat: data.lat,
             lng: data.lng,
             timestamp: data.clientTimestamp
@@ -285,56 +294,86 @@ export class TelemetryService {
     for (let offset = 0; offset < safeEvents.length; offset += CHUNK_SIZE) {
       const chunk = safeEvents.slice(offset, offset + CHUNK_SIZE);
 
-      const values: string[] = [];
-      const params: Array<string | number | Date | boolean | null> = [];
-
-      for (let i = 0; i < chunk.length; i++) {
-        const event = chunk[i];
-        const base = i * 7;
-        const ts = event.clientTimestamp
+      // PostgreSQL cannot update the same unique key twice within one
+      // INSERT ... ON CONFLICT statement. Collapse START + END in the same
+      // minute, giving authenticated END (the billable completion) priority.
+      // All original events are acknowledged when their canonical minute
+      // slot is handled or is already present (idempotent retry).
+      const canonical = new Map<
+        string,
+        { event: (typeof chunk)[number]; timestamp: Date; eventType: string }
+      >();
+      for (const event of chunk) {
+        const timestamp = event.clientTimestamp
           ? new Date(event.clientTimestamp)
           : new Date();
+        const eventType =
+          event.eventType === "END" ? "play_confirm" : event.eventType;
+        const minuteKey = JSON.stringify([
+          event.deviceId,
+          event.videoId,
+          Math.floor(timestamp.getTime() / 60_000),
+        ]);
+        const previous = canonical.get(minuteKey);
+        if (
+          !previous ||
+          (eventType === "play_confirm" &&
+            previous.eventType !== "play_confirm")
+        ) {
+          canonical.set(minuteKey, { event, timestamp, eventType });
+        }
+      }
+
+      const values: string[] = [];
+      const params: Array<string | number | Date | boolean | null> = [];
+      for (const { event, timestamp, eventType } of canonical.values()) {
+        const base = params.length;
         values.push(
           `(gen_random_uuid(), $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, date_trunc('minute', $${base + 6}::timestamp), false, $${base + 7})`,
         );
         params.push(
           event.deviceId,
-          event.eventType,
+          eventType,
           event.videoId,
           event.lat ?? null,
           event.lng ?? null,
-          ts,
-          true, // verified = true for validated batch
+          timestamp,
+          true, // END is only canonicalized after the controller validates the tablet key.
         );
       }
 
       try {
-        const insertResult = await this.prisma.$executeRawUnsafe(
+        await this.prisma.$executeRawUnsafe(
           `INSERT INTO playback_events (id, device_id, event_type, video_id, lat, lng, timestamp, is_simulated, verified)
            VALUES ${values.join(", ")}
            ON CONFLICT (device_id, video_id, timestamp)
-           DO NOTHING`,
+           DO UPDATE SET
+             event_type = EXCLUDED.event_type,
+             verified = EXCLUDED.verified
+           WHERE EXCLUDED.event_type = 'play_confirm'
+             AND (playback_events.event_type <> 'play_confirm'
+               OR playback_events.verified = false)`,
           ...params,
         );
+        // A successful statement handled every unique slot, including
+        // already-recorded duplicates. Do not leave legitimate offline
+        // retries stuck just because no new row was inserted.
         processed += chunk.length;
-        rejected += chunk.length - insertResult;
       } catch (err) {
         this.logger.error(
           `Batch playback chunk failed at offset ${offset}: ${err.message}`,
         );
         // Fallback: insert individually via Prisma ORM
-        for (const event of chunk) {
+        for (const { event, timestamp, eventType } of canonical.values()) {
           try {
             await this.prisma.playbackEvent.create({
               data: {
                 deviceId: event.deviceId,
                 videoId: event.videoId,
-                eventType: event.eventType,
+                eventType,
                 lat: event.lat,
                 lng: event.lng,
-                timestamp: event.clientTimestamp
-                  ? new Date(event.clientTimestamp)
-                  : new Date(),
+                timestamp,
                 verified: true,
               },
             });

@@ -185,9 +185,9 @@ export class TelemetryController {
     const now = new Date();
     const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000);
     const oneMinFuture = new Date(now.getTime() + 60 * 1000);
-    if (ts < fiveMinAgo || ts > oneMinFuture) {
+    if (!Number.isFinite(ts.getTime()) || ts < fiveMinAgo || ts > oneMinFuture) {
       this.logger.warn(
-        `⚠️ Timestamp out of window for deviceId=${payload.deviceId}: ${ts.toISOString()}`,
+        `⚠️ Timestamp out of window for deviceId=${payload.deviceId}: ${Number.isFinite(ts.getTime()) ? ts.toISOString() : "INVALID_DATE"}`,
       );
       return {
         success: false,
@@ -313,9 +313,9 @@ export class TelemetryController {
       const ts = event.clientTimestamp
         ? new Date(event.clientTimestamp)
         : new Date();
-      if (ts < fiveMinAgo || ts > oneMinFuture) {
+      if (!Number.isFinite(ts.getTime()) || ts < fiveMinAgo || ts > oneMinFuture) {
         this.logger.warn(
-          `⚠️ Timestamp out of window for deviceId=${deviceId}: ${ts.toISOString()}`,
+          `⚠️ Timestamp out of window for deviceId=${deviceId}: ${Number.isFinite(ts.getTime()) ? ts.toISOString() : "INVALID_DATE"}`,
         );
         return {
           success: false,

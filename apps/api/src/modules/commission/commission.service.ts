@@ -105,86 +105,86 @@ export class CommissionService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
-      // 1. Verificar si ya existe por reference (idempotencia)
-      const existing = await tx.commission.findFirst({
-        where: { reference: input.reference },
-      });
+        // 1. Verificar si ya existe por reference (idempotencia)
+        const existing = await tx.commission.findFirst({
+          where: { reference: input.reference },
+        });
 
-      if (existing) {
-        // Replays are only idempotent for the SAME economic event.
-        // Never return another driver's commission for a reused reference.
-        this.assertMatchingCommissionReplay(existing, input);
-        this.logger.warn(
-          `[COMMISSION] Idempotent replay for reference ${input.reference}`,
-        );
-        return { commission: existing, created: false };
-      }
+        if (existing) {
+          // Replays are only idempotent for the SAME economic event.
+          // Never return another driver's commission for a reused reference.
+          this.assertMatchingCommissionReplay(existing, input);
+          this.logger.warn(
+            `[COMMISSION] Idempotent replay for reference ${input.reference}`,
+          );
+          return { commission: existing, created: false };
+        }
 
-      // 2. Validar que el conductor existe
-      const driver = await tx.driver.findUnique({
-        where: { id: input.driverId },
-        select: { id: true, fullName: true },
-      });
+        // 2. Validar que el conductor existe
+        const driver = await tx.driver.findUnique({
+          where: { id: input.driverId },
+          select: { id: true, fullName: true },
+        });
 
-      if (!driver) {
-        throw new NotFoundException(`Driver ${input.driverId} not found`);
-      }
+        if (!driver) {
+          throw new NotFoundException(`Driver ${input.driverId} not found`);
+        }
 
-      // 3. Validar regla de negocio: un mismo evento económico no genera dos comisiones
-      // Para DRIVER_REFERRAL: verificar que el conductor referido no tenga ya comisión pagada
-      if (input.sourceType === CommissionSourceType.DRIVER_REFERRAL) {
-        const referredDriverId = input.metadata?.referredDriverId;
-        if (referredDriverId) {
-          const existingReferral = await tx.commission.findFirst({
-            where: {
-              driverId: input.driverId,
-              sourceType: CommissionSourceType.DRIVER_REFERRAL,
-              metadata: {
-                path: ["referredDriverId"],
-                equals: referredDriverId,
+        // 3. Validar regla de negocio: un mismo evento económico no genera dos comisiones
+        // Para DRIVER_REFERRAL: verificar que el conductor referido no tenga ya comisión pagada
+        if (input.sourceType === CommissionSourceType.DRIVER_REFERRAL) {
+          const referredDriverId = input.metadata?.referredDriverId;
+          if (referredDriverId) {
+            const existingReferral = await tx.commission.findFirst({
+              where: {
+                driverId: input.driverId,
+                sourceType: CommissionSourceType.DRIVER_REFERRAL,
+                metadata: {
+                  path: ["referredDriverId"],
+                  equals: referredDriverId,
+                },
               },
-            },
-          });
-          if (existingReferral) {
-            throw new BadRequestException(
-              `Commission already exists for referred driver ${referredDriverId}`,
-            );
+            });
+            if (existingReferral) {
+              throw new BadRequestException(
+                `Commission already exists for referred driver ${referredDriverId}`,
+              );
+            }
           }
         }
-      }
 
-      // 4. Crear comisión
-      const commission = await tx.commission.create({
-        data: {
-          driverId: input.driverId,
-          amount: input.amount,
-          sourceType: input.sourceType,
-          reference: input.reference,
-          status: CommissionStatus.PENDING,
-          metadata: input.metadata || {},
-        },
-      });
+        // 4. Crear comisión
+        const commission = await tx.commission.create({
+          data: {
+            driverId: input.driverId,
+            amount: input.amount,
+            sourceType: input.sourceType,
+            reference: input.reference,
+            status: CommissionStatus.PENDING,
+            metadata: input.metadata || {},
+          },
+        });
 
-      // 5. Crear entrada en ledger financiero (OPEX_COMMISSION)
-      await tx.financialTransaction.create({
-        data: {
-          type: "OUTGOING",
-          category: "OPEX_COMMISSION",
-          amount: input.amount,
-          netAmount: input.amount,
-          taxAmount: 0,
-          entityId: input.driverId,
-          reference: input.reference,
-          note: `Comisión ${input.sourceType}: ${input.metadata?.note || "Sin descripción"}`,
-          status: "PENDING", // PENDING hasta que la comisión se APRUEBE
-        },
-      });
+        // 5. Crear entrada en ledger financiero (OPEX_COMMISSION)
+        await tx.financialTransaction.create({
+          data: {
+            type: "OUTGOING",
+            category: "OPEX_COMMISSION",
+            amount: input.amount,
+            netAmount: input.amount,
+            taxAmount: 0,
+            entityId: input.driverId,
+            reference: input.reference,
+            note: `Comisión ${input.sourceType}: ${input.metadata?.note || "Sin descripción"}`,
+            status: "PENDING", // PENDING hasta que la comisión se APRUEBE
+          },
+        });
 
-      this.logger.log(
-        `[COMMISSION] Created commission ${commission.id} (${input.amount} RD$) for driver ${input.driverId}`,
-      );
+        this.logger.log(
+          `[COMMISSION] Created commission ${commission.id} (${input.amount} RD$) for driver ${input.driverId}`,
+        );
 
-      return { commission, created: true };
+        return { commission, created: true };
       });
     } catch (error: unknown) {
       // On two concurrent requests the unique(reference) constraint is the

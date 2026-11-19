@@ -149,13 +149,17 @@ export class AnalyticsService {
       ? await this.getAdvertiserVideoIds(advertiserId)
       : null;
 
-    const [totalImpressions, uniqueNodesCount, totalScans, recentImpressions] =
+    const [impressionBuckets, uniqueNodesCount, totalScans, recentImpressions] =
       await Promise.all([
-        this.prisma.playbackEvent.count({
+        // One DB snapshot separates verified PoP from raw device events,
+        // without changing the legacy totalImpressions/CTR contract.
+        this.prisma.playbackEvent.groupBy({
+          by: ["verified"],
           where: {
             eventType: "play_confirm",
             ...(videoIds ? { videoId: { in: videoIds } } : {}),
           },
+          _count: { _all: true },
         }),
         this.prisma.playbackEvent.groupBy({
           by: ["deviceId"],
@@ -180,8 +184,19 @@ export class AnalyticsService {
         }),
       ]);
 
+    // verified is non-null in PlaybackEvent; groupBy ensures these totals
+    // come from the same SQL snapshot (unlike concurrent count queries).
+    const verifiedImpressions =
+      impressionBuckets.find((bucket) => bucket.verified)?._count._all ?? 0;
+    const unverifiedImpressions =
+      impressionBuckets.find((bucket) => !bucket.verified)?._count._all ?? 0;
+    const totalImpressions = verifiedImpressions + unverifiedImpressions;
+
     const data = {
-      totalImpressions,
+      totalImpressions, // Legacy raw count: preserve backwards compatibility.
+      verifiedImpressions,
+      unverifiedImpressions,
+      impressionMetricBasis: "raw" as const,
       activeNodes: uniqueNodesCount.length,
       totalScans,
       ctr: totalImpressions > 0 ? (totalScans / totalImpressions) * 100 : 0,

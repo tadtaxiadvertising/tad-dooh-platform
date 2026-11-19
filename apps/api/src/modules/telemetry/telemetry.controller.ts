@@ -8,7 +8,7 @@ import {
   Logger,
   BadRequestException,
 } from "@nestjs/common";
-import { TelemetryService } from "./telemetry.service";
+import { TelemetryService, TELEMETRY_GPS_BATCH_LIMIT } from "./telemetry.service";
 
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -22,21 +22,16 @@ export class TelemetryController {
   ) {}
 
   /**
-   * POST /telemetry/sync — Ingesta masiva de telemetría GPS.
+   * POST /telemetry/sync — Legacy JWT-protected GPS batch ingestion.
    *
-   * B9 PATCH (v12.1.3): endurecimiento mínimo.
-   * Antes: @Public() sin validación → cualquiera podía inyectar filas en
-   * `telemetry` para cualquier driverId. Ahora valida:
-   *   1. Payload no vacío.
-   *   2. Primer `driverId` presente.
-   *   3. Driver existe (1 query pre-flight, O(1) por el index del PK).
+   * This route is NOT @Public; the global SupabaseAuthGuard requires a user
+   * session. It is not the official driver PWA upload path (PostgREST RPC).
    *
-   * El tamaño del batch ya está capeado aguas abajo por `MAX_BATCH_SIZE`
-   * en `TelemetryService.sync()` → no se duplica aquí deliberadamente.
-   *
-   * NOTA: Este endpoint NO es la ruta oficial de la PWA (la oficial va por
-   * PostgREST RPC `bulk_insert_telemetry`, ver regla #4). Se conserva público
-   * (no requiere JWT) para mantener compatibilidad con gateways legados.
+   * Bounded, homogeneous batches are committed atomically and acknowledged
+   * only after PostgreSQL confirms the transaction. The first driver must
+   * exist, but this path does NOT yet verify the authenticated user's
+   * ownership of that driver. See security incident #385 before exposing this
+   * route to regular DRIVER clients or legacy gateways.
    */
   @Post("sync")
   @HttpCode(HttpStatus.CREATED)
@@ -54,11 +49,20 @@ export class TelemetryController {
       throw new BadRequestException("EMPTY_PAYLOAD");
     }
 
-    // Pre-flight: validar que el primer driverId existe (asumimos batch homogéneo).
-    // El servicio ya capa `MAX_BATCH_SIZE` arriba, no duplicamos la verificación.
+    // Acknowledging an oversized batch while silently dropping its tail
+    // destroys offline GPS data. Require the client to keep/split the batch.
+    if (payload.length > TELEMETRY_GPS_BATCH_LIMIT) {
+      throw new BadRequestException("TELEMETRY_BATCH_TOO_LARGE");
+    }
+
     const headDriverId = payload[0]?.driverId;
     if (!headDriverId) {
       throw new BadRequestException("MISSING_DRIVER_ID");
+    }
+    // This route is JWT-protected by the global auth guard, but a caller
+    // must not smuggle another driver's GPS points behind the first ID.
+    if (payload.some((point) => !point || point.driverId !== headDriverId)) {
+      throw new BadRequestException("DRIVER_MISMATCH");
     }
 
     const driver = await this.prisma.driver.findUnique({
@@ -69,11 +73,9 @@ export class TelemetryController {
       throw new BadRequestException("DRIVER_NOT_FOUND");
     }
 
-    this.telemetryService
-      .sync(payload)
-      .catch((err) =>
-        this.logger.error(`Telemetry sync error: ${err.message}`),
-      );
+    // The DB transaction must commit before a success receipt is returned.
+    // A rejected transaction propagates to Nest's failure response.
+    await this.telemetryService.sync(payload);
     return { success: true };
   }
 

@@ -98,6 +98,15 @@ export class TelemetryController {
     },
     @Headers("x-tablet-key") tabletKey: string,
   ) {
+    // TypeScript payload types are erased for HTTP JSON. A forged
+    // "play_confirm" must never be persisted with verified=true.
+    if (
+      !payload ||
+      !["START", "END", "ERROR"].includes(payload.eventType)
+    ) {
+      return { success: false, reason: "EVENT_TYPE_INVALID" };
+    }
+
     // X-Tablet-Key is REQUIRED for playback events
     if (!tabletKey) {
       this.logger.warn(
@@ -213,7 +222,7 @@ export class TelemetryController {
     }[],
     @Headers("x-tablet-key") tabletKey: string,
   ) {
-    if (!payload || payload.length === 0) {
+    if (!Array.isArray(payload) || payload.length === 0) {
       return { success: false, reason: "EMPTY_PAYLOAD" };
     }
 
@@ -231,6 +240,20 @@ export class TelemetryController {
     const deviceId = payload[0]?.deviceId;
     if (!deviceId) {
       return { success: false, reason: "MISSING_DEVICE_ID" };
+    }
+
+    // A tablet key is scoped to ONE device. An attacker with a valid key
+    // must not submit verified PoP for another device inside the same batch.
+    // Validate all events BEFORE rate limit, DB checks or any writes.
+    if (payload.some((event) => !event || event.deviceId !== deviceId)) {
+      return { success: false, reason: "DEVICE_MISMATCH" };
+    }
+    if (
+      payload.some(
+        (event) => !["START", "END", "ERROR"].includes(event.eventType),
+      )
+    ) {
+      return { success: false, reason: "EVENT_TYPE_INVALID" };
     }
 
     const deviceValid = await this.telemetryService.validateDevice(deviceId);

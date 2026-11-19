@@ -110,6 +110,26 @@ describe("Telemetry playback PoP — device and event-type isolation", () => {
     expect(recordPlaybackBatch).not.toHaveBeenCalled();
   });
 
+  it("rejects malformed single-event timestamps before a verified write", async () => {
+    await expect(
+      makeController().recordPlayback(
+        { ...owner, clientTimestamp: "not-a-date" },
+        "valid-key",
+      ),
+    ).resolves.toMatchObject({ success: false, reason: "TIMESTAMP_INVALID" });
+    expect(recordPlayback).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed batch timestamps before any verified writes", async () => {
+    await expect(
+      makeController().recordPlaybackBatch(
+        [owner, { ...owner, clientTimestamp: "not-a-date" }],
+        "valid-key",
+      ),
+    ).resolves.toMatchObject({ success: false, reason: "TIMESTAMP_INVALID" });
+    expect(recordPlaybackBatch).not.toHaveBeenCalled();
+  });
+
   it("fails closed on invalid device key", async () => {
     validateTabletKey.mockResolvedValueOnce(false);
     await expect(

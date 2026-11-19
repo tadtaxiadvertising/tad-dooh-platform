@@ -51,7 +51,7 @@ const DriverModal = React.memo(function DriverModal({
         cedula: "",
         taxiPlate: "",
         licensePlate: "",
-            subscriptionPaid: false,
+        subscriptionPaid: false,
       });
     } catch (err: unknown) {
       console.error("Error creating driver:", err);

@@ -322,7 +322,6 @@ export class DriversService {
     phone: string;
     taxiPlate?: string;
     licensePlate?: string;
-    deviceId?: string;
     subscriptionPaid?: boolean;
     subscriptionEnd?: Date;
     password?: string;
@@ -420,20 +419,6 @@ export class DriversService {
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       });
-
-    if (data.deviceId) {
-      // FIX M-5: Loguear errores silenciados en lugar de descartarlos
-      try {
-        await this.prisma.device.update({
-          where: { deviceId: data.deviceId },
-          data: { driverId: driver.id },
-        });
-      } catch (err) {
-        this.logger.warn(
-          `[DRIVER_CREATE] No se pudo vincular deviceId ${data.deviceId} al conductor ${driver.id}: ${err.message}`,
-        );
-      }
-    }
 
     return toPublicDriver(driver);
   }

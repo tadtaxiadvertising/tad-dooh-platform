@@ -604,6 +604,32 @@ export class CommissionService {
       if (batch.status !== "DRAFT") {
         throw new ConflictException(`Settlement batch ${batchId} already processed`);
       }
+      // Approving a DRAFT freezes the operator's financial snapshot.
+      // New APPROVED commissions for the same calendar period may have
+      // appeared after generation. Never approve totals that omit them.
+      const periodMatch = /^(\\d{4})-(0[1-9]|1[0-2])$/.exec(batch.period);
+      if (!periodMatch) {
+        throw new ConflictException(
+          `Settlement batch ${batchId} has an invalid period; reconcile first`,
+        );
+      }
+      const periodYear = Number(periodMatch[1]);
+      const periodMonth = Number(periodMatch[2]);
+      const unbatchedApproved = await tx.commission.count({
+        where: {
+          status: CommissionStatus.APPROVED,
+          createdAt: {
+            gte: new Date(periodYear, periodMonth - 1, 1),
+            lt: new Date(periodYear, periodMonth, 1),
+          },
+          settlementBatchId: null,
+        },
+      });
+      if (unbatchedApproved > 0) {
+        throw new ConflictException(
+          `Settlement ${batch.period} has approved commissions outside its batch; reconcile before approval`,
+        );
+      }
       // APPROVED is a review decision, not evidence of an external payout.
       // Never change member commission statuses or paidAt at this stage.
       const claimed = await tx.settlementBatch.updateMany({

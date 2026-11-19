@@ -432,6 +432,9 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
         setConnectionStatus("offline");
         void emitNotification("SYNC_FAILED", { pointsBuffered: combined.length });
       }
+      } catch {
+        // A failed disk write leaves the original batch and RAM snapshot intact.
+        setConnectionStatus("offline");
       } finally {
         batchFlushInProgressRef.current = false;
       }
@@ -453,7 +456,9 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
     (coord: TelemetryCoord) => {
       memoryBufferRef.current.push(coord);
       setBatchCount((prev) => prev + 1);
-      writeBatchCoords(memoryBufferRef.current);
+      void writeBatchCoords([coord]).catch(() => {
+        setConnectionStatus("offline");
+      });
 
       // ── Realtime broadcast (throttle 30s, MAP-SPEC-2026) ──────────────────
       const now = Date.now();

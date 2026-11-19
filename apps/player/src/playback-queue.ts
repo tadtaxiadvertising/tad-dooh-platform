@@ -13,6 +13,7 @@ const QUEUE_STORE = "events";
 export class PlaybackQueue {
   private dbReady: Promise<IDBDatabase>;
   private flushTimer: ReturnType<typeof setInterval> | null = null;
+  private flushInFlight: Promise<{ sent: number; failed: number }> | null = null;
   private deviceId: string = "";
 
   constructor() {
@@ -56,7 +57,18 @@ export class PlaybackQueue {
     });
   }
 
-  async flushQueue(): Promise<{ sent: number; failed: number }> {
+  // Reconnect, visibility and the periodic timer can call flush at once.
+  // Share the same Promise so no two callers upload the same local PoP batch.
+  flushQueue(): Promise<{ sent: number; failed: number }> {
+    if (this.flushInFlight) return this.flushInFlight;
+
+    this.flushInFlight = this.flushPendingQueue().finally(() => {
+      this.flushInFlight = null;
+    });
+    return this.flushInFlight;
+  }
+
+  private async flushPendingQueue(): Promise<{ sent: number; failed: number }> {
     const db = await this.dbReady;
     // Fetch a bounded batch rather than loading or deleting the full queue.
     // The remaining events stay durably queued until a later confirmed ACK.

@@ -348,6 +348,15 @@ export class CommissionService {
         );
       }
 
+      // Settlement batches snapshot their member commissions and totals.
+      // A direct revocation would leave DRAFT/APPROVED/PAID batch JSON
+      // inconsistent. Require an explicit batch dispute/reconciliation flow.
+      if (commission.settlementBatchId != null) {
+        throw new ConflictException(
+          `Commission ${commissionId} belongs to a settlement batch; reconcile it before revoking`,
+        );
+      }
+
       // Older records predate the positive-cent validation at creation.
       // A negative amount here would turn a "decrement" into a wallet credit.
       // Never attempt a funded reversal of malformed legacy amounts.
@@ -366,7 +375,13 @@ export class CommissionService {
       }
 
       const changed = await tx.commission.updateMany({
-        where: { id: commissionId, status: commission.status },
+        // Re-check membership atomically: a settlement generator may have
+        // claimed this APPROVED row after our initial findUnique().
+        where: {
+          id: commissionId,
+          status: commission.status,
+          settlementBatchId: null,
+        },
         data: {
           status: CommissionStatus.REVOKED,
           revokedAt: new Date(),

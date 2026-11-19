@@ -93,3 +93,100 @@ test("understands explicit @db.Uuid for a String primary key", () => {
   });
   assert.equal(report.idTypeMismatchCount, 0);
 });
+
+test("financial Float and Int amounts cannot silently become varchar or bigint", () => {
+  const report = auditPrismaSchema({
+    models: [{
+      name: "Wallet", dbName: "wallets",
+      fields: [
+        stringId,
+        { name: "availableBalance", dbName: "available_balance", type: "Float", kind: "scalar" },
+        { name: "pendingWithdrawal", dbName: "pending_withdrawal", type: "Float", kind: "scalar" },
+        { name: "retries", type: "Int", kind: "scalar" },
+      ],
+    }],
+    tables: [{ table_name: "wallets" }],
+    columns: [
+      { table_name: "wallets", column_name: "id", udt_name: "text" },
+      { table_name: "wallets", column_name: "available_balance", udt_name: "varchar" },
+      { table_name: "wallets", column_name: "pending_withdrawal", udt_name: "float8" },
+      { table_name: "wallets", column_name: "retries", udt_name: "int8" },
+    ],
+  });
+  assert.equal(report.missingColumnCount, 0);
+  assert.equal(report.scalarTypeMismatchCount, 2);
+  assert.deepEqual(report.scalarTypeMismatches, [
+    { table: "wallets", column: "available_balance", prismaType: "Float", expected: "float8", actual: "varchar" },
+    { table: "wallets", column: "retries", prismaType: "Int", expected: "int4", actual: "int8" },
+  ]);
+});
+
+test("checks Decimal, Boolean, BigInt and JSONB without requiring data rows", () => {
+  const fields = [
+    { name: "value", type: "Decimal", kind: "scalar" },
+    { name: "enabled", type: "Boolean", kind: "scalar" },
+    { name: "storage", type: "BigInt", kind: "scalar" },
+    { name: "data", type: "Json", kind: "scalar" },
+  ];
+  const actual = ["numeric", "bool", "int8", "jsonb"];
+  const report = auditPrismaSchema({
+    models: [{ name: "Ledger", dbName: "ledger", fields }],
+    tables: [{ table_name: "ledger" }],
+    columns: fields.map((f, i) => ({ table_name: "ledger", column_name: f.name, udt_name: actual[i] })),
+  });
+  assert.equal(report.scalarTypeMismatchCount, 0);
+  assert.equal(report.missingColumnCount, 0);
+});
+
+test("checks explicit native PostgreSQL mappings and non-ID UUIDs", () => {
+  const fields = [
+    { name: "rate", type: "Float", nativeType: ["Real", []], kind: "scalar" },
+    { name: "limit", type: "Int", nativeType: ["SmallInt", []], kind: "scalar" },
+    { name: "source", type: "String", nativeType: ["Uuid", []], kind: "scalar" },
+    { name: "payload", type: "Json", nativeType: ["Json", []], kind: "scalar" },
+  ];
+  const report = auditPrismaSchema({
+    models: [{ name: "Event", dbName: "events", fields }],
+    tables: [{ table_name: "events" }],
+    columns: [
+      { table_name: "events", column_name: "rate", udt_name: "float4" },
+      { table_name: "events", column_name: "limit", udt_name: "int2" },
+      { table_name: "events", column_name: "source", udt_name: "text" },
+      { table_name: "events", column_name: "payload", udt_name: "json" },
+    ],
+  });
+  assert.equal(report.scalarTypeMismatchCount, 1);
+  assert.deepEqual(report.scalarTypeMismatches[0], {
+    table: "events", column: "source", prismaType: "String", expected: "uuid", actual: "text",
+  });
+});
+
+test("avoids false positives for unsupported native mappings and array columns", () => {
+  const fields = [
+    { name: "counterArray", type: "Int", isList: true, kind: "scalar" },
+    { name: "unrecognized", type: "Decimal", nativeType: ["FutureDatabaseType", []], kind: "scalar" },
+    { name: "string", type: "String", kind: "scalar" },
+    { name: "date", type: "DateTime", kind: "scalar" },
+  ];
+  const report = auditPrismaSchema({
+    models: [{ name: "Future", dbName: "future", fields }],
+    tables: [{ table_name: "future" }],
+    columns: [
+      { table_name: "future", column_name: "counterArray", udt_name: "_int4" },
+      { table_name: "future", column_name: "unrecognized", udt_name: "numeric" },
+      { table_name: "future", column_name: "string", udt_name: "varchar" },
+      { table_name: "future", column_name: "date", udt_name: "timestamp" },
+    ],
+  });
+  assert.equal(report.scalarTypeMismatchCount, 0);
+});
+
+test("existing String primary-key validator remains distinct from scalar drift", () => {
+  const report = auditPrismaSchema({
+    models: [{ name: "Device", dbName: "devices", fields: [stringId] }],
+    tables: [{ table_name: "devices" }],
+    columns: [{ table_name: "devices", column_name: "id", udt_name: "uuid" }],
+  });
+  assert.equal(report.idTypeMismatchCount, 1);
+  assert.equal(report.scalarTypeMismatchCount, 0);
+});

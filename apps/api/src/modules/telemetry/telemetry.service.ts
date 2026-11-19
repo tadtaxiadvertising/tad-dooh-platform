@@ -202,6 +202,9 @@ export class TelemetryService {
     verified?: boolean;
     clientTimestamp?: string;
   }) {
+    // The fallback catch block must use the same trusted normalization.
+    const eventType =
+      data.eventType === "END" ? "play_confirm" : data.eventType;
     try {
       // Use raw SQL with ON CONFLICT for deduplication:
       // Same device + video + same-minute timestamp = duplicate
@@ -210,9 +213,6 @@ export class TelemetryService {
         : new Date();
       // Persist authenticated playback completion in the canonical form
       // queried by finance, verified metrics and advertiser reports.
-      const eventType =
-        data.eventType === "END" ? "play_confirm" : data.eventType;
-
       const result = await this.prisma.$executeRawUnsafe(
         `INSERT INTO playback_events (id, device_id, event_type, video_id, lat, lng, timestamp, is_simulated, verified)
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5,

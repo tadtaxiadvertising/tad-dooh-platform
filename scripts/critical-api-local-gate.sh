@@ -76,6 +76,7 @@ pnpm --filter api exec jest --runInBand \
   src/modules/drivers/__tests__/drivers-public-signup-device-binding.spec.ts \
   src/modules/drivers/__tests__/drivers-admin-device-assignment-atomic.spec.ts \
   src/modules/device/device-registration-ownership.spec.ts \
+  src/modules/analytics/analytics-unknown-device-enrollment.spec.ts \
   src/modules/drivers/__tests__/drivers.service.create.spec.ts \
   src/modules/qr-scan/__tests__/qr-scan.service.spec.ts \
   src/modules/auth/guards/tenant.guard.spec.ts \

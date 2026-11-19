@@ -54,7 +54,9 @@ export class AnalyticsService {
         device = await this.prisma.device.create({
           data: {
             deviceId: dto.deviceId,
-            status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
+            // Events are unauthenticated telemetry, not administrator approval.
+            // Preserve the event, but keep unknown hardware pending enrollment.
+            status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
             lastSeen: new Date(),
           },
         });

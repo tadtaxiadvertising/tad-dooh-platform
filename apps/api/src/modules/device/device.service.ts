@@ -81,7 +81,8 @@ export class DeviceService {
           isOnline: true,
           appVersion: dto.app_version,
           lastSeen: new Date(),
-          driverId: dto.driver_id ?? undefined,
+          // Public re-registration can refresh liveness, never ownership.
+          // Driver pairing is reserved for authenticated admin workflows.
         },
       });
     }
@@ -95,7 +96,7 @@ export class DeviceService {
         appVersion: dto.app_version,
         status: BUSINESS_RULES.STATUS.DEVICE.INITIAL, // 🔒 Requires admin approval before joining fleet
         lastSeen: new Date(),
-        driverId: dto.driver_id,
+        // New hardware stays unassigned until an ADMIN pairs it.
       },
     });
   }

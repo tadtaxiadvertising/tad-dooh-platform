@@ -16,6 +16,9 @@ export class RegisterDeviceDto {
   @IsString()
   app_version?: string;
 
+  // Legacy clients may still send driver_id during registration.
+  // It is deliberately ignored by this public endpoint: only the
+  // authenticated ADMIN pairing workflow may change Device.driverId.
   @IsOptional()
   @IsString()
   driver_id?: string;

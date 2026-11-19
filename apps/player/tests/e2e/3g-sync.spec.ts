@@ -228,4 +228,74 @@ test.describe("3G Sync — Telemetry flush on reconnect", () => {
     expect(remaining).toBe(1);
   });
 
+  test("5.3 — Overflow PoP queue retains unsubmitted events", async () => {
+    const page = await context.newPage();
+    await page.addInitScript(() => localStorage.setItem("TAD_DEVICE_ID", "e2e-device"));
+    await page.route("**/device/sync*", (route) => route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify({ update: false, blocked: false, sync_hash: "test" }),
+    }));
+    await page.route("**/sync/*", (route) => route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify({ etag: "test", killSwitch: false, playlist: [] }),
+    }));
+    const batchSizes: number[] = [];
+    await page.route("**/telemetry/playback-batch", (route) => {
+      const events = route.request().postDataJSON() as unknown[];
+      batchSizes.push(events.length);
+      return route.fulfill({
+        status: 201, contentType: "application/json",
+        body: JSON.stringify({ success: true, processed: events.length, rejected: 0 }),
+      });
+    });
+
+    await page.goto("/");
+    await page.waitForTimeout(2000);
+    await context.setOffline(true);
+    await page.evaluate(async () => {
+      await new Promise<void>((resolve, reject) => {
+        const req = indexedDB.open("tad_playback_queue", 1);
+        req.onupgradeneeded = () => {
+          if (!req.result.objectStoreNames.contains("events")) {
+            req.result.createObjectStore("events", { keyPath: "id" });
+          }
+        };
+        req.onsuccess = () => {
+          const tx = req.result.transaction("events", "readwrite");
+          const now = Date.now();
+          for (let i = 0; i < 60; i++) {
+            tx.objectStore("events").put({
+              id: `overflow-${i}_${now + i}`,
+              device_id: "e2e-device",
+              video_id: `overflow-${i}`,
+              timestamp: now + i,
+              event_type: "play_confirm",
+              queuedAt: now + i,
+            });
+          }
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        };
+        req.onerror = () => reject(req.error);
+      });
+    });
+
+    await context.setOffline(false);
+    await expect.poll(() => batchSizes.length, { timeout: 20_000 }).toBeGreaterThan(0);
+    expect(batchSizes[0]).toBe(50);
+    expect(batchSizes.every((count) => count <= 50)).toBe(true);
+
+    const pending = () => page.evaluate(() => new Promise<number>((resolve, reject) => {
+      const req = indexedDB.open("tad_playback_queue", 1);
+      req.onsuccess = () => {
+        const tx = req.result.transaction("events", "readonly");
+        const count = tx.objectStore("events").count();
+        count.onsuccess = () => resolve(count.result);
+        count.onerror = () => reject(count.error);
+      };
+      req.onerror = () => reject(req.error);
+    }));
+    await expect.poll(pending, { timeout: 20_000 }).toBe(10);
+  });
+
 });

@@ -607,7 +607,7 @@ export class CommissionService {
       // Approving a DRAFT freezes the operator's financial snapshot.
       // New APPROVED commissions for the same calendar period may have
       // appeared after generation. Never approve totals that omit them.
-      const periodMatch = /^(\\d{4})-(0[1-9]|1[0-2])$/.exec(batch.period);
+      const periodMatch = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(batch.period);
       if (!periodMatch) {
         throw new ConflictException(
           `Settlement batch ${batchId} has an invalid period; reconcile first`,

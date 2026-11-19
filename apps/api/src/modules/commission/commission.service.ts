@@ -754,7 +754,11 @@ export class CommissionService {
       select: {
         id: true,
         reference: true,
+        type: true,
         amount: true,
+        netAmount: true,
+        taxAmount: true,
+        currency: true,
         status: true,
         entityId: true,
         createdAt: true,
@@ -790,24 +794,55 @@ export class CommissionService {
     // Análisis de discrepancias
     const discrepancies: string[] = [];
 
-    // Comisión sin entrada en ledger
+    // Index source records by their unique reference. Avoid quadratic scans
+    // as driver/commission volume grows 10x, and never confuse a reference
+    // match with a valid economic event.
+    const ledgerByReference = new Map(
+      ledgerEntries.map((entry) => [entry.reference, entry] as const),
+    );
+    const commissionByReference = new Map(
+      commissions.map((commission) => [commission.reference, commission] as const),
+    );
+
     for (const c of commissions) {
-      const ledger = ledgerEntries.find((l) => l.reference === c.reference);
+      const ledger = ledgerByReference.get(c.reference);
       if (!ledger) {
         discrepancies.push(
           `Commission ${c.id} (${c.reference}) has no ledger entry`,
         );
-      } else if (ledger.amount !== c.amount) {
+        continue;
+      }
+      if (ledger.amount !== c.amount) {
         discrepancies.push(
           `Commission ${c.id} amount mismatch: commission=${c.amount}, ledger=${ledger.amount}`,
         );
       }
+      if (ledger.entityId !== c.driverId) {
+        discrepancies.push(`Commission ${c.id} ledger beneficiary mismatch`);
+      }
+      if (ledger.type !== "OUTGOING" || ledger.currency !== "DOP") {
+        discrepancies.push(`Commission ${c.id} ledger type/currency mismatch`);
+      }
+      if (ledger.netAmount !== c.amount || ledger.taxAmount !== 0) {
+        discrepancies.push(`Commission ${c.id} ledger net/tax mismatch`);
+      }
+      // Approved credits must have exactly one completed source ledger
+      // entry. Pending commissions must not masquerade as completed credits.
+      const expectedStatus =
+        c.status === CommissionStatus.PENDING
+          ? "PENDING"
+          : c.status === CommissionStatus.APPROVED ||
+              c.status === CommissionStatus.PAID
+            ? "COMPLETED"
+            : null;
+      if (expectedStatus && ledger.status !== expectedStatus) {
+        discrepancies.push(`Commission ${c.id} source ledger status mismatch`);
+      }
     }
 
-    // Entrada en ledger sin comisión
+    // Ledger entries with no related commission must never be ignored.
     for (const l of ledgerEntries) {
-      const commission = commissions.find((c) => c.reference === l.reference);
-      if (!commission) {
+      if (!l.reference || !commissionByReference.has(l.reference)) {
         discrepancies.push(
           `Ledger entry ${l.id} (${l.reference}) has no matching commission`,
         );
@@ -824,15 +859,15 @@ export class CommissionService {
       );
     }
 
-    // Comisiones PAID sin payout correspondiente
-    const paidCommissions = commissions.filter((c) => c.status === "PAID");
-    for (const c of paidCommissions) {
-      const payout = payouts.find((p) =>
-        p.reference?.includes(c.driverId.slice(0, 8)),
-      );
-      if (!payout) {
+    // A payout reference containing an ID prefix is NOT bank evidence.
+    // The legacy payout route and individual mark-paid method are disabled
+    // until per-beneficiary bank confirmation exists (#309/#338). Therefore
+    // a historical PAID commission cannot be declared reconciled here,
+    // even if an unverified OPEX_COMMISSION_PAYOUT row happens to exist.
+    for (const c of commissions) {
+      if (c.status === CommissionStatus.PAID) {
         discrepancies.push(
-          `Commission ${c.id} marked PAID but no payout found for driver ${c.driverId}`,
+          `Commission ${c.id} marked PAID without verified bank evidence; manual reconciliation required`,
         );
       }
     }

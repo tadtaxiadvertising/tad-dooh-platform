@@ -698,17 +698,27 @@ export class DriversService {
     });
     if (!device) throw new Error("Dispositivo no encontrado en el inventario");
 
-    // Both writes must succeed or neither must persist. If the target
-    // tablet update fails after unlinking the previous tablet, a non-atomic
-    // handoff leaves the driver without hardware and breaks attribution.
+    // Keep driver handoffs serialized, including concurrent assignments to
+    // different tablets. Updating the driver row takes a PostgreSQL row lock
+    // for this transaction; updatedAt reflects the administrative change.
+    // Compare-and-set on the target's observed owner prevents another admin
+    // from silently overwriting a device that changed hands after our read.
     return this.prisma.$transaction(async (tx) => {
+      await tx.driver.update({
+        where: { id: driverId },
+        data: { updatedAt: new Date() },
+      });
+
       await tx.device.updateMany({
-        where: { driverId },
+        where: { driverId, id: { not: device.id } },
         data: { driverId: null },
       });
 
+      // Prisma 5 allows non-unique predicates alongside a unique id in
+      // update.where. A lost race throws P2025 and rolls back the unlink.
+      // Keep the target attached when replaying the same assignment.
       return tx.device.update({
-        where: { id: device.id },
+        where: { id: device.id, driverId: device.driverId },
         data: { driverId },
       });
     });

@@ -7,7 +7,7 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
   const ledgerUpdateMany = jest.fn();
   const ledgerCreate = jest.fn();
   const walletUpsert = jest.fn();
-  const walletUpdate = jest.fn();
+  const walletUpdateMany = jest.fn();
   const findUniqueOrThrow = jest.fn();
 
   const commission = {
@@ -23,7 +23,7 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
       updateMany: ledgerUpdateMany,
       create: ledgerCreate,
     },
-    wallet: { upsert: walletUpsert, update: walletUpdate },
+    wallet: { upsert: walletUpsert, updateMany: walletUpdateMany },
   };
   const prisma = {
     commission: {
@@ -46,7 +46,7 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
     updateMany.mockResolvedValue({ count: 1 });
     ledgerUpdateMany.mockResolvedValue({ count: 1 });
     walletUpsert.mockResolvedValue({ driverId: "driver-1", availableBalance: 500 });
-    walletUpdate.mockResolvedValue({ driverId: "driver-1", availableBalance: 0 });
+    walletUpdateMany.mockResolvedValue({ count: 1 });
     ledgerCreate.mockResolvedValue({ id: "reversal-1" });
   });
 
@@ -156,10 +156,58 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
           category: "OPEX_COMMISSION_REVERSAL",
         }),
       });
-      expect(walletUpdate).toHaveBeenCalledWith({
-        where: { driverId: "driver-1" },
+      expect(walletUpdateMany).toHaveBeenCalledWith({
+        where: {
+          driverId: "driver-1",
+          availableBalance: { gte: 500 },
+        },
         data: { availableBalance: { decrement: 500 } },
       });
+    },
+  );
+
+  it.each([0, 2])(
+    "fails closed when funded wallet revocation matches %s wallets",
+    async (count) => {
+      findUnique.mockResolvedValue({
+        ...commission,
+        status: CommissionStatus.APPROVED,
+      });
+      walletUpdateMany.mockResolvedValue({ count });
+
+      await expect(
+        service.revokeCommission("commission-1", "fraud", "admin-1"),
+      ).rejects.toBeInstanceOf(ConflictException);
+
+      expect(walletUpdateMany).toHaveBeenCalledWith({
+        where: {
+          driverId: "driver-1",
+          availableBalance: { gte: 500 },
+        },
+        data: { availableBalance: { decrement: 500 } },
+      });
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      // A mocked Prisma transaction cannot prove rollback of the commission
+      // status and reversal ledger. Verify on real PostgreSQL in staging.
+    },
+  );
+
+  it.each([0, -500, Number.NaN, Number.POSITIVE_INFINITY, 0.001])(
+    "rejects malformed historical approved amount %s before reversing",
+    async (amount) => {
+      findUnique.mockResolvedValue({
+        ...commission,
+        amount,
+        status: CommissionStatus.APPROVED,
+      });
+
+      await expect(
+        service.revokeCommission("commission-1", "invalid", "admin-1"),
+      ).rejects.toBeInstanceOf(ConflictException);
+
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(ledgerCreate).not.toHaveBeenCalled();
+      expect(walletUpdateMany).not.toHaveBeenCalled();
     },
   );
 
@@ -170,7 +218,7 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
         where: { id: "commission-1", status: CommissionStatus.PENDING },
       }),
     );
-    expect(walletUpdate).not.toHaveBeenCalled();
+    expect(walletUpdateMany).not.toHaveBeenCalled();
     expect(ledgerCreate).not.toHaveBeenCalled();
   });
 
@@ -180,7 +228,7 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
     await expect(service.revokeCommission("commission-1", "fraud", "admin-1"))
       .rejects.toBeInstanceOf(ConflictException);
     expect(ledgerCreate).not.toHaveBeenCalled();
-    expect(walletUpdate).not.toHaveBeenCalled();
+    expect(walletUpdateMany).not.toHaveBeenCalled();
   });
 
   it("rejects replay of revoked commission with no balance debit", async () => {
@@ -188,7 +236,7 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
     await expect(service.revokeCommission("commission-1", "fraud", "admin-2"))
       .rejects.toBeInstanceOf(ConflictException);
     expect(updateMany).not.toHaveBeenCalled();
-    expect(walletUpdate).not.toHaveBeenCalled();
+    expect(walletUpdateMany).not.toHaveBeenCalled();
   });
 
   it("marks APPROVED as PAID with a conditional update only", async () => {

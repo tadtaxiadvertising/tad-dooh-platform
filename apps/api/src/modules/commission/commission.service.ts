@@ -348,6 +348,23 @@ export class CommissionService {
         );
       }
 
+      // Older records predate the positive-cent validation at creation.
+      // A negative amount here would turn a "decrement" into a wallet credit.
+      // Never attempt a funded reversal of malformed legacy amounts.
+      if (
+        [CommissionStatus.APPROVED, CommissionStatus.PAID].includes(
+          commission.status as CommissionStatus,
+        ) &&
+        (!Number.isFinite(commission.amount) ||
+          commission.amount <= 0 ||
+          !Number.isSafeInteger(Math.round(commission.amount * 100)) ||
+          Math.round(commission.amount * 100) / 100 !== commission.amount)
+      ) {
+        throw new ConflictException(
+          `Commission ${commissionId} has an invalid amount; reconcile before revoking`,
+        );
+      }
+
       const changed = await tx.commission.updateMany({
         where: { id: commissionId, status: commission.status },
         data: {
@@ -382,12 +399,24 @@ export class CommissionService {
           },
         });
 
-        // Wallet credit occurs at APPROVED, not PAID. Reversal of EITHER
-        // state must debit that same credit once; old code only debited PAID.
-        await tx.wallet.update({
-          where: { driverId: commission.driverId },
+        // Wallet credit occurs at APPROVED, not PAID. Never debit funds
+        // that have since been withdrawn/spent or use a stale balance read:
+        // an atomic PostgreSQL predicate prevents negative availableBalance
+        // even when another debit races with this revocation.
+        const debited = await tx.wallet.updateMany({
+          where: {
+            driverId: commission.driverId,
+            availableBalance: { gte: commission.amount },
+          },
           data: { availableBalance: { decrement: commission.amount } },
         });
+        if (debited.count !== 1) {
+          // Roll back the REVOKED claim and reversal ledger in this same tx.
+          // No silent debt/negative wallet: require explicit reconciliation.
+          throw new ConflictException(
+            `Commission ${commissionId} wallet funds unavailable; reconcile before revoking`,
+          );
+        }
       }
 
       this.logger.log(`[COMMISSION] Revoked commission ${commissionId}`);

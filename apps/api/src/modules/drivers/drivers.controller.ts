@@ -144,7 +144,7 @@ export class DriversController {
 
     // Public signup must not mass-assign driver/device/financial fields.
     // Tablet pairing is reserved for the authenticated ADMIN endpoint
-    // PUT /drivers/:id/assign-device, after onboarding verification.
+    // POST /drivers/:id/assign-device, after onboarding verification.
     return this.driversService.create({
       fullName: body.fullName,
       phone: body.phone,

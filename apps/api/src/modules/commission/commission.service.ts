@@ -751,6 +751,7 @@ export class CommissionService {
         sourceType: true,
         status: true,
         reference: true,
+        approvedAt: true,
         settlementBatchId: true,
         createdAt: true,
         paidAt: true,
@@ -806,6 +807,46 @@ export class CommissionService {
       },
     });
 
+    // Reversals may be posted months after the original commission.
+    // Look them up by the exact immutable source reference, NOT by the
+    // reconciliation month's ledger createdAt window. The reference column
+    // has a unique index and avoids scanning unrelated financial rows.
+    // Bound each IN-list to avoid unbounded SQL parameters at 10x volume.
+    const reversalReferences = [
+      ...new Set(commissions.map((c) => `REV-${c.reference}`)),
+    ];
+    const reversals: Array<{
+      id: string;
+      reference: string | null;
+      entityId: string | null;
+      type: string;
+      amount: number;
+      netAmount: number;
+      taxAmount: number;
+      currency: string;
+      status: string;
+    }> = [];
+    for (let offset = 0; offset < reversalReferences.length; offset += 500) {
+      const matches = await this.prisma.financialTransaction.findMany({
+        where: {
+          category: "OPEX_COMMISSION_REVERSAL",
+          reference: { in: reversalReferences.slice(offset, offset + 500) },
+        },
+        select: {
+          id: true,
+          reference: true,
+          entityId: true,
+          type: true,
+          amount: true,
+          netAmount: true,
+          taxAmount: true,
+          currency: true,
+          status: true,
+        },
+      });
+      reversals.push(...matches);
+    }
+
     // Análisis de discrepancias
     const discrepancies: string[] = [];
 
@@ -817,6 +858,9 @@ export class CommissionService {
     );
     const commissionByReference = new Map(
       commissions.map((commission) => [commission.reference, commission] as const),
+    );
+    const reversalByReference = new Map(
+      reversals.map((entry) => [entry.reference, entry] as const),
     );
 
     for (const c of commissions) {
@@ -844,10 +888,12 @@ export class CommissionService {
       // Approved credits must have exactly one completed source ledger
       // entry. Pending commissions must not masquerade as completed credits.
       const expectedStatus =
-        c.status === CommissionStatus.PENDING
+        c.status === CommissionStatus.PENDING ||
+        (c.status === CommissionStatus.REVOKED && !c.approvedAt)
           ? "PENDING"
           : c.status === CommissionStatus.APPROVED ||
-              c.status === CommissionStatus.PAID
+              c.status === CommissionStatus.PAID ||
+              (c.status === CommissionStatus.REVOKED && !!c.approvedAt)
             ? "COMPLETED"
             : null;
       if (expectedStatus && ledger.status !== expectedStatus) {
@@ -861,6 +907,43 @@ export class CommissionService {
         discrepancies.push(
           `Ledger entry ${l.id} (${l.reference}) has no matching commission`,
         );
+      }
+    }
+
+    // A revoked credit has to have its exact, completed compensating
+    // financial entry. A PENDING commission was never wallet-credited,
+    // therefore a reversal would instead be an unexpected money movement.
+    // This verifies ledger consistency, not the bank or current wallet state.
+    for (const c of commissions) {
+      const reversal = reversalByReference.get(`REV-${c.reference}`);
+      const fundedRevocation =
+        c.status === CommissionStatus.REVOKED && !!c.approvedAt;
+      if (fundedRevocation && !reversal) {
+        discrepancies.push(
+          `Commission ${c.id} revoked after approval but has no reversal ledger entry`,
+        );
+        continue;
+      }
+      if (!fundedRevocation && reversal) {
+        discrepancies.push(
+          `Commission ${c.id} has an unexpected reversal ledger entry`,
+        );
+        continue;
+      }
+      if (fundedRevocation && reversal) {
+        if (
+          reversal.entityId !== c.driverId ||
+          reversal.type !== "INCOMING" ||
+          reversal.currency !== "DOP" ||
+          reversal.amount !== c.amount ||
+          reversal.netAmount !== c.amount ||
+          reversal.taxAmount !== 0 ||
+          reversal.status !== "COMPLETED"
+        ) {
+          discrepancies.push(
+            `Commission ${c.id} reversal ledger attribution/amount/status mismatch`,
+          );
+        }
       }
     }
 

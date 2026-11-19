@@ -296,6 +296,8 @@ test.describe("3G Sync — Telemetry flush on reconnect", () => {
       req.onerror = () => reject(req.error);
     }));
     await expect.poll(pending, { timeout: 20_000 }).toBe(10);
+    // Reconnect has two callers (PlaybackQueue and SyncManager): one request only.
+    expect(batchSizes).toEqual([50]);
   });
 
 });

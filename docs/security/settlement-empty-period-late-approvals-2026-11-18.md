@@ -10,6 +10,7 @@ El servicio de liquidación mensual creaba automáticamente un lote `APPROVED` p
 ## Decisión / cambio mínimo
 
 - **No crear ni aprobar automáticamente** un lote sin comisiones `APPROVED`. Devolver `409 Conflict` y permitir volver a generar después de que existan comisiones elegibles.
+- **Validar mes/año también dentro de `CommissionService.generateMonthlySettlement`**, no solo en el controlador HTTP: mes entero entre 1 y 12 y año entero entre 2020 y 2100. Rechazar con 400 antes de `$transaction` para que trabajos internos no creen lotes `2026-13` asociados a enero de 2027 por la normalización de `new Date()`. El comportamiento de aprobación y las liquidaciones ya registradas no se modifica.
 - Cuando ya existe un lote, contar las comisiones `APPROVED` del periodo con `settlementBatchId=null`. Si existe alguna, **no devolver el lote como si estuviera actualizado**; devolver 409 y exigir conciliación explícita.
 - En la aprobación manual de un lote DRAFT, repetir la comprobación de comisiones APPROVED que siguen fuera del lote; rechazar la aprobación con 409 antes del UPDATE si hay alguna o si el período guardado es inválido.
 - Preservar generación no vacía, control atómico de membresía, aprobación manual de DRAFT cuando no hay discrepancias y suspensión de pagos bancarios.

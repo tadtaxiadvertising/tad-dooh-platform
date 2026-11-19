@@ -434,6 +434,21 @@ export class CommissionService {
     input: MonthlySettlementInput,
   ): Promise<SettlementBatch> {
     const { month, year, generatedBy } = input;
+    // Keep the domain boundary aligned with CommissionController. Internal
+    // jobs bypass HTTP validation, and Date() silently normalizes months 0/13
+    // into another year, potentially labelling a financial batch incorrectly.
+    if (
+      !Number.isInteger(month) ||
+      month < 1 ||
+      month > 12 ||
+      !Number.isInteger(year) ||
+      year < 2020 ||
+      year > 2100
+    ) {
+      throw new BadRequestException(
+        "month/year deben representar un período válido",
+      );
+    }
     const periodKey = `${year}-${String(month).padStart(2, "0")}`;
     const periodStart = new Date(year, month - 1, 1);
     const periodEnd = new Date(year, month, 1);

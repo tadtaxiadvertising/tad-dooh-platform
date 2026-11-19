@@ -23,7 +23,6 @@ describe("Commission reconciliation must not report false-clean financial status
     createdAt: new Date("2026-11-05T12:00:00.000Z"),
     approvedAt: new Date("2026-11-06T12:00:00.000Z") as Date | null,
     paidAt: null,
-    approvedAt: new Date("2026-11-05T13:00:00.000Z") as Date | null,
   };
   const sourceLedger = {
     id: "ledger-1",
@@ -51,9 +50,8 @@ describe("Commission reconciliation must not report false-clean financial status
     taxAmount: 0,
     status: "COMPLETED",
   };
-  let currentReversals: Array<typeof validReversal> = [];
+  let currentReversals: Array<typeof validReversal | typeof sourceLedger> = [];
   let currentPayouts: Array<Record<string, unknown>> = [];
-  let currentReversals: Array<typeof sourceLedger> = [];
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -66,7 +64,6 @@ describe("Commission reconciliation must not report false-clean financial status
     financialRead.mockImplementation(async ({ where }) => {
       if (where.category === "OPEX_COMMISSION") return currentSourceLedger;
       if (where.category === "OPEX_COMMISSION_PAYOUT") return currentPayouts;
-      if (where.category === "OPEX_COMMISSION_REVERSAL") return currentReversals;
       if (where.category === "OPEX_COMMISSION_REVERSAL") {
         // Simulate indexed lookup by exact reference, regardless of date.
         return currentReversals.filter((entry) =>

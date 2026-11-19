@@ -252,6 +252,8 @@ export class CommissionService {
 
       // Fail closed: never grant wallet balance without advancing exactly
       // one matching, still-pending source ledger entry in the SAME tx.
+      // Gross amount alone is insufficient: source net/tax/currency must
+      // match the same DOP commission or no wallet credit is permitted.
       // A missing/mismatched/previously completed ledger must be reconciled.
       const ledger = await tx.financialTransaction.updateMany({
         where: {
@@ -260,6 +262,9 @@ export class CommissionService {
           category: "OPEX_COMMISSION",
           entityId: commission.driverId,
           amount: commission.amount,
+          netAmount: commission.amount,
+          taxAmount: 0,
+          currency: "DOP",
           status: "PENDING",
         },
         data: { status: "COMPLETED" },

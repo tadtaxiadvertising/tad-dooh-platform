@@ -82,6 +82,23 @@ export class CommissionService {
    * Si ya existe una comisión con esa reference, no se crea duplicada.
    */
   async createIdempotent(input: CreateCommissionInput) {
+    // A commission credits the driver wallet and creates a matching ledger
+    // entry once approved. Reject negative, NaN/Infinity, sub-cent or
+    // imprecisely huge amounts BEFORE any database transaction starts.
+    // This also protects internal callers that bypass the HTTP controller.
+    const amount = input?.amount;
+    if (
+      typeof amount !== "number" ||
+      !Number.isFinite(amount) ||
+      amount <= 0 ||
+      !Number.isSafeInteger(Math.round(amount * 100)) ||
+      Math.round(amount * 100) / 100 !== amount
+    ) {
+      throw new BadRequestException(
+        "Commission amount must be a positive finite RD$ amount in cents",
+      );
+    }
+
     this.logger.log(
       `[COMMISSION] Creating idempotent commission: ${input.reference} for driver ${input.driverId}`,
     );

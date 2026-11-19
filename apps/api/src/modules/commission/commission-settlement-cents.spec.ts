@@ -165,17 +165,21 @@ describe("Monthly settlement uses exact integer cents", () => {
     expect(claimCommissions).not.toHaveBeenCalled();
   });
 
-  it("retains empty-period semantics without a financial claim", async () => {
+  it("refuses an empty period without creating an automatically approved batch", async () => {
+    // PR #341 deliberately refuses to seal empty months. If commissions
+    // become APPROVED later, the operator must be able to retry generation.
     findCommissions.mockResolvedValue([]);
-    const batch = await service.generateMonthlySettlement({
-      month: 11,
-      year: 2026,
-      generatedBy: "admin-1",
-    });
-    expect(batch.status).toBe("APPROVED");
-    expect(batch.grossTotal).toBe(0);
-    expect(batch.netTotal).toBe(0);
-    expect(batch.withholdings).toBe(0);
+
+    await expect(
+      service.generateMonthlySettlement({
+        month: 11,
+        year: 2026,
+        generatedBy: "admin-1",
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(createBatch).not.toHaveBeenCalled();
     expect(claimCommissions).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 });

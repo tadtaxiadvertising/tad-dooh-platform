@@ -154,8 +154,11 @@ describe("CommissionService", () => {
     it("should return existing commission when reference exists", async () => {
       const existing = {
         id: "commission-1",
+        driverId: "driver-1",
         reference: "REF-BONUS-123",
         amount: 500,
+        sourceType: CommissionSourceType.DRIVER_REFERRAL,
+        metadata: {},
         status: CommissionStatus.PENDING,
       };
       mockPrisma.commission.findFirst.mockResolvedValue(existing);

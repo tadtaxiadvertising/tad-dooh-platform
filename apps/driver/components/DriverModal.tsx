@@ -4,7 +4,6 @@ import {
   User,
   Phone,
   IdCard,
-  CreditCard,
   Hash,
 } from "lucide-react";
 import { createDriver } from "@tad/services";
@@ -29,7 +28,6 @@ const DriverModal = React.memo(function DriverModal({
     cedula: "",
     taxiPlate: "",
     licensePlate: "",
-    subscriptionPaid: false,
   });
 
   if (!isOpen) return null;
@@ -51,7 +49,6 @@ const DriverModal = React.memo(function DriverModal({
         cedula: "",
         taxiPlate: "",
         licensePlate: "",
-        subscriptionPaid: false,
       });
     } catch (err: unknown) {
       console.error("Error creating driver:", err);
@@ -177,27 +174,9 @@ const DriverModal = React.memo(function DriverModal({
               cuando el conductor esté habilitado para recibir un dispositivo.
             </p>
 
-            <div className="flex items-center gap-3 pt-6">
-              <button
-                type="button"
-                onClick={() =>
-                  setFormData({
-                    ...formData,
-                    subscriptionPaid: !formData.subscriptionPaid,
-                  })
-                }
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all font-bold text-xs uppercase tracking-wider ${
-                  formData.subscriptionPaid
-                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                    : "bg-zinc-800 border-white/5 text-zinc-500"
-                }`}
-              >
-                <CreditCard className="w-4 h-4" />
-                {formData.subscriptionPaid
-                  ? "Pagado RD$6,000"
-                  : "Pendiente Pago"}
-              </button>
-            </div>
+            <p className="text-xs text-zinc-400">
+              El pago se confirma después del registro mediante el proceso autorizado.
+            </p>
           </div>
 
           <div className="flex gap-3 pt-4">

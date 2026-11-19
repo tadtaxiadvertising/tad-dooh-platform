@@ -675,23 +675,32 @@ export class DriversService {
     });
     if (!driver) throw new Error("Chofer no encontrado");
 
-    // Verificar onboarding completado (TOS + Pago + Banco)
-    const onboardingCompleteSteps: string[] = [
-      BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.COMPLETED,
-      BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING,
-    ];
-    const onboardingComplete = onboardingCompleteSteps.includes(
-      driver.onboardingStatus,
-    );
-
-    if (
-      driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE &&
-      !onboardingComplete
-    ) {
-      throw new ForbiddenException(
-        `Onboarding incompleto o suscripción no pagada. Estado actual: ${driver.onboardingStatus}. Asegúrate de completar: TOS → Pago RD$${BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD.toLocaleString()} → Cuenta bancaria.`,
-      );
-    }
+    // A driver's eligibility can change while another admin is assigning
+    // hardware. Validate before the transaction AND again after acquiring
+    // the driver-row lock, using one consistent rule.
+    const assertEligibleForDevice = (candidate: {
+      status: string;
+      onboardingStatus: string;
+    }) => {
+      if (candidate.status === BUSINESS_RULES.STATUS.DRIVER.BLOCKED) {
+        throw new ForbiddenException(
+          "Conductor bloqueado: no se puede asignar una tablet.",
+        );
+      }
+      const onboardingCompleteSteps: string[] = [
+        BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.COMPLETED,
+        BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING,
+      ];
+      if (
+        candidate.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE &&
+        !onboardingCompleteSteps.includes(candidate.onboardingStatus)
+      ) {
+        throw new ForbiddenException(
+          `Onboarding incompleto o suscripción no pagada. Estado actual: ${candidate.onboardingStatus}. Asegúrate de completar: TOS → Pago RD$${BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD.toLocaleString()} → Cuenta bancaria.`,
+        );
+      }
+    };
+    assertEligibleForDevice(driver);
 
     const device = await this.prisma.device.findFirst({
       where: { OR: [{ deviceId }, { id: deviceId }] },
@@ -704,10 +713,14 @@ export class DriversService {
     // Compare-and-set on the target's observed owner prevents another admin
     // from silently overwriting a device that changed hands after our read.
     return this.prisma.$transaction(async (tx) => {
-      await tx.driver.update({
+      const lockedDriver = await tx.driver.update({
         where: { id: driverId },
         data: { updatedAt: new Date() },
+        select: { status: true, onboardingStatus: true },
       });
+      // A suspension between the initial read and this lock must prevent
+      // device unlinking and binding; a rejected transaction rolls back.
+      assertEligibleForDevice(lockedDriver);
       // Serialize handoffs for the same driver. A transaction alone cannot
       // prevent concurrent admins from assigning two distinct tablets:
       // both may unlink the old binding before either target is written.

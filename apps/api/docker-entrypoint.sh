@@ -33,7 +33,13 @@ fi
 echo "[entrypoint] Applying Prisma migrations..."
 node ./scripts/check-supabase-target.cjs
 DATABASE_URL="$DIRECT_URL" pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma
-echo "[entrypoint] Prisma migrations applied."
+
+# Prisma migrate deploy only applies migrations not yet marked finished.
+# It does NOT detect drift after restoration/manual DDL. Refuse to start the
+# NestJS API if critical Prisma model tables, columns or relation types differ
+# from the real database. Uses read-only PostgreSQL metadata; no auto-repair.
+DATABASE_URL="$DIRECT_URL" node ./scripts/check-prisma-drift.cjs
+echo "[entrypoint] Prisma migrations applied; schema parity verified."
 
 echo "[entrypoint] Starting node dist/main.js ..."
 exec node --expose-gc dist/main.js

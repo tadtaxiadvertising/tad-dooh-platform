@@ -25,7 +25,8 @@ cd -- "$ROOT"
 # Ignore dependency, git and generated trees when searching.
 unsafe_env="$(find "$ROOT" \
   \( -type d \( -name node_modules -o -name .git -o -name .next \) -prune \) -o \
-  \( -type f \( -name '.env' -o -name '.env.*' -o -name '.envrc' -o -name '.envrc.*' \) \
+  \( \( -type f -o -type l \) \
+     \( -name '.env' -o -name '.env.*' -o -name '.envrc' -o -name '.envrc.*' \) \
      ! -name '*.example' -print \) -quit)"
 if [[ -n "$unsafe_env" ]]; then
   echo 'BLOCKED: environment file present in checkout; use an isolated sanitized checkout' >&2

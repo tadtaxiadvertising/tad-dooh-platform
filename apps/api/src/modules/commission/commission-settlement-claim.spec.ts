@@ -10,6 +10,7 @@ describe("Commission monthly settlement atomic membership claim", () => {
   const findCommissions = jest.fn();
   const createBatch = jest.fn();
   const claimCommissions = jest.fn();
+  const countUnbatched = jest.fn();
 
   const tx = {
     settlementBatch: {
@@ -19,6 +20,7 @@ describe("Commission monthly settlement atomic membership claim", () => {
     commission: {
       findMany: findCommissions,
       updateMany: claimCommissions,
+      count: countUnbatched,
     },
   };
   const prisma = {
@@ -62,6 +64,7 @@ describe("Commission monthly settlement atomic membership claim", () => {
     findCommissions.mockResolvedValue([eligible]);
     createBatch.mockResolvedValue(draftBatch);
     claimCommissions.mockResolvedValue({ count: 1 });
+    countUnbatched.mockResolvedValue(0);
   });
 
   it("claims only still-APPROVED and unbatched members before publishing totals", async () => {
@@ -144,34 +147,74 @@ describe("Commission monthly settlement atomic membership claim", () => {
     });
 
     expect(batch.status).toBe("APPROVED");
+    expect(countUnbatched).toHaveBeenCalledTimes(1);
     expect(findCommissions).not.toHaveBeenCalled();
     expect(createBatch).not.toHaveBeenCalled();
     expect(claimCommissions).not.toHaveBeenCalled();
   });
 
-  it("preserves the existing empty-period semantics without a membership claim", async () => {
+  it("does not create an automatically approved empty-period batch", async () => {
     findCommissions.mockResolvedValue([]);
-    createBatch.mockResolvedValue({
-      ...draftBatch,
-      status: "APPROVED",
-      grossTotal: 0,
-      netTotal: 0,
-      withholdings: 0,
-    });
 
-    const batch = await service.generateMonthlySettlement({
+    await expect(
+      service.generateMonthlySettlement({
+        month: 11,
+        year: 2026,
+        generatedBy: "admin-1",
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(createBatch).not.toHaveBeenCalled();
+    expect(claimCommissions).not.toHaveBeenCalled();
+    expect(countUnbatched).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows a retry after an initially empty period receives approvals", async () => {
+    findCommissions.mockResolvedValueOnce([]).mockResolvedValueOnce([eligible]);
+    await expect(
+      service.generateMonthlySettlement({
+        month: 11,
+        year: 2026,
+        generatedBy: "admin-1",
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(createBatch).not.toHaveBeenCalled();
+
+    const result = await service.generateMonthlySettlement({
       month: 11,
       year: 2026,
       generatedBy: "admin-1",
     });
-
-    expect(batch.grossTotal).toBe(0);
-    expect(claimCommissions).not.toHaveBeenCalled();
-    expect(createBatch).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        status: "APPROVED",
-        commissionsCount: 0,
-      }),
-    });
+    expect(result.id).toBe("batch-1");
+    expect(createBatch).toHaveBeenCalledTimes(1);
+    expect(claimCommissions).toHaveBeenCalledTimes(1);
   });
+
+  it("blocks stale batch reuse when later-approved commissions are still unbatched", async () => {
+    findBatch.mockResolvedValue({ ...draftBatch, status: "APPROVED" });
+    countUnbatched.mockResolvedValue(2);
+
+    await expect(
+      service.generateMonthlySettlement({
+        month: 11,
+        year: 2026,
+        generatedBy: "admin-2",
+      }),
+    ).rejects.toThrow("approved commissions outside its batch");
+
+    expect(countUnbatched).toHaveBeenCalledWith({
+      where: {
+        status: CommissionStatus.APPROVED,
+        createdAt: {
+          gte: new Date(2026, 10, 1),
+          lt: new Date(2026, 11, 1),
+        },
+        settlementBatchId: null,
+      },
+    });
+    expect(createBatch).not.toHaveBeenCalled();
+    expect(claimCommissions).not.toHaveBeenCalled();
+  });
+
 });

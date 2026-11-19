@@ -58,24 +58,18 @@ export class PlaybackQueue {
 
   async flushQueue(): Promise<{ sent: number; failed: number }> {
     const db = await this.dbReady;
+    // Fetch a bounded batch rather than loading or deleting the full queue.
+    // The remaining events stay durably queued until a later confirmed ACK.
+    const batchSize = Math.max(1, Math.floor(env.PLAYBACK_QUEUE_MAX_SIZE));
     const events = await new Promise<PlaybackEvent[]>((resolve) => {
       const tx = db.transaction(QUEUE_STORE, "readonly");
       const store = tx.objectStore(QUEUE_STORE);
-      const req = store.getAll();
+      const req = store.getAll(undefined, batchSize);
       req.onsuccess = () => resolve(req.result || []);
       req.onerror = () => resolve([]);
     });
 
     if (events.length === 0) return { sent: 0, failed: 0 };
-
-    // Trim queue to max size (anti-OOM)
-    if (events.length > env.PLAYBACK_QUEUE_MAX_SIZE) {
-      const excess = events.length - env.PLAYBACK_QUEUE_MAX_SIZE;
-      for (let i = 0; i < excess; i++) {
-        await this.removeEvent(`${events[i].video_id}_${events[i].timestamp}`);
-      }
-      events.splice(0, excess);
-    }
 
     // Batch send — use the validated endpoint
     let sent = 0;

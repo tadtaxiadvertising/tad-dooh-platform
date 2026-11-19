@@ -38,6 +38,7 @@ if (!connectionUrl) {
       report.missingTableCount ||
       report.missingColumnCount ||
       report.idTypeMismatchCount ||
+      report.scalarTypeMismatchCount ||
       report.relationTypeMismatchCount
     ) {
       process.exitCode = 1;

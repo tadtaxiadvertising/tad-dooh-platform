@@ -4,11 +4,9 @@ import {
   User,
   Phone,
   IdCard,
-  CreditCard,
   Hash,
   AlertTriangle,
 } from "lucide-react";
-import clsx from "clsx";
 import { createDriver } from "@tad/services";
 import { notifyChange } from "@tad/ui";
 import { toast } from "sonner";
@@ -32,7 +30,6 @@ const DriverModal = React.memo(function DriverModal({
     cedula: "",
     taxiPlate: "",
     licensePlate: "",
-    subscriptionPaid: false,
     contractAccepted: false,
   });
 
@@ -55,7 +52,6 @@ const DriverModal = React.memo(function DriverModal({
         cedula: "",
         taxiPlate: "",
         licensePlate: "",
-        subscriptionPaid: false,
         contractAccepted: false,
       });
     } catch (err: unknown) {
@@ -221,29 +217,9 @@ const DriverModal = React.memo(function DriverModal({
               </label>
             </div>
 
-            {/* Subscription Toggle */}
-            <div className="flex items-center gap-3 pt-6">
-              <button
-                type="button"
-                onClick={() =>
-                  setFormData({
-                    ...formData,
-                    subscriptionPaid: !formData.subscriptionPaid,
-                  })
-                }
-                className={clsx(
-                  "flex items-center gap-2 px-4 py-2 rounded-xl border transition-all font-bold text-xs uppercase tracking-wider",
-                  formData.subscriptionPaid
-                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                    : "bg-zinc-900 border-white/10 text-zinc-500",
-                )}
-              >
-                <CreditCard className="w-4 h-4" />
-                {formData.subscriptionPaid
-                  ? "Pagado RD$6,000"
-                  : "Pendiente Pago"}
-              </button>
-            </div>
+            <p className="text-xs text-zinc-400">
+              El pago se registra y valida por separado en el panel de Administración.
+            </p>
           </div>
 
           <div className="flex gap-4 pt-4">

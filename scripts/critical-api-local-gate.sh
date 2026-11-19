@@ -5,15 +5,15 @@ set -euo pipefail
 umask 077
 
 # Use shell built-ins to determine the repository path before any child process.
-script_dir="\${BASH_SOURCE[0]%/*}"
-[[ "$script_dir" != "\${BASH_SOURCE[0]}" ]] || script_dir='.'
+script_dir="${BASH_SOURCE[0]%/*}"
+[[ "$script_dir" != "${BASH_SOURCE[0]}" ]] || script_dir='.'
 ROOT="$(cd -- "$script_dir/.." && pwd -P)"
 
 # All tools, including those checking the environment, run under a fresh,
 # allowlisted environment. Unsetting a short list of secrets is not sufficient:
 # SMTP, AWS, provider-specific and future credentials could otherwise leak.
 /usr/bin/env -i \
-  PATH="\${PATH:-/usr/local/bin:/usr/bin:/bin}" \
+  PATH="${PATH:-/usr/local/bin:/usr/bin:/bin}" \
   CI=true NODE_ENV=test \
   bash -s -- "$ROOT" <<'ISOLATED_GATE'
 set -euo pipefail

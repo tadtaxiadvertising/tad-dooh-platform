@@ -47,40 +47,34 @@ export class TelemetryService {
     deviceId: string,
     additionalCount = 1,
   ): Promise<boolean> {
-    const now = await this.getWindowStart();
-    const windowStart = new Date(now.getTime());
-    // Round down to nearest minute
-    windowStart.setMilliseconds(0);
-    windowStart.setSeconds(0);
-
-    // Check existing count for this device in this window (parameterized query)
-    const existing = await this.prisma.$queryRaw<{ count: number }[]>`
-      SELECT count FROM rate_limit_windows
-      WHERE device_id = ${deviceId} AND window_start = ${windowStart}
-    `;
-
-    let currentCount = 0;
-    if (existing && Array.isArray(existing) && existing.length > 0) {
-      // Extract count from result (first element is count)
-      const firstRow = existing[0];
-      currentCount = firstRow?.count || 0;
-    }
-
-    if (currentCount + additionalCount > PLAYBACK_RATE_LIMIT) {
+    // A batch is charged by its event count, not by one request. Reject
+    // invalid/oversized values before touching the database.
+    if (
+      !Number.isSafeInteger(additionalCount) ||
+      additionalCount < 1 ||
+      additionalCount > PLAYBACK_RATE_LIMIT
+    ) {
       return false;
     }
 
-    // Increment or insert using atomic upsert (parameterized statement)
-    await this.prisma.$executeRaw`
+    const now = await this.getWindowStart();
+    const windowStart = new Date(now.getTime());
+    windowStart.setMilliseconds(0);
+    windowStart.setSeconds(0);
+
+    // One atomic PostgreSQL UPSERT is needed: a SELECT then UPDATE permits
+    // concurrent calls to both pass the limit. The conflict predicate is
+    // evaluated under the row lock and returns no row if quota is exhausted.
+    const accepted = await this.prisma.$queryRaw<Array<{ count: number }>>`
       INSERT INTO rate_limit_windows (id, device_id, window_start, count)
-      VALUES (gen_random_uuid(), ${deviceId}, ${windowStart}, 1)
+      VALUES (gen_random_uuid(), ${deviceId}, ${windowStart}, ${additionalCount})
       ON CONFLICT (device_id, window_start)
-      DO UPDATE SET count = rate_limit_windows.count + 1
+      DO UPDATE SET count = rate_limit_windows.count + EXCLUDED.count
+      WHERE rate_limit_windows.count + EXCLUDED.count <= ${PLAYBACK_RATE_LIMIT}
+      RETURNING count
     `;
 
-    // Prune expired windows (handled by the DB constraint row TTL in production)
-
-    return true;
+    return accepted.length === 1;
   }
 
   // --- Device Validation ---

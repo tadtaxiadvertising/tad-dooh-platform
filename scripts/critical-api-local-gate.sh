@@ -82,6 +82,7 @@ pnpm --filter api exec jest --runInBand \
   src/modules/telemetry/__tests__/telemetry.service.spec.ts \
   src/modules/telemetry/telemetry-canonical-pop.spec.ts \
   src/modules/telemetry/telemetry-gps-sync-ack.spec.ts \
+  src/modules/fleet/fleet-track-batch-binding.spec.ts \
   src/modules/drivers/__tests__/drivers.service.create.spec.ts \
   src/modules/qr-scan/__tests__/qr-scan.service.spec.ts \
   src/modules/auth/guards/tenant.guard.spec.ts \

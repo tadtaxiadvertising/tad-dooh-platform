@@ -68,6 +68,9 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
         category: "OPEX_COMMISSION",
         entityId: "driver-1",
         amount: 500,
+        netAmount: 500,
+        taxAmount: 0,
+        currency: "DOP",
         status: "PENDING",
       },
       data: { status: "COMPLETED" },
@@ -85,6 +88,47 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
       walletUpsert.mock.invocationCallOrder[0],
     );
   });
+
+  it.each([
+    ["netAmount", 450],
+    ["taxAmount", 50],
+    ["currency", "USD"],
+  ] as const)(
+    "rejects a pending source ledger with inconsistent %s before wallet credit",
+    async (corruptField, corruptValue) => {
+      // Simulate Prisma updateMany's exact equality predicates over an
+      // existing historical ledger row; omitting a field from WHERE must
+      // make this regression fail, not silently return count=0.
+      const ledgerRow: Record<string, string | number> = {
+        reference: commission.reference,
+        type: "OUTGOING",
+        category: "OPEX_COMMISSION",
+        entityId: commission.driverId,
+        amount: commission.amount,
+        netAmount: commission.amount,
+        taxAmount: 0,
+        currency: "DOP",
+        status: "PENDING",
+        [corruptField]: corruptValue,
+      };
+      ledgerUpdateMany.mockImplementation(async ({ where }: {
+        where: Record<string, string | number>;
+      }) => ({
+        count: Object.entries(where).every(
+          ([key, expected]) => ledgerRow[key] === expected,
+        )
+          ? 1
+          : 0,
+      }));
+
+      await expect(service.approveCommission("commission-1", "admin-1"))
+        .rejects.toBeInstanceOf(ConflictException);
+      expect(ledgerUpdateMany).toHaveBeenCalledTimes(1);
+      expect(walletUpsert).not.toHaveBeenCalled();
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      // Actual DB rollback of the preceding commission CAS needs staging.
+    },
+  );
 
   it("rejects already-approved commissions before writing a ledger or balance", async () => {
     findUnique.mockResolvedValue({ ...commission, status: CommissionStatus.APPROVED });

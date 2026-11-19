@@ -358,7 +358,7 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
       // Keep IndexedDB and memory intact while HTTP is in flight.
       if (!isOnlineRef.current) {
         await appendOfflineCoords(combined);
-        setBatchCount(0);
+        dropAcknowledgedMemory();
         const len = (await readCoordsByStatus("offline")).length;
         setOfflineCount(len);
         void emitNotification("OFFLINE_MODE", { pointsBuffered: len });
@@ -384,7 +384,7 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
 
         if (driverId === "unknown" || deviceId === "unknown") {
           await appendOfflineCoords(combined);
-          setBatchCount(0);
+          dropAcknowledgedMemory();
           setOfflineCount((await readCoordsByStatus("offline")).length);
           setConnectionStatus("offline");
           return;

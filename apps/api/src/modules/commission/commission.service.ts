@@ -103,15 +103,19 @@ export class CommissionService {
       `[COMMISSION] Creating idempotent commission: ${input.reference} for driver ${input.driverId}`,
     );
 
-    return this.prisma.$transaction(async (tx) => {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
       // 1. Verificar si ya existe por reference (idempotencia)
       const existing = await tx.commission.findFirst({
         where: { reference: input.reference },
       });
 
       if (existing) {
+        // Replays are only idempotent for the SAME economic event.
+        // Never return another driver's commission for a reused reference.
+        this.assertMatchingCommissionReplay(existing, input);
         this.logger.warn(
-          `[COMMISSION] Duplicate reference ${input.reference} - returning existing commission ${existing.id}`,
+          `[COMMISSION] Idempotent replay for reference ${input.reference}`,
         );
         return { commission: existing, created: false };
       }
@@ -181,7 +185,30 @@ export class CommissionService {
       );
 
       return { commission, created: true };
-    });
+      });
+    } catch (error: unknown) {
+      // On two concurrent requests the unique(reference) constraint is the
+      // final arbiter. After the losing transaction rolls back, re-read the
+      // winner and verify it is the SAME event. Do not mask unrelated DB
+      // failures, create another ledger entry, or trust the caller's driver.
+      if (
+        typeof error !== "object" ||
+        error === null ||
+        !("code" in error) ||
+        error.code !== "P2002"
+      ) {
+        throw error;
+      }
+      const winner = await this.prisma.commission.findUnique({
+        where: { reference: input.reference },
+      });
+      if (!winner) throw error;
+      this.assertMatchingCommissionReplay(winner, input);
+      this.logger.warn(
+        `[COMMISSION] Concurrent idempotent replay for reference ${input.reference}`,
+      );
+      return { commission: winner, created: false };
+    }
   }
 
   /**
@@ -745,6 +772,44 @@ export class CommissionService {
         settlementBatch: { select: { id: true, period: true, status: true } },
       },
     });
+  }
+
+  /**
+   * The same unique reference can only identify one economic event.
+   * Metadata notes/timestamps are not identity fields; the referred driver
+   * and campaign are. Reject mismatched replays rather than leaking someone
+   * else's commission or silently accepting a different amount.
+   */
+  private assertMatchingCommissionReplay(
+    existing: {
+      driverId: string;
+      amount: number;
+      sourceType: string;
+      metadata: unknown;
+    },
+    input: CreateCommissionInput,
+  ): void {
+    const eventId = (value: unknown, key: string): string | undefined => {
+      if (value === null || typeof value !== "object" || Array.isArray(value)) {
+        return undefined;
+      }
+      const field = (value as Record<string, unknown>)[key];
+      return typeof field === "string" ? field : undefined;
+    };
+
+    if (
+      existing.driverId !== input.driverId ||
+      existing.amount !== input.amount ||
+      existing.sourceType !== input.sourceType ||
+      eventId(existing.metadata, "referredDriverId") !==
+        eventId(input.metadata, "referredDriverId") ||
+      eventId(existing.metadata, "campaignId") !==
+        eventId(input.metadata, "campaignId")
+    ) {
+      throw new ConflictException(
+        "Commission reference belongs to another economic event",
+      );
+    }
   }
 
   private groupBy<T>(array: T[], key: keyof T): Record<string, number> {

@@ -8,7 +8,7 @@ import {
   Logger,
   BadRequestException,
 } from "@nestjs/common";
-import { TelemetryService } from "./telemetry.service";
+import { TelemetryService, TELEMETRY_GPS_BATCH_LIMIT } from "./telemetry.service";
 
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -54,11 +54,20 @@ export class TelemetryController {
       throw new BadRequestException("EMPTY_PAYLOAD");
     }
 
-    // Pre-flight: validar que el primer driverId existe (asumimos batch homogéneo).
-    // El servicio ya capa `MAX_BATCH_SIZE` arriba, no duplicamos la verificación.
+    // Acknowledging an oversized batch while silently dropping its tail
+    // destroys offline GPS data. Require the client to keep/split the batch.
+    if (payload.length > TELEMETRY_GPS_BATCH_LIMIT) {
+      throw new BadRequestException("TELEMETRY_BATCH_TOO_LARGE");
+    }
+
     const headDriverId = payload[0]?.driverId;
     if (!headDriverId) {
       throw new BadRequestException("MISSING_DRIVER_ID");
+    }
+    // This route is JWT-protected by the global auth guard, but a caller
+    // must not smuggle another driver's GPS points behind the first ID.
+    if (payload.some((point) => !point || point.driverId !== headDriverId)) {
+      throw new BadRequestException("DRIVER_MISMATCH");
     }
 
     const driver = await this.prisma.driver.findUnique({
@@ -69,11 +78,9 @@ export class TelemetryController {
       throw new BadRequestException("DRIVER_NOT_FOUND");
     }
 
-    this.telemetryService
-      .sync(payload)
-      .catch((err) =>
-        this.logger.error(`Telemetry sync error: ${err.message}`),
-      );
+    // The DB transaction must commit before a success receipt is returned.
+    // A rejected transaction propagates to Nest's failure response.
+    await this.telemetryService.sync(payload);
     return { success: true };
   }
 

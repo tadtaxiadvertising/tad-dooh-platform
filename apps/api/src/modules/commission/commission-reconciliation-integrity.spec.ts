@@ -21,7 +21,7 @@ describe("Commission reconciliation must not report false-clean financial status
     status: CommissionStatus.APPROVED,
     settlementBatchId: "batch-1",
     createdAt: new Date("2026-11-05T12:00:00.000Z"),
-    approvedAt: new Date("2026-11-06T12:00:00.000Z"),
+    approvedAt: new Date("2026-11-06T12:00:00.000Z") as Date | null,
     paidAt: null,
   };
   const sourceLedger = {

@@ -40,6 +40,15 @@ class OfflineQueue {
 
   final List<List<GpsPoint>> _gpsQueue = [];
   bool _hydrated = false;
+  // Serialize SharedPreferences updates so enqueue and ACK cannot overwrite
+  // each other's persisted representation on a concurrent reconnect.
+  Future<void> _operations = Future<void>.value();
+
+  Future<T> _serialized<T>(Future<T> Function() operation) {
+    final next = _operations.then((_) => operation());
+    _operations = next.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    return next;
+  }
 
   Future<void> _ensureHydrated() async {
     if (_hydrated) return;
@@ -69,30 +78,51 @@ class OfflineQueue {
           .map((b) => b.map((p) => p.toJson()).toList())
           .toList(),
     );
-    await prefs.setString(_kPrefKey, encoded);
+    final saved = await prefs.setString(_kPrefKey, encoded);
+    if (!saved) throw StateError('GPS offline queue persistence failed');
   }
 
-  Future<void> enqueueGpsBatch(List<GpsPoint> batch) async {
-    await _ensureHydrated();
-    _gpsQueue.add(batch);
-    await _persist();
-  }
+  Future<void> enqueueGpsBatch(List<GpsPoint> batch) =>
+      _serialized(() async {
+        await _ensureHydrated();
+        if (batch.isEmpty) return;
+        _gpsQueue.add(List<GpsPoint>.from(batch));
+        try {
+          await _persist();
+        } catch (_) {
+          _gpsQueue.removeLast();
+          rethrow;
+        }
+      });
 
-  Future<List<List<GpsPoint>>> drainAll() async {
-    await _ensureHydrated();
-    final result = List<List<GpsPoint>>.from(_gpsQueue);
-    _gpsQueue.clear();
-    await _persist();
-    return result;
-  }
+  /// Read-only. A batch stays on disk while the HTTP request is in flight.
+  Future<List<GpsPoint>?> peekFirstBatch() => _serialized(() async {
+        await _ensureHydrated();
+        if (_gpsQueue.isEmpty) return null;
+        return List<GpsPoint>.from(_gpsQueue.first);
+      });
 
-  Future<bool> get isEmpty async {
-    await _ensureHydrated();
-    return _gpsQueue.isEmpty;
-  }
+  /// Only call on a valid application-level receipt for the first batch.
+  Future<void> acknowledgeFirstBatch() => _serialized(() async {
+        await _ensureHydrated();
+        if (_gpsQueue.isEmpty) return;
+        final first = _gpsQueue.removeAt(0);
+        try {
+          await _persist();
+        } catch (_) {
+          _gpsQueue.insert(0, first);
+          rethrow;
+        }
+      });
 
-  Future<int> get pendingBatches async {
-    await _ensureHydrated();
-    return _gpsQueue.length;
-  }
+  Future<bool> get isEmpty => _serialized(() async {
+        await _ensureHydrated();
+        return _gpsQueue.isEmpty;
+      });
+
+  Future<int> get pendingBatches => _serialized(() async {
+        await _ensureHydrated();
+        return _gpsQueue.length;
+      });
+
 }

@@ -23,6 +23,7 @@ describe("Commission reconciliation must not report false-clean financial status
     createdAt: new Date("2026-11-05T12:00:00.000Z"),
     approvedAt: new Date("2026-11-06T12:00:00.000Z") as Date | null,
     paidAt: null,
+    approvedAt: new Date("2026-11-05T13:00:00.000Z") as Date | null,
   };
   const sourceLedger = {
     id: "ledger-1",
@@ -39,6 +40,18 @@ describe("Commission reconciliation must not report false-clean financial status
   };
   let currentCommissions = [commission];
   let currentSourceLedger = [sourceLedger];
+  const validReversal = {
+    id: "reversal-1",
+    reference: `REV-${commission.reference}`,
+    entityId: commission.driverId,
+    type: "INCOMING",
+    currency: "DOP",
+    amount: 500,
+    netAmount: 500,
+    taxAmount: 0,
+    status: "COMPLETED",
+  };
+  let currentReversals: Array<typeof validReversal> = [];
   let currentPayouts: Array<Record<string, unknown>> = [];
   let currentReversals: Array<typeof sourceLedger> = [];
 
@@ -53,6 +66,7 @@ describe("Commission reconciliation must not report false-clean financial status
     financialRead.mockImplementation(async ({ where }) => {
       if (where.category === "OPEX_COMMISSION") return currentSourceLedger;
       if (where.category === "OPEX_COMMISSION_PAYOUT") return currentPayouts;
+      if (where.category === "OPEX_COMMISSION_REVERSAL") return currentReversals;
       if (where.category === "OPEX_COMMISSION_REVERSAL") {
         // Simulate indexed lookup by exact reference, regardless of date.
         return currentReversals.filter((entry) =>
@@ -310,4 +324,153 @@ describe("Commission reconciliation must not report false-clean financial status
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain("1 APPROVED commissions not assigned to settlement batch");
   });
+  it("fails reconciliation when an approved credit was revoked without a reversal ledger", async () => {
+    currentCommissions = [{
+      ...commission,
+      status: CommissionStatus.REVOKED,
+      settlementBatchId: null,
+    }];
+    const result = await service.reconcileCommissions(11, 2026);
+    expect(result.isClean).toBe(false);
+    expect(result.discrepancies).toContain(
+      "Commission commission-1 missing credit reversal ledger",
+    );
+  });
+
+  it("accepts a revoked previously credited commission only with exact compensation", async () => {
+    currentCommissions = [{
+      ...commission,
+      status: CommissionStatus.REVOKED,
+      settlementBatchId: null,
+    }];
+    currentReversals = [validReversal];
+
+    const result = await service.reconcileCommissions(11, 2026);
+    expect(result.isClean).toBe(true);
+    expect(result.discrepancies).toEqual([]);
+    expect(financialRead).toHaveBeenCalledWith({
+      where: {
+        category: "OPEX_COMMISSION_REVERSAL",
+        reference: { in: ["REV-REF-1"] },
+      },
+      select: expect.objectContaining({
+        reference: true,
+        entityId: true,
+        amount: true,
+        currency: true,
+        status: true,
+      }),
+    });
+  });
+
+  it("accepts PENDING to REVOKED without a wallet credit or compensating ledger", async () => {
+    currentCommissions = [{
+      ...commission,
+      status: CommissionStatus.REVOKED,
+      settlementBatchId: null,
+      approvedAt: null,
+    }];
+    currentSourceLedger = [{ ...sourceLedger, status: "PENDING" }];
+    const result = await service.reconcileCommissions(11, 2026);
+    expect(result.isClean).toBe(true);
+  });
+
+  it("rejects a PENDING to REVOKED record with a completed source ledger", async () => {
+    currentCommissions = [{
+      ...commission,
+      status: CommissionStatus.REVOKED,
+      settlementBatchId: null,
+      approvedAt: null,
+    }];
+    const result = await service.reconcileCommissions(11, 2026);
+    expect(result.isClean).toBe(false);
+    expect(result.discrepancies).toContain(
+      "Commission commission-1 source ledger status mismatch",
+    );
+  });
+
+  const invalidReversalCases: Array<[string, Partial<typeof validReversal>]> = [
+    ["another beneficiary", { entityId: "another-driver" }],
+    ["wrong direction", { type: "OUTGOING" }],
+    ["wrong currency", { currency: "USD" }],
+    ["wrong amount", { amount: 499 }],
+    ["wrong net amount", { netAmount: 499 }],
+    ["fabricated tax", { taxAmount: 1 }],
+    ["pending reversal", { status: "PENDING" }],
+  ];
+
+  it.each(invalidReversalCases)(
+    "rejects %s in a financial reversal rather than marking it clean",
+    async (_label, change) => {
+      currentCommissions = [{
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        settlementBatchId: null,
+      }];
+      currentReversals = [{ ...validReversal, ...change }];
+
+      const result = await service.reconcileCommissions(11, 2026);
+      expect(result.isClean).toBe(false);
+      expect(result.discrepancies).toContain(
+        "Commission commission-1 reversal ledger financial identity mismatch",
+      );
+    },
+  );
+
+  it("flags unexpected reversal of an uncredited or still-approved commission", async () => {
+    currentReversals = [validReversal];
+    const result = await service.reconcileCommissions(11, 2026);
+    expect(result.isClean).toBe(false);
+    expect(result.discrepancies).toContain(
+      "Commission commission-1 has unexpected reversal ledger",
+    );
+  });
+
+  it("flags unexpected reversal after revoking a never-approved commission", async () => {
+    currentCommissions = [{
+      ...commission,
+      status: CommissionStatus.REVOKED,
+      settlementBatchId: null,
+      approvedAt: null,
+    }];
+    currentSourceLedger = [{ ...sourceLedger, status: "PENDING" }];
+    currentReversals = [validReversal];
+    const result = await service.reconcileCommissions(11, 2026);
+    expect(result.isClean).toBe(false);
+    expect(result.discrepancies).toContain(
+      "Commission commission-1 has unexpected reversal ledger",
+    );
+  });
+
+  it("reads reversals by exact reference even if revoked in a later month", async () => {
+    currentCommissions = [{
+      ...commission,
+      status: CommissionStatus.REVOKED,
+      settlementBatchId: null,
+    }];
+    currentReversals = [validReversal];
+    await service.reconcileCommissions(11, 2026);
+    const reversalCalls = financialRead.mock.calls
+      .map(([args]) => args)
+      .filter((args) => args.where.category === "OPEX_COMMISSION_REVERSAL");
+    expect(reversalCalls).toHaveLength(1);
+    expect(reversalCalls[0].where.reference).toEqual({ in: ["REV-REF-1"] });
+    expect(reversalCalls[0].where.createdAt).toBeUndefined();
+  });
+
+  it("bounds reference predicates into 500-member chunks at 10x volume", async () => {
+    currentCommissions = Array.from({ length: 501 }, (_, index) => ({
+      ...commission,
+      id: `commission-${index}`,
+      reference: `REF-${index}`,
+    }));
+    await service.reconcileCommissions(11, 2026);
+    const reversalCalls = financialRead.mock.calls
+      .map(([args]) => args)
+      .filter((args) => args.where.category === "OPEX_COMMISSION_REVERSAL");
+    expect(reversalCalls).toHaveLength(2);
+    expect(reversalCalls[0].where.reference.in).toHaveLength(500);
+    expect(reversalCalls[1].where.reference.in).toHaveLength(1);
+  });
+
 });

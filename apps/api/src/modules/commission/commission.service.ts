@@ -753,6 +753,7 @@ export class CommissionService {
         reference: true,
         settlementBatchId: true,
         createdAt: true,
+        approvedAt: true,
         paidAt: true,
       },
     });
@@ -806,6 +807,50 @@ export class CommissionService {
       },
     });
 
+    // A revocation after wallet credit must have a completed INCOMING
+    // compensating ledger entry, even when it happened in a later month.
+    // Query by exact reference rather than createdAt, which would miss
+    // post-period reversals. Chunk predicates to bound 10x query size.
+    const reversalByReference = new Map<
+      string,
+      {
+        id: string;
+        reference: string | null;
+        entityId: string | null;
+        type: string;
+        currency: string;
+        amount: number;
+        netAmount: number;
+        taxAmount: number;
+        status: string;
+      }
+    >();
+    const reversalReferences = commissions.map((c) => `REV-${c.reference}`);
+    for (let index = 0; index < reversalReferences.length; index += 500) {
+      const reversals = await this.prisma.financialTransaction.findMany({
+        where: {
+          category: "OPEX_COMMISSION_REVERSAL",
+          reference: { in: reversalReferences.slice(index, index + 500) },
+        },
+        select: {
+          id: true,
+          reference: true,
+          entityId: true,
+          type: true,
+          currency: true,
+          amount: true,
+          netAmount: true,
+          taxAmount: true,
+          status: true,
+        },
+      });
+      for (const reversal of reversals) {
+        if (reversal.reference) {
+          reversalByReference.set(reversal.reference, reversal);
+        }
+      }
+    }
+
     // Análisis de discrepancias
     const discrepancies: string[] = [];
 
@@ -844,10 +889,12 @@ export class CommissionService {
       // Approved credits must have exactly one completed source ledger
       // entry. Pending commissions must not masquerade as completed credits.
       const expectedStatus =
-        c.status === CommissionStatus.PENDING
+        c.status === CommissionStatus.PENDING ||
+        (c.status === CommissionStatus.REVOKED && !c.approvedAt)
           ? "PENDING"
           : c.status === CommissionStatus.APPROVED ||
-              c.status === CommissionStatus.PAID
+              c.status === CommissionStatus.PAID ||
+              (c.status === CommissionStatus.REVOKED && !!c.approvedAt)
             ? "COMPLETED"
             : null;
       if (expectedStatus && ledger.status !== expectedStatus) {
@@ -861,6 +908,36 @@ export class CommissionService {
         discrepancies.push(
           `Ledger entry ${l.id} (${l.reference}) has no matching commission`,
         );
+      }
+    }
+
+    // An APPROVED/PAID commission becomes a wallet credit. If it is later
+    // REVOKED, that credit must be compensated by an exact, completed ledger
+    // entry. A PENDING-to-REVOKED event was never credited and must NOT
+    // fabricate a reversal. Unexpected reversal rows also fail reconciliation.
+    for (const c of commissions) {
+      const reversal = reversalByReference.get(`REV-${c.reference}`);
+      const creditedBeforeRevoke =
+        c.status === CommissionStatus.REVOKED && !!c.approvedAt;
+
+      if (creditedBeforeRevoke && !reversal) {
+        discrepancies.push(`Commission ${c.id} missing credit reversal ledger`);
+      } else if (!creditedBeforeRevoke && reversal) {
+        discrepancies.push(`Commission ${c.id} has unexpected reversal ledger`);
+      } else if (creditedBeforeRevoke && reversal) {
+        if (
+          reversal.entityId !== c.driverId ||
+          reversal.type !== "INCOMING" ||
+          reversal.currency !== "DOP" ||
+          reversal.amount !== c.amount ||
+          reversal.netAmount !== c.amount ||
+          reversal.taxAmount !== 0 ||
+          reversal.status !== "COMPLETED"
+        ) {
+          discrepancies.push(
+            `Commission ${c.id} reversal ledger financial identity mismatch`,
+          );
+        }
       }
     }
 

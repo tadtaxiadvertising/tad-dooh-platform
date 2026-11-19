@@ -5,12 +5,8 @@ import {
   Phone,
   IdCard,
   CreditCard,
-  Tablet,
   Hash,
-  CheckCircle2,
-  AlertTriangle,
 } from "lucide-react";
-import clsx from "clsx";
 import { createDriver } from "@tad/services";
 import { notifyChange } from "@tad/ui";
 
@@ -33,30 +29,8 @@ const DriverModal = React.memo(function DriverModal({
     cedula: "",
     taxiPlate: "",
     licensePlate: "",
-    deviceId: "",
     subscriptionPaid: false,
-    deviceFound: null as boolean | null,
   });
-
-  const checkDevice = async (id: string) => {
-    if (!id) {
-      setFormData((prev) => ({ ...prev, deviceId: "", deviceFound: null }));
-      return;
-    }
-
-    try {
-      // Usamos getDevices para buscar si existe (Backend side check)
-      const { getDevices } = await import("@tad/services");
-      const devices = await getDevices();
-      const exists = devices.some(
-        (d: { deviceId?: string; device_id?: string }) =>
-          (d.deviceId || d.device_id) === id,
-      );
-      setFormData((prev) => ({ ...prev, deviceId: id, deviceFound: exists }));
-    } catch {
-      setFormData((prev) => ({ ...prev, deviceId: id, deviceFound: null }));
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -64,14 +38,6 @@ const DriverModal = React.memo(function DriverModal({
     e.preventDefault();
     setLoading(true);
     setError(null);
-
-    if (formData.deviceId && formData.deviceFound === false) {
-      setError(
-        "EL ID DE TABLET NO EXISTE EN EL INVENTARIO. REGÍSTRELO PRIMERO EN LA SECCIÓN DE DISPOSITIVOS.",
-      );
-      setLoading(false);
-      return;
-    }
 
     try {
       await createDriver(formData);
@@ -85,9 +51,7 @@ const DriverModal = React.memo(function DriverModal({
         cedula: "",
         taxiPlate: "",
         licensePlate: "",
-        deviceId: "",
-        subscriptionPaid: false,
-        deviceFound: null,
+            subscriptionPaid: false,
       });
     } catch (err: unknown) {
       console.error("Error creating driver:", err);
@@ -208,48 +172,10 @@ const DriverModal = React.memo(function DriverModal({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">
-                ID Tablet (Opcional)
-              </label>
-              <div className="relative">
-                <Tablet className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                <input
-                  type="text"
-                  placeholder="Ej: TAD-XXXXXX"
-                  value={formData.deviceId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      deviceId: e.target.value.toUpperCase(),
-                    }))
-                  }
-                  onBlur={(e) => {
-                    const id = e.target.value.toUpperCase();
-                    if (id.length > 5) checkDevice(id);
-                  }}
-                  className={clsx(
-                    "w-full bg-zinc-800 border rounded-xl py-3 pl-12 pr-4 text-sm text-white outline-none transition-colors",
-                    formData.deviceFound === true
-                      ? "border-emerald-500/50"
-                      : formData.deviceFound === false
-                        ? "border-rose-500/50"
-                        : "border-white/5 focus:border-tad-yellow",
-                  )}
-                />
-                {formData.deviceFound === true && (
-                  <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500 animate-in zoom-in" />
-                )}
-                {formData.deviceFound === false && (
-                  <AlertTriangle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-500 animate-in shake-x" />
-                )}
-              </div>
-              {formData.deviceFound === false && (
-                <p className="text-[9px] text-rose-500 font-bold uppercase tracking-widest mt-1">
-                  Dispositivo no localizado en el cluster.
-                </p>
-              )}
-            </div>
+            <p className="rounded-xl border border-tad-yellow/20 bg-tad-yellow/5 px-4 py-3 text-xs text-zinc-300">
+              La tablet se asigna desde Administración después del registro,
+              cuando el conductor esté habilitado para recibir un dispositivo.
+            </p>
 
             <div className="flex items-center gap-3 pt-6">
               <button

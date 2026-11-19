@@ -382,12 +382,24 @@ export class CommissionService {
           },
         });
 
-        // Wallet credit occurs at APPROVED, not PAID. Reversal of EITHER
-        // state must debit that same credit once; old code only debited PAID.
-        await tx.wallet.update({
-          where: { driverId: commission.driverId },
+        // Wallet credit occurs at APPROVED, not PAID. Never debit funds
+        // that have since been withdrawn/spent or use a stale balance read:
+        // an atomic PostgreSQL predicate prevents negative availableBalance
+        // even when another debit races with this revocation.
+        const debited = await tx.wallet.updateMany({
+          where: {
+            driverId: commission.driverId,
+            availableBalance: { gte: commission.amount },
+          },
           data: { availableBalance: { decrement: commission.amount } },
         });
+        if (debited.count !== 1) {
+          // Roll back the REVOKED claim and reversal ledger in this same tx.
+          // No silent debt/negative wallet: require explicit reconciliation.
+          throw new ConflictException(
+            `Commission ${commissionId} wallet funds unavailable; reconcile before revoking`,
+          );
+        }
       }
 
       this.logger.log(`[COMMISSION] Revoked commission ${commissionId}`);

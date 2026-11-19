@@ -103,85 +103,112 @@ export class CommissionService {
       `[COMMISSION] Creating idempotent commission: ${input.reference} for driver ${input.driverId}`,
     );
 
-    return this.prisma.$transaction(async (tx) => {
-      // 1. Verificar si ya existe por reference (idempotencia)
-      const existing = await tx.commission.findFirst({
-        where: { reference: input.reference },
-      });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // 1. Verificar si ya existe por reference (idempotencia)
+        const existing = await tx.commission.findFirst({
+          where: { reference: input.reference },
+        });
 
-      if (existing) {
-        this.logger.warn(
-          `[COMMISSION] Duplicate reference ${input.reference} - returning existing commission ${existing.id}`,
-        );
-        return { commission: existing, created: false };
-      }
+        if (existing) {
+          // Replays are only idempotent for the SAME economic event.
+          // Never return another driver's commission for a reused reference.
+          this.assertMatchingCommissionReplay(existing, input);
+          this.logger.warn(
+            `[COMMISSION] Idempotent replay for reference ${input.reference}`,
+          );
+          return { commission: existing, created: false };
+        }
 
-      // 2. Validar que el conductor existe
-      const driver = await tx.driver.findUnique({
-        where: { id: input.driverId },
-        select: { id: true, fullName: true },
-      });
+        // 2. Validar que el conductor existe
+        const driver = await tx.driver.findUnique({
+          where: { id: input.driverId },
+          select: { id: true, fullName: true },
+        });
 
-      if (!driver) {
-        throw new NotFoundException(`Driver ${input.driverId} not found`);
-      }
+        if (!driver) {
+          throw new NotFoundException(`Driver ${input.driverId} not found`);
+        }
 
-      // 3. Validar regla de negocio: un mismo evento económico no genera dos comisiones
-      // Para DRIVER_REFERRAL: verificar que el conductor referido no tenga ya comisión pagada
-      if (input.sourceType === CommissionSourceType.DRIVER_REFERRAL) {
-        const referredDriverId = input.metadata?.referredDriverId;
-        if (referredDriverId) {
-          const existingReferral = await tx.commission.findFirst({
-            where: {
-              driverId: input.driverId,
-              sourceType: CommissionSourceType.DRIVER_REFERRAL,
-              metadata: {
-                path: ["referredDriverId"],
-                equals: referredDriverId,
+        // 3. Validar regla de negocio: un mismo evento económico no genera dos comisiones
+        // Para DRIVER_REFERRAL: verificar que el conductor referido no tenga ya comisión pagada
+        if (input.sourceType === CommissionSourceType.DRIVER_REFERRAL) {
+          const referredDriverId = input.metadata?.referredDriverId;
+          if (referredDriverId) {
+            const existingReferral = await tx.commission.findFirst({
+              where: {
+                driverId: input.driverId,
+                sourceType: CommissionSourceType.DRIVER_REFERRAL,
+                metadata: {
+                  path: ["referredDriverId"],
+                  equals: referredDriverId,
+                },
               },
-            },
-          });
-          if (existingReferral) {
-            throw new BadRequestException(
-              `Commission already exists for referred driver ${referredDriverId}`,
-            );
+            });
+            if (existingReferral) {
+              throw new BadRequestException(
+                `Commission already exists for referred driver ${referredDriverId}`,
+              );
+            }
           }
         }
+
+        // 4. Crear comisión
+        const commission = await tx.commission.create({
+          data: {
+            driverId: input.driverId,
+            amount: input.amount,
+            sourceType: input.sourceType,
+            reference: input.reference,
+            status: CommissionStatus.PENDING,
+            metadata: input.metadata || {},
+          },
+        });
+
+        // 5. Crear entrada en ledger financiero (OPEX_COMMISSION)
+        await tx.financialTransaction.create({
+          data: {
+            type: "OUTGOING",
+            category: "OPEX_COMMISSION",
+            amount: input.amount,
+            netAmount: input.amount,
+            taxAmount: 0,
+            entityId: input.driverId,
+            reference: input.reference,
+            note: `Comisión ${input.sourceType}: ${input.metadata?.note || "Sin descripción"}`,
+            status: "PENDING", // PENDING hasta que la comisión se APRUEBE
+          },
+        });
+
+        this.logger.log(
+          `[COMMISSION] Created commission ${commission.id} (${input.amount} RD$) for driver ${input.driverId}`,
+        );
+
+        return { commission, created: true };
+      });
+    } catch (error: unknown) {
+      // On two concurrent requests the unique(reference) constraint is the
+      // final arbiter. After the losing transaction rolls back, re-read the
+      // winner and verify it is the SAME event. Do not mask unrelated DB
+      // failures, create another ledger entry, or trust the caller's driver.
+      if (
+        typeof error !== "object" ||
+        error === null ||
+        !("code" in error) ||
+        error.code !== "P2002"
+      ) {
+        throw error;
       }
-
-      // 4. Crear comisión
-      const commission = await tx.commission.create({
-        data: {
-          driverId: input.driverId,
-          amount: input.amount,
-          sourceType: input.sourceType,
-          reference: input.reference,
-          status: CommissionStatus.PENDING,
-          metadata: input.metadata || {},
-        },
+      const winner = await this.prisma.commission.findUnique({
+        where: { reference: input.reference },
       });
-
-      // 5. Crear entrada en ledger financiero (OPEX_COMMISSION)
-      await tx.financialTransaction.create({
-        data: {
-          type: "OUTGOING",
-          category: "OPEX_COMMISSION",
-          amount: input.amount,
-          netAmount: input.amount,
-          taxAmount: 0,
-          entityId: input.driverId,
-          reference: input.reference,
-          note: `Comisión ${input.sourceType}: ${input.metadata?.note || "Sin descripción"}`,
-          status: "PENDING", // PENDING hasta que la comisión se APRUEBE
-        },
-      });
-
-      this.logger.log(
-        `[COMMISSION] Created commission ${commission.id} (${input.amount} RD$) for driver ${input.driverId}`,
+      if (!winner) throw error;
+      this.assertMatchingCommissionReplay(winner, input);
+      this.logger.warn(
+        `[COMMISSION] Concurrent idempotent replay for reference ${input.reference}`,
       );
-
-      return { commission, created: true };
-    });
+      return { commission: winner, created: false };
+    }
   }
 
   /**
@@ -745,6 +772,44 @@ export class CommissionService {
         settlementBatch: { select: { id: true, period: true, status: true } },
       },
     });
+  }
+
+  /**
+   * The same unique reference can only identify one economic event.
+   * Metadata notes/timestamps are not identity fields; the referred driver
+   * and campaign are. Reject mismatched replays rather than leaking someone
+   * else's commission or silently accepting a different amount.
+   */
+  private assertMatchingCommissionReplay(
+    existing: {
+      driverId: string;
+      amount: number;
+      sourceType: string;
+      metadata: unknown;
+    },
+    input: CreateCommissionInput,
+  ): void {
+    const eventId = (value: unknown, key: string): string | undefined => {
+      if (value === null || typeof value !== "object" || Array.isArray(value)) {
+        return undefined;
+      }
+      const field = (value as Record<string, unknown>)[key];
+      return typeof field === "string" ? field : undefined;
+    };
+
+    if (
+      existing.driverId !== input.driverId ||
+      existing.amount !== input.amount ||
+      existing.sourceType !== input.sourceType ||
+      eventId(existing.metadata, "referredDriverId") !==
+        eventId(input.metadata, "referredDriverId") ||
+      eventId(existing.metadata, "campaignId") !==
+        eventId(input.metadata, "campaignId")
+    ) {
+      throw new ConflictException(
+        "Commission reference belongs to another economic event",
+      );
+    }
   }
 
   private groupBy<T>(array: T[], key: keyof T): Record<string, number> {

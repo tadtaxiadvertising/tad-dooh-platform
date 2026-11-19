@@ -74,7 +74,7 @@ describe("Commission reconciliation must not report false-clean financial status
     expect(result.isClean).toBe(true);
   });
 
-  it.each([
+  const invalidLedgerCases: Array<[string, Partial<typeof sourceLedger>, RegExp]> = [
     ["wrong driver", { entityId: "other-driver" }, /beneficiary mismatch/],
     ["wrong type", { type: "INCOMING" }, /type\/currency mismatch/],
     ["wrong currency", { currency: "USD" }, /type\/currency mismatch/],
@@ -82,12 +82,17 @@ describe("Commission reconciliation must not report false-clean financial status
     ["wrong net amount", { netAmount: 450 }, /net\/tax mismatch/],
     ["wrong withholding", { taxAmount: 50 }, /net\/tax mismatch/],
     ["pending ledger behind approved wallet credit", { status: "PENDING" }, /status mismatch/],
-  ])("flags %s rather than returning a clean financial report", async (_name, changed, pattern) => {
+  ];
+
+  it.each(invalidLedgerCases)(
+    "flags %s rather than returning a clean financial report",
+    async (_name, changed, pattern) => {
     currentSourceLedger = [{ ...sourceLedger, ...changed }];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies.some((item) => pattern.test(item))).toBe(true);
-  });
+    },
+  );
 
   it("does not treat a completed source ledger as valid for a PENDING commission", async () => {
     currentCommissions = [{ ...commission, status: CommissionStatus.PENDING, settlementBatchId: null }];

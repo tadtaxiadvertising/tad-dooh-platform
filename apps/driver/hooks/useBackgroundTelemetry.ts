@@ -210,6 +210,7 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
   );
   const lastLivePingRef = useRef<number>(0);
   const syncInProgressRef = useRef(false);
+  const batchFlushInProgressRef = useRef(false);
 
   const resolveApiBase = useCallback(() => "/api/proxy", []);
 

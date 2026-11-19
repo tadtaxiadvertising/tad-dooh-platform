@@ -295,30 +295,17 @@ export class CommissionService {
    * Se ejecuta durante el cierre mensual.
    */
   async markCommissionPaid(commissionId: string, paidAt: Date = new Date()) {
-    const commission = await this.prisma.commission.findUnique({
-      where: { id: commissionId },
-    });
-    if (!commission) {
-      throw new NotFoundException(`Commission ${commissionId} not found`);
-    }
-    if (commission.status !== CommissionStatus.APPROVED) {
-      throw new ConflictException(
-        `Commission ${commissionId} must be APPROVED before marking PAID`,
-      );
-    }
-
-    const changed = await this.prisma.commission.updateMany({
-      where: { id: commissionId, status: CommissionStatus.APPROVED },
-      data: { status: CommissionStatus.PAID, paidAt },
-    });
-    if (changed.count !== 1) {
-      throw new ConflictException(
-        `Commission ${commissionId} was changed concurrently`,
-      );
-    }
-    return this.prisma.commission.findUniqueOrThrow({
-      where: { id: commissionId },
-    });
+    // A commission is APPROVED when credited to the driver's wallet.
+    // PAID is an external bank-settlement assertion, not a local state
+    // transition. This legacy method has no bank receipt, beneficiary
+    // confirmation or reconciliation ledger. Fail closed even for trusted
+    // internal callers, instead of creating a financially false status.
+    void commissionId;
+    void paidAt;
+    throw new ConflictException(
+      "Pago individual de comisiones suspendido: requiere confirmación bancaria " +
+        "por beneficiario y conciliación antes de marcar PAID.",
+    );
   }
 
   /**

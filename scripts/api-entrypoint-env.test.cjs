@@ -27,23 +27,44 @@ const fixtures = Object.freeze({
 // Only the migration boundary is substituted. The production entrypoint and its
 // set -eu behavior execute unchanged in a real shell. No pnpm executable runs.
 const migrationBoundary = `node() {
-  if [ "$#" -ne 1 ] || [ "\${1-}" != "./scripts/check-supabase-target.cjs" ]; then
-    printf '%s\\n' '[test] unexpected Node command'
+  if [ "$#" -ne 1 ]; then
+    printf '%s\\n' '[test] unexpected Node argument count'
     return 92
   fi
-  if [ "\${TAD_TEST_PREFLIGHT_FAIL:-}" = "1" ]; then
-    printf '%s\\n' '[test] Supabase target rejected'
-    return 18
-  fi
-  printf '%s\\n' '[test] Supabase target verified'
-  return 0
+  case "\${1-}" in
+    "./scripts/check-supabase-target.cjs")
+      if [ "\${TAD_TEST_PREFLIGHT_FAIL:-}" = "1" ]; then
+        printf '%s\\n' '[test] Supabase target rejected'
+        return 18
+      fi
+      printf '%s\\n' '[test] Supabase target verified'
+      ;;
+    "./scripts/check-prisma-drift.cjs")
+      if [ "\${DATABASE_URL:-}" != "\${DIRECT_URL:-}" ]; then
+        printf '%s\\n' '[test] parity used wrong URL'
+        return 94
+      fi
+      if [ "\${TAD_TEST_DRIFT_FAIL:-}" = "1" ]; then
+        printf '%s\\n' '[test] schema drift detected'
+        return 31
+      fi
+      printf '%s\\n' '[test] schema parity verified'
+      ;;
+    *)
+      printf '%s\\n' '[test] unexpected Node command'
+      return 92
+      ;;
+  esac
 }
 pnpm() {
-  if [ "$#" -ne 5 ] || [ "\${1-}" != "exec" ] || [ "\${2-}" != "prisma" ] || [ "\${3-}" != "migrate" ] || [ "\${4-}" != "deploy" ] || [ "\${5-}" != "--schema=./prisma/schema.prisma" ]; then
-    printf '%s\\n' '[test] unexpected migration command'
+  if [ "$#" -ne 5 ] || [ "\${1-}" != "exec" ] || [ "\${2-}" != "prisma" ] || [ "\${3-}" != "migrate" ] || [ "\${4-}" != "deploy" ] || [ "\${5-}" != "--schema=./prisma/schema.prisma" ] || [ "\${DATABASE_URL:-}" != "\${DIRECT_URL:-}" ]; then
+    printf '%s\\n' '[test] unexpected migration command or target'
     return 91
   fi
   printf '%s\\n' '${migrationMarker}'
+  if [ "\${TAD_TEST_MIGRATION_SUCCEED:-}" = "1" ]; then
+    return 0
+  fi
   return 17
 }
 `;
@@ -58,10 +79,23 @@ function runEntrypoint(environment = {}) {
     path.join(temporaryRoot, "tad-api-entrypoint-"),
   );
   try {
-    // Construct from scratch: parent credentials, BASH_ENV and PATH are never
-    // inherited. Empty PATH and cwd prevent a real Node/API binary from running
-    // if migration failure propagation regresses.
-    const env = { NODE_ENV: "test", PORT: "3000", PATH: "", ...environment };
+    // PATH contains only a fixture executable, never the host Node binary.
+    // The real production script remains untouched; we can safely verify
+    // that a healthy schema reaches the final exec without starting an API.
+    const fakeNode = path.join(directory, "node");
+    if (!windows) {
+      fs.writeFileSync(
+        fakeNode,
+        '#!/bin/sh\nif [ "$#" -eq 2 ] && [ "$1" = "--expose-gc" ] && [ "$2" = "dist/main.js" ]; then echo "[test] API exec reached"; exit 0; fi\nexit 95\n',
+        { mode: 0o700 },
+      );
+    }
+    const env = {
+      NODE_ENV: "test",
+      PORT: "3000",
+      PATH: windows ? "" : directory,
+      ...environment,
+    };
     if (windows)
       env.SYSTEMROOT = process.env.SYSTEMROOT || process.env.SystemRoot;
     const result = spawnSync(shell, shellArgs, {
@@ -205,5 +239,39 @@ test("the real API entrypoint propagates migration failure without starting Node
   assert.equal(output.includes(migrationMarker), true);
   assert.doesNotMatch(output, /Prisma migrations applied/);
   assert.doesNotMatch(output, /parameter not set|unbound variable/i);
+  assertNoNodeStart(output);
+});
+
+test("the real entrypoint refuses to start after migration when schema parity fails", () => {
+  const { status, output } = runEntrypoint({
+    ...fixtures,
+    TAD_TEST_MIGRATION_SUCCEED: "1",
+    TAD_TEST_DRIFT_FAIL: "1",
+  });
+  assert.equal(status, 31);
+  assert.match(output, /\[test\] schema drift detected/);
+  assert.equal(output.includes(migrationMarker), true);
+  assert.doesNotMatch(output, /Prisma migrations applied; schema parity verified/);
+  assertNoNodeStart(output);
+});
+
+test("the real entrypoint starts only after clean migrations AND matching schema", {
+  skip: windows ? "No portable POSIX fake node on Windows Git Bash" : false,
+}, () => {
+  const { status, output } = runEntrypoint({
+    ...fixtures,
+    TAD_TEST_MIGRATION_SUCCEED: "1",
+  });
+  assert.equal(status, 0);
+  assert.match(output, /\[test\] Supabase target verified/);
+  assert.match(output, /\[test\] schema parity verified/);
+  assert.match(output, /Prisma migrations applied; schema parity verified/);
+  assert.match(output, /\[test\] API exec reached/);
+});
+
+test("failure of Prisma migrations never invokes the read-only parity check", () => {
+  const { status, output } = runEntrypoint(fixtures);
+  assert.equal(status, 17);
+  assert.doesNotMatch(output, /\[test\] schema parity verified|schema drift detected/);
   assertNoNodeStart(output);
 });

@@ -338,15 +338,24 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
   // ─── Flush: envía batch al backend ────────────────────────────────────────
   const flushBatch = useCallback(
     async (forceFlush = false) => {
+      if (batchFlushInProgressRef.current) return;
+      batchFlushInProgressRef.current = true;
+      try {
       const storageBatch = await readCoordsByStatus("batch");
-      const combined = [...storageBatch, ...memoryBufferRef.current];
+      const combined = Array.from(new Map(
+        [...storageBatch, ...memoryBufferRef.current].map((coord) => [coord.ts, coord]),
+      ).values());
+      const processedKeys = combined.map((coord) => coord.ts);
+      const keys = new Set(processedKeys);
+      const dropAcknowledgedMemory = () => {
+        memoryBufferRef.current = memoryBufferRef.current.filter((coord) => !keys.has(coord.ts));
+        setBatchCount(memoryBufferRef.current.length);
+      };
 
       if (combined.length === 0) return;
       if (!forceFlush && combined.length < BATCH_SIZE) return;
 
-      memoryBufferRef.current = [];
-      await writeBatchCoords([]);
-
+      // Keep IndexedDB and memory intact while HTTP is in flight.
       if (!isOnlineRef.current) {
         await appendOfflineCoords(combined);
         setBatchCount(0);
@@ -412,10 +421,13 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
         setConnectionStatus("online");
       } catch {
         await appendOfflineCoords(combined);
-        setBatchCount(0);
+        dropAcknowledgedMemory();
         setOfflineCount((await readCoordsByStatus("offline")).length);
         setConnectionStatus("offline");
         void emitNotification("SYNC_FAILED", { pointsLost: combined.length });
+      }
+      } finally {
+        batchFlushInProgressRef.current = false;
       }
     },
     [postTrackBatch, resolveApiBase, setLock, syncOfflineQueue],

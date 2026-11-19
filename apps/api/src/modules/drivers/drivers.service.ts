@@ -698,15 +698,19 @@ export class DriversService {
     });
     if (!device) throw new Error("Dispositivo no encontrado en el inventario");
 
-    // Remove any existing bindings this driver has
-    await this.prisma.device.updateMany({
-      where: { driverId },
-      data: { driverId: null },
-    });
+    // Both writes must succeed or neither must persist. If the target
+    // tablet update fails after unlinking the previous tablet, a non-atomic
+    // handoff leaves the driver without hardware and breaks attribution.
+    return this.prisma.$transaction(async (tx) => {
+      await tx.device.updateMany({
+        where: { driverId },
+        data: { driverId: null },
+      });
 
-    return this.prisma.device.update({
-      where: { id: device.id },
-      data: { driverId },
+      return tx.device.update({
+        where: { id: device.id },
+        data: { driverId },
+      });
     });
   }
 

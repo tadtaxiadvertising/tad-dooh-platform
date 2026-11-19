@@ -487,13 +487,25 @@ export class CommissionService {
         },
       });
 
-      // 6. Vincular comisiones al lote
-      await tx.commission.updateMany({
+      // 6. Claim exactly the approved, still-unbatched commissions read above.
+      // PostgreSQL READ COMMITTED can observe a concurrent revoke/batch claim
+      // between findMany() and updateMany(). A plain update by ID would link
+      // ineligible rows and publish incorrect settlement totals.
+      const claimed = await tx.commission.updateMany({
         where: {
           id: { in: commissions.map((c) => c.id) },
+          status: CommissionStatus.APPROVED,
+          settlementBatchId: null,
         },
         data: { settlementBatchId: batch.id },
       });
+      if (claimed.count !== commissions.length) {
+        // The batch creation AND any partial links must roll back together.
+        // Do not recalculate totals from a stale snapshot or retry silently.
+        throw new ConflictException(
+          `Settlement ${periodKey} changed during generation; retry after reconciliation`,
+        );
+      }
 
       this.logger.log(
         `[SETTLEMENT] Generated batch ${batch.id} for ${periodKey}: ${commissions.length} commissions, ${byReferent.size} referents, Net: ${totalNet} RD$`,

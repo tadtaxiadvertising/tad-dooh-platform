@@ -330,7 +330,7 @@ describe("Commission reconciliation must not report false-clean financial status
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
-      "Commission commission-1 missing credit reversal ledger",
+      "Commission commission-1 revoked after approval but has no reversal ledger entry",
     );
   });
 
@@ -409,7 +409,7 @@ describe("Commission reconciliation must not report false-clean financial status
       const result = await service.reconcileCommissions(11, 2026);
       expect(result.isClean).toBe(false);
       expect(result.discrepancies).toContain(
-        "Commission commission-1 reversal ledger financial identity mismatch",
+        "Commission commission-1 reversal ledger attribution/amount/status mismatch",
       );
     },
   );
@@ -419,7 +419,7 @@ describe("Commission reconciliation must not report false-clean financial status
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
-      "Commission commission-1 has unexpected reversal ledger",
+      "Commission commission-1 has an unexpected reversal ledger entry",
     );
   });
 
@@ -435,7 +435,7 @@ describe("Commission reconciliation must not report false-clean financial status
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
-      "Commission commission-1 has unexpected reversal ledger",
+      "Commission commission-1 has an unexpected reversal ledger entry",
     );
   });
 

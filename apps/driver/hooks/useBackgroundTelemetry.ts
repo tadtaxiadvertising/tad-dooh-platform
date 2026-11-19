@@ -343,13 +343,20 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
       batchFlushInProgressRef.current = true;
       try {
         const storageBatch = await readCoordsByStatus("batch");
-        const combined = Array.from(new Map(
-          [...storageBatch, ...memoryBufferRef.current].map((coord) => [coord.ts, coord]),
-        ).values()).slice(0, GPS_UPLOAD_MAX_BATCH_SIZE);
+        const combined = Array.from(
+          new Map(
+            [...storageBatch, ...memoryBufferRef.current].map((coord) => [
+              coord.ts,
+              coord,
+            ]),
+          ).values(),
+        ).slice(0, GPS_UPLOAD_MAX_BATCH_SIZE);
         const processedKeys = combined.map((coord) => coord.ts);
         const keys = new Set(processedKeys);
         const dropAcknowledgedMemory = () => {
-          memoryBufferRef.current = memoryBufferRef.current.filter((coord) => !keys.has(coord.ts));
+          memoryBufferRef.current = memoryBufferRef.current.filter(
+            (coord) => !keys.has(coord.ts),
+          );
           setBatchCount(memoryBufferRef.current.length);
         };
 
@@ -431,7 +438,9 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
           dropAcknowledgedMemory();
           setOfflineCount((await readCoordsByStatus("offline")).length);
           setConnectionStatus("offline");
-          void emitNotification("SYNC_FAILED", { pointsBuffered: combined.length });
+          void emitNotification("SYNC_FAILED", {
+            pointsBuffered: combined.length,
+          });
         }
       } catch {
         // A failed disk write leaves the original batch and RAM snapshot intact.

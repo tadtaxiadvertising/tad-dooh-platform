@@ -341,97 +341,97 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
       if (batchFlushInProgressRef.current) return;
       batchFlushInProgressRef.current = true;
       try {
-      const storageBatch = await readCoordsByStatus("batch");
-      const combined = Array.from(new Map(
-        [...storageBatch, ...memoryBufferRef.current].map((coord) => [coord.ts, coord]),
-      ).values());
-      const processedKeys = combined.map((coord) => coord.ts);
-      const keys = new Set(processedKeys);
-      const dropAcknowledgedMemory = () => {
-        memoryBufferRef.current = memoryBufferRef.current.filter((coord) => !keys.has(coord.ts));
-        setBatchCount(memoryBufferRef.current.length);
-      };
+        const storageBatch = await readCoordsByStatus("batch");
+        const combined = Array.from(new Map(
+          [...storageBatch, ...memoryBufferRef.current].map((coord) => [coord.ts, coord]),
+        ).values());
+        const processedKeys = combined.map((coord) => coord.ts);
+        const keys = new Set(processedKeys);
+        const dropAcknowledgedMemory = () => {
+          memoryBufferRef.current = memoryBufferRef.current.filter((coord) => !keys.has(coord.ts));
+          setBatchCount(memoryBufferRef.current.length);
+        };
 
-      if (combined.length === 0) return;
-      if (!forceFlush && combined.length < BATCH_SIZE) return;
+        if (combined.length === 0) return;
+        if (!forceFlush && combined.length < BATCH_SIZE) return;
 
-      // Keep IndexedDB and memory intact while HTTP is in flight.
-      if (!isOnlineRef.current) {
-        await appendOfflineCoords(combined);
-        dropAcknowledgedMemory();
-        const len = (await readCoordsByStatus("offline")).length;
-        setOfflineCount(len);
-        void emitNotification("OFFLINE_MODE", { pointsBuffered: len });
-        return;
-      }
-
-      setConnectionStatus("syncing");
-
-      try {
-        const apiBase = resolveApiBase();
-        const userRaw = localStorage.getItem("tad_driver_user");
-        let user = null;
-        // A2: JSON.parse seguro — si localStorage corrupto, no romper el sync loop.
-        if (userRaw) {
-          try {
-            user = JSON.parse(userRaw);
-          } catch {
-            user = null;
-          }
+        // Keep IndexedDB and memory intact while HTTP is in flight.
+        if (!isOnlineRef.current) {
+          await appendOfflineCoords(combined);
+          dropAcknowledgedMemory();
+          const len = (await readCoordsByStatus("offline")).length;
+          setOfflineCount(len);
+          void emitNotification("OFFLINE_MODE", { pointsBuffered: len });
+          return;
         }
-        const driverId = user?.entityId || "unknown";
-        const deviceId = localStorage.getItem("TAD_DEVICE_ID") || "unknown";
 
-        if (driverId === "unknown" || deviceId === "unknown") {
+        setConnectionStatus("syncing");
+
+        try {
+          const apiBase = resolveApiBase();
+          const userRaw = localStorage.getItem("tad_driver_user");
+          let user = null;
+          // A2: JSON.parse seguro — si localStorage corrupto, no romper el sync loop.
+          if (userRaw) {
+            try {
+              user = JSON.parse(userRaw);
+            } catch {
+              user = null;
+            }
+          }
+          const driverId = user?.entityId || "unknown";
+          const deviceId = localStorage.getItem("TAD_DEVICE_ID") || "unknown";
+
+          if (driverId === "unknown" || deviceId === "unknown") {
+            await appendOfflineCoords(combined);
+            dropAcknowledgedMemory();
+            setOfflineCount((await readCoordsByStatus("offline")).length);
+            setConnectionStatus("offline");
+            return;
+          }
+
+          const res = await postTrackBatch(apiBase, driverId, deviceId, combined);
+
+          if (res.status === 402) {
+            triggerKillSwitch({
+              setLock,
+              setConnectionStatus,
+              stopTracking: stopTrackingRef.current,
+            });
+            // Preserve pending GPS during a subscription suspension.
+            await appendOfflineCoords(combined);
+            dropAcknowledgedMemory();
+            return;
+          }
+
+          if (!(await isCompleteGpsBatchReceipt(res, combined.length))) {
+            throw new Error("GPS_BATCH_ACK_INCOMPLETE");
+          }
+          // Commit local deletion only after server confirms full processing.
+          await removeCoordsByKeys(processedKeys, "batch");
+          dropAcknowledgedMemory();
+
+          const offlineQueue = await readCoordsByStatus("offline");
+          if (offlineQueue.length > 0) {
+            const syncResult = await syncOfflineQueue(
+              apiBase,
+              driverId,
+              deviceId,
+            );
+            if (!syncResult.success) {
+              setConnectionStatus("offline");
+              return;
+            }
+          }
+
+          setConnectionStatus("online");
+        } catch {
           await appendOfflineCoords(combined);
           dropAcknowledgedMemory();
           setOfflineCount((await readCoordsByStatus("offline")).length);
           setConnectionStatus("offline");
-          return;
+          void emitNotification("SYNC_FAILED", { pointsBuffered: combined.length });
         }
-
-        const res = await postTrackBatch(apiBase, driverId, deviceId, combined);
-
-        if (res.status === 402) {
-          triggerKillSwitch({
-            setLock,
-            setConnectionStatus,
-            stopTracking: stopTrackingRef.current,
-          });
-          // Preserve pending GPS during a subscription suspension.
-          await appendOfflineCoords(combined);
-          dropAcknowledgedMemory();
-          return;
-        }
-
-        if (!(await isCompleteGpsBatchReceipt(res, combined.length))) {
-          throw new Error("GPS_BATCH_ACK_INCOMPLETE");
-        }
-        // Commit local deletion only after server confirms full processing.
-        await removeCoordsByKeys(processedKeys, "batch");
-        dropAcknowledgedMemory();
-
-        const offlineQueue = await readCoordsByStatus("offline");
-        if (offlineQueue.length > 0) {
-          const syncResult = await syncOfflineQueue(
-            apiBase,
-            driverId,
-            deviceId,
-          );
-          if (!syncResult.success) {
-            setConnectionStatus("offline");
-            return;
-          }
-        }
-
-        setConnectionStatus("online");
-      } catch {
-        await appendOfflineCoords(combined);
-        dropAcknowledgedMemory();
-        setOfflineCount((await readCoordsByStatus("offline")).length);
-        setConnectionStatus("offline");
-        void emitNotification("SYNC_FAILED", { pointsBuffered: combined.length });
-      }
       } catch {
         // A failed disk write leaves the original batch and RAM snapshot intact.
         setConnectionStatus("offline");

@@ -22,7 +22,7 @@ No hay evidencia aquí de pagos incorrectos reales. La base Supabase conectada n
 - Mantener el agrupamiento **por conductor referente** y la regla actual de redondear una vez **por referente**, pero operar con enteros de centavos.
 - Convertir a RD$ únicamente al crear los campos de lote y JSON: `grossAmount`, `withholding`, `netAmount`, `grossTotal`, `withholdings`, `netTotal`.
 - Verificar desbordamiento de acumuladores, sin redondear silenciosamente comisiones erróneas ni alterar retrospectivamente lotes aprobados.
-- Conservar la transacción, la validación de membresía `status=APPROVED && settlementBatchId=null`, el comportamiento de periodos vacíos y los métodos de pago suspendidos.
+- Conservar la transacción, la validación de membresía `status=APPROVED && settlementBatchId=null` y los métodos de pago suspendidos. Desde el PR #341, un período sin comisiones APPROVED **devuelve 409** sin generar un lote vacío ni aprobarlo automáticamente, de modo que las comisiones aprobadas después puedan liquidarse.
 
 ### Ejemplos de comprobación
 
@@ -42,7 +42,7 @@ pnpm --filter api exec jest --runInBand src/modules/commission/commission-settle
 pnpm --filter api run build
 ```
 
-El método candidato se ejercitó en una evaluación aislada de JavaScript con transacciones sintéticas: **12/12 escenarios pasaron**, incluidos importes pequeños, agregación por referente, lote vacío, importes negativos/NaN/Infinity/subcentavos y límite de enteros seguros. **Esto no es** Jest ejecutado, TypeScript estricto, build Docker ni prueba de PostgreSQL.
+El método candidato original se ejercitó en una evaluación aislada de JavaScript con transacciones sintéticas: **12/12 escenarios pasaron** sobre la rama de entonces. Después, la fusión del PR #341 introdujo una modificación intencional del caso de período vacío: ahora **rechaza** su generación. La prueba de la suite de centavos debe comprobar dicho rechazo y ninguna escritura. La evaluación aislada original **no** equivale a Jest, TypeScript estricto, Docker o PostgreSQL y no cubre automáticamente todas las fusiones posteriores.
 
 Antes de fusionar, usar PostgreSQL desechable de staging con el esquema exacto de Prisma y datos ficticios. Verificar `grossTotal=netTotal+withholdings` al centavo y que la suma de subtotales por referente coincide con la del lote. Ejecutar escenarios de 10x volumen y concurrencia de la generación de lotes. Verificar ledger original y snapshot de cada comisión sin alterar wallets.
 

@@ -7,13 +7,21 @@ export async function isCompleteGpsBatchReceipt(
   response: Pick<Response, "ok" | "json">,
   expectedCount: number,
 ): Promise<boolean> {
-  if (!response.ok || !Number.isSafeInteger(expectedCount) || expectedCount < 1) {
+  if (
+    !response.ok ||
+    !Number.isSafeInteger(expectedCount) ||
+    expectedCount < 1
+  ) {
     return false;
   }
 
   try {
     const receipt: unknown = await response.json();
-    if (typeof receipt !== "object" || receipt === null || Array.isArray(receipt)) {
+    if (
+      typeof receipt !== "object" ||
+      receipt === null ||
+      Array.isArray(receipt)
+    ) {
       return false;
     }
     const { input, count } = receipt as Record<string, unknown>;

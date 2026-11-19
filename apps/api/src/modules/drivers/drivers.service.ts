@@ -696,7 +696,7 @@ export class DriversService {
         !onboardingCompleteSteps.includes(candidate.onboardingStatus)
       ) {
         throw new ForbiddenException(
-          `Onboarding incompleto o suscripción no pagada. Estado actual: ${candidate.onboardingStatus}. Asegúrate de completar: TOS → Pago RD${BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD.toLocaleString()} → Cuenta bancaria.`,
+          `Onboarding incompleto o suscripción no pagada. Estado actual: ${candidate.onboardingStatus}. Asegúrate de completar: TOS → Pago RD$${BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD.toLocaleString()} → Cuenta bancaria.`,
         );
       }
     };

@@ -67,6 +67,35 @@ describe("Commission monthly settlement atomic membership claim", () => {
     countUnbatched.mockResolvedValue(0);
   });
 
+  it.each([
+    { month: 0, year: 2026 },
+    { month: 13, year: 2026 },
+    { month: -1, year: 2026 },
+    { month: 1.5, year: 2026 },
+    { month: Number.NaN, year: 2026 },
+    { month: 11, year: 2019 },
+    { month: 11, year: 2101 },
+    { month: 11, year: 2026.5 },
+    { month: 11, year: Number.POSITIVE_INFINITY },
+  ])(
+    "rejects invalid settlement period month=$month year=$year before any DB access",
+    async ({ month, year }) => {
+      await expect(
+        service.generateMonthlySettlement({
+          month,
+          year,
+          generatedBy: "admin-1",
+        }),
+      ).rejects.toThrow("month/year deben representar un período válido");
+
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(findBatch).not.toHaveBeenCalled();
+      expect(findCommissions).not.toHaveBeenCalled();
+      expect(createBatch).not.toHaveBeenCalled();
+      expect(claimCommissions).not.toHaveBeenCalled();
+    },
+  );
+
   it("claims only still-APPROVED and unbatched members before publishing totals", async () => {
     const result = await service.generateMonthlySettlement({
       month: 11,

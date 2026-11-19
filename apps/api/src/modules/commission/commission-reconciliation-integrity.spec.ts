@@ -19,11 +19,10 @@ describe("Commission reconciliation must not report false-clean financial status
     amount: 500,
     sourceType: "DRIVER_REFERRAL",
     status: CommissionStatus.APPROVED,
-    settlementBatchId: "batch-1",
+    settlementBatchId: "batch-1" as string | null,
     createdAt: new Date("2026-11-05T12:00:00.000Z"),
     approvedAt: new Date("2026-11-06T12:00:00.000Z") as Date | null,
     paidAt: null,
-    approvedAt: new Date("2026-11-05T13:00:00.000Z") as Date | null,
   };
   const sourceLedger = {
     id: "ledger-1",
@@ -51,9 +50,8 @@ describe("Commission reconciliation must not report false-clean financial status
     taxAmount: 0,
     status: "COMPLETED",
   };
-  let currentReversals: Array<typeof validReversal> = [];
+  let currentReversals: Array<typeof validReversal | typeof sourceLedger> = [];
   let currentPayouts: Array<Record<string, unknown>> = [];
-  let currentReversals: Array<typeof sourceLedger> = [];
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -66,7 +64,6 @@ describe("Commission reconciliation must not report false-clean financial status
     financialRead.mockImplementation(async ({ where }) => {
       if (where.category === "OPEX_COMMISSION") return currentSourceLedger;
       if (where.category === "OPEX_COMMISSION_PAYOUT") return currentPayouts;
-      if (where.category === "OPEX_COMMISSION_REVERSAL") return currentReversals;
       if (where.category === "OPEX_COMMISSION_REVERSAL") {
         // Simulate indexed lookup by exact reference, regardless of date.
         return currentReversals.filter((entry) =>
@@ -333,7 +330,7 @@ describe("Commission reconciliation must not report false-clean financial status
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
-      "Commission commission-1 missing credit reversal ledger",
+      "Commission commission-1 revoked after approval but has no reversal ledger entry",
     );
   });
 
@@ -412,7 +409,7 @@ describe("Commission reconciliation must not report false-clean financial status
       const result = await service.reconcileCommissions(11, 2026);
       expect(result.isClean).toBe(false);
       expect(result.discrepancies).toContain(
-        "Commission commission-1 reversal ledger financial identity mismatch",
+        "Commission commission-1 reversal ledger attribution/amount/status mismatch",
       );
     },
   );
@@ -422,7 +419,7 @@ describe("Commission reconciliation must not report false-clean financial status
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
-      "Commission commission-1 has unexpected reversal ledger",
+      "Commission commission-1 has an unexpected reversal ledger entry",
     );
   });
 
@@ -438,7 +435,7 @@ describe("Commission reconciliation must not report false-clean financial status
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
-      "Commission commission-1 has unexpected reversal ledger",
+      "Commission commission-1 has an unexpected reversal ledger entry",
     );
   });
 

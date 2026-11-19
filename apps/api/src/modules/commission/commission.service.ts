@@ -751,7 +751,6 @@ export class CommissionService {
         sourceType: true,
         status: true,
         reference: true,
-        approvedAt: true,
         settlementBatchId: true,
         createdAt: true,
         approvedAt: true,
@@ -808,30 +807,6 @@ export class CommissionService {
       },
     });
 
-    // A revocation after wallet credit must have a completed INCOMING
-    // compensating ledger entry, even when it happened in a later month.
-    // Query by exact reference rather than createdAt, which would miss
-    // post-period reversals. Chunk predicates to bound 10x query size.
-    const reversalByReference = new Map<
-      string,
-      {
-        id: string;
-        reference: string | null;
-        entityId: string | null;
-        type: string;
-        currency: string;
-        amount: number;
-        netAmount: number;
-        taxAmount: number;
-        status: string;
-      }
-    >();
-    const reversalReferences = commissions.map((c) => `REV-${c.reference}`);
-    for (let index = 0; index < reversalReferences.length; index += 500) {
-      const reversals = await this.prisma.financialTransaction.findMany({
-        where: {
-          category: "OPEX_COMMISSION_REVERSAL",
-          reference: { in: reversalReferences.slice(index, index + 500) },
     // Reversals may be posted months after the original commission.
     // Look them up by the exact immutable source reference, NOT by the
     // reconciliation month's ledger createdAt window. The reference column
@@ -866,18 +841,6 @@ export class CommissionService {
           amount: true,
           netAmount: true,
           taxAmount: true,
-          status: true,
-        },
-      });
-      for (const reversal of reversals) {
-        if (reversal.reference) {
-          reversalByReference.set(reversal.reference, reversal);
-        }
-      }
-          amount: true,
-          netAmount: true,
-          taxAmount: true,
-          currency: true,
           status: true,
         },
       });
@@ -947,20 +910,6 @@ export class CommissionService {
       }
     }
 
-    // An APPROVED/PAID commission becomes a wallet credit. If it is later
-    // REVOKED, that credit must be compensated by an exact, completed ledger
-    // entry. A PENDING-to-REVOKED event was never credited and must NOT
-    // fabricate a reversal. Unexpected reversal rows also fail reconciliation.
-    for (const c of commissions) {
-      const reversal = reversalByReference.get(`REV-${c.reference}`);
-      const creditedBeforeRevoke =
-        c.status === CommissionStatus.REVOKED && !!c.approvedAt;
-
-      if (creditedBeforeRevoke && !reversal) {
-        discrepancies.push(`Commission ${c.id} missing credit reversal ledger`);
-      } else if (!creditedBeforeRevoke && reversal) {
-        discrepancies.push(`Commission ${c.id} has unexpected reversal ledger`);
-      } else if (creditedBeforeRevoke && reversal) {
     // A revoked credit has to have its exact, completed compensating
     // financial entry. A PENDING commission was never wallet-credited,
     // therefore a reversal would instead be an unexpected money movement.
@@ -992,7 +941,6 @@ export class CommissionService {
           reversal.status !== "COMPLETED"
         ) {
           discrepancies.push(
-            `Commission ${c.id} reversal ledger financial identity mismatch`,
             `Commission ${c.id} reversal ledger attribution/amount/status mismatch`,
           );
         }

@@ -5,7 +5,7 @@ import { PrismaService } from "../prisma/prisma.service";
  * SRE v12.2.5 — TelemetryService with PoP Validation
  *
  * PROTOCOLO ANTI-OOM:
- * 1. Batch size capped at MAX_BATCH_SIZE (500 points)
+ * 1. GPS batches above TELEMETRY_GPS_BATCH_LIMIT (500) rejected before persistence
  * 2. Uses for-loop instead of .map() chains to avoid triple memory allocation
  * 3. Chunked inserts to prevent query string from exceeding PostgreSQL limits
  *

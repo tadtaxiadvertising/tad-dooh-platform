@@ -106,16 +106,32 @@ export class PlaybackQueue {
         signal: AbortSignal.timeout(15_000),
       });
 
-      if (response.ok) {
-        // Remove all successfully sent events
+      // The backend currently responds HTTP 201 even for
+      // { success: false, reason: "TABLET_KEY_MISSING" }. Never clear local
+      // proofs merely because HTTP succeeded: require full application ACK.
+      const acknowledgement = (await response.json().catch(() => null)) as {
+        success?: boolean;
+        processed?: number;
+        rejected?: number;
+        reason?: string;
+      } | null;
+      const fullyAccepted =
+        response.ok &&
+        acknowledgement?.success === true &&
+        acknowledgement.processed === payload.length &&
+        acknowledgement.rejected === 0;
+
+      if (fullyAccepted) {
         for (const event of events) {
           await this.removeEvent(`${event.video_id}_${event.timestamp}`);
         }
         sent = events.length;
       } else {
+        // Preserve the entire local batch for retry/reconciliation if any
+        // event is rejected or the receipt is missing/ambiguous.
         failed = events.length;
         console.warn(
-          `[PlaybackQueue] Batch flush failed: HTTP ${response.status}`,
+          `[PlaybackQueue] Batch unacknowledged: HTTP ${response.status}, reason=${acknowledgement?.reason || "PARTIAL_OR_INVALID_ACK"}`,
         );
       }
     } catch (err) {

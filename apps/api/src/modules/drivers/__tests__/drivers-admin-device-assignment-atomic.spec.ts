@@ -15,9 +15,14 @@ describe("DriversService.assignDevice atomic handoff", () => {
     const tx = {
       driver: {
         // A driver row update is the per-driver serialization lock.
-        update: jest.fn(async ({ where }: { where: { id: string }; data: { updatedAt: Date } }) =>
-          ({ id: where.id }),
-        ),
+        update: jest.fn(async (_args: {
+          where: { id: string };
+          data: { updatedAt: Date };
+          select: { status: true; onboardingStatus: true };
+        }) => ({
+          status: "OPERATIVO",
+          onboardingStatus: "COMPLETED",
+        })),
       },
       $queryRaw: jest.fn(async (_sql: TemplateStringsArray, id: string) => {
         if (lockHeld) {
@@ -126,6 +131,7 @@ describe("DriversService.assignDevice atomic handoff", () => {
     expect(tx.driver.update).toHaveBeenCalledWith({
       where: { id: "driver-1" },
       data: { updatedAt: expect.any(Date) },
+      select: { status: true, onboardingStatus: true },
     });
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
     const [sql, lockedDriverId] = tx.$queryRaw.mock.calls[0];
@@ -145,6 +151,39 @@ describe("DriversService.assignDevice atomic handoff", () => {
     expect(links.get("target-tablet")).toBe("driver-1");
     expect(prisma.device.updateMany).not.toHaveBeenCalled();
     expect(prisma.device.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects a blocked driver even with completed onboarding", async () => {
+    const { service, prisma, tx, links } = makeHarness();
+    prisma.driver.findUnique.mockResolvedValueOnce({
+      id: "driver-1",
+      status: "BLOQUEADO",
+      onboardingStatus: "COMPLETED",
+    });
+
+    await expect(service.assignDevice("driver-1", "TAD-TARGET"))
+      .rejects.toThrow("Conductor bloqueado");
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.device.updateMany).not.toHaveBeenCalled();
+    expect(links.get("old-tablet")).toBe("driver-1");
+  });
+
+  it("rejects a driver blocked after pre-read but before the row lock", async () => {
+    const { service, prisma, tx, links } = makeHarness();
+    tx.driver.update.mockResolvedValueOnce({
+      status: "BLOQUEADO",
+      onboardingStatus: "COMPLETED",
+    });
+
+    await expect(service.assignDevice("driver-1", "TAD-TARGET"))
+      .rejects.toThrow("Conductor bloqueado");
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.driver.update).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
+    expect(tx.device.updateMany).not.toHaveBeenCalled();
+    expect(tx.device.update).not.toHaveBeenCalled();
+    expect(links.get("old-tablet")).toBe("driver-1");
+    expect(links.get("target-tablet")).toBeNull();
   });
 
   it("rolls back previous binding if the target device write fails", async () => {

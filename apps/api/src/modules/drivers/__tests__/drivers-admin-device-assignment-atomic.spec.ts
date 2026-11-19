@@ -9,6 +9,9 @@ describe("DriversService.assignDevice atomic handoff", () => {
     let failTargetWrite = false;
     let nextTargetOwnerBeforeTx: string | null | undefined;
 
+    // Simulates PostgreSQL's per-driver row lock, released at transaction end.
+    let lockHeld = false;
+    const lockWaiters: Array<() => void> = [];
     const tx = {
       driver: {
         // A driver row update is the per-driver serialization lock.
@@ -16,6 +19,13 @@ describe("DriversService.assignDevice atomic handoff", () => {
           ({ id: where.id }),
         ),
       },
+      $queryRaw: jest.fn(async (_sql: TemplateStringsArray, id: string) => {
+        if (lockHeld) {
+          await new Promise<void>((resolve) => lockWaiters.push(resolve));
+        }
+        lockHeld = true;
+        return [{ id }];
+      }),
       device: {
         updateMany: jest.fn(async ({ where, data }: {
           where: { driverId: string; id: { not: string } };
@@ -62,20 +72,29 @@ describe("DriversService.assignDevice atomic handoff", () => {
         update: jest.fn(),
         updateMany: jest.fn(),
       },
-      // Simulate the atomic rollback contract of a Prisma interactive
-      // transaction; this fixture is not a real PostgreSQL integration test.
+      // Simulate both rollback and the release of the row lock on commit.
+      // This fixture does not replace a real PostgreSQL concurrency test.
       $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => {
         // An unrelated admin may change the target after the initial read.
         if (nextTargetOwnerBeforeTx !== undefined) {
           links.set("target-tablet", nextTargetOwnerBeforeTx);
         }
+        let acquired = false;
         const snapshot = new Map(links);
         try {
-          return await callback(tx);
+          const result = await callback(tx);
+          acquired = true;
+          return result;
         } catch (error) {
           links.clear();
           for (const [id, owner] of snapshot) links.set(id, owner);
+          acquired = true;
           throw error;
+        } finally {
+          if (acquired) {
+            lockHeld = false;
+            lockWaiters.shift()?.();
+          }
         }
       }),
     };
@@ -108,6 +127,10 @@ describe("DriversService.assignDevice atomic handoff", () => {
       where: { id: "driver-1" },
       data: { updatedAt: expect.any(Date) },
     });
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    const [sql, lockedDriverId] = tx.$queryRaw.mock.calls[0];
+    expect(sql.join("?")).toContain("FOR NO KEY UPDATE");
+    expect(lockedDriverId).toBe("driver-1");
     expect(tx.device.updateMany).toHaveBeenCalledWith({
       where: { driverId: "driver-1", id: { not: "target-tablet" } },
       data: { driverId: null },
@@ -135,6 +158,36 @@ describe("DriversService.assignDevice atomic handoff", () => {
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(links.get("old-tablet")).toBe("driver-1");
     expect(links.get("target-tablet")).toBeNull();
+  });
+
+  it("rejects a missing locked driver before unlinking any device", async () => {
+    const { service, tx, links } = makeHarness();
+    tx.$queryRaw.mockResolvedValueOnce([]);
+    await expect(service.assignDevice("driver-1", "TAD-TARGET"))
+      .rejects.toThrow("Chofer no encontrado");
+    expect(tx.device.updateMany).not.toHaveBeenCalled();
+    expect(tx.device.update).not.toHaveBeenCalled();
+    expect(links.get("old-tablet")).toBe("driver-1");
+  });
+
+  it("serializes concurrent admin handoffs for the same driver", async () => {
+    const { service, prisma, tx, links } = makeHarness();
+    links.set("second-target", null);
+    prisma.device.findFirst.mockImplementation(async ({ where }: {
+      where: { OR: [{ deviceId: string }, { id: string }] };
+    }) => {
+      const id = where.OR[0].deviceId === "TAD-SECOND" ? "second-target" : "target-tablet";
+      return { id, deviceId: where.OR[0].deviceId };
+    });
+
+    await Promise.all([
+      service.assignDevice("driver-1", "TAD-TARGET"),
+      service.assignDevice("driver-1", "TAD-SECOND"),
+    ]);
+    const owned = [...links.values()].filter((owner) => owner === "driver-1");
+    expect(owned).toHaveLength(1);
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
   });
 
   it("does not unlink a driver when the target device does not exist", async () => {

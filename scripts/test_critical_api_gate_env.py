@@ -65,6 +65,24 @@ exit 0
         self.assertIn('BLOCKED: environment file present', result.stderr)
         self.assertNotIn('CHECK_NODE_SECRETS', result.stdout)
 
+    def test_blocks_symlinked_environment_files(self):
+        # dotenv loaders follow symlinks. A symlink named .env must be treated
+        # like a file, even if its target lives outside the checkout.
+        with tempfile.TemporaryDirectory(prefix='tad-external-config-') as external:
+            dummy = Path(external) / 'dummy-config'
+            dummy.write_text('FAKE_NON_SECRET=1')
+            for name in ('.env', 'apps/api/.env.production', '.envrc.local'):
+                with self.subTest(name=name):
+                    link = self.root / name
+                    link.symlink_to(dummy)
+                    try:
+                        result = self.run_gate()
+                        self.assertEqual(result.returncode, 2, result.stderr)
+                        self.assertIn('BLOCKED: environment file present', result.stderr)
+                        self.assertNotIn('CHECK_NODE_SECRETS', result.stdout)
+                    finally:
+                        link.unlink()
+
     def test_rejects_wrong_node(self):
         self.make_shim('node', '#!/bin/sh\nif [ "${1:-}" = "-p" ]; then echo 24; else exit 0; fi\n')
         result = self.run_gate()

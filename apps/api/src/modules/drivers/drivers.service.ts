@@ -708,6 +708,19 @@ export class DriversService {
         where: { id: driverId },
         data: { updatedAt: new Date() },
       });
+      // Serialize handoffs for the same driver. A transaction alone cannot
+      // prevent concurrent admins from assigning two distinct tablets:
+      // both may unlink the old binding before either target is written.
+      // Lock the driver row first; NO KEY UPDATE avoids blocking FK key
+      // checks while keeping other handoffs for this driver ordered.
+      const lockedDrivers = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "drivers"
+        WHERE "id" = ${driverId}
+        FOR NO KEY UPDATE
+      `;
+      if (lockedDrivers.length !== 1) {
+        throw new BadRequestException("Chofer no encontrado");
+      }
 
       await tx.device.updateMany({
         where: { driverId, id: { not: device.id } },

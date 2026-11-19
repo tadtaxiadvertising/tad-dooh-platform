@@ -16,6 +16,7 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
     amount: 500,
     reference: "REF-DRIVER-1",
     status: CommissionStatus.PENDING,
+    settlementBatchId: null,
   };
   const tx = {
     commission: { findUnique, updateMany },
@@ -141,7 +142,11 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
       findUnique.mockResolvedValue({ ...commission, status });
       await service.revokeCommission("commission-1", "fraud", "admin-1");
       expect(updateMany).toHaveBeenCalledWith({
-        where: { id: "commission-1", status },
+        where: {
+          id: "commission-1",
+          status,
+          settlementBatchId: null,
+        },
         data: {
           status: CommissionStatus.REVOKED,
           revokedAt: expect.any(Date),
@@ -215,11 +220,69 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
     await service.revokeCommission("commission-1", "fraud", "admin-1");
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "commission-1", status: CommissionStatus.PENDING },
+        where: {
+          id: "commission-1",
+          status: CommissionStatus.PENDING,
+          settlementBatchId: null,
+        },
       }),
     );
     expect(walletUpdateMany).not.toHaveBeenCalled();
     expect(ledgerCreate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    CommissionStatus.PENDING,
+    CommissionStatus.APPROVED,
+    CommissionStatus.PAID,
+  ])(
+    "refuses revocation of %s commission already linked to a settlement",
+    async (status) => {
+      findUnique.mockResolvedValue({
+        ...commission,
+        status,
+        settlementBatchId: "settlement-batch-1",
+      });
+
+      await expect(
+        service.revokeCommission("commission-1", "fraud", "admin-1"),
+      ).rejects.toBeInstanceOf(ConflictException);
+
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(ledgerCreate).not.toHaveBeenCalled();
+      expect(walletUpdateMany).not.toHaveBeenCalled();
+    },
+  );
+
+  it("fails closed when a concurrent settlement claims after the revocation read", async () => {
+    findUnique.mockResolvedValue({
+      ...commission,
+      status: CommissionStatus.APPROVED,
+      settlementBatchId: null,
+    });
+    // The real WHERE additionally requires settlementBatchId IS NULL.
+    // PostgreSQL returns count=0 if a settlement generator claimed the row.
+    updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.revokeCommission("commission-1", "fraud", "admin-1"),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "commission-1",
+        status: CommissionStatus.APPROVED,
+        settlementBatchId: null,
+      },
+      data: {
+        status: CommissionStatus.REVOKED,
+        revokedAt: expect.any(Date),
+        revokedBy: "admin-1",
+        revocationReason: "fraud",
+      },
+    });
+    expect(ledgerCreate).not.toHaveBeenCalled();
+    expect(walletUpdateMany).not.toHaveBeenCalled();
   });
 
   it("rejects conflicting revocation with no compensating ledger or debit", async () => {

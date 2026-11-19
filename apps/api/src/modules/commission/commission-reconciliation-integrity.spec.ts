@@ -1,3 +1,4 @@
+import { BadRequestException } from "@nestjs/common";
 import { CommissionService, CommissionStatus } from "./commission.service";
 
 describe("Commission reconciliation must not report false-clean financial status", () => {
@@ -73,6 +74,26 @@ describe("Commission reconciliation must not report false-clean financial status
       throw new Error("Unexpected financial category");
     });
   });
+
+  it.each([
+    [0, 2026],
+    [13, 2026],
+    [1.5, 2026],
+    [Number.NaN, 2026],
+    [11, 2019],
+    [11, 2101],
+    [11, 2026.5],
+    [11, Number.NaN],
+  ])(
+    "rejects invalid reconciliation period month=%s year=%s before any financial reads",
+    async (month, year) => {
+      await expect(service.reconcileCommissions(month, year))
+        .rejects.toBeInstanceOf(BadRequestException);
+      expect(commissionsRead).not.toHaveBeenCalled();
+      expect(financialRead).not.toHaveBeenCalled();
+      expect(batchesRead).not.toHaveBeenCalled();
+    },
+  );
 
   it("keeps a properly attributed APPROVED commission reconciled", async () => {
     const result = await service.reconcileCommissions(11, 2026);

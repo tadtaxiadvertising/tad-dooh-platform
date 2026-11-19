@@ -737,6 +737,22 @@ export class CommissionService {
    * Detecta discrepancias para auditoría.
    */
   async reconcileCommissions(month: number, year: number) {
+    // Internal callers bypass HTTP param validation. Date() normalizes
+    // months 0/13 or fractional inputs into a different accounting period,
+    // which could otherwise produce a falsely clean reconciliation report.
+    // Keep the service domain bound aligned with monthly batch generation.
+    if (
+      !Number.isInteger(month) ||
+      month < 1 ||
+      month > 12 ||
+      !Number.isInteger(year) ||
+      year < 2020 ||
+      year > 2100
+    ) {
+      throw new BadRequestException(
+        "month/year deben representar un período válido",
+      );
+    }
     const periodKey = `${year}-${String(month).padStart(2, "0")}`;
 
     this.logger.log(`[RECONCILIATION] Running reconciliation for ${periodKey}`);

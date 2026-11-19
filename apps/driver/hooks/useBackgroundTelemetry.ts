@@ -16,8 +16,8 @@
  *      procesa la cola offline por lotes hacia /fleet/track-batch sin bloquear
  *      la UI thread. Reconexión (navigator.onLine) triggera sync automático.
  *
- *   4. IndexedDB BUFFER — coordenadas acumuladas en TADTelemetryDB con
- *      status 'batch' (en vuelo) y 'offline' (pendientes). Máx 500 registros.
+ *   4. IndexedDB BUFFER — coordenadas persistidas en TADTelemetryDB.
+ *      No descartar datos pendientes para imponer un límite de registros.
  *
  *   5. KILL-SWITCH 402 — HTTP 402 del backend → destruye worker GPS,
  *      invalida JWT local, dispara TAD_FORCE_LOGOUT, activa PaymentLockOverlay.
@@ -39,6 +39,7 @@ import { isCompleteGpsBatchReceipt } from "../lib/gps-batch-receipt";
 const BATCH_SIZE = 10;
 const FLUSH_INTERVAL_MS = 300_000; // 5 minutos — debounce estricto (regla de negocio)
 const DRIP_CHUNK_SIZE = 50; // Tamaño de chunk para drip-sync offline
+const GPS_UPLOAD_MAX_BATCH_SIZE = 500; // Compatible con el límite del API
 const LIVE_PING_THROTTLE_MS = 30_000; // 30s — MAP-SPEC-2026
 const SYNC_IDLE_DELAY_MS = 200; // requestIdleCallback fallback delay
 // Delay post-reconnect para stabilizar red
@@ -344,7 +345,7 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
         const storageBatch = await readCoordsByStatus("batch");
         const combined = Array.from(new Map(
           [...storageBatch, ...memoryBufferRef.current].map((coord) => [coord.ts, coord]),
-        ).values());
+        ).values()).slice(0, GPS_UPLOAD_MAX_BATCH_SIZE);
         const processedKeys = combined.map((coord) => coord.ts);
         const keys = new Set(processedKeys);
         const dropAcknowledgedMemory = () => {

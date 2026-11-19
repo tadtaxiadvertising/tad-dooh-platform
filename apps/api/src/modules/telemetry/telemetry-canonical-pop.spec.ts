@@ -124,6 +124,54 @@ describe("TelemetryService canonical verified Proof of Play", () => {
     expect(execute).toHaveBeenCalledTimes(1);
   });
 
+  it("preserves distinct minute slots while normalizing only completion", async () => {
+    const result = await makeService().recordPlaybackBatch([
+      {
+        deviceId: "TAD-DEVICE",
+        videoId: "VIDEO-1",
+        eventType: "START",
+        clientTimestamp: "2026-11-19T17:00:50.000Z",
+      },
+      {
+        deviceId: "TAD-DEVICE",
+        videoId: "VIDEO-1",
+        eventType: "END",
+        clientTimestamp: "2026-11-19T17:01:20.000Z",
+      },
+    ]);
+    expect(result).toEqual({ processed: 2, rejected: 0 });
+    expect(execute).toHaveBeenCalledTimes(1);
+    // Two 7-parameter database rows, because the minute differs.
+    expect(execute.mock.calls[0].slice(1)).toHaveLength(14);
+    expect(execute.mock.calls[0][2]).toBe("START");
+    expect(execute.mock.calls[0][9]).toBe("play_confirm");
+  });
+
+  it("does not send a full receipt when the SQL write fails and fallback only handles one canonical slot", async () => {
+    execute.mockRejectedValueOnce(new Error("synthetic SQL error"));
+    create.mockResolvedValueOnce({ id: "event-1" });
+    const result = await makeService().recordPlaybackBatch([
+      {
+        deviceId: "TAD-DEVICE",
+        videoId: "VIDEO-1",
+        eventType: "START",
+        clientTimestamp: "2026-11-19T17:00:05.000Z",
+      },
+      {
+        deviceId: "TAD-DEVICE",
+        videoId: "VIDEO-1",
+        eventType: "END",
+        clientTimestamp: "2026-11-19T17:00:35.000Z",
+      },
+    ]);
+    expect(create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ eventType: "play_confirm" }),
+    });
+    expect(result.processed).toBe(1);
+    // The player must retain the original 2 events until full receipt.
+    expect(result.processed).not.toBe(2);
+  });
+
   it("preserves the canonical type in the ORM fallback when raw SQL fails", async () => {
     execute.mockRejectedValueOnce(new Error("synthetic DB SQL failure"));
     create.mockResolvedValueOnce({ id: "event-1" });

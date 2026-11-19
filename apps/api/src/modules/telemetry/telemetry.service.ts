@@ -16,7 +16,7 @@ import { PrismaService } from "../prisma/prisma.service";
  * - Rate limiting: max 60 playback events per minute per deviceId
  * - Deduplication: ON CONFLICT for duplicate playback events
  */
-const MAX_BATCH_SIZE = 500;
+export const TELEMETRY_GPS_BATCH_LIMIT = 500;
 const CHUNK_SIZE = 100;
 const PLAYBACK_MAX_BATCH_SIZE = 200;
 const PLAYBACK_RATE_LIMIT = 60; // events per minute per device
@@ -138,57 +138,54 @@ export class TelemetryService {
       speed?: number;
       timestamp?: string | number | Date;
     }>,
-  ) {
+  ): Promise<void> {
     if (!data || data.length === 0) return;
-
-    const safeData =
-      data.length > MAX_BATCH_SIZE ? data.slice(0, MAX_BATCH_SIZE) : data;
-
-    if (safeData.length < data.length) {
-      this.logger.warn(
-        `⚠️ [ANTI-OOM] Telemetry batch truncated: ${data.length} → ${safeData.length} points (max: ${MAX_BATCH_SIZE})`,
-      );
+    if (data.length > TELEMETRY_GPS_BATCH_LIMIT) {
+      // Never truncate offline telemetry while reporting success.
+      // The caller must split the retained queue into smaller batches.
+      throw new Error("TELEMETRY_BATCH_TOO_LARGE");
     }
 
     try {
-      let totalProcessed = 0;
+      // A later chunk can fail after earlier inserts. Keep the entire upload
+      // atomic so the client can safely retry without a partial success.
+      await this.prisma.$transaction(async (tx) => {
+        for (let offset = 0; offset < data.length; offset += CHUNK_SIZE) {
+          const chunk = data.slice(offset, offset + CHUNK_SIZE);
+          const values: string[] = [];
+          const params: Array<string | number | Date> = [];
 
-      for (let offset = 0; offset < safeData.length; offset += CHUNK_SIZE) {
-        const chunk = safeData.slice(offset, offset + CHUNK_SIZE);
+          for (let i = 0; i < chunk.length; i++) {
+            const item = chunk[i];
+            const base = i * 5;
+            values.push(
+              `(gen_random_uuid(), $${base + 1}, ST_SetSRID(ST_MakePoint($${base + 2}, $${base + 3}), 4326), $${base + 4}, $${base + 5})`,
+            );
+            params.push(
+              item.driverId,
+              item.lng,
+              item.lat,
+              item.speed ?? 0,
+              item.timestamp ? new Date(item.timestamp) : new Date(),
+            );
+          }
 
-        const values: string[] = [];
-        const params: Array<string | number | Date> = [];
-
-        for (let i = 0; i < chunk.length; i++) {
-          const item = chunk[i];
-          const base = i * 5;
-          values.push(
-            `(gen_random_uuid(), $${base + 1}, ST_SetSRID(ST_MakePoint($${base + 2}, $${base + 3}), 4326), $${base + 4}, $${base + 5})`,
-          );
-          params.push(
-            item.driverId,
-            item.lng,
-            item.lat,
-            item.speed ?? 0,
-            item.timestamp ? new Date(item.timestamp) : new Date(),
+          await tx.$executeRawUnsafe(
+            `INSERT INTO telemetry (id, driver_id, coords, speed, timestamp)
+             VALUES ${values.join(", ")}
+             ON CONFLICT (driver_id, date_trunc('second', timestamp)) DO NOTHING`,
+            ...params,
           );
         }
-
-        await this.prisma.$executeRawUnsafe(
-          `INSERT INTO telemetry (id, driver_id, coords, speed, timestamp)
-           VALUES ${values.join(", ")}
-           ON CONFLICT (driver_id, date_trunc('second', timestamp)) DO NOTHING`,
-          ...params,
-        );
-
-        totalProcessed += chunk.length;
-      }
+      });
 
       this.logger.log(
-        `✅ Batch sync completed: ${totalProcessed} points processed in ${Math.ceil(safeData.length / CHUNK_SIZE)} chunks.`,
+        `✅ Batch sync completed: ${data.length} points committed in ${Math.ceil(data.length / CHUNK_SIZE)} chunks.`,
       );
-    } catch (err) {
-      this.logger.error(`Failed to batch sync telemetry: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to batch sync telemetry: ${message}`);
+      throw err; // Must not return 201/"success" after an unknown DB outcome.
     }
   }
 

@@ -33,12 +33,12 @@ describe("DriversService.assignDevice atomic handoff", () => {
       }),
       device: {
         updateMany: jest.fn(async ({ where, data }: {
-          where: { driverId: string; id: { not: string } };
+          where: { driverId: string; id?: { not: string } };
           data: { driverId: null };
         }) => {
           let count = 0;
           for (const [id, owner] of links) {
-            if (owner === where.driverId && id !== where.id.not) {
+            if (owner === where.driverId && (!where.id || id !== where.id.not)) {
               links.set(id, data.driverId);
               count++;
             }
@@ -227,6 +227,68 @@ describe("DriversService.assignDevice atomic handoff", () => {
     expect(owned).toHaveLength(1);
     expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("unlinks devices through the same driver-row lock used by assignment", async () => {
+    const { service, prisma, tx, links } = makeHarness();
+    await expect(service.unlinkDevice("driver-1")).resolves.toEqual({ count: 1 });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    const [sql, id] = tx.$queryRaw.mock.calls[0];
+    expect(sql.join("?")).toContain("FOR NO KEY UPDATE");
+    expect(id).toBe("driver-1");
+    expect(tx.device.updateMany).toHaveBeenCalledWith({
+      where: { driverId: "driver-1" },
+      data: { driverId: null },
+    });
+    expect(prisma.device.updateMany).not.toHaveBeenCalled();
+    expect(links.get("old-tablet")).toBeNull();
+  });
+
+  it("keeps unlink's existing count-zero contract for a missing driver", async () => {
+    const { service, tx, links } = makeHarness();
+    tx.$queryRaw.mockResolvedValueOnce([]);
+    await expect(service.unlinkDevice("missing-driver")).resolves.toEqual({ count: 0 });
+    expect(tx.device.updateMany).not.toHaveBeenCalled();
+    expect(links.get("old-tablet")).toBe("driver-1");
+  });
+
+  it("serializes unlink behind an in-flight admin assignment for the same driver", async () => {
+    const { service, prisma, tx, links } = makeHarness();
+    const originalUpdateMany = tx.device.updateMany.getMockImplementation();
+    if (!originalUpdateMany) throw new Error("missing fixture implementation");
+    let entered!: () => void;
+    let resume!: () => void;
+    const enteredFirstWrite = new Promise<void>((resolve) => { entered = resolve; });
+    const releaseFirstWrite = new Promise<void>((resolve) => { resume = resolve; });
+
+    tx.device.updateMany.mockImplementationOnce(async (args) => {
+      entered();
+      await releaseFirstWrite;
+      return originalUpdateMany(args);
+    });
+
+    // Assignment has already acquired the row lock, but has not completed
+    // unlink+target-binding. Unlink must wait on that same row.
+    const assignment = service.assignDevice("driver-1", "TAD-TARGET");
+    await enteredFirstWrite;
+    const unlink = service.unlinkDevice("driver-1");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(tx.device.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.device.updateMany).not.toHaveBeenCalled();
+
+    resume();
+    await expect(assignment).resolves.toMatchObject({
+      id: "target-tablet",
+      driverId: "driver-1",
+    });
+    await expect(unlink).resolves.toEqual({ count: 1 });
+
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect([...links.values()].filter((owner) => owner === "driver-1"))
+      .toHaveLength(0);
   });
 
   it("does not unlink a driver when the target device does not exist", async () => {

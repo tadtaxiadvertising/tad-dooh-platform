@@ -754,9 +754,22 @@ export class DriversService {
    * Unlink a hardware device from a driver
    */
   async unlinkDevice(driverId: string) {
-    return this.prisma.device.updateMany({
-      where: { driverId },
-      data: { driverId: null },
+    // Pairing and unpairing must serialize on the SAME driver-row lock.
+    // Otherwise unlink can complete against the old tablet while a concurrent
+    // handoff binds a new tablet, leaving a supposed unlink ineffective.
+    return this.prisma.$transaction(async (tx) => {
+      const lockedDrivers = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "drivers"
+        WHERE "id" = ${driverId}
+        FOR NO KEY UPDATE
+      `;
+      // Preserve the previous no-op { count: 0 } response for unknown IDs.
+      if (lockedDrivers.length === 0) return { count: 0 };
+
+      return tx.device.updateMany({
+        where: { driverId },
+        data: { driverId: null },
+      });
     });
   }
 

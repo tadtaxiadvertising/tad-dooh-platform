@@ -941,7 +941,6 @@ export class CommissionService {
           reversal.status !== "COMPLETED"
         ) {
           discrepancies.push(
-            `Commission ${c.id} reversal ledger financial identity mismatch`,
             `Commission ${c.id} reversal ledger attribution/amount/status mismatch`,
           );
         }

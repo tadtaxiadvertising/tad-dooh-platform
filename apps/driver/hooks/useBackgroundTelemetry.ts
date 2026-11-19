@@ -398,12 +398,18 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
             setConnectionStatus,
             stopTracking: stopTrackingRef.current,
           });
+          // Preserve pending GPS during a subscription suspension.
+          await appendOfflineCoords(combined);
+          dropAcknowledgedMemory();
           return;
         }
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        setBatchCount(0);
+        if (!(await isCompleteGpsBatchReceipt(res, combined.length))) {
+          throw new Error("GPS_BATCH_ACK_INCOMPLETE");
+        }
+        // Commit local deletion only after server confirms full processing.
+        await removeCoordsByKeys(processedKeys, "batch");
+        dropAcknowledgedMemory();
 
         const offlineQueue = await readCoordsByStatus("offline");
         if (offlineQueue.length > 0) {
@@ -424,7 +430,7 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
         dropAcknowledgedMemory();
         setOfflineCount((await readCoordsByStatus("offline")).length);
         setConnectionStatus("offline");
-        void emitNotification("SYNC_FAILED", { pointsLost: combined.length });
+        void emitNotification("SYNC_FAILED", { pointsBuffered: combined.length });
       }
       } finally {
         batchFlushInProgressRef.current = false;

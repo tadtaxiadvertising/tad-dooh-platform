@@ -271,66 +271,62 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
       syncInProgressRef.current = true;
 
       let processed = 0;
-      let remainingQueue = await readCoordsByStatus("offline");
+      let remainingQueue: TelemetryCoord[] = [];
+      try {
+        remainingQueue = await readCoordsByStatus("offline");
+        while (remainingQueue.length > 0) {
+          const chunk = remainingQueue.slice(0, DRIP_CHUNK_SIZE);
+          const processedKeys = chunk.map((c) => c.ts);
 
-      while (remainingQueue.length > 0) {
-        const chunk = remainingQueue.slice(0, DRIP_CHUNK_SIZE);
-        // A2: guardar las claves (ts) de los items procesados para eliminarlos
-        // SOLO a ellos, preservando items nuevos añadidos concurrentemente.
-        const processedKeys = chunk.map((c) => c.ts);
-
-        try {
-          const res = await postTrackBatch(apiBase, driverId, deviceId, chunk);
-          if (res.status === 402) {
-            triggerKillSwitch({
-              setLock,
-              setConnectionStatus,
-              stopTracking: stopTrackingRef.current,
-            });
-            break;
+          try {
+            const res = await postTrackBatch(apiBase, driverId, deviceId, chunk);
+            if (res.status === 402) {
+              triggerKillSwitch({
+                setLock,
+                setConnectionStatus,
+                stopTracking: stopTrackingRef.current,
+              });
+              break; // Keep every unacknowledged point on disk.
+            }
+            if (!(await isCompleteGpsBatchReceipt(res, chunk.length))) {
+              break;
+            }
+            // A valid receipt is not enough until IndexedDB commits the ACK.
+            await removeCoordsByKeys(processedKeys, "offline");
+          } catch {
+            break; // Retry all outstanding points after connectivity returns.
           }
-          if (!res.ok) break;
-        } catch {
-          break;
+
+          processed += chunk.length;
+          // Include points queued concurrently, never clear the whole store.
+          remainingQueue = await readCoordsByStatus("offline");
+          setOfflineCount(remainingQueue.length);
+
+          if (remainingQueue.length > 0) {
+            await new Promise<void>((resolve) =>
+              scheduleIdleTask(() => resolve()),
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.random() * 800 + 200),
+            );
+          }
         }
 
-        processed += chunk.length;
-        remainingQueue = remainingQueue.slice(chunk.length);
-        // A2: solo elimina las claves procesadas, no sobrescribe toda la cola.
-        await removeOfflineCoordsByKeys(processedKeys);
-        setOfflineCount(remainingQueue.length);
-
-        // Non-blocking: yield a la UI thread entre chunks
-        if (remainingQueue.length > 0) {
-          await new Promise<void>((resolve) =>
-            scheduleIdleTask(() => resolve()),
-          );
-          // Delay aleatorio para no saturar backend
-          await new Promise((resolve) =>
-            setTimeout(resolve, Math.random() * 800 + 200),
-          );
+        if (processed > 0) {
+          void emitNotification("SYNC_COMPLETED", {
+            processed,
+            remaining: remainingQueue.length,
+          });
         }
-      }
 
-      if (remainingQueue.length === 0) {
-        await clearOfflineCoords();
-        setOfflineCount(0);
-      }
-
-      syncInProgressRef.current = false;
-
-      if (processed > 0) {
-        void emitNotification("SYNC_COMPLETED", {
+        return {
           processed,
           remaining: remainingQueue.length,
-        });
+          success: remainingQueue.length === 0,
+        };
+      } finally {
+        syncInProgressRef.current = false;
       }
-
-      return {
-        processed,
-        remaining: remainingQueue.length,
-        success: remainingQueue.length === 0,
-      };
     },
     [postTrackBatch, setLock],
   );

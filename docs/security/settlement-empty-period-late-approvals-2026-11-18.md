@@ -11,7 +11,8 @@ El servicio de liquidación mensual creaba automáticamente un lote `APPROVED` p
 
 - **No crear ni aprobar automáticamente** un lote sin comisiones `APPROVED`. Devolver `409 Conflict` y permitir volver a generar después de que existan comisiones elegibles.
 - Cuando ya existe un lote, contar las comisiones `APPROVED` del periodo con `settlementBatchId=null`. Si existe alguna, **no devolver el lote como si estuviera actualizado**; devolver 409 y exigir conciliación explícita.
-- Preservar generación no vacía, control atómico de membresía, aprobación manual de DRAFT y suspensión de pagos bancarios.
+- En la aprobación manual de un lote DRAFT, repetir la comprobación de comisiones APPROVED que siguen fuera del lote; rechazar la aprobación con 409 antes del UPDATE si hay alguna o si el período guardado es inválido.
+- Preservar generación no vacía, control atómico de membresía, aprobación manual de DRAFT cuando no hay discrepancias y suspensión de pagos bancarios.
 - No recalcular históricos, borrar lotes, alterar `APPROVED`, pagar automáticamente ni tocar saldos.
 
 **Compatibilidad:** las operaciones que esperaban un lote `APPROVED` de cero al generar un mes vacío ahora reciben 409. Esto es intencional para impedir un cierre financiero falso. Un futuro cierre administrativo explícito de un mes vacío puede diseñarse con cutoff, auditoría y conciliación; no debe confundirse con la generación.
@@ -30,7 +31,8 @@ En PostgreSQL de staging desechable y con backup de recuperación:
 1. Generar periodo con solo comisiones PENDING: debe devolver 409 y no dejar fila en `settlement_batches`.
 2. Aprobar esa comisión y reintentar: debe crear un único lote DRAFT con membresía, totales y referencias correctas.
 3. Generar lote con comisiones existentes; después aprobar otra del mismo periodo: siguiente generación debe devolver 409 y no modificar el lote existente.
-4. Verificar reapertura solo mediante procedimiento de conciliación autorizado, no `db push` ni `DELETE` destructivo.
-5. Simular múltiples generadores concurrentes, ventanas de fechas y la lógica de reconciliación; pagos bancarios permanecen bloqueados.
+4. Sin regenerar, intentar aprobar directamente el lote DRAFT cuando exista una nueva comisión APPROVED sin lote: devolver 409, sin cambiar el estado DRAFT ni tocar ledger/wallet. Un lote con período inválido también debe rechazarse.
+5. Verificar reapertura solo mediante procedimiento de conciliación autorizado, no `db push` ni `DELETE` destructivo.
+6. Simular múltiples generadores concurrentes, ventanas de fechas y la lógica de reconciliación; pagos bancarios permanecen bloqueados.
 
 No fusionar ni desplegar hasta ejecución real de GitHub Actions (#147), validación de la base productiva (#217), rotación de secretos (#244) y revisión de integridad financiera. Railway sigue fijado a un SHA anterior (#313).

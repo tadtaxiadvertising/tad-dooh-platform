@@ -90,6 +90,26 @@ describe("Telemetry playback PoP — device and event-type isolation", () => {
     expect(recordPlaybackBatch).toHaveBeenCalledWith(payload);
   });
 
+  it("rejects a single-event PoP when async quota resolves false", async () => {
+    checkPlaybackRateLimit.mockResolvedValueOnce(false);
+    await expect(
+      makeController().recordPlayback(owner, "valid-key"),
+    ).resolves.toMatchObject({ success: false, reason: "RATE_LIMITED" });
+    expect(checkPlaybackRateLimit).toHaveBeenCalledWith(owner.deviceId);
+    expect(validateDevice).not.toHaveBeenCalled();
+    expect(recordPlayback).not.toHaveBeenCalled();
+  });
+
+  it("rejects a full offline PoP batch when async quota resolves false", async () => {
+    checkPlaybackRateLimit.mockResolvedValueOnce(false);
+    const payload = [owner, { ...owner, eventType: "START" as const }];
+    await expect(
+      makeController().recordPlaybackBatch(payload, "valid-key"),
+    ).resolves.toMatchObject({ success: false, reason: "RATE_LIMITED" });
+    expect(checkPlaybackRateLimit).toHaveBeenCalledWith(owner.deviceId, 2);
+    expect(recordPlaybackBatch).not.toHaveBeenCalled();
+  });
+
   it("fails closed on invalid device key", async () => {
     validateTabletKey.mockResolvedValueOnce(false);
     await expect(

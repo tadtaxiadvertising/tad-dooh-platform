@@ -120,7 +120,7 @@ export class TelemetryController {
     }
 
     // Rate limiting: check per-deviceId burst
-    const rateLimitOk = this.telemetryService.checkPlaybackRateLimit(
+    const rateLimitOk = await this.telemetryService.checkPlaybackRateLimit(
       payload.deviceId,
     );
     if (!rateLimitOk) {
@@ -293,7 +293,7 @@ export class TelemetryController {
     }
 
     // Rate limit check for the batch
-    const rateLimitOk = this.telemetryService.checkPlaybackRateLimit(
+    const rateLimitOk = await this.telemetryService.checkPlaybackRateLimit(
       deviceId,
       payload.length,
     );

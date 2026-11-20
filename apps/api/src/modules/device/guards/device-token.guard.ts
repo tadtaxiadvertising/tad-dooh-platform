@@ -16,12 +16,13 @@ import { matchesAuthenticatedDevice } from "./device-request-scope";
 /**
  * SEC-03: Device Token Guard
  *
- * Validates that the request includes a valid X-Device-Token header
- * (JWT signed by the backend during sync) and that the device
- * identified by the token is in OPERATIVO status.
+ * Validates that X-Device-Token carries a purpose-bound DEVICE_AUTH JWT
+ * and that its device is OPERATIVO. Public OFFLINE_LICENSE manifests are
+ * playback entitlements, never proof of device possession.
  *
- * This guard is applied to sync and bulk-sync endpoints to ensure
- * only registered, approved tablets can pull campaign content.
+ * This guard protects sync and command ACK. Issuance/rotation of DEVICE_AUTH
+ * must be implemented through a separate authenticated pairing protocol;
+ * this guard must never mint or return a token.
  */
 @Injectable()
 export class DeviceTokenGuard implements CanActivate {

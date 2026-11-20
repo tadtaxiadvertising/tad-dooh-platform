@@ -49,3 +49,7 @@ The executable **read-only** inventory is in `docs/incidents/sql/2026-11-20-pris
 ### Privilege detail for mutable-search-path functions
 
 Read-only `pg_proc` inspection confirms both functions use invoker privileges, not `SECURITY DEFINER`. `refresh_active_campaigns()` grants no `EXECUTE` to `PUBLIC`, `anon` or `authenticated`. `update_campaign_expirations_updated_at()` inherits `EXECUTE` to those roles, but is a PostgreSQL trigger function attached to `public.campaign_expirations`, not a general-purpose SQL RPC. The two functions have no fixed `search_path`. A separate reviewed security migration should inspect and qualify their definitions, then pin safe `search_path` values without changing function behavior. No direct privilege exploit was established by these metadata checks.
+
+### SQL inventory execution check
+
+The complete eight-statement, SELECT-only SQL inventory was executed against the connected Supabase project on 2026-11-20 and returned without a SQL error; the final result was the function privilege metadata above. Major report sections were also checked individually (migration counts/SQLSTATEs, table availability, relationship mismatches, RLS grants, row counts). This is verification of **read-only diagnostics**, not production schema repair.

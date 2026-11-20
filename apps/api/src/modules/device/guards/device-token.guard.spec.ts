@@ -1,5 +1,5 @@
 import type { ExecutionContext } from "@nestjs/common";
-import { ForbiddenException } from "@nestjs/common";
+import { ForbiddenException, UnauthorizedException } from "@nestjs/common";
 import * as jwt from "jsonwebtoken";
 import type { PrismaService } from "../../prisma/prisma.service";
 import { DeviceTokenGuard } from "./device-token.guard";
@@ -22,7 +22,7 @@ describe("DeviceTokenGuard device ownership", () => {
     const request = {
       headers: {
         "x-device-token": jwt.sign(
-          { deviceId: "TAD-A", type: "OFFLINE_LICENSE" },
+          { deviceId: "TAD-A", type: "DEVICE_AUTH" },
           signingKey,
         ),
       },
@@ -32,7 +32,7 @@ describe("DeviceTokenGuard device ownership", () => {
       ...overrides,
       headers: {
         "x-device-token": jwt.sign(
-          { deviceId: "TAD-A", type: "OFFLINE_LICENSE" },
+          { deviceId: "TAD-A", type: "DEVICE_AUTH" },
           signingKey,
         ),
         ...(overrides.headers as Record<string, unknown> | undefined),
@@ -45,6 +45,76 @@ describe("DeviceTokenGuard device ownership", () => {
       request,
     };
   };
+
+  it.each(["OFFLINE_LICENSE", "KILLSWITCH_GRACE", "pairing", "user_session"])(
+    "rejects a signed %s JWT, even for the correct device",
+    async (type) => {
+      const token = jwt.sign({ deviceId: "TAD-A", type }, signingKey);
+      const { context, request } = contextFor({
+        headers: { "x-device-token": token },
+      });
+      await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+      expect(findUnique).not.toHaveBeenCalled();
+      expect(request).not.toHaveProperty("authenticatedDeviceId");
+    },
+  );
+
+  it("rejects an otherwise signed token without an explicit device purpose", async () => {
+    const token = jwt.sign({ deviceId: "TAD-A" }, signingKey);
+    const { context } = contextFor({
+      headers: { "x-device-token": token },
+    });
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+
+  it("rejects a device token using an unexpected JWT algorithm", async () => {
+    const token = jwt.sign(
+      { deviceId: "TAD-A", type: "DEVICE_AUTH" },
+      signingKey,
+      { algorithm: "HS384" },
+    );
+    const { context } = contextFor({
+      headers: { "x-device-token": token },
+    });
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+
+  it("rejects a valid-purpose token with an invalid signature", async () => {
+    const token = jwt.sign(
+      { deviceId: "TAD-A", type: "DEVICE_AUTH" },
+      "wrong-fixture-key",
+    );
+    const { context } = contextFor({
+      headers: { "x-device-token": token },
+    });
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+
+  it("rejects an expired device credential", async () => {
+    const token = jwt.sign(
+      { deviceId: "TAD-A", type: "DEVICE_AUTH" },
+      signingKey,
+      { expiresIn: -1 },
+    );
+    const { context } = contextFor({
+      headers: { "x-device-token": token },
+    });
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(findUnique).not.toHaveBeenCalled();
+  });
 
   it("authorizes a device requesting only its own resources", async () => {
     const { context, request } = contextFor();

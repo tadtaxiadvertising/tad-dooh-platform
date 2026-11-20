@@ -16,12 +16,13 @@ import { matchesAuthenticatedDevice } from "./device-request-scope";
 /**
  * SEC-03: Device Token Guard
  *
- * Validates that the request includes a valid X-Device-Token header
- * (JWT signed by the backend during sync) and that the device
- * identified by the token is in OPERATIVO status.
+ * Validates that X-Device-Token carries a purpose-bound DEVICE_AUTH JWT
+ * and that its device is OPERATIVO. Public OFFLINE_LICENSE manifests are
+ * playback entitlements, never proof of device possession.
  *
- * This guard is applied to sync and bulk-sync endpoints to ensure
- * only registered, approved tablets can pull campaign content.
+ * This guard protects sync and command ACK. Issuance/rotation of DEVICE_AUTH
+ * must be implemented through a separate authenticated pairing protocol;
+ * this guard must never mint or return a token.
  */
 @Injectable()
 export class DeviceTokenGuard implements CanActivate {
@@ -37,12 +38,21 @@ export class DeviceTokenGuard implements CanActivate {
       throw new UnauthorizedException("Missing X-Device-Token header");
     }
 
-    // Verify the JWT and extract the deviceId
-    let decoded: { deviceId?: string };
+    // Device operations require a purpose-bound device credential. The
+    // public /sync/:deviceId manifest returns a signed OFFLINE_LICENSE JWT;
+    // a valid signature and deviceId alone cannot authorize device commands.
+    // No token is minted here: provisioning remains an ADMIN-controlled flow.
+    let decoded: { deviceId?: string; type?: string };
     try {
-      decoded = jwt.verify(token, this.JWT_SECRET) as { deviceId?: string };
+      decoded = jwt.verify(token, this.JWT_SECRET, {
+        algorithms: ["HS256"],
+      }) as { deviceId?: string; type?: string };
     } catch {
       throw new UnauthorizedException("Invalid or expired device token");
+    }
+
+    if (decoded.type !== "DEVICE_AUTH") {
+      throw new UnauthorizedException("Invalid device token purpose");
     }
 
     const deviceId = decoded.deviceId;

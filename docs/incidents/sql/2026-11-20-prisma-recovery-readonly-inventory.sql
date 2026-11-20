@@ -119,3 +119,15 @@ SELECT (SELECT count(*) FROM public.drivers) AS drivers,
 -- make changes ONLY via separate reviewed, forward-only staging-rehearsed
 -- migrations. Never run db push, migrate reset, or migrate resolve --applied
 -- to conceal the observed history.
+
+-- 8) Function privilege and security-context metadata (no function bodies).
+SELECT n.nspname AS schema_name, p.proname AS function_name,
+       pg_get_function_identity_arguments(p.oid) AS args,
+       p.prosecdef AS security_definer, p.proconfig AS fixed_config,
+       has_function_privilege('anon',p.oid,'EXECUTE') AS anon_execute,
+       has_function_privilege('authenticated',p.oid,'EXECUTE') AS authenticated_execute,
+       has_function_privilege('public',p.oid,'EXECUTE') AS public_execute
+FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+WHERE n.nspname='public'
+  AND p.proname IN ('update_campaign_expirations_updated_at','refresh_active_campaigns')
+ORDER BY p.proname;

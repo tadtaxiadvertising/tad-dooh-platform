@@ -37,12 +37,21 @@ export class DeviceTokenGuard implements CanActivate {
       throw new UnauthorizedException("Missing X-Device-Token header");
     }
 
-    // Verify the JWT and extract the deviceId
-    let decoded: { deviceId?: string };
+    // Device operations require a purpose-bound device credential. The
+    // public /sync/:deviceId manifest returns a signed OFFLINE_LICENSE JWT;
+    // a valid signature and deviceId alone cannot authorize device commands.
+    // No token is minted here: provisioning remains an ADMIN-controlled flow.
+    let decoded: { deviceId?: string; type?: string };
     try {
-      decoded = jwt.verify(token, this.JWT_SECRET) as { deviceId?: string };
+      decoded = jwt.verify(token, this.JWT_SECRET, {
+        algorithms: ["HS256"],
+      }) as { deviceId?: string; type?: string };
     } catch {
       throw new UnauthorizedException("Invalid or expired device token");
+    }
+
+    if (decoded.type !== "DEVICE_AUTH") {
+      throw new UnauthorizedException("Invalid device token purpose");
     }
 
     const deviceId = decoded.deviceId;

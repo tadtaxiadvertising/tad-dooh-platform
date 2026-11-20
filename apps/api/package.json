@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1003.0",
-    "@logtail/node": "^0.5.8",
+    "@logtail/node": "^0.6.1",
     "@logtail/winston": "^0.5.8",
     "@modelcontextprotocol/sdk": "^1.15.1",
     "@nestjs/axios": "^3.0.2",
@@ -53,7 +53,7 @@
     "@sentry/nestjs": "^10.46.0",
     "@sentry/node": "^10.46.0",
     "@sentry/profiling-node": "^10.46.0",
-    "@supabase/supabase-js": "^2.99.0",
+    "@supabase/supabase-js": "^2.119.0",
     "@tad/impact-calculator": "workspace:*",
     "axios": "^1.13.6",
     "bcrypt": "6.0.0",

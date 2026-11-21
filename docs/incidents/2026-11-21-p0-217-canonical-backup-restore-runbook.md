@@ -49,8 +49,10 @@ while ($null -ne $cursor) {
     }
     $cursor = $cursor.Parent
 }
-& supabase --version
-if ($LASTEXITCODE -ne 0) { throw "Supabase CLI unavailable." }
+$cliVersion = (& supabase --version | Select-Object -First 1).Trim()
+if ($LASTEXITCODE -ne 0 -or $cliVersion -notmatch '^3\.') {
+    throw "REFUSED: this runbook requires verified Supabase CLI v3."
+}
 & supabase db dump --help
 if ($LASTEXITCODE -ne 0) { throw "Cannot verify installed dump flags." }
 
@@ -87,6 +89,25 @@ $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $desti
 Write-Host "EXPORT_COMPONENTS_WRITTEN_TO_PRIVATE_ENCRYPTED_VOLUME; RESTORE_NOT_YET_VERIFIED"
 ~~~
 
+### Offline export-integrity gate (not restore proof)
+
+After copying the manifest and the three SQL files onto the encrypted operator volume, run this verifier **from the checkout's repository root**. It only reads local hashes, rejects unexpected fields/paths, blocks a backup directory inside Git, and prints a verdict without printing any file content or private path. It does not prove disk encryption, off-site retention, Auth/Storage completeness or recoverability. The three files and manifest **must never** be committed.
+
+~~~powershell
+$env:TAD_EXPECTED_SUPABASE_PROJECT_REF = "ltdcdhqixvbpdcitthqf"
+try {
+    & node .\scripts\verify-supabase-backup-export.cjs $destination
+    if ($LASTEXITCODE -ne 0) { throw "Export-integrity check refused or failed." }
+} finally {
+    Remove-Item Env:\TAD_EXPECTED_SUPABASE_PROJECT_REF -ErrorAction SilentlyContinue
+}
+~~~
+
+Expected success code: `EXPORT_INTEGRITY_PASS_RESTORE_UNVERIFIED`. A successful integrity check is **not** a verified restore, so do not flip `restore_verified` to true or unlock a production migration gate.
+
+CLI version rationale: [Supabase CLI v3 changed remote targeting](https://supabase.com/changelog/supabase-cli-v3) and documents `--remote=<ref|branch|url>` for `db dump`. Explicit project targeting is mandatory; no unqualified `supabase db dump` command is permitted.
+
+
 **Important limits:** a nonempty dump or matching checksum is **not proof of completeness or recoverability**. The default Supabase CLI schema export filters Supabase-managed schemas; data and role exports have different coverage. Check the actual scope of auth users/identities, Storage metadata, custom Auth/Storage policies and project configuration during the restore trial. Do not publish counts that could identify individuals. Separately export actual **Storage bucket object bytes** to the approved encrypted off-site destination; database backup alone contains only their metadata. Configuration for third-party Auth providers, secrets, SMTP, hooks and Edge Functions also needs a separate confidential inventory.
 
 After the exports, use an organization-approved encryption tool/key to create an encrypted off-site copy, check its read-back/hash and retention, then restrict or remove intermediary plaintext from the encrypted staging area according to the data-handling policy. Do not send the backup itself to this conversation or the repository. The manifest remains **private**.
@@ -99,6 +120,21 @@ After the exports, use an organization-approved encryption tool/key to create an
 4. Validate checksum of the downloaded encrypted archive; decrypt only onto an encrypted controlled volume and compare the three file SHA-256 hashes with the private manifest. Test actual Auth/Storage metadata and object-byte restoration, not just public tables. If any step fails, mark **restore_failed**, do not claim ready.
 5. On the **clone only**, compare tables, columns/types, PK/FK/indexes, RLS and grants, functions/triggers, migration-history metadata, and aggregate row counts against the recorded source snapshot. Preserve the existing drift (23 missing tables, UUID/TEXT conflicts) as baseline evidence; a successful clone does **not** imply Prisma parity. Run apps/api/scripts/check-prisma-drift.cjs with an inspection-only role against the clone; an expected nonzero drift result is not a backup failure.
 6. Perform a second rehearsal restoring from the off-site encrypted copy, not only from the local plaintext export, to prove end-to-end recovery. Record start/end UTC, RPO and measured RTO, reviewer, object-count comparisons and any restore errors, never customer records or credentials.
+
+### Read-only missing-object inventory (2026-11-21; NOT a migration plan)
+
+Fresh catalog check on the owner-confirmed project found exactly these **23** absent Prisma-model tables (compare to the full current Prisma DMMF when preparing actual repair):
+
+```text
+active_ads, advertiser_subscriptions, analytics_events, bi_dashboard_snapshots,
+campaign_metrics, commission_ledger, commissions, contract_acceptances,
+conversation_messages, conversations, conversion_events, fleets, leads,
+payment_evidence, payment_intents, payment_verifications, playlists,
+portal_requests, qr_scans, reconciliation_reports, referral_attributions,
+settlement_batches, users
+```
+
+The current `schema.prisma` defines relationships requiring careful dependency ordering: `conversation_messages` references `conversations`; `payment_evidence` and `payment_verifications` reference `payment_intents`; `payment_intents` and `referral_attributions` reference `leads`; `commissions` references `drivers` and optional `settlement_batches`; `playlists` references `campaigns`. These are **Prisma source-level relations**, not proof of existing PostgreSQL foreign keys. The currently present referenced tables may have incompatible UUID/TEXT identifiers. Before creating ANY FK, reconcile actual physical column types, preserved data and target model types on a restored clone. Do not replay the historical migrations as-is or infer financial safety from a new empty ledger table.
 
 ## Step 3: schema repair **after** restore evidence
 

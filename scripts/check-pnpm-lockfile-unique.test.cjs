@@ -4,7 +4,7 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { findDuplicateLockfileMappings } = require("./check-pnpm-lockfile-unique.cjs");
+const { findDuplicateLockfileMappings, findBrokenSnapshotMappings } = require("./check-pnpm-lockfile-unique.cjs");
 
 test("rejects repeated nested pnpm importer specifiers", () => {
   const lock = [
@@ -62,4 +62,47 @@ test("current tracked lockfile has no duplicated mapping keys", () => {
   assert.match(source, /^lockfileVersion: '9\.0'$/m);
   assert.match(source, /^  apps\/player:$/m);
   assert.match(source, /^  apps\/api:$/m);
+});
+
+test("rejects null snapshot mappings left by merges even without duplicate YAML keys", () => {
+  const lock = [
+    "snapshots:",
+    "  vite-plugin-static-copy@2.3.2(vite@6.4.6):",
+    "  vite@6.4.6:",
+    "    dependencies:",
+    "      esbuild: 0.25.12",
+  ].join("\n");
+  assert.deepEqual(findDuplicateLockfileMappings(lock), []);
+  const errors = findBrokenSnapshotMappings(lock);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /empty snapshot mapping/);
+});
+
+test("rejects dependencies without a snapshot dependencies group", () => {
+  const lock = [
+    "snapshots:",
+    "  vite@6.4.6:",
+    "      vite: 6.4.5",
+  ].join("\n");
+  const errors = findBrokenSnapshotMappings(lock);
+  assert.ok(errors.some((error) => /dependency without snapshot group/.test(error)));
+});
+
+test("accepts legitimately empty snapshots and grouped dependencies", () => {
+  const lock = [
+    "snapshots:",
+    "  empty@1.0.0: {}",
+    "  plugin@2.0.0:",
+    "    dependencies:",
+    "      vite: 6.4.6",
+    "    optional: true",
+    "    transitivePeerDependencies:",
+    "      - esbuild",
+  ].join("\n");
+  assert.deepEqual(findBrokenSnapshotMappings(lock), []);
+});
+
+test("tracked lockfile contains neither null nor malformed snapshot mappings", () => {
+  const source = fs.readFileSync(path.resolve(__dirname, "..", "pnpm-lock.yaml"), "utf8");
+  assert.deepEqual(findBrokenSnapshotMappings(source), []);
 });

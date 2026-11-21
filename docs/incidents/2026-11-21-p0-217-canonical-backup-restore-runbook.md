@@ -32,6 +32,8 @@ Official references:
 
 Supabase's current CLI documentation describes three complementary logical exports: roles, schema and data. The CLI version matters (v3 uses --remote=<ref|branch|url> and targets local by default). Review the **installed** supabase db dump --help before these commands. Docker Desktop is required by the CLI workflow. Run in a private PowerShell session with an authenticated Supabase CLI session, not with a password embedded into command arguments.
 
+**Consistency warning (release blocker):** the three CLI export invocations (roles, schema, data) are separate operations. A valid SHA-256 manifest does not prove that they represent **the same point in time** if clients are still writing. Arrange an authorized write-quiescence window or a provider-supported transactionally consistent snapshot method before trusting the complete backup; coordinate tablet offline/reconnect behavior and financial webhook retries rather than silently dropping events. Never stop services or suspend payments without an approved change window. Record the source snapshot timestamp and recheck counts using [the aggregate-only restore baseline query](sql/2026-11-21-restore-readonly-proof.sql) when the backup is restored. Differences need investigation, and matching aggregates alone do not establish a restorable backup.
+
 The following example **refuses** to start unless an existing encrypted backup volume has been explicitly selected with TAD_ENCRYPTED_BACKUP_DIR. That environmental variable holds a local **directory path only**, never a secret. The operator must validate encryption/ACLs, enough free space and off-repo location; a directory variable cannot prove BitLocker or other encryption is actually enabled.
 
 ~~~powershell

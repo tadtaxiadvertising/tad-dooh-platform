@@ -7,6 +7,12 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
+const windows = process.platform === "win32";
+// Match the real-shell harness used by api-entrypoint-env.test.cjs.
+// A POSIX shell is required, but /bin/sh is not a native Windows path.
+const shell = windows ? "C:\\Program Files\\Git\\bin\\bash.exe" : "/bin/sh";
+const shellArgs = windows ? ["--noprofile", "--norc", "--posix", "-s"] : ["-s"];
+
 const root = path.resolve(__dirname, "..");
 const script = fs.readFileSync(
   path.join(root, "apps/api/scripts/migrate-safe.sh"), "utf8",
@@ -68,14 +74,19 @@ pnpm() {
 `;
 
 function execute(environment) {
+  assert.ok(
+    fs.existsSync(shell),
+    `Required real POSIX shell is unavailable: ${shell}`,
+  );
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tad-safe-migrate-"));
   try {
-    const result = spawnSync("/bin/sh", ["-s"], {
+    const result = spawnSync(shell, shellArgs, {
       input: boundary + script,
       encoding: "utf8",
       cwd: dir,
       env: { PATH: "", TAD_APPROVE_MANUAL_MIGRATION: "YES", ...environment },
       timeout: 4000,
+      windowsHide: true,
     });
     assert.equal(result.error, undefined);
     assert.equal(result.signal, null);

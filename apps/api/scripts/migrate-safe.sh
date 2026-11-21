@@ -36,17 +36,16 @@ node ../../scripts/verify-supabase-runtime-target.cjs
 # Retain the existing runtime/migration consistency preflight as defense in depth.
 node ./scripts/check-supabase-target.cjs
 
-# An already-diverged database cannot safely receive normal pending migrations:
-# the old order attempted SQL writes before discovering this unsafe state.
-# Read-only metadata parity MUST succeed before the FIRST schema write.
-# Reconcile preexisting drift only through a separately reviewed restore-first
-# recovery plan; there is intentionally no emergency bypass here.
-if DATABASE_URL="$DIRECT_URL" node ./scripts/check-prisma-drift.cjs; then
-  echo "[migration] Preflight schema parity PASS; normal migrate deploy permitted."
-else
-  status="$?"
-  echo "[migration] REFUSED: preexisting schema drift ($status); no migration executed." >&2
-  exit "$status"
+# P0 #217 incident freeze: this specific owner-confirmed production project
+# has 23 missing model tables and unresolved financial/UUID schema drift.
+# A normal Prisma migrate deploy can write pending SQL without repairing it.
+# Do not try to use this ordinary migration runner for incident recovery.
+# Removing this code requires a separately reviewed recovery PR AFTER an
+# encrypted offsite backup and successful isolated restore are proven.
+# No environment variable or manual YES approval can override this block.
+if [ "${TAD_EXPECTED_SUPABASE_PROJECT_REF:-}" = "ltdcdhqixvbpdcitthqf" ]; then
+  echo "[migration] REFUSED: P0 #217 production project frozen; no SQL executed." >&2
+  exit 1
 fi
 
 # Prisma's datasource uses DATABASE_URL; temporarily point ONLY this

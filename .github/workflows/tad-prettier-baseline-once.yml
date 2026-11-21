@@ -84,7 +84,24 @@ jobs:
             const pre = ts.createSourceFile(file, before, ts.ScriptTarget.Latest, false, mode);
             const post = ts.createSourceFile(file, after, ts.ScriptTarget.Latest, false, mode);
             if (pre.parseDiagnostics.length !== post.parseDiagnostics.length) throw new Error("Parse diagnostics changed: " + file);
-            if (JSON.stringify(shape(pre)) !== JSON.stringify(shape(post))) throw new Error("TypeScript AST changed (not format-only): " + file);
+            const left = shape(pre);
+            const right = shape(post);
+            if (JSON.stringify(left) !== JSON.stringify(right)) {
+              function firstMismatch(a, b, path = "root") {
+                if (Array.isArray(a) && Array.isArray(b)) {
+                  if (a.length !== b.length) return path + " array-lengths " + a.length + "/" + b.length;
+                  for (let i = 0; i < a.length; i += 1) {
+                    const child = firstMismatch(a[i], b[i], path + "[" + i + "]");
+                    if (child) return child;
+                  }
+                  return null;
+                }
+                if (a === b) return null;
+                const describe = v => typeof v === "string" ? "string-length-" + v.length : String(v);
+                return path + " " + describe(a) + " vs " + describe(b);
+              }
+              throw new Error("TypeScript AST changed (not format-only): " + file + " :: " + firstMismatch(left, right));
+            }
           }
           process.stdout.write("TAD_PRETTIER_AST_UNCHANGED count=" + changed.length + "\n");
           NODE

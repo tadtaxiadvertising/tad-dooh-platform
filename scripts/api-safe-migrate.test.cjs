@@ -174,6 +174,23 @@ test("successful migration is not declared complete until schema parity passes",
   assert.equal((result.output.match(/schema verified/g) || []).length, 1, "postcheck only; pending migrations are permitted on healthy other targets");
 });
 
+for (const [description, variant] of [
+  ["uppercase", "LTDCDHQIXVBPDCITTHQF"],
+  ["padded", " ltdcdhqixvbpdcitthqf "],
+  ["newline-suffixed", "ltdcdhqixvbpdcitthqf\n"],
+]) {
+  test(`rejects noncanonical project-ref alias: ${description}`, () => {
+    const result = execute({
+      ...fixtures,
+      TAD_EXPECTED_SUPABASE_PROJECT_REF: variant,
+      TAD_TEST_MIGRATE_STATUS: "0",
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.output, /project ref must be lowercase ASCII without whitespace/);
+    assert.doesNotMatch(result.output, /pinned project checked|migration invoked/);
+  });
+}
+
 test("P0 canonical project is frozen before SQL, even with bypass-looking flags", () => {
   const result = execute({
     ...fixtures,

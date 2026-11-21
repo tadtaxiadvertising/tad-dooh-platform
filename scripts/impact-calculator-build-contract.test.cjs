@@ -30,7 +30,7 @@ test("advertiser offer exists in the shared source and built public contract", (
 });
 
 test("Jest and TypeScript CI build the shared package before consuming it", () => {
-  const workflow = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
+  const workflow = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8").replace(/\r\n/g, "\n");
   const check = (start, end, consumer) => {
     const block = workflow.split(start)[1]?.split(end)[0];
     assert.ok(block, `CI missing ${start.trim()} job`);

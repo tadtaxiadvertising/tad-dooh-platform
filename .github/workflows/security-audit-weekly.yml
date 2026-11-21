@@ -270,27 +270,68 @@ jobs:
           retention-days: 30
 
       - name: Create GitHub Issue on failure
-        if: failure() && (steps.audit.outputs.new_errors == 'true' || steps.audit.outputs.new_grants == 'true' || steps.audit.outputs.mutable_funcs == 'true' || steps.audit.outputs.db_critical == 'true')
+        # Preflight, Management API, PostgreSQL and upload failures must be
+        # reported too; audit step outputs may not exist after an early error.
+        if: failure()
         uses: actions/github-script@v7
+        env:
+          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+          AUDIT_NEW_ERRORS: ${{ steps.audit.outputs.new_errors }}
+          AUDIT_NEW_GRANTS: ${{ steps.audit.outputs.new_grants }}
+          AUDIT_MUTABLE_FUNCS: ${{ steps.audit.outputs.mutable_funcs }}
+          AUDIT_DB_CRITICAL: ${{ steps.audit.outputs.db_critical }}
         with:
           script: |
             const fs = require('fs');
-            const counts = JSON.parse(fs.readFileSync('./advisories-summary.json', 'utf8'));
-            
-            const issues = [];
-            if ('${{ steps.audit.outputs.new_errors }}' === 'true') issues.push('New security ERRORs detected');
-            if ('${{ steps.audit.outputs.new_grants }}' === 'true') issues.push('Grants to anon/authenticated found');
-            if ('${{ steps.audit.outputs.mutable_funcs }}' === 'true') issues.push('Mutable search_path functions found');
-            if ('${{ steps.audit.outputs.db_critical }}' === 'true') issues.push('Database size critical (>450MB/500MB)');
-            
+            // Raw advisories, SQL, URLs, and credentials must never go to
+            // issues. The summary is optional when audit failed early.
+            let counts = null;
+            try {
+              if (fs.existsSync('./advisories-summary.json')) {
+                const parsed = JSON.parse(fs.readFileSync('./advisories-summary.json', 'utf8'));
+                const names = ['ERROR_COUNT', 'WARN_COUNT', 'INFO_COUNT'];
+                if (names.every(key => Number.isSafeInteger(parsed[key]) && parsed[key] >= 0)) {
+                  counts = Object.fromEntries(names.map(key => [key, parsed[key]]));
+                }
+              }
+            } catch {
+              counts = null;
+            }
+
+            const flags = [
+              ['AUDIT_NEW_ERRORS', 'New security ERRORs detected'],
+              ['AUDIT_NEW_GRANTS', 'Client-role table grants detected'],
+              ['AUDIT_MUTABLE_FUNCS', 'Mutable function search_path detected'],
+              ['AUDIT_DB_CRITICAL', 'Database size critical'],
+            ];
+            const findings = flags.filter(([key]) => process.env[key] === 'true')
+              .map(([, reason]) => reason);
+            if (findings.length === 0) {
+              findings.push(process.env.AUDIT_OUTCOME === 'failure'
+                ? 'Audit interrupted or failed before findings were available'
+                : 'Workflow failed in setup, artifact upload, or another step');
+            }
+            const countSummary = counts
+              ? 'ERROR: ' + counts.ERROR_COUNT + ', WARN: ' + counts.WARN_COUNT +
+                ', INFO: ' + counts.INFO_COUNT
+              : 'Unavailable (audit may have failed before creating summary)';
+            const body = [
+              '**Weekly Supabase Security Audit failed.**',
+              'Run: ' + context.runId,
+              'Timestamp (UTC): ' + new Date().toISOString(),
+              'Findings:',
+              ...findings.map(reason => '- ' + reason),
+              'Aggregate advisory counts: ' + countSummary,
+              'Inspect the restricted Actions run for diagnosis; do not paste secrets or raw SQL.',
+            ].join('\n');
+            // Avoid optional assignees/labels blocking issue creation if the
+            // actor is a bot or the repository has no matching labels.
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `🔴 Security Audit Failed - ${issues.join(', ')}`,
-              body: `**Weekly Supabase Security Audit** detected issues.\n\n**Run:** ${context.runId}\n**Project:** ltdcdhqixvbpdcitthqf\n**Timestamp:** ${new Date().toISOString()}\n\n**Issues:**\n${issues.map(i => `- ${i}`).join('\n')}\n\n**Summary:**\n- ERROR: ${counts.ERROR_COUNT || 0}\n- WARN: ${counts.WARN_COUNT || 0}\n- INFO: ${counts.INFO_COUNT || 0}\n\n**Action Required:** Review the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.\n\n**Known Blocked (OK):**\n- rls_disabled_in_public (spatial_ref_sys) - requires Supabase Support\n- extension_in_public (postgis) - requires Supabase Support\n- st_estimatedextent functions - PostGIS system functions\n`,
-              labels: ['security', 'audit', 'supabase'],
-              assignees: ['${{ github.actor }}']
-            })
+              title: 'Security Audit Failed - run ' + context.runId,
+              body,
+            });
 
       - name: Slack Notification on failure
         if: failure() && env.SLACK_WEBHOOK_URL != ''

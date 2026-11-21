@@ -15,6 +15,18 @@ function isWithin(parent, candidate) {
   return rel === "" || (rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel));
 }
 
+async function hasGitAncestor(directory) {
+  for (let cursor = directory;; cursor = path.dirname(cursor)) {
+    try {
+      await fs.promises.lstat(path.join(cursor, ".git"));
+      return true;
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    if (cursor === path.dirname(cursor)) return false;
+  }
+}
+
 async function hashFile(file) {
   const digest = crypto.createHash("sha256");
   for await (const chunk of fs.createReadStream(file)) digest.update(chunk);
@@ -32,7 +44,7 @@ async function checkExport(directory, expectedRef, repositoryRoot = path.resolve
       fs.promises.realpath(dir),
       fs.promises.realpath(repositoryRoot),
     ]);
-    if (isWithin(realRepo, realDir)) return "IN_REPOSITORY";
+    if (isWithin(realRepo, realDir) || await hasGitAncestor(realDir)) return "IN_REPOSITORY";
 
     const manifestPath = path.join(realDir, "manifest.json");
     const manifestStat = await fs.promises.lstat(manifestPath);

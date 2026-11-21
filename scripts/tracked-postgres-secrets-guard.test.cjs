@@ -273,7 +273,7 @@ test("Slack weekly notifications never expose webhook URL through curl process a
     const shell = block.split("\n")
       .map(line => line.startsWith("          ") ? line.slice(10) : line)
       .join("\n").replace(/\$\{\{[^}]*\}\}/g, "synthetic-github-value");
-    assert.doesNotMatch(shell, /["']\$SLACK_WEBHOOK_URL["']\s*(?:$|\n)/m);
+    // Dynamic mock below checks every argv item, not here-doc source text.
     assert.match(shell, /--config - <<CURL_CONFIG/);
     assert.match(shell, /url = "\$SLACK_WEBHOOK_URL"/);
 

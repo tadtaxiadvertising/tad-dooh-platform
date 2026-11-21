@@ -208,6 +208,8 @@ describe("OnboardingService verified driver referral pricing", () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    // resetAllMocks also erases jest.fn factory implementations.
+    supabase.getClient.mockReturnValue({ auth: { admin: { createUser, deleteUser } } });
     prisma.advertiser.findUnique.mockResolvedValue(null);
     prisma.driver.findUnique.mockResolvedValue(null);
     createUser.mockResolvedValue({

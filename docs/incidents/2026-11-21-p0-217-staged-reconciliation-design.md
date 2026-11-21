@@ -13,6 +13,7 @@ The EasyPanel operator independently stated that this is the API's canonical pro
 | Prisma models | 52 | Baseline from tracked schema |
 | Present/missing mapped model tables | 29 / **23** | API fail-closed correctly rejects startup |
 | Physical `public` base tables / catalog columns | 33 / 346 | Includes non-model tables; not business row counts |
+| Physical `public` FKs / RLS-enabled base tables | 13 / 9 | Aggregate catalog counts; not proof of correct FK mappings or RLS policies |
 | Missing columns of **present** model tables | **34** | Creating the 23 missing tables alone cannot close the gap |
 | Primary-key `String` expected TEXT versus actual UUID | **14** | Must reconcile Prisma/native types and FK compatibility |
 | Six verified logical relation type conflicts | **6** | Adding these FKs as written is unsafe/incompatible |
@@ -80,8 +81,8 @@ The following were individually rechecked on the live PostgreSQL catalog with **
 
 **G0 — Containment, identity and full restore proof (mandatory):**
 1. Run `scripts/verify-supabase-runtime-target.cjs` privately with operator-authorized `TAD_EXPECTED_SUPABASE_PROJECT_REF`; print verdicts only, never URLs. Reconcile with EasyPanel deployment SHA and secrets incident [#244](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/244).
-2. Export roles, schema and data using reviewed Supabase CLI flags, to a restricted encrypted volume **outside Git**; run `scripts/verify-supabase-backup-export.cjs`. Its `EXPORT_INTEGRITY_PASS_RESTORE_UNVERIFIED` is **only** byte-integrity verification.
-3. Copy the export to independently retained encrypted off-site storage. Export actual Storage bucket object **bytes** separately and prove checksum, coverage and retention. Do not equate `storage.objects` rows with downloaded media.
+2. Coordinate an approved **write-quiescence window or provider-supported point-in-time-consistent snapshot strategy** before multiple role/schema/data exports; three independently invoked `db dump` commands alone do not prove a single data-consistent backup under concurrent writes. Then export into a restricted encrypted volume **outside Git**; run `scripts/verify-supabase-backup-export.cjs`. Its `EXPORT_INTEGRITY_PASS_RESTORE_UNVERIFIED` is **only** byte-integrity verification.
+3. Capture a time-scoped, **aggregate-only** source baseline using [restore proof SQL](sql/2026-11-21-restore-readonly-proof.sql), and repeat on the isolated clone. Compare only after establishing a consistent snapshot time; matching counts are necessary diagnostics, **not** proof of successful restore. Copy the export to independently retained encrypted off-site storage. Export actual Storage bucket object **bytes** separately and prove checksum, coverage and retention. Do not equate `storage.objects` rows with downloaded media.
 4. Restore the off-site copy in an **isolated, side-effect-disabled** PostgreSQL/Supabase-compatible instance; verify Auth users, Storage objects, schema/constraints, aggregate counts, hashes, and restore elapsed time (RTO/RPO). Do not provision paid projects without authorization. Never restore over `ltdcdhqixvbpdcitthqf` or implicitly over inactive `tadprod`.
 5. Owner and reviewer attest restore evidence **privately**. The absence of a full verified restore blocks every subsequent schema-write stage.
 
@@ -114,4 +115,4 @@ The following were individually rechecked on the live PostgreSQL catalog with **
 - **No changes proposed to:** production database, Prisma migrations, API entrypoint, RLS grants, data permissions, secrets, financial ledgers, offline queues or Docker.
 - **Release status:** **P0 blocked / #217 stays open.** This file is an analysis and staged design, not executable SQL or a migration authorization.
 
-See [canonical backup and restore runbook](2026-11-21-p0-217-canonical-backup-restore-runbook.md), [read-only inventory SQL](sql/2026-11-20-prisma-recovery-readonly-inventory.sql) and [historical drift evidence](2026-11-20-prisma-drift-evidence-update.md).
+See [canonical backup and restore runbook](2026-11-21-p0-217-canonical-backup-restore-runbook.md), [read-only inventory SQL](sql/2026-11-20-prisma-recovery-readonly-inventory.sql), [aggregate clone-restore proof SQL](sql/2026-11-21-restore-readonly-proof.sql) and [historical drift evidence](2026-11-20-prisma-drift-evidence-update.md).

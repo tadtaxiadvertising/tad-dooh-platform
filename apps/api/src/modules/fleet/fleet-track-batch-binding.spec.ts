@@ -18,7 +18,7 @@ describe("Fleet public GPS ingestion — admin device-driver binding", () => {
   const service = new FleetService(prisma as never, {} as never, {} as never);
   const point = {
     lat: 19.45,
-    lng: -70.70,
+    lng: -70.7,
     speed: 20,
     timestamp: Date.UTC(2026, 10, 19, 18, 0, 0),
   };
@@ -86,7 +86,7 @@ describe("Fleet public GPS ingestion — admin device-driver binding", () => {
           driverId: "driver-legitimate",
           deviceId: "TAD-TABLET-1",
           latitude: 19.45,
-          longitude: -70.70,
+          longitude: -70.7,
           speed: 20,
           timestamp: new Date(point.timestamp),
         },

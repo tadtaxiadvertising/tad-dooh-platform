@@ -19,7 +19,10 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
 
   it("fetches campaigns by hardware ID without binding it to a UUID column", async () => {
     const { controller, prisma } = setup();
-    prisma.device.findFirst.mockResolvedValue({ id: uuid, deviceId: "TAD-0001" });
+    prisma.device.findFirst.mockResolvedValue({
+      id: uuid,
+      deviceId: "TAD-0001",
+    });
     await controller.getDeviceCampaigns("TAD-0001");
     expect(prisma.device.findFirst).toHaveBeenCalledWith({
       where: { deviceId: "TAD-0001" },
@@ -43,9 +46,14 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
 
   it("queues an admin command by real DB UUID after resolving a hardware ID", async () => {
     const { controller, prisma } = setup();
-    prisma.device.findFirst.mockResolvedValue({ id: uuid, deviceId: "TAD-0001" });
+    prisma.device.findFirst.mockResolvedValue({
+      id: uuid,
+      deviceId: "TAD-0001",
+    });
     prisma.deviceCommand.create.mockResolvedValue({ id: "command-1" });
-    await controller.sendDeviceCommand("TAD-0001", { commandType: "FORCE_SYNC" });
+    await controller.sendDeviceCommand("TAD-0001", {
+      commandType: "FORCE_SYNC",
+    });
     expect(prisma.device.findFirst).toHaveBeenCalledWith({
       where: { deviceId: "TAD-0001" },
     });

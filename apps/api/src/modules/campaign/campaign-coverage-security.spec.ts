@@ -15,7 +15,10 @@ describe("Campaign coverage privacy and tenant isolation", () => {
     playlistItem: { findMany: playlistFindMany },
   };
   const controller = new CampaignController(
-    {} as never, prisma as never, {} as never, {} as never,
+    {} as never,
+    prisma as never,
+    {} as never,
+    {} as never,
   );
 
   const req = (role: UserRole, entityId = "adv-owner") =>
@@ -51,8 +54,12 @@ describe("Campaign coverage privacy and tenant isolation", () => {
   beforeEach(() => {
     jest.resetAllMocks();
     findUnique.mockResolvedValue({
-      id: "campaign-1", name: "Test", advertiserId: "adv-owner",
-      targetAll: true, isGlobal: false, targetCity: "Santiago",
+      id: "campaign-1",
+      name: "Test",
+      advertiserId: "adv-owner",
+      targetAll: true,
+      isGlobal: false,
+      targetCity: "Santiago",
     });
     deviceFindMany.mockResolvedValue([safeDevice]);
     assignmentsFindMany.mockResolvedValue([]);
@@ -60,11 +67,17 @@ describe("Campaign coverage privacy and tenant isolation", () => {
   });
 
   it("rejects cross-advertiser distribution BEFORE querying fleet assignments", async () => {
-    findUnique.mockResolvedValue({ name: "Another campaign", advertiserId: "adv-other" });
+    findUnique.mockResolvedValue({
+      name: "Another campaign",
+      advertiserId: "adv-other",
+    });
     const errorLog = jest.spyOn(console, "error").mockImplementation(() => {});
     try {
       await expect(
-        controller.getCampaignDistribution("campaign-1", req(UserRole.ADVERTISER)),
+        controller.getCampaignDistribution(
+          "campaign-1",
+          req(UserRole.ADVERTISER),
+        ),
       ).rejects.toBeInstanceOf(ForbiddenException);
     } finally {
       errorLog.mockRestore();
@@ -75,7 +88,10 @@ describe("Campaign coverage privacy and tenant isolation", () => {
   });
 
   it("rejects cross-advertiser device coverage BEFORE accessing any device", async () => {
-    findUnique.mockResolvedValue({ name: "Another campaign", advertiserId: "adv-other" });
+    findUnique.mockResolvedValue({
+      name: "Another campaign",
+      advertiserId: "adv-other",
+    });
     await expect(
       controller.getCampaignDevices("campaign-1", req(UserRole.ADVERTISER)),
     ).rejects.toBeInstanceOf(ForbiddenException);
@@ -86,7 +102,8 @@ describe("Campaign coverage privacy and tenant isolation", () => {
   it("allows an owning advertiser to obtain distribution with safe device selection", async () => {
     assignmentsFindMany.mockResolvedValue([{ device_id: "device-uuid-1" }]);
     const result = await controller.getCampaignDistribution(
-      "campaign-1", req(UserRole.ADVERTISER),
+      "campaign-1",
+      req(UserRole.ADVERTISER),
     );
     expect(result.total_screens).toBe(1);
     expect(result.taxis).toEqual([
@@ -107,11 +124,14 @@ describe("Campaign coverage privacy and tenant isolation", () => {
 
   it("does not expose credentials, precise GPS or driver IDs for global coverage", async () => {
     const result = await controller.getCampaignDevices(
-      "campaign-1", req(UserRole.ADVERTISER),
+      "campaign-1",
+      req(UserRole.ADVERTISER),
     );
     expect(result).toEqual([
       expect.objectContaining({
-        id: "device-uuid-1", deviceId: "TAD-001", assignment_type: "GLOBAL",
+        id: "device-uuid-1",
+        deviceId: "TAD-001",
+        assignment_type: "GLOBAL",
       }),
     ]);
     assertSafeSelection(deviceFindMany.mock.calls[0][0].select);
@@ -120,19 +140,25 @@ describe("Campaign coverage privacy and tenant isolation", () => {
 
   it("also restricts nested device query for explicitly assigned coverage", async () => {
     findUnique.mockResolvedValue({
-      name: "Local", advertiserId: "adv-owner",
-      targetAll: false, isGlobal: false, targetCity: "Santiago",
+      name: "Local",
+      advertiserId: "adv-owner",
+      targetAll: false,
+      isGlobal: false,
+      targetCity: "Santiago",
     });
     assignmentsFindMany.mockResolvedValue([
       { device: safeDevice, assigned_at: new Date("2026-11-18T00:00:00Z") },
     ]);
     deviceFindMany.mockResolvedValue([]);
     const result = await controller.getCampaignDevices(
-      "campaign-1", req(UserRole.ADVERTISER),
+      "campaign-1",
+      req(UserRole.ADVERTISER),
     );
     expect(result).toHaveLength(1);
     expect(result[0]).toHaveProperty("assignment_type", "DIRECT");
-    assertSafeSelection(assignmentsFindMany.mock.calls[0][0].include.device.select);
+    assertSafeSelection(
+      assignmentsFindMany.mock.calls[0][0].include.device.select,
+    );
     assertSafeSelection(deviceFindMany.mock.calls[0][0].select);
   });
 

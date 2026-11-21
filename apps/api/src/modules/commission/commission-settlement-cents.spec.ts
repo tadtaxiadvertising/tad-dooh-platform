@@ -21,11 +21,7 @@ describe("Monthly settlement uses exact integer cents", () => {
   };
   const service = new CommissionService(prisma as never);
 
-  const commission = (
-    id: string,
-    amount: number,
-    driverId = "driver-1",
-  ) => ({
+  const commission = (id: string, amount: number, driverId = "driver-1") => ({
     id,
     driverId,
     driver: { id: driverId, fullName: "Test Driver" },
@@ -99,7 +95,10 @@ describe("Monthly settlement uses exact integer cents", () => {
     expect(batch.grossTotal).toBe(501.84);
     expect(batch.withholdings).toBe(50.19);
     expect(batch.netTotal).toBe(451.65);
-    expect(batch.grossTotal - batch.withholdings).toBeCloseTo(batch.netTotal, 10);
+    expect(batch.grossTotal - batch.withholdings).toBeCloseTo(
+      batch.netTotal,
+      10,
+    );
     expect(batch.referents).toEqual([
       expect.objectContaining({
         driverId: "driver-1",

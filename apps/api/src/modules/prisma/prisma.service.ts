@@ -52,7 +52,6 @@ export class PrismaService
   private masterSyncNextCheckAt = 0;
   private masterSyncWarningEmitted = false;
 
-
   /**
    * Indicates whether the initial database connection completed successfully.
    * Startup initializers use this to avoid generating extra connection attempts
@@ -206,7 +205,9 @@ export class PrismaService
         );
         this.masterSyncWarningEmitted = true;
       } else if (this.masterSyncViewReady && this.masterSyncWarningEmitted) {
-        this.logger.log("[MASTER_SYNC_VIEW_READY] Materialized view available.");
+        this.logger.log(
+          "[MASTER_SYNC_VIEW_READY] Materialized view available.",
+        );
         this.masterSyncWarningEmitted = false;
       }
       return this.masterSyncViewReady;

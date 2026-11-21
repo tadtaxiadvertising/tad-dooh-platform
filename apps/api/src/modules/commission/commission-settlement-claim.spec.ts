@@ -25,8 +25,7 @@ describe("Commission monthly settlement atomic membership claim", () => {
   };
   const prisma = {
     $transaction: jest.fn(
-      async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
+      async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
     ),
   };
   const service = new CommissionService(prisma as never);
@@ -121,8 +120,9 @@ describe("Commission monthly settlement atomic membership claim", () => {
       },
       data: { settlementBatchId: "batch-1" },
     });
-    expect(createBatch.mock.invocationCallOrder[0])
-      .toBeLessThan(claimCommissions.mock.invocationCallOrder[0]);
+    expect(createBatch.mock.invocationCallOrder[0]).toBeLessThan(
+      claimCommissions.mock.invocationCallOrder[0],
+    );
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 
@@ -245,5 +245,4 @@ describe("Commission monthly settlement atomic membership claim", () => {
     expect(createBatch).not.toHaveBeenCalled();
     expect(claimCommissions).not.toHaveBeenCalled();
   });
-
 });

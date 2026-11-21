@@ -3,7 +3,9 @@ import type { PlaybackEvent } from "./types";
 /** Canonicalizes offline PoP event kinds without manufacturing billable END events. */
 export type PlaybackApiEventType = "START" | "END" | "ERROR";
 
-export function toPlaybackApiEventType(eventType: string): PlaybackApiEventType | null {
+export function toPlaybackApiEventType(
+  eventType: string,
+): PlaybackApiEventType | null {
   switch (eventType) {
     case "play_start":
       return "START";

@@ -37,10 +37,13 @@ describe("CampaignService.simulateImpact — undiscounted base price", () => {
     [4999, 1],
     [5000, 2],
     [7500, 3],
-  ])("a budget of RD$%i can cover %i base-rate screens", async (budget, expected) => {
-    const result = await service.simulateImpact(budget, "Santiago");
-    expect(result.recommendedScreens).toBe(expected);
-  });
+  ])(
+    "a budget of RD$%i can cover %i base-rate screens",
+    async (budget, expected) => {
+      const result = await service.simulateImpact(budget, "Santiago");
+      expect(result.recommendedScreens).toBe(expected);
+    },
+  );
 
   it("never recommends more than online inventory", async () => {
     deviceCount.mockResolvedValue(1);
@@ -48,14 +51,13 @@ describe("CampaignService.simulateImpact — undiscounted base price", () => {
     expect(result.recommendedScreens).toBe(1);
   });
 
-  it.each([
-    Number.NaN,
-    Number.POSITIVE_INFINITY,
-    Number.NEGATIVE_INFINITY,
-    -1,
-  ])("rejects invalid budgets before querying devices (%s)", async budget => {
-    await expect(service.simulateImpact(budget, "Santiago"))
-      .rejects.toBeInstanceOf(BadRequestException);
-    expect(deviceCount).not.toHaveBeenCalled();
-  });
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -1])(
+    "rejects invalid budgets before querying devices (%s)",
+    async (budget) => {
+      await expect(
+        service.simulateImpact(budget, "Santiago"),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(deviceCount).not.toHaveBeenCalled();
+    },
+  );
 });

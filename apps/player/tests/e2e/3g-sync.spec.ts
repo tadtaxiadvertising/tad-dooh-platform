@@ -155,7 +155,11 @@ test.describe("3G Sync — Telemetry flush on reconnect", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ update: false, blocked: false, sync_hash: "test" }),
+        body: JSON.stringify({
+          update: false,
+          blocked: false,
+          sync_hash: "test",
+        }),
       }),
     );
     await page.route("**/sync/*", (route) =>
@@ -211,7 +215,9 @@ test.describe("3G Sync — Telemetry flush on reconnect", () => {
     await context.setOffline(true);
     await page.waitForTimeout(200);
     await context.setOffline(false);
-    await expect.poll(() => rejectedRequests, { timeout: 20_000 }).toBeGreaterThan(0);
+    await expect
+      .poll(() => rejectedRequests, { timeout: 20_000 })
+      .toBeGreaterThan(0);
 
     const remaining = await page.evaluate(async () => {
       return new Promise<number>((resolve, reject) => {
@@ -230,22 +236,39 @@ test.describe("3G Sync — Telemetry flush on reconnect", () => {
 
   test("5.3 — Overflow PoP queue retains unsubmitted events", async () => {
     const page = await context.newPage();
-    await page.addInitScript(() => localStorage.setItem("TAD_DEVICE_ID", "e2e-device"));
-    await page.route("**/device/sync*", (route) => route.fulfill({
-      status: 200, contentType: "application/json",
-      body: JSON.stringify({ update: false, blocked: false, sync_hash: "test" }),
-    }));
-    await page.route("**/sync/*", (route) => route.fulfill({
-      status: 200, contentType: "application/json",
-      body: JSON.stringify({ etag: "test", killSwitch: false, playlist: [] }),
-    }));
+    await page.addInitScript(() =>
+      localStorage.setItem("TAD_DEVICE_ID", "e2e-device"),
+    );
+    await page.route("**/device/sync*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          update: false,
+          blocked: false,
+          sync_hash: "test",
+        }),
+      }),
+    );
+    await page.route("**/sync/*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ etag: "test", killSwitch: false, playlist: [] }),
+      }),
+    );
     const batchSizes: number[] = [];
     await page.route("**/telemetry/playback-batch", (route) => {
       const events = route.request().postDataJSON() as unknown[];
       batchSizes.push(events.length);
       return route.fulfill({
-        status: 201, contentType: "application/json",
-        body: JSON.stringify({ success: true, processed: events.length, rejected: 0 }),
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          processed: events.length,
+          rejected: 0,
+        }),
       });
     });
 
@@ -281,23 +304,28 @@ test.describe("3G Sync — Telemetry flush on reconnect", () => {
     });
 
     await context.setOffline(false);
-    await expect.poll(() => batchSizes.length, { timeout: 20_000 }).toBeGreaterThan(0);
+    await expect
+      .poll(() => batchSizes.length, { timeout: 20_000 })
+      .toBeGreaterThan(0);
     expect(batchSizes[0]).toBe(50);
     expect(batchSizes.every((count) => count <= 50)).toBe(true);
 
-    const pending = () => page.evaluate(() => new Promise<number>((resolve, reject) => {
-      const req = indexedDB.open("tad_playback_queue", 1);
-      req.onsuccess = () => {
-        const tx = req.result.transaction("events", "readonly");
-        const count = tx.objectStore("events").count();
-        count.onsuccess = () => resolve(count.result);
-        count.onerror = () => reject(count.error);
-      };
-      req.onerror = () => reject(req.error);
-    }));
+    const pending = () =>
+      page.evaluate(
+        () =>
+          new Promise<number>((resolve, reject) => {
+            const req = indexedDB.open("tad_playback_queue", 1);
+            req.onsuccess = () => {
+              const tx = req.result.transaction("events", "readonly");
+              const count = tx.objectStore("events").count();
+              count.onsuccess = () => resolve(count.result);
+              count.onerror = () => reject(count.error);
+            };
+            req.onerror = () => reject(req.error);
+          }),
+      );
     await expect.poll(pending, { timeout: 20_000 }).toBe(10);
     // Reconnect has two callers (PlaybackQueue and SyncManager): one request only.
     expect(batchSizes).toEqual([50]);
   });
-
 });

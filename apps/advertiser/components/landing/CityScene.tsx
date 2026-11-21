@@ -1,4 +1,8 @@
-import { CITIES, type DemoCity, type LandingRole } from "../../lib/landing/model";
+import {
+  CITIES,
+  type DemoCity,
+  type LandingRole,
+} from "../../lib/landing/model";
 import { OBJECTIVES, type DemoObjective } from "../../lib/landing/content";
 
 export default function CityScene({
@@ -15,9 +19,24 @@ export default function CityScene({
   // Text is for this illustrative preview only: no persistence or analytics.
   const displayBrand = brandName.trim().replace(/\s+/g, " ").slice(0, 24);
   const preview = {
-    awareness: { tag: "TU MARCA, PRESENTE", first: "tu marca.", second: "en camino.", note: "Una idea que acompaña el recorrido." },
-    launch: { tag: "UNA NOVEDAD", first: "algo nuevo.", second: "en la ciudad.", note: "Presenta lo nuevo durante el trayecto." },
-    local: { tag: "CERCA DE TU GENTE", first: "tu ciudad.", second: "tu historia.", note: "Conecta tu mensaje con lo local." },
+    awareness: {
+      tag: "TU MARCA, PRESENTE",
+      first: "tu marca.",
+      second: "en camino.",
+      note: "Una idea que acompaña el recorrido.",
+    },
+    launch: {
+      tag: "UNA NOVEDAD",
+      first: "algo nuevo.",
+      second: "en la ciudad.",
+      note: "Presenta lo nuevo durante el trayecto.",
+    },
+    local: {
+      tag: "CERCA DE TU GENTE",
+      first: "tu ciudad.",
+      second: "tu historia.",
+      note: "Conecta tu mensaje con lo local.",
+    },
   }[objective];
   const scene =
     role === "driver"
@@ -63,13 +82,18 @@ export default function CityScene({
       data-perspective={role}
       data-city={city}
       data-objective={role === "advertiser" ? objective : undefined}
-      data-brand-custom={role === "advertiser" && displayBrand ? "true" : undefined}
+      data-brand-custom={
+        role === "advertiser" && displayBrand ? "true" : undefined
+      }
       aria-label={sceneAriaLabel}
       role="img"
     >
       <div className="landing-scene-grid" />
       <div className="landing-scene-label">
-        <span /> {role === "advertiser" ? `ESCENA · ${CITIES[city].toUpperCase()}` : scene.label}
+        <span />{" "}
+        {role === "advertiser"
+          ? `ESCENA · ${CITIES[city].toUpperCase()}`
+          : scene.label}
       </div>
       <div className="landing-orbit landing-orbit-one" />
       <div className="landing-orbit landing-orbit-two" />

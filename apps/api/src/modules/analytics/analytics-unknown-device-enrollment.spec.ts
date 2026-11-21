@@ -11,10 +11,12 @@ describe("AnalyticsService public event device enrollment", () => {
   beforeEach(() => {
     jest.resetAllMocks();
     deviceRead.mockResolvedValue(null);
-    deviceCreate.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
-      id: "pending-device",
-      ...data,
-    }));
+    deviceCreate.mockImplementation(
+      async ({ data }: { data: Record<string, unknown> }) => ({
+        id: "pending-device",
+        ...data,
+      }),
+    );
     eventCreate.mockResolvedValue({ id: "event-1" });
     service = new AnalyticsService(
       {
@@ -30,7 +32,9 @@ describe("AnalyticsService public event device enrollment", () => {
       service.ingestEvent({ deviceId: "UNKNOWN-HW", eventType: "playback" }),
     ).resolves.toEqual({ id: "event-1" });
 
-    expect(deviceRead).toHaveBeenCalledWith({ where: { deviceId: "UNKNOWN-HW" } });
+    expect(deviceRead).toHaveBeenCalledWith({
+      where: { deviceId: "UNKNOWN-HW" },
+    });
     expect(deviceCreate).toHaveBeenCalledWith({
       data: {
         deviceId: "UNKNOWN-HW",
@@ -45,8 +49,9 @@ describe("AnalyticsService public event device enrollment", () => {
         processed: false,
       }),
     });
-    expect(deviceCreate.mock.calls[0][0].data.status)
-      .not.toBe(BUSINESS_RULES.STATUS.DEVICE.ACTIVE);
+    expect(deviceCreate.mock.calls[0][0].data.status).not.toBe(
+      BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
+    );
   });
 
   it("does not alter the status or ownership of a known approved device", async () => {
@@ -63,8 +68,14 @@ describe("AnalyticsService public event device enrollment", () => {
   });
 
   it("does not register an unknown device a second time for repeated events", async () => {
-    await service.ingestEvent({ deviceId: "UNKNOWN-HW", eventType: "playback" });
-    await service.ingestEvent({ deviceId: "UNKNOWN-HW", eventType: "playback" });
+    await service.ingestEvent({
+      deviceId: "UNKNOWN-HW",
+      eventType: "playback",
+    });
+    await service.ingestEvent({
+      deviceId: "UNKNOWN-HW",
+      eventType: "playback",
+    });
 
     expect(deviceRead).toHaveBeenCalledTimes(1);
     expect(deviceCreate).toHaveBeenCalledTimes(1);

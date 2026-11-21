@@ -1,4 +1,8 @@
-import { BadRequestException, ConflictException, ForbiddenException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { CommissionController } from "./commission.controller";
 import type { CommissionService } from "./commission.service";
 import type { AuthUser } from "../auth/auth.types";
@@ -104,12 +108,15 @@ describe("CommissionController authenticated financial audit attribution", () =>
     { user: { role: UserRole.ADMIN, id: "   " } },
     { user: { role: UserRole.DRIVER, id: "driver-1" } },
     { user: { role: UserRole.ADVERTISER, id: "advertiser-1" } },
-  ])("rejects missing, invalid or non-admin audit principals", async (context) => {
-    await expect(
-      controller.approveCommission("commission-1", context as never),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-    expect(approveCommission).not.toHaveBeenCalled();
-  });
+  ])(
+    "rejects missing, invalid or non-admin audit principals",
+    async (context) => {
+      await expect(
+        controller.approveCommission("commission-1", context as never),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(approveCommission).not.toHaveBeenCalled();
+    },
+  );
 
   it("denies a non-admin revoke before any service mutation", async () => {
     await expect(
@@ -142,19 +149,21 @@ describe("CommissionController authenticated financial audit attribution", () =>
     { month: 11, year: 2026.5 },
     { month: 11, year: 2019 },
     { month: "11", year: 2026 },
-  ])("rejects invalid settlement periods and never calls finance", async (input) => {
-    await expect(
-      controller.generateSettlement(input as never, trusted),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(generateMonthlySettlement).not.toHaveBeenCalled();
-  });
+  ])(
+    "rejects invalid settlement periods and never calls finance",
+    async (input) => {
+      await expect(
+        controller.generateSettlement(input as never, trusted),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(generateMonthlySettlement).not.toHaveBeenCalled();
+    },
+  );
 
   it("requires admin actor for settlements even with valid input", async () => {
     await expect(
-      controller.generateSettlement(
-        { month: 11, year: 2026 },
-        { user: { role: UserRole.ADMIN, id: "" } } as never,
-      ),
+      controller.generateSettlement({ month: 11, year: 2026 }, {
+        user: { role: UserRole.ADMIN, id: "" },
+      } as never),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(generateMonthlySettlement).not.toHaveBeenCalled();
   });

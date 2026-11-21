@@ -9,7 +9,10 @@ import type { MediaAsset } from "./types";
  * report optimistic counts. Therefore those counts are NOT a durability ACK.
  */
 export async function prepareOfflinePlaylist(
-  cache: Pick<CacheManager, "cacheVideos" | "hasMissingAssets" | "evictStaleAssets">,
+  cache: Pick<
+    CacheManager,
+    "cacheVideos" | "hasMissingAssets" | "evictStaleAssets"
+  >,
   assets: MediaAsset[],
 ): Promise<boolean> {
   if (assets.length === 0) return true;

@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  X,
-  User,
-  Phone,
-  IdCard,
-  Hash,
-} from "lucide-react";
+import { X, User, Phone, IdCard, Hash } from "lucide-react";
 import { createDriver } from "@tad/services";
 import { notifyChange } from "@tad/ui";
 
@@ -175,7 +169,8 @@ const DriverModal = React.memo(function DriverModal({
             </p>
 
             <p className="text-xs text-zinc-400">
-              El pago se confirma después del registro mediante el proceso autorizado.
+              El pago se confirma después del registro mediante el proceso
+              autorizado.
             </p>
           </div>
 

@@ -49,13 +49,15 @@ export class OnboardingController {
   @Throttle({ default: { limit: 6, ttl: 60000 } })
   @Post("advertiser/oauth/profile")
   async completeOAuthProfile(
-    @Req() request: {
+    @Req()
+    request: {
       user?: { role?: string; entityId?: string | null; email?: string };
     },
     @Body() data: CompleteOAuthAdvertiserProfileDto,
   ) {
     return this.onboardingService.completeOAuthAdvertiserProfile(
-      request.user || {}, data,
+      request.user || {},
+      data,
     );
   }
 

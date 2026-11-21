@@ -15,14 +15,16 @@ describe("DriversService.assignDevice atomic handoff", () => {
     const tx = {
       driver: {
         // A driver row update is the per-driver serialization lock.
-        update: jest.fn(async (_args: {
-          where: { id: string };
-          data: { updatedAt: Date };
-          select: { status: true; onboardingStatus: true };
-        }) => ({
-          status: "OPERATIVO",
-          onboardingStatus: "COMPLETED",
-        })),
+        update: jest.fn(
+          async (_args: {
+            where: { id: string };
+            data: { updatedAt: Date };
+            select: { status: true; onboardingStatus: true };
+          }) => ({
+            status: "OPERATIVO",
+            onboardingStatus: "COMPLETED",
+          }),
+        ),
       },
       $queryRaw: jest.fn(async (_sql: TemplateStringsArray, id: string) => {
         if (lockHeld) {
@@ -32,31 +34,44 @@ describe("DriversService.assignDevice atomic handoff", () => {
         return [{ id }];
       }),
       device: {
-        updateMany: jest.fn(async ({ where, data }: {
-          where: { driverId: string; id?: { not: string } };
-          data: { driverId: null };
-        }) => {
-          let count = 0;
-          for (const [id, owner] of links) {
-            if (owner === where.driverId && (!where.id || id !== where.id.not)) {
-              links.set(id, data.driverId);
-              count++;
+        updateMany: jest.fn(
+          async ({
+            where,
+            data,
+          }: {
+            where: { driverId: string; id?: { not: string } };
+            data: { driverId: null };
+          }) => {
+            let count = 0;
+            for (const [id, owner] of links) {
+              if (
+                owner === where.driverId &&
+                (!where.id || id !== where.id.not)
+              ) {
+                links.set(id, data.driverId);
+                count++;
+              }
             }
-          }
-          return { count };
-        }),
-        update: jest.fn(async ({ where, data }: {
-          where: { id: string; driverId: string | null };
-          data: { driverId: string };
-        }) => {
-          if (failTargetWrite) throw new Error("target device write failed");
-          if (!links.has(where.id)) throw new Error("device missing");
-          if (links.get(where.id) !== where.driverId) {
-            throw new Error("target ownership changed (CAS rejected)");
-          }
-          links.set(where.id, data.driverId);
-          return { id: where.id, driverId: data.driverId };
-        }),
+            return { count };
+          },
+        ),
+        update: jest.fn(
+          async ({
+            where,
+            data,
+          }: {
+            where: { id: string; driverId: string | null };
+            data: { driverId: string };
+          }) => {
+            if (failTargetWrite) throw new Error("target device write failed");
+            if (!links.has(where.id)) throw new Error("device missing");
+            if (links.get(where.id) !== where.driverId) {
+              throw new Error("target ownership changed (CAS rejected)");
+            }
+            links.set(where.id, data.driverId);
+            return { id: where.id, driverId: data.driverId };
+          },
+        ),
       },
     };
 
@@ -79,29 +94,31 @@ describe("DriversService.assignDevice atomic handoff", () => {
       },
       // Simulate both rollback and the release of the row lock on commit.
       // This fixture does not replace a real PostgreSQL concurrency test.
-      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => {
-        // An unrelated admin may change the target after the initial read.
-        if (nextTargetOwnerBeforeTx !== undefined) {
-          links.set("target-tablet", nextTargetOwnerBeforeTx);
-        }
-        let acquired = false;
-        const snapshot = new Map(links);
-        try {
-          const result = await callback(tx);
-          acquired = true;
-          return result;
-        } catch (error) {
-          links.clear();
-          for (const [id, owner] of snapshot) links.set(id, owner);
-          acquired = true;
-          throw error;
-        } finally {
-          if (acquired) {
-            lockHeld = false;
-            lockWaiters.shift()?.();
+      $transaction: jest.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) => {
+          // An unrelated admin may change the target after the initial read.
+          if (nextTargetOwnerBeforeTx !== undefined) {
+            links.set("target-tablet", nextTargetOwnerBeforeTx);
           }
-        }
-      }),
+          let acquired = false;
+          const snapshot = new Map(links);
+          try {
+            const result = await callback(tx);
+            acquired = true;
+            return result;
+          } catch (error) {
+            links.clear();
+            for (const [id, owner] of snapshot) links.set(id, owner);
+            acquired = true;
+            throw error;
+          } finally {
+            if (acquired) {
+              lockHeld = false;
+              lockWaiters.shift()?.();
+            }
+          }
+        },
+      ),
     };
 
     return {
@@ -114,7 +131,9 @@ describe("DriversService.assignDevice atomic handoff", () => {
       prisma,
       tx,
       links,
-      setFailTargetWrite: () => { failTargetWrite = true; },
+      setFailTargetWrite: () => {
+        failTargetWrite = true;
+      },
       setTargetOwnerBeforeTx: (owner: string | null) => {
         nextTargetOwnerBeforeTx = owner;
       },
@@ -123,7 +142,9 @@ describe("DriversService.assignDevice atomic handoff", () => {
 
   it("updates previous and target device inside one transaction", async () => {
     const { service, prisma, tx, links } = makeHarness();
-    await expect(service.assignDevice("driver-1", "TAD-TARGET")).resolves.toEqual({
+    await expect(
+      service.assignDevice("driver-1", "TAD-TARGET"),
+    ).resolves.toEqual({
       id: "target-tablet",
       driverId: "driver-1",
     });
@@ -145,8 +166,9 @@ describe("DriversService.assignDevice atomic handoff", () => {
       where: { id: "target-tablet", driverId: null },
       data: { driverId: "driver-1" },
     });
-    expect(tx.driver.update.mock.invocationCallOrder[0])
-      .toBeLessThan(tx.device.updateMany.mock.invocationCallOrder[0]);
+    expect(tx.driver.update.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.device.updateMany.mock.invocationCallOrder[0],
+    );
     expect(links.get("old-tablet")).toBeNull();
     expect(links.get("target-tablet")).toBe("driver-1");
     expect(prisma.device.updateMany).not.toHaveBeenCalled();
@@ -161,8 +183,9 @@ describe("DriversService.assignDevice atomic handoff", () => {
       onboardingStatus: "COMPLETED",
     });
 
-    await expect(service.assignDevice("driver-1", "TAD-TARGET"))
-      .rejects.toThrow("Conductor bloqueado");
+    await expect(
+      service.assignDevice("driver-1", "TAD-TARGET"),
+    ).rejects.toThrow("Conductor bloqueado");
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(tx.device.updateMany).not.toHaveBeenCalled();
     expect(links.get("old-tablet")).toBe("driver-1");
@@ -175,8 +198,9 @@ describe("DriversService.assignDevice atomic handoff", () => {
       onboardingStatus: "COMPLETED",
     });
 
-    await expect(service.assignDevice("driver-1", "TAD-TARGET"))
-      .rejects.toThrow("Conductor bloqueado");
+    await expect(
+      service.assignDevice("driver-1", "TAD-TARGET"),
+    ).rejects.toThrow("Conductor bloqueado");
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(tx.driver.update).toHaveBeenCalledTimes(1);
     expect(tx.$queryRaw).not.toHaveBeenCalled();
@@ -202,8 +226,9 @@ describe("DriversService.assignDevice atomic handoff", () => {
   it("rejects a missing locked driver before unlinking any device", async () => {
     const { service, tx, links } = makeHarness();
     tx.$queryRaw.mockResolvedValueOnce([]);
-    await expect(service.assignDevice("driver-1", "TAD-TARGET"))
-      .rejects.toThrow("Chofer no encontrado");
+    await expect(
+      service.assignDevice("driver-1", "TAD-TARGET"),
+    ).rejects.toThrow("Chofer no encontrado");
     expect(tx.device.updateMany).not.toHaveBeenCalled();
     expect(tx.device.update).not.toHaveBeenCalled();
     expect(links.get("old-tablet")).toBe("driver-1");
@@ -212,16 +237,23 @@ describe("DriversService.assignDevice atomic handoff", () => {
   it("serializes concurrent admin handoffs for the same driver", async () => {
     const { service, prisma, tx, links } = makeHarness();
     links.set("second-target", null);
-    prisma.device.findFirst.mockImplementation(async ({ where }: {
-      where: { OR: [{ deviceId: string }, { id: string }] };
-    }) => {
-      const id = where.OR[0].deviceId === "TAD-SECOND" ? "second-target" : "target-tablet";
-      return {
-        id,
-        deviceId: where.OR[0].deviceId,
-        driverId: links.get(id) ?? null,
-      };
-    });
+    prisma.device.findFirst.mockImplementation(
+      async ({
+        where,
+      }: {
+        where: { OR: [{ deviceId: string }, { id: string }] };
+      }) => {
+        const id =
+          where.OR[0].deviceId === "TAD-SECOND"
+            ? "second-target"
+            : "target-tablet";
+        return {
+          id,
+          deviceId: where.OR[0].deviceId,
+          driverId: links.get(id) ?? null,
+        };
+      },
+    );
 
     await Promise.all([
       service.assignDevice("driver-1", "TAD-TARGET"),
@@ -235,7 +267,9 @@ describe("DriversService.assignDevice atomic handoff", () => {
 
   it("unlinks devices through the same driver-row lock used by assignment", async () => {
     const { service, prisma, tx, links } = makeHarness();
-    await expect(service.unlinkDevice("driver-1")).resolves.toEqual({ count: 1 });
+    await expect(service.unlinkDevice("driver-1")).resolves.toEqual({
+      count: 1,
+    });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
     const [sql, id] = tx.$queryRaw.mock.calls[0];
@@ -252,7 +286,9 @@ describe("DriversService.assignDevice atomic handoff", () => {
   it("keeps unlink's existing count-zero contract for a missing driver", async () => {
     const { service, tx, links } = makeHarness();
     tx.$queryRaw.mockResolvedValueOnce([]);
-    await expect(service.unlinkDevice("missing-driver")).resolves.toEqual({ count: 0 });
+    await expect(service.unlinkDevice("missing-driver")).resolves.toEqual({
+      count: 0,
+    });
     expect(tx.device.updateMany).not.toHaveBeenCalled();
     expect(links.get("old-tablet")).toBe("driver-1");
   });
@@ -263,8 +299,12 @@ describe("DriversService.assignDevice atomic handoff", () => {
     if (!originalUpdateMany) throw new Error("missing fixture implementation");
     let entered!: () => void;
     let resume!: () => void;
-    const enteredFirstWrite = new Promise<void>((resolve) => { entered = resolve; });
-    const releaseFirstWrite = new Promise<void>((resolve) => { resume = resolve; });
+    const enteredFirstWrite = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const releaseFirstWrite = new Promise<void>((resolve) => {
+      resume = resolve;
+    });
 
     tx.device.updateMany.mockImplementationOnce(async (args) => {
       entered();
@@ -291,16 +331,17 @@ describe("DriversService.assignDevice atomic handoff", () => {
 
     expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
-    expect([...links.values()].filter((owner) => owner === "driver-1"))
-      .toHaveLength(0);
+    expect(
+      [...links.values()].filter((owner) => owner === "driver-1"),
+    ).toHaveLength(0);
   });
 
   it("does not unlink a driver when the target device does not exist", async () => {
     const { service, prisma, links } = makeHarness();
     prisma.device.findFirst.mockResolvedValueOnce(null);
-    await expect(
-      service.assignDevice("driver-1", "MISSING"),
-    ).rejects.toThrow("Dispositivo no encontrado");
+    await expect(service.assignDevice("driver-1", "MISSING")).rejects.toThrow(
+      "Dispositivo no encontrado",
+    );
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(links.get("old-tablet")).toBe("driver-1");
   });
@@ -327,8 +368,9 @@ describe("DriversService.assignDevice atomic handoff", () => {
       deviceId: "TAD-TARGET",
       driverId: "driver-1",
     });
-    await expect(service.assignDevice("driver-1", "TAD-TARGET"))
-      .resolves.toEqual({ id: "target-tablet", driverId: "driver-1" });
+    await expect(
+      service.assignDevice("driver-1", "TAD-TARGET"),
+    ).resolves.toEqual({ id: "target-tablet", driverId: "driver-1" });
     expect(links.get("old-tablet")).toBeNull();
     expect(links.get("target-tablet")).toBe("driver-1");
   });

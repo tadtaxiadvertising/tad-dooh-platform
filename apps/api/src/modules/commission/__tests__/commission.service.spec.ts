@@ -201,22 +201,19 @@ describe("CommissionService", () => {
       expect(result.status).toBe("APPROVED");
     });
 
-    it(
-      "rejects a zero-commission settlement so later approvals remain eligible",
-      async () => {
-        mockPrisma.settlementBatch.findUnique.mockResolvedValue(null);
-        mockPrisma.commission.findMany.mockResolvedValue([]);
+    it("rejects a zero-commission settlement so later approvals remain eligible", async () => {
+      mockPrisma.settlementBatch.findUnique.mockResolvedValue(null);
+      mockPrisma.commission.findMany.mockResolvedValue([]);
 
-        await expect(
-          service.generateMonthlySettlement({
-            month: 9,
-            year: 2026,
-            generatedBy: "admin-1",
-          }),
-        ).rejects.toThrow("has no approved commissions");
+      await expect(
+        service.generateMonthlySettlement({
+          month: 9,
+          year: 2026,
+          generatedBy: "admin-1",
+        }),
+      ).rejects.toThrow("has no approved commissions");
 
-        expect(mockPrisma.settlementBatch.create).not.toHaveBeenCalled();
-      },
-    );
+      expect(mockPrisma.settlementBatch.create).not.toHaveBeenCalled();
+    });
   });
 });

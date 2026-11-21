@@ -185,7 +185,9 @@ export class CommissionController {
       body.year < 2020 ||
       body.year > 2100
     ) {
-      throw new BadRequestException("month/year deben representar un período válido");
+      throw new BadRequestException(
+        "month/year deben representar un período válido",
+      );
     }
 
     const batch = await this.commissionService.generateMonthlySettlement({

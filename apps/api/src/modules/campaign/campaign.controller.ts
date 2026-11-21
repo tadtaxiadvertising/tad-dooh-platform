@@ -79,8 +79,14 @@ const campaignCoverageDeviceSelect = {
 
 type CampaignCoverageDevice = Pick<
   Device,
-  "id" | "deviceId" | "taxiNumber" | "city" | "status" |
-  "lastHeartbeat" | "lastSeen" | "lastSync"
+  | "id"
+  | "deviceId"
+  | "taxiNumber"
+  | "city"
+  | "status"
+  | "lastHeartbeat"
+  | "lastSeen"
+  | "lastSync"
 >;
 
 /**
@@ -323,7 +329,9 @@ export class CampaignController {
       });
     }
     if (role !== UserRole.ADMIN) {
-      throw new ForbiddenException("Rol no autorizado para consultar campañas.");
+      throw new ForbiddenException(
+        "Rol no autorizado para consultar campañas.",
+      );
     }
     return this.campaignService.getAllCampaigns();
   }
@@ -356,7 +364,9 @@ export class CampaignController {
         req.user?.role === UserRole.ADVERTISER &&
         campaign.advertiserId !== req.user.entityId
       ) {
-        throw new ForbiddenException("No tienes permisos para ver esta distribución");
+        throw new ForbiddenException(
+          "No tienes permisos para ver esta distribución",
+        );
       }
 
       const distributions = await this.prisma.deviceCampaign.findMany({
@@ -514,7 +524,10 @@ export class CampaignController {
     // Merge both (avoid duplicates)
     const deviceMap = new Map<
       string,
-      CampaignCoverageDevice & { assigned_at: Date | null; assignment_type: string }
+      CampaignCoverageDevice & {
+        assigned_at: Date | null;
+        assignment_type: string;
+      }
     >();
 
     for (const a of assignments) {

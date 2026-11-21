@@ -1,4 +1,12 @@
-import { IsArray, IsString, IsNumber, ValidateNested, ArrayMaxSize, Min, Max } from "class-validator";
+import {
+  IsArray,
+  IsString,
+  IsNumber,
+  ValidateNested,
+  ArrayMaxSize,
+  Min,
+  Max,
+} from "class-validator";
 import { Type } from "class-transformer";
 
 export const GPS_TRACK_BATCH_LIMIT = 500;

@@ -7,9 +7,12 @@ import { AdvertisersController } from "./advertisers.controller";
 
 describe("Authoritative OAuth advertiser status", () => {
   const findUnique = jest.fn();
-  const service = new AdvertisersService({
-    advertiser: { findUnique },
-  } as never, {} as never);
+  const service = new AdvertisersService(
+    {
+      advertiser: { findUnique },
+    } as never,
+    {} as never,
+  );
   const controller = new AdvertisersController(service);
   const identity = {
     role: "ADVERTISER",
@@ -20,7 +23,9 @@ describe("Authoritative OAuth advertiser status", () => {
   beforeEach(() => {
     jest.resetAllMocks();
     findUnique.mockResolvedValue({
-      id: "advertiser-own", email: "own@example.test", status: "ACTIVE",
+      id: "advertiser-own",
+      email: "own@example.test",
+      status: "ACTIVE",
     });
   });
 
@@ -37,58 +42,77 @@ describe("Authoritative OAuth advertiser status", () => {
       where: { id: "advertiser-own" },
       select: { id: true, email: true, status: true },
     });
-    expect(Reflect.getMetadata(
-      IS_PUBLIC_KEY, AdvertisersController.prototype.verifyOAuthStatus,
-    )).not.toBe(true);
-    expect(Reflect.getMetadata(
-      ROLES_KEY, AdvertisersController.prototype.verifyOAuthStatus,
-    )).toEqual([UserRole.ADVERTISER]);
+    expect(
+      Reflect.getMetadata(
+        IS_PUBLIC_KEY,
+        AdvertisersController.prototype.verifyOAuthStatus,
+      ),
+    ).not.toBe(true);
+    expect(
+      Reflect.getMetadata(
+        ROLES_KEY,
+        AdvertisersController.prototype.verifyOAuthStatus,
+      ),
+    ).toEqual([UserRole.ADVERTISER]);
   });
 
   it("reads PENDING_REVIEW from PostgreSQL despite stale ACTIVE metadata", async () => {
     findUnique.mockResolvedValue({
-      id: "advertiser-own", email: "own@example.test",
+      id: "advertiser-own",
+      email: "own@example.test",
       status: "PENDING_REVIEW",
     });
-    await expect(service.verifyOAuthAdvertiserStatus(identity))
-      .resolves.toEqual({
-        role: "ADVERTISER", advertiserId: "advertiser-own",
-        status: "PENDING_REVIEW",
-      });
+    await expect(
+      service.verifyOAuthAdvertiserStatus(identity),
+    ).resolves.toEqual({
+      role: "ADVERTISER",
+      advertiserId: "advertiser-own",
+      status: "PENDING_REVIEW",
+    });
   });
 
   it.each(["SUSPENDED", "DISABLED", "UNKNOWN"])(
     "denies %s accounts, not silently authorizing ACTIVE",
-    async status => {
+    async (status) => {
       findUnique.mockResolvedValue({
-        id: "advertiser-own", email: "own@example.test", status,
+        id: "advertiser-own",
+        email: "own@example.test",
+        status,
       });
-      await expect(service.verifyOAuthAdvertiserStatus(identity))
-        .rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(
+        service.verifyOAuthAdvertiserStatus(identity),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     },
   );
 
   it("returns PENDING_ONBOARDING only for its verified owner to finish the existing profile", async () => {
     findUnique.mockResolvedValue({
-      id: "advertiser-own", email: "own@example.test",
+      id: "advertiser-own",
+      email: "own@example.test",
       status: "PENDING_ONBOARDING",
     });
-    await expect(service.verifyOAuthAdvertiserStatus(identity))
-      .resolves.toEqual({
-        role: "ADVERTISER", advertiserId: "advertiser-own",
-        status: "PENDING_ONBOARDING",
-      });
+    await expect(
+      service.verifyOAuthAdvertiserStatus(identity),
+    ).resolves.toEqual({
+      role: "ADVERTISER",
+      advertiserId: "advertiser-own",
+      status: "PENDING_ONBOARDING",
+    });
   });
 
   it("refuses deleted users and email/ownership mismatch", async () => {
     findUnique.mockResolvedValueOnce(null);
-    await expect(service.verifyOAuthAdvertiserStatus(identity))
-      .rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(
+      service.verifyOAuthAdvertiserStatus(identity),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     findUnique.mockResolvedValueOnce({
-      id: "advertiser-other", email: "other@example.test", status: "ACTIVE",
+      id: "advertiser-other",
+      email: "other@example.test",
+      status: "ACTIVE",
     });
-    await expect(service.verifyOAuthAdvertiserStatus(identity))
-      .rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(
+      service.verifyOAuthAdvertiserStatus(identity),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it("refuses role spoofing, missing identity and an absent email", async () => {
@@ -98,8 +122,9 @@ describe("Authoritative OAuth advertiser status", () => {
       { ...identity, entityId: null },
       { ...identity, email: undefined },
     ]) {
-      await expect(service.verifyOAuthAdvertiserStatus(fake))
-        .rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(
+        service.verifyOAuthAdvertiserStatus(fake),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     }
   });
 });

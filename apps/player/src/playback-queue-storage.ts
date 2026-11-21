@@ -10,8 +10,10 @@ export function persistPlaybackEvent(
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(storeName, "readwrite");
     tx.oncomplete = () => resolve();
-    tx.onabort = () => reject(tx.error ?? new Error("PLAYBACK_QUEUE_WRITE_ABORTED"));
-    tx.onerror = () => reject(tx.error ?? new Error("PLAYBACK_QUEUE_WRITE_FAILED"));
+    tx.onabort = () =>
+      reject(tx.error ?? new Error("PLAYBACK_QUEUE_WRITE_ABORTED"));
+    tx.onerror = () =>
+      reject(tx.error ?? new Error("PLAYBACK_QUEUE_WRITE_FAILED"));
     tx.objectStore(storeName).put({
       id: `${event.video_id}_${event.timestamp}`,
       ...event,
@@ -35,15 +37,16 @@ export function removeAcknowledgedPlaybackEvents(
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(storeName, "readwrite");
     tx.oncomplete = () => resolve();
-    tx.onabort = () => reject(tx.error ?? new Error("PLAYBACK_QUEUE_ACK_ABORTED"));
-    tx.onerror = () => reject(tx.error ?? new Error("PLAYBACK_QUEUE_ACK_FAILED"));
+    tx.onabort = () =>
+      reject(tx.error ?? new Error("PLAYBACK_QUEUE_ACK_ABORTED"));
+    tx.onerror = () =>
+      reject(tx.error ?? new Error("PLAYBACK_QUEUE_ACK_FAILED"));
     const store = tx.objectStore(storeName);
     for (const event of events) {
       const request = store.get(`${event.video_id}_${event.timestamp}`);
       request.onsuccess = () => {
         const current = request.result as
-          | (PlaybackEvent & { queuedAt?: number })
-          | undefined;
+          (PlaybackEvent & { queuedAt?: number }) | undefined;
         // Another tab may have already removed the acknowledged item.
         if (!current) return;
 

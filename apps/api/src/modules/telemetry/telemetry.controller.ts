@@ -8,7 +8,10 @@ import {
   Logger,
   BadRequestException,
 } from "@nestjs/common";
-import { TelemetryService, TELEMETRY_GPS_BATCH_LIMIT } from "./telemetry.service";
+import {
+  TelemetryService,
+  TELEMETRY_GPS_BATCH_LIMIT,
+} from "./telemetry.service";
 
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -102,10 +105,7 @@ export class TelemetryController {
   ) {
     // TypeScript payload types are erased for HTTP JSON. A forged
     // "play_confirm" must never be persisted with verified=true.
-    if (
-      !payload ||
-      !["START", "END", "ERROR"].includes(payload.eventType)
-    ) {
+    if (!payload || !["START", "END", "ERROR"].includes(payload.eventType)) {
       return { success: false, reason: "EVENT_TYPE_INVALID" };
     }
 
@@ -187,7 +187,11 @@ export class TelemetryController {
     const now = new Date();
     const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000);
     const oneMinFuture = new Date(now.getTime() + 60 * 1000);
-    if (!Number.isFinite(ts.getTime()) || ts < fiveMinAgo || ts > oneMinFuture) {
+    if (
+      !Number.isFinite(ts.getTime()) ||
+      ts < fiveMinAgo ||
+      ts > oneMinFuture
+    ) {
       this.logger.warn(
         `⚠️ Timestamp out of window for deviceId=${payload.deviceId}: ${Number.isFinite(ts.getTime()) ? ts.toISOString() : "INVALID_DATE"}`,
       );
@@ -315,7 +319,11 @@ export class TelemetryController {
       const ts = event.clientTimestamp
         ? new Date(event.clientTimestamp)
         : new Date();
-      if (!Number.isFinite(ts.getTime()) || ts < fiveMinAgo || ts > oneMinFuture) {
+      if (
+        !Number.isFinite(ts.getTime()) ||
+        ts < fiveMinAgo ||
+        ts > oneMinFuture
+      ) {
         this.logger.warn(
           `⚠️ Timestamp out of window for deviceId=${deviceId}: ${Number.isFinite(ts.getTime()) ? ts.toISOString() : "INVALID_DATE"}`,
         );

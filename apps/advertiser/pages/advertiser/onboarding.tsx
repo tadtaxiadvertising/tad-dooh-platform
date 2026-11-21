@@ -78,7 +78,11 @@ export default function AdvertiserOnboarding() {
   const verifiedOffer = quoteState?.key === quoteKey ? quoteState.offer : null;
   const effectiveQuoteStatus = !referralCode
     ? "none"
-    : verifiedOffer ? "verified" : quoteStatus === "verified" ? "checking" : quoteStatus;
+    : verifiedOffer
+      ? "verified"
+      : quoteStatus === "verified"
+        ? "checking"
+        : quoteStatus;
 
   // A code in a URL or in an input is never proof of eligibility.
   // The API resolves it against the Driver table; stale responses are ignored.
@@ -136,7 +140,13 @@ export default function AdvertiserOnboarding() {
       window.clearTimeout(timer);
       abort.abort();
     };
-  }, [quoteKey, referralCode, simulator.screens, simulator.months, simulator.includeProduction]);
+  }, [
+    quoteKey,
+    referralCode,
+    simulator.screens,
+    simulator.months,
+    simulator.includeProduction,
+  ]);
 
   const estimate = estimateCampaign(simulator);
   const displayedBudget = verifiedOffer?.subtotal ?? estimate.total;
@@ -183,8 +193,13 @@ export default function AdvertiserOnboarding() {
   };
 
   const handleSubmit = async () => {
-    if (referralCode && (!verifiedOffer || effectiveQuoteStatus !== "verified")) {
-      setError("Verifica tu código de conductor o elimínalo para continuar sin descuento.");
+    if (
+      referralCode &&
+      (!verifiedOffer || effectiveQuoteStatus !== "verified")
+    ) {
+      setError(
+        "Verifica tu código de conductor o elimínalo para continuar sin descuento.",
+      );
       return;
     }
     const validationError = validateCommitment();
@@ -228,9 +243,10 @@ export default function AdvertiserOnboarding() {
 
       clearReferralCode();
       // Use the server's recomputed offer, never a client-side price claim.
-      const recordedBudget = typeof data?.quote?.subtotal === "number"
-        ? data.quote.subtotal
-        : displayedBudget;
+      const recordedBudget =
+        typeof data?.quote?.subtotal === "number"
+          ? data.quote.subtotal
+          : displayedBudget;
       setCampaignData({
         companyName: form.companyName.trim(),
         screens: simulator.screens,

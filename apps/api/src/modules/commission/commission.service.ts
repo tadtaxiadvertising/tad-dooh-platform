@@ -287,7 +287,8 @@ export class CommissionService {
       const updated = await tx.commission.findUnique({
         where: { id: commissionId },
       });
-      if (!updated) throw new NotFoundException(`Commission ${commissionId} not found`);
+      if (!updated)
+        throw new NotFoundException(`Commission ${commissionId} not found`);
       this.logger.log(
         `[COMMISSION] Approved commission ${commissionId}, wallet credited once`,
       );
@@ -322,7 +323,9 @@ export class CommissionService {
     reason: string,
     revokedBy: string,
   ) {
-    this.logger.warn(`[COMMISSION] Revoking commission ${commissionId}: ${reason}`);
+    this.logger.warn(
+      `[COMMISSION] Revoking commission ${commissionId}: ${reason}`,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       const commission = await tx.commission.findUnique({
@@ -332,8 +335,11 @@ export class CommissionService {
         throw new NotFoundException(`Commission ${commissionId} not found`);
       }
       if (
-        ![CommissionStatus.PENDING, CommissionStatus.APPROVED, CommissionStatus.PAID]
-          .includes(commission.status as CommissionStatus)
+        ![
+          CommissionStatus.PENDING,
+          CommissionStatus.APPROVED,
+          CommissionStatus.PAID,
+        ].includes(commission.status as CommissionStatus)
       ) {
         throw new ConflictException(
           `Commission ${commissionId} cannot be revoked from ${commission.status}`,
@@ -661,12 +667,16 @@ export class CommissionService {
   async approveSettlementBatch(batchId: string, approvedBy: string) {
     this.logger.log(`[SETTLEMENT] Approving batch ${batchId} by ${approvedBy}`);
     return this.prisma.$transaction(async (tx) => {
-      const batch = await tx.settlementBatch.findUnique({ where: { id: batchId } });
+      const batch = await tx.settlementBatch.findUnique({
+        where: { id: batchId },
+      });
       if (!batch) {
         throw new NotFoundException(`Settlement batch ${batchId} not found`);
       }
       if (batch.status !== "DRAFT") {
-        throw new ConflictException(`Settlement batch ${batchId} already processed`);
+        throw new ConflictException(
+          `Settlement batch ${batchId} already processed`,
+        );
       }
       // Approving a DRAFT freezes the operator's financial snapshot.
       // New APPROVED commissions for the same calendar period may have
@@ -701,7 +711,9 @@ export class CommissionService {
         data: { status: "APPROVED", approvedAt: new Date(), approvedBy },
       });
       if (claimed.count !== 1) {
-        throw new ConflictException(`Settlement batch ${batchId} approved concurrently`);
+        throw new ConflictException(
+          `Settlement batch ${batchId} approved concurrently`,
+        );
       }
       const updated = await tx.settlementBatch.findUniqueOrThrow({
         where: { id: batchId },
@@ -878,7 +890,9 @@ export class CommissionService {
       ledgerEntries.map((entry) => [entry.reference, entry] as const),
     );
     const commissionByReference = new Map(
-      commissions.map((commission) => [commission.reference, commission] as const),
+      commissions.map(
+        (commission) => [commission.reference, commission] as const,
+      ),
     );
     const reversalByReference = new Map(
       reversals.map((entry) => [entry.reference, entry] as const),

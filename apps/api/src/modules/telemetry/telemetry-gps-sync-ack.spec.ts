@@ -29,9 +29,14 @@ describe("Telemetry GPS synchronization — bounded, atomic, acknowledged", () =
 
   it("refuses oversized offline batches instead of silently truncating them", async () => {
     const controller = makeController();
-    const huge = Array.from({ length: TELEMETRY_GPS_BATCH_LIMIT + 1 }, () => point);
+    const huge = Array.from(
+      { length: TELEMETRY_GPS_BATCH_LIMIT + 1 },
+      () => point,
+    );
 
-    await expect(controller.sync(huge)).rejects.toThrow("TELEMETRY_BATCH_TOO_LARGE");
+    await expect(controller.sync(huge)).rejects.toThrow(
+      "TELEMETRY_BATCH_TOO_LARGE",
+    );
     expect(driverFindUnique).not.toHaveBeenCalled();
     expect(sync).not.toHaveBeenCalled();
   });
@@ -52,10 +57,12 @@ describe("Telemetry GPS synchronization — bounded, atomic, acknowledged", () =
     });
     sync.mockReturnValueOnce(inFlight);
     let completed = false;
-    const response = makeController().sync([point]).then((value) => {
-      completed = true;
-      return value;
-    });
+    const response = makeController()
+      .sync([point])
+      .then((value) => {
+        completed = true;
+        return value;
+      });
     await Promise.resolve();
     await Promise.resolve();
     expect(completed).toBe(false);

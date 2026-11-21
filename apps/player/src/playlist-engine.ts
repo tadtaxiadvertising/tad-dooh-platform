@@ -236,7 +236,9 @@ export class PlaylistEngine {
       })
       .catch(() => {
         // Persist failures must be observable; do not print event data.
-        console.error("[PlaylistEngine] PoP START not persisted to offline queue");
+        console.error(
+          "[PlaylistEngine] PoP START not persisted to offline queue",
+        );
       });
 
     // FIX LEAK-2: Resolve video source from CacheManager (IndexedDB blob URL)
@@ -290,7 +292,9 @@ export class PlaylistEngine {
       })
       .catch(() => {
         // A missing END proof must not disappear as a silent accounting gap.
-        console.error("[PlaylistEngine] PoP END not persisted to offline queue");
+        console.error(
+          "[PlaylistEngine] PoP END not persisted to offline queue",
+        );
       });
 
     // Advance index (wraps around the active playlist)

@@ -92,9 +92,14 @@ export class AdvertisersController {
   @AllowAdvertiserStatuses("ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING")
   @Throttle({ default: { limit: 120, ttl: 60000 } })
   async verifyOAuthStatus(
-    @Req() request: { user?: { role?: string; entityId?: string | null; email?: string } },
+    @Req()
+    request: {
+      user?: { role?: string; entityId?: string | null; email?: string };
+    },
   ) {
-    return this.advertisersService.verifyOAuthAdvertiserStatus(request.user || {});
+    return this.advertisersService.verifyOAuthAdvertiserStatus(
+      request.user || {},
+    );
   }
 
   /**

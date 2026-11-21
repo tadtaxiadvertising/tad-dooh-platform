@@ -55,8 +55,8 @@ function interpolateScrollProgress(
   if (progress <= stops[0]) return values[0];
   for (let index = 1; index < stops.length; index += 1) {
     if (progress <= stops[index]) {
-      const fraction = (progress - stops[index - 1]) /
-        (stops[index] - stops[index - 1]);
+      const fraction =
+        (progress - stops[index - 1]) / (stops[index] - stops[index - 1]);
       return values[index - 1] + fraction * (values[index] - values[index - 1]);
     }
   }
@@ -81,7 +81,11 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
     offset: ["start start", "end end"],
   });
   const taxiOpacity = useTransform(() =>
-    interpolateScrollProgress(scrollYProgress.get(), [0, 0.24, 0.39], [1, 1, 0]),
+    interpolateScrollProgress(
+      scrollYProgress.get(),
+      [0, 0.24, 0.39],
+      [1, 1, 0],
+    ),
   );
   const taxiX = useTransform(() =>
     interpolateScrollProgress(scrollYProgress.get(), [0, 0.34], [0, 110]),
@@ -90,10 +94,18 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
     interpolateScrollProgress(scrollYProgress.get(), [0, 0.36], [1, 1.14]),
   );
   const tabletOpacity = useTransform(() =>
-    interpolateScrollProgress(scrollYProgress.get(), [0.27, 0.4, 0.66, 0.77], [0, 1, 1, 0]),
+    interpolateScrollProgress(
+      scrollYProgress.get(),
+      [0.27, 0.4, 0.66, 0.77],
+      [0, 1, 1, 0],
+    ),
   );
   const tabletScale = useTransform(() =>
-    interpolateScrollProgress(scrollYProgress.get(), [0.26, 0.44, 0.66], [0.78, 1, 1.04]),
+    interpolateScrollProgress(
+      scrollYProgress.get(),
+      [0.26, 0.44, 0.66],
+      [0.78, 1, 1.04],
+    ),
   );
   const reportOpacity = useTransform(() =>
     interpolateScrollProgress(scrollYProgress.get(), [0.69, 0.83], [0, 1]),
@@ -102,13 +114,25 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
     interpolateScrollProgress(scrollYProgress.get(), [0.67, 0.89], [44, 0]),
   );
   const firstCaption = useTransform(() =>
-    interpolateScrollProgress(scrollYProgress.get(), [0, 0.18, 0.31, 0.4], [1, 1, 0.7, 0]),
+    interpolateScrollProgress(
+      scrollYProgress.get(),
+      [0, 0.18, 0.31, 0.4],
+      [1, 1, 0.7, 0],
+    ),
   );
   const secondCaption = useTransform(() =>
-    interpolateScrollProgress(scrollYProgress.get(), [0.3, 0.42, 0.6, 0.72], [0, 1, 1, 0]),
+    interpolateScrollProgress(
+      scrollYProgress.get(),
+      [0.3, 0.42, 0.6, 0.72],
+      [0, 1, 1, 0],
+    ),
   );
   const thirdCaption = useTransform(() =>
-    interpolateScrollProgress(scrollYProgress.get(), [0.66, 0.79, 1], [0, 1, 1]),
+    interpolateScrollProgress(
+      scrollYProgress.get(),
+      [0.66, 0.79, 1],
+      [0, 1, 1],
+    ),
   );
   const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
   const captions = [firstCaption, secondCaption, thirdCaption];
@@ -133,16 +157,11 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
         </div>
         <div className={styles.layout}>
           <div className={styles.words}>
-            <p className={styles.overline}>
-              UNA NUEVA FORMA DE ESTAR PRESENTE
-            </p>
+            <p className={styles.overline}>UNA NUEVA FORMA DE ESTAR PRESENTE</p>
             <h2 id="motion-story-title">
               De tu idea <em>a la ciudad.</em>
             </h2>
-            <div
-              className={styles.chapterWindow}
-              aria-hidden="true"
-            >
+            <div className={styles.chapterWindow} aria-hidden="true">
               {scenes.map((chapter, index) => (
                 <motion.div
                   key={chapter.number}
@@ -252,9 +271,7 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
               </div>
             </motion.div>
             <div className={styles.artBottom}>
-              <span>
-                CONCEPTO VISUAL · NO REPRESENTA UNA CAMPAÑA PUBLICADA
-              </span>
+              <span>CONCEPTO VISUAL · NO REPRESENTA UNA CAMPAÑA PUBLICADA</span>
               <span>↗</span>
             </div>
           </div>

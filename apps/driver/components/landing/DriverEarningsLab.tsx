@@ -35,7 +35,8 @@ export default function DriverEarningsLab({
       typeof window === "undefined" ||
       typeof window.matchMedia !== "function" ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) return;
+    )
+      return;
     const animation = output.animate(
       [
         { transform: "translateY(3px)", opacity: 0.94 },

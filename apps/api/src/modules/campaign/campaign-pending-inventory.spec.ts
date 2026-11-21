@@ -11,8 +11,8 @@ describe("CampaignService pending-review device assignment gate", () => {
   };
   const prisma = {
     advertiser: { findUnique: findAdvertiser },
-    $transaction: jest.fn(async (callback: (transaction: typeof tx) => unknown) =>
-      callback(tx),
+    $transaction: jest.fn(
+      async (callback: (transaction: typeof tx) => unknown) => callback(tx),
     ),
     refreshActiveCampaignsView,
   };

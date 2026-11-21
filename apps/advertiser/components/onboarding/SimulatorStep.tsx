@@ -55,9 +55,10 @@ export default function SimulatorStep({
   const reduceMotion = useReducedMotion();
 
   const estimate = estimateCampaign(config);
-  const appliedOffer = quoteStatus === "verified" && verifiedOffer?.verifiedDriverCode
-    ? verifiedOffer
-    : null;
+  const appliedOffer =
+    quoteStatus === "verified" && verifiedOffer?.verifiedDriverCode
+      ? verifiedOffer
+      : null;
   const displayedTotal = appliedOffer?.subtotal ?? estimate.total;
   const detailed = estimateCampaignDetailed(config);
   const calibration = getCalibrationBadge();
@@ -256,7 +257,10 @@ export default function SimulatorStep({
         {/* Driver referral is an eligibility claim verified by the API. */}
         {onReferralCodeChange && (
           <div className="space-y-2">
-            <label htmlFor="advertiser-driver-code" className="block text-[11px] font-bold text-white">
+            <label
+              htmlFor="advertiser-driver-code"
+              className="block text-[11px] font-bold text-white"
+            >
               Código de conductor TAD (descuento del 40 %)
             </label>
             <input
@@ -265,13 +269,19 @@ export default function SimulatorStep({
               autoComplete="off"
               maxLength={64}
               value={referralCode}
-              onChange={(event) => onReferralCodeChange(event.target.value.trim())}
+              onChange={(event) =>
+                onReferralCodeChange(event.target.value.trim())
+              }
               aria-describedby="advertiser-driver-code-help"
               className="w-full min-h-11 px-3 rounded-xl bg-white/10 text-white border border-white/30 focus-visible:outline-2 focus-visible:outline-[#FDCB01]"
               placeholder="Introduce el código del conductor"
             />
-            <p id="advertiser-driver-code-help" role="status" aria-live="polite"
-              className="text-[11px] text-[#D7D7D7]">
+            <p
+              id="advertiser-driver-code-help"
+              role="status"
+              aria-live="polite"
+              className="text-[11px] text-[#D7D7D7]"
+            >
               {!referralCode
                 ? "La tarifa base es RD$2,500 por pantalla/mes. El descuento requiere un código válido."
                 : quoteStatus === "verified" && appliedOffer
@@ -282,8 +292,7 @@ export default function SimulatorStep({
                       ? "Código no válido. Comprueba el código o elimínalo para continuar a tarifa base."
                       : quoteStatus === "error"
                         ? "No fue posible validar el código. No aplicamos descuentos sin confirmación."
-                        : "El descuento está pendiente de validación."
-              }
+                        : "El descuento está pendiente de validación."}
             </p>
           </div>
         )}
@@ -347,7 +356,9 @@ export default function SimulatorStep({
             </div>
             {appliedOffer && (
               <div className="flex justify-between gap-4">
-                <span className="text-[#FDCB01]">Código de conductor verificado · 40 %</span>
+                <span className="text-[#FDCB01]">
+                  Código de conductor verificado · 40 %
+                </span>
                 <span className="text-[#FDCB01] font-bold tabular-nums shrink-0">
                   −RD${appliedOffer.discountAmount.toLocaleString()}
                 </span>
@@ -369,10 +380,11 @@ export default function SimulatorStep({
             role="note"
             className="mt-4 pt-4 border-t border-white/[0.06] text-[10px] font-bold leading-relaxed text-[#FDCB01]/90"
           >
-            La tarifa base es RD$2,500 por pantalla/mes (sin ITBIS).
-            El descuento del conductor solo aplica al costo de pantallas y requiere
-            verificación del código por el servidor. La producción creativa opcional
-            se calcula aparte. La simulación no contrata, cobra ni reserva pantallas.
+            La tarifa base es RD$2,500 por pantalla/mes (sin ITBIS). El
+            descuento del conductor solo aplica al costo de pantallas y requiere
+            verificación del código por el servidor. La producción creativa
+            opcional se calcula aparte. La simulación no contrata, cobra ni
+            reserva pantallas.
           </p>
         </div>
       </div>

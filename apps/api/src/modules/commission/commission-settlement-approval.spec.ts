@@ -113,8 +113,9 @@ describe("Commission settlement must not claim bank payment during review", () =
     for (const status of ["APPROVED", "PAID"]) {
       jest.clearAllMocks();
       findUnique.mockResolvedValue({ ...draft, status });
-      await expect(service.approveSettlementBatch("batch-1", "admin-2"))
-        .rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        service.approveSettlementBatch("batch-1", "admin-2"),
+      ).rejects.toBeInstanceOf(ConflictException);
       expect(updateMany).not.toHaveBeenCalled();
       expect(commissionUpdateMany).not.toHaveBeenCalled();
     }
@@ -122,15 +123,18 @@ describe("Commission settlement must not claim bank payment during review", () =
 
   it("rejects a competing admin after the DRAFT CAS loses", async () => {
     updateMany.mockResolvedValue({ count: 0 });
-    await expect(service.approveSettlementBatch("batch-1", "admin-2"))
-      .rejects.toBeInstanceOf(ConflictException);
+    await expect(
+      service.approveSettlementBatch("batch-1", "admin-2"),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(findUniqueOrThrow).not.toHaveBeenCalled();
     expect(commissionUpdateMany).not.toHaveBeenCalled();
   });
 
   it("allows only one of two concurrent administrators to approve", async () => {
     let claims = 0;
-    updateMany.mockImplementation(async () => ({ count: ++claims === 1 ? 1 : 0 }));
+    updateMany.mockImplementation(async () => ({
+      count: ++claims === 1 ? 1 : 0,
+    }));
     const results = await Promise.allSettled([
       service.approveSettlementBatch("batch-1", "admin-1"),
       service.approveSettlementBatch("batch-1", "admin-2"),
@@ -143,8 +147,9 @@ describe("Commission settlement must not claim bank payment during review", () =
 
   it("returns not found without performing any financial operation", async () => {
     findUnique.mockResolvedValue(null);
-    await expect(service.approveSettlementBatch("missing", "admin-1"))
-      .rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.approveSettlementBatch("missing", "admin-1"),
+    ).rejects.toBeInstanceOf(NotFoundException);
     expect(updateMany).not.toHaveBeenCalled();
     expect(commissionUpdateMany).not.toHaveBeenCalled();
   });

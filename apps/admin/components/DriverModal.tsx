@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  X,
-  User,
-  Phone,
-  IdCard,
-  Hash,
-  AlertTriangle,
-} from "lucide-react";
+import { X, User, Phone, IdCard, Hash, AlertTriangle } from "lucide-react";
 import { createDriver } from "@tad/services";
 import { notifyChange } from "@tad/ui";
 import { toast } from "sonner";
@@ -218,7 +211,8 @@ const DriverModal = React.memo(function DriverModal({
             </div>
 
             <p className="text-xs text-zinc-400">
-              El pago se registra y valida por separado en el panel de Administración.
+              El pago se registra y valida por separado en el panel de
+              Administración.
             </p>
           </div>
 

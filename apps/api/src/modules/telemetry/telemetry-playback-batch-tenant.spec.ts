@@ -22,8 +22,16 @@ describe("Telemetry playback PoP — device and event-type isolation", () => {
       {} as never,
     );
 
-  const owner = { deviceId: "OWNER-TABLET", videoId: "VIDEO-1", eventType: "END" as const };
-  const foreign = { deviceId: "OTHER-TABLET", videoId: "VIDEO-1", eventType: "END" as const };
+  const owner = {
+    deviceId: "OWNER-TABLET",
+    videoId: "VIDEO-1",
+    eventType: "END" as const,
+  };
+  const foreign = {
+    deviceId: "OTHER-TABLET",
+    videoId: "VIDEO-1",
+    eventType: "END" as const,
+  };
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -48,10 +56,10 @@ describe("Telemetry playback PoP — device and event-type isolation", () => {
 
   it("rejects a forged runtime play_confirm eventType in a batch", async () => {
     await expect(
-      makeController().recordPlaybackBatch([
-        owner,
-        { ...owner, eventType: "play_confirm" } as never,
-      ], "valid-key"),
+      makeController().recordPlaybackBatch(
+        [owner, { ...owner, eventType: "play_confirm" } as never],
+        "valid-key",
+      ),
     ).resolves.toMatchObject({ success: false, reason: "EVENT_TYPE_INVALID" });
     expect(recordPlaybackBatch).not.toHaveBeenCalled();
     expect(validateTabletKey).not.toHaveBeenCalled();
@@ -70,7 +78,10 @@ describe("Telemetry playback PoP — device and event-type isolation", () => {
 
   it("rejects malformed runtime batches instead of throwing", async () => {
     await expect(
-      makeController().recordPlaybackBatch({ deviceId: owner.deviceId } as never, "valid-key"),
+      makeController().recordPlaybackBatch(
+        { deviceId: owner.deviceId } as never,
+        "valid-key",
+      ),
     ).resolves.toMatchObject({ success: false, reason: "EMPTY_PAYLOAD" });
     await expect(
       makeController().recordPlaybackBatch([owner, null] as never, "valid-key"),

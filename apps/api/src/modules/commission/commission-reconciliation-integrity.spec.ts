@@ -87,8 +87,9 @@ describe("Commission reconciliation must not report false-clean financial status
   ])(
     "rejects invalid reconciliation period month=%s year=%s before any financial reads",
     async (month, year) => {
-      await expect(service.reconcileCommissions(month, year))
-        .rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.reconcileCommissions(month, year),
+      ).rejects.toBeInstanceOf(BadRequestException);
       expect(commissionsRead).not.toHaveBeenCalled();
       expect(financialRead).not.toHaveBeenCalled();
       expect(batchesRead).not.toHaveBeenCalled();
@@ -109,50 +110,74 @@ describe("Commission reconciliation must not report false-clean financial status
   });
 
   it("recognizes a valid PENDING event only with pending source ledger", async () => {
-    currentCommissions = [{ ...commission, status: CommissionStatus.PENDING, settlementBatchId: null }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.PENDING,
+        settlementBatchId: null,
+      },
+    ];
     currentSourceLedger = [{ ...sourceLedger, status: "PENDING" }];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(true);
   });
 
-  const invalidLedgerCases: Array<[string, Partial<typeof sourceLedger>, RegExp]> = [
+  const invalidLedgerCases: Array<
+    [string, Partial<typeof sourceLedger>, RegExp]
+  > = [
     ["wrong driver", { entityId: "other-driver" }, /beneficiary mismatch/],
     ["wrong type", { type: "INCOMING" }, /type\/currency mismatch/],
     ["wrong currency", { currency: "USD" }, /type\/currency mismatch/],
     ["wrong amount", { amount: 450 }, /amount mismatch/],
     ["wrong net amount", { netAmount: 450 }, /net\/tax mismatch/],
     ["wrong withholding", { taxAmount: 50 }, /net\/tax mismatch/],
-    ["pending ledger behind approved wallet credit", { status: "PENDING" }, /status mismatch/],
+    [
+      "pending ledger behind approved wallet credit",
+      { status: "PENDING" },
+      /status mismatch/,
+    ],
   ];
 
   it.each(invalidLedgerCases)(
     "flags %s rather than returning a clean financial report",
     async (_name, changed, pattern) => {
-    currentSourceLedger = [{ ...sourceLedger, ...changed }];
-    const result = await service.reconcileCommissions(11, 2026);
-    expect(result.isClean).toBe(false);
-    expect(result.discrepancies.some((item) => pattern.test(item))).toBe(true);
+      currentSourceLedger = [{ ...sourceLedger, ...changed }];
+      const result = await service.reconcileCommissions(11, 2026);
+      expect(result.isClean).toBe(false);
+      expect(result.discrepancies.some((item) => pattern.test(item))).toBe(
+        true,
+      );
     },
   );
 
   it("does not treat a completed source ledger as valid for a PENDING commission", async () => {
-    currentCommissions = [{ ...commission, status: CommissionStatus.PENDING, settlementBatchId: null }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.PENDING,
+        settlementBatchId: null,
+      },
+    ];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
-    expect(result.discrepancies).toContain("Commission commission-1 source ledger status mismatch");
+    expect(result.discrepancies).toContain(
+      "Commission commission-1 source ledger status mismatch",
+    );
   });
 
   it("does not infer bank transfer from a payout reference containing a driver prefix", async () => {
     currentCommissions = [{ ...commission, status: CommissionStatus.PAID }];
-    currentPayouts = [{
-      id: "fake-payout-1",
-      reference: `PAYOUT-2026-11-${commission.driverId.slice(0, 8)}-unverified`,
-      entityId: "another-driver",
-      status: "COMPLETED",
-      amount: 450,
-      netAmount: 450,
-      taxAmount: 50,
-    }];
+    currentPayouts = [
+      {
+        id: "fake-payout-1",
+        reference: `PAYOUT-2026-11-${commission.driverId.slice(0, 8)}-unverified`,
+        entityId: "another-driver",
+        status: "COMPLETED",
+        amount: 450,
+        netAmount: 450,
+        taxAmount: 50,
+      },
+    ];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.summary.totalPayouts).toBe(1);
@@ -163,42 +188,58 @@ describe("Commission reconciliation must not report false-clean financial status
 
   it("flags PAID without verified bank evidence even when payout entity matches driver", async () => {
     currentCommissions = [{ ...commission, status: CommissionStatus.PAID }];
-    currentPayouts = [{
-      id: "unverified-payout-1",
-      reference: "bank-looking-reference",
-      entityId: commission.driverId,
-      status: "COMPLETED",
-      amount: 450,
-      netAmount: 450,
-      taxAmount: 50,
-    }];
+    currentPayouts = [
+      {
+        id: "unverified-payout-1",
+        reference: "bank-looking-reference",
+        entityId: commission.driverId,
+        status: "COMPLETED",
+        amount: 450,
+        netAmount: 450,
+        taxAmount: 50,
+      },
+    ];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
-    expect(result.discrepancies.some((item) => item.includes("verified bank evidence"))).toBe(true);
+    expect(
+      result.discrepancies.some((item) =>
+        item.includes("verified bank evidence"),
+      ),
+    ).toBe(true);
   });
 
   it("retains missing ledger and unmatched ledger discrepancy checks", async () => {
     currentSourceLedger = [{ ...sourceLedger, reference: "ANOTHER-REFERENCE" }];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
-    expect(result.discrepancies.some((item) => item.includes("has no ledger entry"))).toBe(true);
-    expect(result.discrepancies.some((item) => item.includes("has no matching commission"))).toBe(true);
+    expect(
+      result.discrepancies.some((item) => item.includes("has no ledger entry")),
+    ).toBe(true);
+    expect(
+      result.discrepancies.some((item) =>
+        item.includes("has no matching commission"),
+      ),
+    ).toBe(true);
   });
 
   it("requires a completed cross-month reversal ledger for an approved-then-revoked commission", async () => {
-    currentCommissions = [{
-      ...commission,
-      status: CommissionStatus.REVOKED,
-      approvedAt: new Date("2026-11-06T12:00:00.000Z"),
-      settlementBatchId: null,
-    }];
-    currentReversals = [{
-      ...sourceLedger,
-      id: "reversal-1",
-      reference: "REV-REF-1",
-      type: "INCOMING",
-      createdAt: new Date("2026-12-03T12:00:00.000Z"),
-    }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        approvedAt: new Date("2026-11-06T12:00:00.000Z"),
+        settlementBatchId: null,
+      },
+    ];
+    currentReversals = [
+      {
+        ...sourceLedger,
+        id: "reversal-1",
+        reference: "REV-REF-1",
+        type: "INCOMING",
+        createdAt: new Date("2026-12-03T12:00:00.000Z"),
+      },
+    ];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(true);
     expect(financialRead).toHaveBeenCalledWith({
@@ -218,12 +259,14 @@ describe("Commission reconciliation must not report false-clean financial status
   });
 
   it("reports an approved-then-revoked commission without its reversal ledger", async () => {
-    currentCommissions = [{
-      ...commission,
-      status: CommissionStatus.REVOKED,
-      approvedAt: new Date("2026-11-06T12:00:00.000Z"),
-      settlementBatchId: null,
-    }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        approvedAt: new Date("2026-11-06T12:00:00.000Z"),
+        settlementBatchId: null,
+      },
+    ];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
@@ -244,19 +287,23 @@ describe("Commission reconciliation must not report false-clean financial status
   it.each(corruptReversalCases)(
     "rejects financially invalid %s in a purported reversal ledger",
     async (_name, changed) => {
-      currentCommissions = [{
-        ...commission,
-        status: CommissionStatus.REVOKED,
-        approvedAt: new Date("2026-11-06T12:00:00.000Z"),
-        settlementBatchId: null,
-      }];
-      currentReversals = [{
-        ...sourceLedger,
-        id: "reversal-1",
-        reference: "REV-REF-1",
-        type: "INCOMING",
-        ...changed,
-      }];
+      currentCommissions = [
+        {
+          ...commission,
+          status: CommissionStatus.REVOKED,
+          approvedAt: new Date("2026-11-06T12:00:00.000Z"),
+          settlementBatchId: null,
+        },
+      ];
+      currentReversals = [
+        {
+          ...sourceLedger,
+          id: "reversal-1",
+          reference: "REV-REF-1",
+          type: "INCOMING",
+          ...changed,
+        },
+      ];
       const result = await service.reconcileCommissions(11, 2026);
       expect(result.isClean).toBe(false);
       expect(result.discrepancies).toContain(
@@ -266,24 +313,28 @@ describe("Commission reconciliation must not report false-clean financial status
   );
 
   it("does not expect a reversal for REVOKED commissions never approved", async () => {
-    currentCommissions = [{
-      ...commission,
-      status: CommissionStatus.REVOKED,
-      approvedAt: null,
-      settlementBatchId: null,
-    }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        approvedAt: null,
+        settlementBatchId: null,
+      },
+    ];
     currentSourceLedger = [{ ...sourceLedger, status: "PENDING" }];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(true);
   });
 
   it("flags an unexpected reversal on PENDING or APPROVED commissions", async () => {
-    currentReversals = [{
-      ...sourceLedger,
-      id: "reversal-1",
-      type: "INCOMING",
-      reference: "REV-REF-1",
-    }];
+    currentReversals = [
+      {
+        ...sourceLedger,
+        id: "reversal-1",
+        type: "INCOMING",
+        reference: "REV-REF-1",
+      },
+    ];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
@@ -292,19 +343,23 @@ describe("Commission reconciliation must not report false-clean financial status
   });
 
   it("flags an unexpected reversal for a pending-then-revoked commission", async () => {
-    currentCommissions = [{
-      ...commission,
-      status: CommissionStatus.REVOKED,
-      approvedAt: null,
-      settlementBatchId: null,
-    }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        approvedAt: null,
+        settlementBatchId: null,
+      },
+    ];
     currentSourceLedger = [{ ...sourceLedger, status: "PENDING" }];
-    currentReversals = [{
-      ...sourceLedger,
-      id: "reversal-1",
-      type: "INCOMING",
-      reference: "REV-REF-1",
-    }];
+    currentReversals = [
+      {
+        ...sourceLedger,
+        id: "reversal-1",
+        type: "INCOMING",
+        reference: "REV-REF-1",
+      },
+    ];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
@@ -340,14 +395,18 @@ describe("Commission reconciliation must not report false-clean financial status
     currentCommissions = [{ ...commission, settlementBatchId: null }];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
-    expect(result.discrepancies).toContain("1 APPROVED commissions not assigned to settlement batch");
+    expect(result.discrepancies).toContain(
+      "1 APPROVED commissions not assigned to settlement batch",
+    );
   });
   it("fails reconciliation when an approved credit was revoked without a reversal ledger", async () => {
-    currentCommissions = [{
-      ...commission,
-      status: CommissionStatus.REVOKED,
-      settlementBatchId: null,
-    }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        settlementBatchId: null,
+      },
+    ];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
@@ -356,11 +415,13 @@ describe("Commission reconciliation must not report false-clean financial status
   });
 
   it("accepts a revoked previously credited commission only with exact compensation", async () => {
-    currentCommissions = [{
-      ...commission,
-      status: CommissionStatus.REVOKED,
-      settlementBatchId: null,
-    }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        settlementBatchId: null,
+      },
+    ];
     currentReversals = [validReversal];
 
     const result = await service.reconcileCommissions(11, 2026);
@@ -382,24 +443,28 @@ describe("Commission reconciliation must not report false-clean financial status
   });
 
   it("accepts PENDING to REVOKED without a wallet credit or compensating ledger", async () => {
-    currentCommissions = [{
-      ...commission,
-      status: CommissionStatus.REVOKED,
-      settlementBatchId: null,
-      approvedAt: null,
-    }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        settlementBatchId: null,
+        approvedAt: null,
+      },
+    ];
     currentSourceLedger = [{ ...sourceLedger, status: "PENDING" }];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(true);
   });
 
   it("rejects a PENDING to REVOKED record with a completed source ledger", async () => {
-    currentCommissions = [{
-      ...commission,
-      status: CommissionStatus.REVOKED,
-      settlementBatchId: null,
-      approvedAt: null,
-    }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        settlementBatchId: null,
+        approvedAt: null,
+      },
+    ];
     const result = await service.reconcileCommissions(11, 2026);
     expect(result.isClean).toBe(false);
     expect(result.discrepancies).toContain(
@@ -420,11 +485,13 @@ describe("Commission reconciliation must not report false-clean financial status
   it.each(invalidReversalCases)(
     "rejects %s in a financial reversal rather than marking it clean",
     async (_label, change) => {
-      currentCommissions = [{
-        ...commission,
-        status: CommissionStatus.REVOKED,
-        settlementBatchId: null,
-      }];
+      currentCommissions = [
+        {
+          ...commission,
+          status: CommissionStatus.REVOKED,
+          settlementBatchId: null,
+        },
+      ];
       currentReversals = [{ ...validReversal, ...change }];
 
       const result = await service.reconcileCommissions(11, 2026);
@@ -445,12 +512,14 @@ describe("Commission reconciliation must not report false-clean financial status
   });
 
   it("flags unexpected reversal after revoking a never-approved commission", async () => {
-    currentCommissions = [{
-      ...commission,
-      status: CommissionStatus.REVOKED,
-      settlementBatchId: null,
-      approvedAt: null,
-    }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        settlementBatchId: null,
+        approvedAt: null,
+      },
+    ];
     currentSourceLedger = [{ ...sourceLedger, status: "PENDING" }];
     currentReversals = [validReversal];
     const result = await service.reconcileCommissions(11, 2026);
@@ -461,11 +530,13 @@ describe("Commission reconciliation must not report false-clean financial status
   });
 
   it("reads reversals by exact reference even if revoked in a later month", async () => {
-    currentCommissions = [{
-      ...commission,
-      status: CommissionStatus.REVOKED,
-      settlementBatchId: null,
-    }];
+    currentCommissions = [
+      {
+        ...commission,
+        status: CommissionStatus.REVOKED,
+        settlementBatchId: null,
+      },
+    ];
     currentReversals = [validReversal];
     await service.reconcileCommissions(11, 2026);
     const reversalCalls = financialRead.mock.calls
@@ -490,5 +561,4 @@ describe("Commission reconciliation must not report false-clean financial status
     expect(reversalCalls[0].where.reference.in).toHaveLength(500);
     expect(reversalCalls[1].where.reference.in).toHaveLength(1);
   });
-
 });

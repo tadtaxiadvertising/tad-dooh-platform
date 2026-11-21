@@ -3,10 +3,13 @@ import { AdvertisersService } from "./advertisers.service";
 describe("AdvertisersService.create — referral attribution safety", () => {
   const findDriver = jest.fn();
   const createAdvertiser = jest.fn();
-  const service = new AdvertisersService({
-    driver: { findUnique: findDriver },
-    advertiser: { create: createAdvertiser },
-  } as never, {} as never);
+  const service = new AdvertisersService(
+    {
+      driver: { findUnique: findDriver },
+      advertiser: { create: createAdvertiser },
+    } as never,
+    {} as never,
+  );
   const base = {
     companyName: "Test merchant",
     contactName: "Representative",
@@ -20,7 +23,10 @@ describe("AdvertisersService.create — referral attribution safety", () => {
 
   it("retains a real driver's referral for later approved attribution", async () => {
     findDriver.mockResolvedValue({ id: "driver-real", isSimulated: false });
-    const result = await service.create({ ...base, referralCode: "DRIVER_REAL" });
+    const result = await service.create({
+      ...base,
+      referralCode: "DRIVER_REAL",
+    });
     expect(findDriver).toHaveBeenCalledWith({
       where: { referralCode: "DRIVER_REAL" },
       select: { id: true, isSimulated: true },

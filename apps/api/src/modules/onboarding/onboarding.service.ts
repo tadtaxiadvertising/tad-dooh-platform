@@ -37,17 +37,25 @@ export class OnboardingService {
    * Never trust "discount", "eligible" or "budget" fields submitted by clients.
    */
   private async verifiedOffer(data: OnboardAdvertiserQuoteDto) {
-    const { referralCode, expectedScreens, campaignMonths, includeProduction } = data;
+    const { referralCode, expectedScreens, campaignMonths, includeProduction } =
+      data;
     if (
-      !Number.isSafeInteger(expectedScreens) || expectedScreens < 1 || expectedScreens > 100 ||
+      !Number.isSafeInteger(expectedScreens) ||
+      expectedScreens < 1 ||
+      expectedScreens > 100 ||
       !Number.isSafeInteger(campaignMonths ?? 1) ||
-      (campaignMonths ?? 1) < 1 || (campaignMonths ?? 1) > 12 ||
-      (includeProduction !== undefined && typeof includeProduction !== "boolean")
+      (campaignMonths ?? 1) < 1 ||
+      (campaignMonths ?? 1) > 12 ||
+      (includeProduction !== undefined &&
+        typeof includeProduction !== "boolean")
     ) {
       throw new BadRequestException("Configuración de campaña no válida.");
     }
-    if (referralCode !== undefined &&
-      (typeof referralCode !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(referralCode))) {
+    if (
+      referralCode !== undefined &&
+      (typeof referralCode !== "string" ||
+        !/^[A-Za-z0-9_-]{1,64}$/.test(referralCode))
+    ) {
       throw new BadRequestException("Código de conductor no válido.");
     }
     const referrer = referralCode
@@ -237,7 +245,11 @@ export class OnboardingService {
         );
       }
       this.logger.error("Advertiser onboarding transaction failed");
-      if (error instanceof ConflictException || error instanceof BadRequestException) throw error;
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
+      )
+        throw error;
       throw new InternalServerErrorException(
         "Error al procesar el registro. Intente de nuevo.",
       );
@@ -257,21 +269,29 @@ export class OnboardingService {
   ) {
     if (
       identity?.role !== "ADVERTISER" ||
-      typeof identity.entityId !== "string" || !identity.entityId.trim() ||
-      typeof identity.email !== "string" || !identity.email.trim()
+      typeof identity.entityId !== "string" ||
+      !identity.entityId.trim() ||
+      typeof identity.email !== "string" ||
+      !identity.email.trim()
     ) {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
     }
 
-    const companyName = typeof data?.companyName === "string"
-      ? data.companyName.trim() : "";
-    const contactName = typeof data?.contactName === "string"
-      ? data.contactName.trim() : "";
-    const phone = data?.phone === undefined
-      ? undefined : (typeof data.phone === "string" ? data.phone.trim() : "");
+    const companyName =
+      typeof data?.companyName === "string" ? data.companyName.trim() : "";
+    const contactName =
+      typeof data?.contactName === "string" ? data.contactName.trim() : "";
+    const phone =
+      data?.phone === undefined
+        ? undefined
+        : typeof data.phone === "string"
+          ? data.phone.trim()
+          : "";
     if (
-      companyName.length < 2 || companyName.length > 120 ||
-      contactName.length < 2 || contactName.length > 120 ||
+      companyName.length < 2 ||
+      companyName.length > 120 ||
+      contactName.length < 2 ||
+      contactName.length > 120 ||
       (phone !== undefined && !/^[+0-9 ()-]{7,25}$/.test(phone))
     ) {
       throw new BadRequestException("Los datos del perfil no son válidos.");
@@ -285,7 +305,8 @@ export class OnboardingService {
     if (
       !advertiser ||
       advertiser.id !== identity.entityId ||
-      advertiser.email.trim().toLowerCase() !== identity.email.trim().toLowerCase()
+      advertiser.email.trim().toLowerCase() !==
+        identity.email.trim().toLowerCase()
     ) {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
     }
@@ -295,7 +316,9 @@ export class OnboardingService {
       return { advertiserId: advertiser.id, status: "PENDING_REVIEW" as const };
     }
     if (advertiser.status !== "PENDING_ONBOARDING") {
-      throw new ForbiddenException("Esta cuenta no requiere completar el perfil.");
+      throw new ForbiddenException(
+        "Esta cuenta no requiere completar el perfil.",
+      );
     }
 
     const result = await this.prisma.advertiser.updateMany({
@@ -319,7 +342,9 @@ export class OnboardingService {
     if (latest?.status === "PENDING_REVIEW") {
       return { advertiserId: advertiser.id, status: "PENDING_REVIEW" as const };
     }
-    throw new ConflictException("El estado de la cuenta cambió. Vuelve a iniciar sesión.");
+    throw new ConflictException(
+      "El estado de la cuenta cambió. Vuelve a iniciar sesión.",
+    );
   }
 
   /**

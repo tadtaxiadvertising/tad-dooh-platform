@@ -20,8 +20,7 @@ describe("CommissionService financial amount validation before idempotent create
   };
   const prisma = {
     $transaction: jest.fn(
-      async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
+      async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
     ),
   };
   const service = new CommissionService(prisma as never);
@@ -49,30 +48,42 @@ describe("CommissionService financial amount validation before idempotent create
   });
 
   it.each([
-    0, -500, -0.01, Number.NaN, Number.POSITIVE_INFINITY,
-    Number.NEGATIVE_INFINITY, 0.001, 1.234, 0.009,
+    0,
+    -500,
+    -0.01,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+    0.001,
+    1.234,
+    0.009,
     Number.MAX_SAFE_INTEGER,
-  ])("rejects invalid amount %s before opening a transaction", async (amount) => {
-    await expect(service.createIdempotent(input(amount)))
-      .rejects.toBeInstanceOf(BadRequestException);
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(findDriver).not.toHaveBeenCalled();
-    expect(createCommission).not.toHaveBeenCalled();
-    expect(createLedgerEntry).not.toHaveBeenCalled();
-  });
+  ])(
+    "rejects invalid amount %s before opening a transaction",
+    async (amount) => {
+      await expect(
+        service.createIdempotent(input(amount)),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(findDriver).not.toHaveBeenCalled();
+      expect(createCommission).not.toHaveBeenCalled();
+      expect(createLedgerEntry).not.toHaveBeenCalled();
+    },
+  );
 
-  it.each([
-    "500", null, undefined, {}, [],
-  ])("rejects non-number amount %p without touching DB", async (amount) => {
-    await expect(
-      service.createIdempotent({
-        ...input(500),
-        amount: amount as number,
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(createLedgerEntry).not.toHaveBeenCalled();
-  });
+  it.each(["500", null, undefined, {}, []])(
+    "rejects non-number amount %p without touching DB",
+    async (amount) => {
+      await expect(
+        service.createIdempotent({
+          ...input(500),
+          amount: amount as number,
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(createLedgerEntry).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([0.01, 0.29, 1.25, 500, 1000000.23])(
     "accepts finite cent-denominated RD$ %s and creates matching ledger",

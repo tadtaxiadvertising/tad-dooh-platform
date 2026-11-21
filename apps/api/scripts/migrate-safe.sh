@@ -36,6 +36,19 @@ node ../../scripts/verify-supabase-runtime-target.cjs
 # Retain the existing runtime/migration consistency preflight as defense in depth.
 node ./scripts/check-supabase-target.cjs
 
+# An already-diverged database cannot safely receive normal pending migrations:
+# the old order attempted SQL writes before discovering this unsafe state.
+# Read-only metadata parity MUST succeed before the FIRST schema write.
+# Reconcile preexisting drift only through a separately reviewed restore-first
+# recovery plan; there is intentionally no emergency bypass here.
+if DATABASE_URL="$DIRECT_URL" node ./scripts/check-prisma-drift.cjs; then
+  echo "[migration] Preflight schema parity PASS; normal migrate deploy permitted."
+else
+  status="$?"
+  echo "[migration] REFUSED: preexisting schema drift ($status); no migration executed." >&2
+  exit "$status"
+fi
+
 # Prisma's datasource uses DATABASE_URL; temporarily point ONLY this
 # subprocess at the verified direct/session migration connection.
 DATABASE_URL="$DIRECT_URL" pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma

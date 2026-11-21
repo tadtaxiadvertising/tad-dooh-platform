@@ -24,6 +24,7 @@ const fixtures = Object.freeze({
   DATABASE_URL: "postgresql://runtime:fixture-only@runtime.invalid:6543/fixture",
   SUPABASE_URL: "https://fixture-project.supabase.invalid",
   DIRECT_URL: "postgresql://direct:fixture-only@direct.invalid:5432/fixture",
+  TAD_EXPECTED_SUPABASE_PROJECT_REF: "aaaaaaaaaaaaaaaaaaaa",
 });
 const migrateMarker = "[fixture] migration invoked";
 
@@ -35,6 +36,13 @@ const boundary = `node() {
     return 91
   fi
   case "\${1-}" in
+    "../../scripts/verify-supabase-runtime-target.cjs")
+      if [ "\${TAD_TEST_PINNED_FAIL:-}" = "1" ]; then
+        echo "[fixture] independently pinned target mismatch" >&2
+        return 17
+      fi
+      echo "[fixture] pinned project checked"
+      ;;
     "./scripts/check-supabase-target.cjs")
       if [ "\${TAD_TEST_PREFLIGHT_FAIL:-}" = "1" ]; then
         echo "[fixture] target mismatch" >&2
@@ -129,6 +137,13 @@ test("manual migration requires explicit YES even with complete database configu
   assert.doesNotMatch(result.output, /target checked|migration invoked/);
 });
 
+test("independently pinned target mismatch refuses before invoking Prisma", () => {
+  const result = execute({ ...fixtures, TAD_TEST_PINNED_FAIL: "1" });
+  assert.equal(result.status, 17);
+  assert.match(result.output, /independently pinned target mismatch/);
+  assert.doesNotMatch(result.output, /migration invoked|target checked|schema verified/);
+});
+
 test("an unverified Supabase target blocks migration", () => {
   const result = execute({ ...fixtures, TAD_TEST_PREFLIGHT_FAIL: "1" });
   assert.equal(result.status, 19);
@@ -149,6 +164,7 @@ test("successful migration is not declared complete until schema parity passes",
   const result = execute({ ...fixtures, TAD_TEST_MIGRATE_STATUS: "0" });
   assert.equal(result.status, 0);
   assert.match(result.output, /migration invoked/);
+  assert.match(result.output, /pinned project checked/);
   assert.match(result.output, /schema verified/);
 });
 

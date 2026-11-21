@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { persistPlaybackEvent } from "../../src/playback-queue-storage.ts";
+import { persistPlaybackEvent, removeAcknowledgedPlaybackEvents } from "../../src/playback-queue-storage.ts";
 
 const event = Object.freeze({
   device_id: "STORED-DEVICE", video_id: "VIDEO-1", event_type: "play_confirm",
@@ -87,4 +87,132 @@ test("uses event device identity when player has not been initialized", async ()
   assert.equal(state.putCalls[0].device_id, "STORED-DEVICE");
   tx.oncomplete();
   await promise;
+});
+
+// The fake store holds changes until the transaction commits. Request success
+// alone never commits a queued Proof-of-Play cleanup.
+function mockAckDatabase(events) {
+  const records = new Map(events.map((e) => [`${e.video_id}_${e.timestamp}`, e]));
+  const pendingDeletes = new Set();
+  const requests = [];
+  let aborted = false;
+  const store = {
+    get(key) {
+      const request = { result: undefined, onsuccess: null };
+      requests.push({ key, request });
+      return request;
+    },
+    delete(key) {
+      pendingDeletes.add(key);
+      return {};
+    },
+  };
+  const tx = {
+    oncomplete: null, onabort: null, onerror: null, error: null,
+    objectStore(name) {
+      assert.equal(name, "events");
+      return store;
+    },
+    abort() {
+      aborted = true;
+      pendingDeletes.clear();
+      this.onabort?.();
+    },
+  };
+  return {
+    db: { transaction(name, mode) {
+      assert.equal(name, "events");
+      assert.equal(mode, "readwrite");
+      return tx;
+    } },
+    tx, records, requests, pendingDeletes,
+    respond(index, result = records.get(requests[index].key)) {
+      requests[index].request.result = result;
+      requests[index].request.onsuccess?.();
+    },
+    commit() {
+      assert.equal(aborted, false);
+      for (const key of pendingDeletes) records.delete(key);
+      tx.oncomplete?.();
+    },
+  };
+}
+
+const acknowledgementEvent = Object.freeze({
+  ...event, queuedAt: 1732100001000,
+});
+
+test("acknowledged playback is not locally marked removed before transaction commit", async () => {
+  const store = mockAckDatabase([acknowledgementEvent]);
+  let settled = false;
+  const pending = removeAcknowledgedPlaybackEvents(store.db, "events", [acknowledgementEvent])
+    .then(() => { settled = true; });
+  store.respond(0);
+  assert.equal(store.pendingDeletes.size, 1);
+  await Promise.resolve();
+  assert.equal(settled, false);
+  assert.equal(store.records.size, 1);
+  store.commit();
+  await pending;
+  assert.equal(settled, true);
+  assert.equal(store.records.size, 0);
+});
+
+test("two acknowledged playback entries are removed in one committed transaction", async () => {
+  const second = { ...acknowledgementEvent, video_id: "VIDEO-2", timestamp: 1732100002000 };
+  const store = mockAckDatabase([acknowledgementEvent, second]);
+  const pending = removeAcknowledgedPlaybackEvents(store.db, "events", [acknowledgementEvent, second]);
+  assert.equal(store.requests.length, 2);
+  store.respond(0);
+  store.respond(1);
+  assert.equal(store.pendingDeletes.size, 2);
+  store.commit();
+  await pending;
+  assert.equal(store.records.size, 0);
+});
+
+test("transaction abort after delete requests retains every acknowledged event", async () => {
+  const store = mockAckDatabase([acknowledgementEvent]);
+  const pending = removeAcknowledgedPlaybackEvents(store.db, "events", [acknowledgementEvent]);
+  store.respond(0);
+  store.tx.error = new Error("STORAGE_ABORT");
+  store.tx.abort();
+  await assert.rejects(pending, /STORAGE_ABORT/);
+  assert.equal(store.records.size, 1);
+});
+
+test("overwritten unacknowledged event aborts cleanup and rolls back previous deletes", async () => {
+  const second = { ...acknowledgementEvent, video_id: "VIDEO-2", timestamp: 1732100002000 };
+  const store = mockAckDatabase([acknowledgementEvent, second]);
+  const pending = removeAcknowledgedPlaybackEvents(store.db, "events", [acknowledgementEvent, second]);
+  store.respond(0);
+  store.respond(1, { ...second, event_type: "play_start" });
+  await assert.rejects(pending, /PLAYBACK_QUEUE_ACK_ABORTED/);
+  assert.equal(store.records.size, 2);
+  assert.equal(store.pendingDeletes.size, 0);
+});
+
+test("reused key with a newer queuedAt value is not deleted by an old ACK", async () => {
+  const store = mockAckDatabase([acknowledgementEvent]);
+  const pending = removeAcknowledgedPlaybackEvents(store.db, "events", [acknowledgementEvent]);
+  store.respond(0, { ...acknowledgementEvent, queuedAt: acknowledgementEvent.queuedAt + 1 });
+  await assert.rejects(pending, /PLAYBACK_QUEUE_ACK_ABORTED/);
+  assert.equal(store.pendingDeletes.size, 0);
+});
+
+test("already-removed records do not trigger deletion of unrelated events", async () => {
+  const store = mockAckDatabase([]);
+  const pending = removeAcknowledgedPlaybackEvents(store.db, "events", [acknowledgementEvent]);
+  store.respond(0);
+  assert.equal(store.pendingDeletes.size, 0);
+  store.commit();
+  await pending;
+});
+
+test("failed IndexedDB cleanup transaction propagates an error for retry", async () => {
+  const store = mockAckDatabase([acknowledgementEvent]);
+  const pending = removeAcknowledgedPlaybackEvents(store.db, "events", [acknowledgementEvent]);
+  store.tx.onerror?.();
+  await assert.rejects(pending, /PLAYBACK_QUEUE_ACK_FAILED/);
+  assert.equal(store.records.size, 1);
 });

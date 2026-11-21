@@ -6,7 +6,7 @@
 import type { PlaybackEvent } from "./types";
 import env from "./config";
 import { buildPlaybackApiPayload } from "./playback-event-type";
-import { persistPlaybackEvent } from "./playback-queue-storage";
+import { persistPlaybackEvent, removeAcknowledgedPlaybackEvents } from "./playback-queue-storage";
 
 const QUEUE_DB_NAME = "tad_playback_queue";
 const QUEUE_DB_VERSION = 1;
@@ -111,9 +111,9 @@ export class PlaybackQueue {
         acknowledgement.rejected === 0;
 
       if (fullyAccepted) {
-        for (const event of events) {
-          await this.removeEvent(`${event.video_id}_${event.timestamp}`);
-        }
+        // A batch is locally acknowledged only after every covered record
+        // has been deleted in one committed IndexedDB transaction.
+        await removeAcknowledgedPlaybackEvents(db, QUEUE_STORE, events);
         sent = events.length;
       } else {
         // Preserve the entire local batch for retry/reconciliation if any
@@ -123,9 +123,11 @@ export class PlaybackQueue {
           `[PlaybackQueue] Batch unacknowledged: HTTP ${response.status}, reason=${acknowledgement?.reason || "PARTIAL_OR_INVALID_ACK"}`,
         );
       }
-    } catch (err) {
+    } catch {
       failed = events.length;
-      console.warn("[PlaybackQueue] Network error during flush:", err);
+      // Could be network failure or an IndexedDB transaction rollback.
+      // Avoid logging raw requests, credentials or stored proof payloads.
+      console.warn("[PlaybackQueue] Delivery or local ACK cleanup failed; proofs remain pending.");
     }
 
     return { sent, failed };
@@ -137,17 +139,6 @@ export class PlaybackQueue {
         console.error("[PlaybackQueue] Flush error:", err);
       });
     }, env.PLAYBACK_FLUSH_INTERVAL_MS);
-  }
-
-  private async removeEvent(id: string): Promise<void> {
-    const db = await this.dbReady;
-    return new Promise((resolve) => {
-      const tx = db.transaction(QUEUE_STORE, "readwrite");
-      const store = tx.objectStore(QUEUE_STORE);
-      const req = store.delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = () => resolve();
-    });
   }
 
   private async openDB(): Promise<IDBDatabase> {

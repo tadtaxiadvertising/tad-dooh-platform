@@ -79,7 +79,7 @@ test("API mailer uses a patched maintained Nodemailer and its bundled types", ()
   const api = JSON.parse(fs.readFileSync(path.join(ROOT, "apps/api/package.json"), "utf8"));
   // A later patched 10.x release is valid; never pin this security check
   // to a stale literal version while the lockfile advances.
-  const declared = /^\\^10\\.(\\d+)\\.(\\d+)$/.exec(api.dependencies.nodemailer);
+  const declared = /^\^10\.(\d+)\.(\d+)$/.exec(api.dependencies.nodemailer);
   assert.ok(declared, "Nodemailer must declare a bounded ^10.x.y release.");
   const [, declaredMinor, declaredPatch] = declared.map(Number);
   assert.ok(

@@ -58,8 +58,8 @@ test("Next security acceptance uses root pinned pnpm without conflicting major o
   const pkg = JSON.parse(read("package.json"));
   const workflow = read(".github/workflows/next-security-acceptance.yml");
   assert.equal(pkg.packageManager, "pnpm@10.34.9");
-  assert.match(workflow, /uses: pnpm\\/action-setup@v4/);
-  assert.doesNotMatch(workflow, /^\\s+version: 10\\s*$/m);
+  assert.match(workflow, /uses: pnpm\/action-setup@v4/);
+  assert.doesNotMatch(workflow, /^\s+version: 10\s*$/m);
   assert.match(workflow, /pnpm install --frozen-lockfile/);
   assert.match(workflow, /pnpm audit --audit-level=critical/);
 });

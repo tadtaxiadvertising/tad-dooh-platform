@@ -55,6 +55,10 @@ const boundary = `node() {
         echo "[fixture] drift check used wrong database" >&2
         return 93
       fi
+      if [ "\${TAD_TEST_DRIFT_QUERY_ERROR:-}" = "1" ]; then
+        echo "[fixture] catalog inspection unavailable" >&2
+        return 2
+      fi
       if [ "\${TAD_TEST_DRIFT_FAIL:-}" = "1" ] || { [ "\${TAD_TEST_DRIFT_POST_FAIL:-}" = "1" ] && [ "\${TAD_TEST_MIGRATION_INVOKED:-}" = "1" ]; }; then
         echo "[fixture] schema drift detected" >&2
         return 31
@@ -175,6 +179,14 @@ test("preexisting schema drift refuses before migration starts", () => {
   assert.equal(result.status, 31);
   assert.match(result.output, /schema drift detected/);
   assert.match(result.output, /REFUSED: preexisting schema drift/);
+  assert.doesNotMatch(result.output, /migration invoked/);
+});
+
+test("catalog query failure also blocks Prisma without a database write", () => {
+  const result = execute({ ...fixtures, TAD_TEST_DRIFT_QUERY_ERROR: "1" });
+  assert.equal(result.status, 2);
+  assert.match(result.output, /catalog inspection unavailable/);
+  assert.match(result.output, /REFUSED: preexisting schema drift \(2\)/);
   assert.doesNotMatch(result.output, /migration invoked/);
 });
 

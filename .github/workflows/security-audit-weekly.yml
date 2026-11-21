@@ -209,7 +209,7 @@ jobs:
           # Fail on new ERRORs (excluding known blocked ones)
           KNOWN_BLOCKED_ERRORS='["rls_disabled_in_public"]'
           NEW_ERRORS=$(echo "$ADVISORIES" | jq --argjson known "$KNOWN_BLOCKED_ERRORS" \
-            '[.[] | select(.level=="ERROR" and (.name | IN($known[])) | not)]')
+            '[.[] | select(.level=="ERROR" and ((.name | IN($known[])) | not))]')
           NEW_ERROR_COUNT=$(echo "$NEW_ERRORS" | jq 'length')
           
           if [ "$NEW_ERROR_COUNT" -gt 0 ]; then
@@ -221,7 +221,7 @@ jobs:
           # Warn on new WARNs (excluding known)
           KNOWN_WARNS='["extension_in_public","anon_security_definer_function_executable","authenticated_security_definer_function_executable"]'
           NEW_WARNS=$(echo "$ADVISORIES" | jq --argjson known "$KNOWN_WARNS" \
-            '[.[] | select(.level=="WARN" and (.name | IN($known[])) | not)]')
+            '[.[] | select(.level=="WARN" and ((.name | IN($known[])) | not))]')
           NEW_WARN_COUNT=$(echo "$NEW_WARNS" | jq 'length')
           
           if [ "$NEW_WARN_COUNT" -gt 0 ]; then
@@ -241,12 +241,14 @@ jobs:
             echo "mutable_funcs=true" >> $GITHUB_OUTPUT
           fi
           
-          # Check for critical DB size
-          if [ "${DB_SIZE_MB:-0}" -gt 450 ]; then
-            exit 1
-          fi
-          
-          if [ "${new_errors:-false}" = "true" ] || [ "${new_grants:-false}" = "true" ] || [ "${mutable_funcs:-false}" = "true" ] || [ "${db_critical:-false}" = "true" ]; then
+          # The GITHUB_OUTPUT file does NOT set variables in this Bash process.
+          # Fail closed using the actual counters, never ${new_errors:-false}
+          # or other undefined local flags. Keep output flags for issue reporting.
+          if [ "$NEW_ERROR_COUNT" -gt 0 ] ||
+             [ "$GRANT_COUNT" -gt 0 ] ||
+             [ "$MUTABLE_FUNCS" -gt 0 ] ||
+             [ "${DB_SIZE_MB:-0}" -gt 450 ]; then
+            echo "::error::Weekly Supabase audit failed one or more security checks."
             exit 1
           fi
           

@@ -3,7 +3,8 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { execFileSync, spawnSync } = require("node:child_process");
-const { readFileSync } = require("node:fs");
+const { readFileSync, mkdtempSync, rmSync } = require("node:fs");
+const os = require("node:os");
 const vm = require("node:vm");
 const path = require("node:path");
 
@@ -256,4 +257,55 @@ test("weekly audit failure reporter creates sanitized issue without summary, aft
 
   const nonAudit = await simulate(undefined, { AUDIT_OUTCOME: "success" });
   assert.match(nonAudit, /Workflow failed in setup, artifact upload/);
+});
+
+test("Slack weekly notifications never expose webhook URL through curl process argv", {
+  skip: process.platform === "win32",
+}, () => {
+  const source = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  const privateFixture = "https://example.invalid/webhook/PRIVATE_FIXTURE_URL_MARKER";
+  for (const name of ["Slack Notification on failure", "Slack Notification on success"]) {
+    const section = source.split("      - name: " + name + "\n")[1]
+      ?.split("\n      - name: ")[0];
+    assert.ok(section, "Expected Slack step: " + name);
+    const block = section.split("        run: |\n")[1];
+    assert.ok(block, "Expected Slack shell script");
+    const shell = block.split("\n")
+      .map(line => line.startsWith("          ") ? line.slice(10) : line)
+      .join("\n").replace(/\$\{\{[^}]*\}\}/g, "synthetic-github-value");
+    assert.doesNotMatch(shell, /["']\$SLACK_WEBHOOK_URL["']\s*(?:$|\n)/m);
+    assert.match(shell, /--config - <<CURL_CONFIG/);
+    assert.match(shell, /url = "\$SLACK_WEBHOOK_URL"/);
+
+    const folder = mkdtempSync(path.join(os.tmpdir(), "tad-slack-argv-"));
+    try {
+      const argvFile = path.join(folder, "args.txt");
+      const configFile = path.join(folder, "config.txt");
+      const mock = [
+        "curl() {",
+        "  printf '%s\\n' \"$@\" > \"$TAD_CURL_ARGV_OUT\"",
+        "  cat > \"$TAD_CURL_CONFIG_OUT\"",
+        "}",
+      ].join("\n");
+      const run = spawnSync("bash", ["-c", mock + "\n" + shell], {
+        env: {
+          PATH: process.env.PATH || "",
+          SLACK_WEBHOOK_URL: privateFixture,
+          TAD_CURL_ARGV_OUT: argvFile,
+          TAD_CURL_CONFIG_OUT: configFile,
+        },
+        encoding: "utf8",
+        timeout: 4000,
+      });
+      assert.equal(run.status, 0, "Slack synthetic notification shell failed");
+      const argv = readFileSync(argvFile, "utf8");
+      const config = readFileSync(configFile, "utf8");
+      assert.ok(!argv.includes(privateFixture), "Webhook must not appear in curl argv");
+      assert.match(argv, /--config\n-\n/);
+      assert.ok(config.includes(privateFixture), "Webhook should be curl stdin config only");
+      assert.ok(!run.stdout.includes(privateFixture) && !run.stderr.includes(privateFixture));
+    } finally {
+      rmSync(folder, { recursive: true, force: true });
+    }
+  }
 });

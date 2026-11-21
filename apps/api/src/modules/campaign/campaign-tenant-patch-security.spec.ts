@@ -52,16 +52,19 @@ describe("Campaign tenant patch and list authorization", () => {
     ["status", "ACTIVE"],
     ["isGlobal", true],
     ["name", "unauthorized edit"],
-  ])("rejects privileged advertiser PATCH %s BEFORE service mutation", async (field, value) => {
-    await expect(
-      controller.updateCampaign(
-        "campaign-1",
-        { [field]: value } as never,
-        req(UserRole.ADVERTISER, "advertiser-A"),
-      ),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-    expect(updateCampaign).not.toHaveBeenCalled();
-  });
+  ])(
+    "rejects privileged advertiser PATCH %s BEFORE service mutation",
+    async (field, value) => {
+      await expect(
+        controller.updateCampaign(
+          "campaign-1",
+          { [field]: value } as never,
+          req(UserRole.ADVERTISER, "advertiser-A"),
+        ),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(updateCampaign).not.toHaveBeenCalled();
+    },
+  );
 
   it("rejects mixing safe links with unsafe fields", async () => {
     await expect(
@@ -85,7 +88,14 @@ describe("Campaign tenant patch and list authorization", () => {
     expect(updateCampaign).not.toHaveBeenCalled();
   });
 
-  it.each([{}, null, [], { whatsapp: 42 }, { whatsapp: { nested: "bad" } }, { whatsapp: "x".repeat(2049) }])(
+  it.each([
+    {},
+    null,
+    [],
+    { whatsapp: 42 },
+    { whatsapp: { nested: "bad" } },
+    { whatsapp: "x".repeat(2049) },
+  ])(
     "rejects malformed or empty advertiser patch payloads",
     async (payload) => {
       await expect(
@@ -169,9 +179,9 @@ describe("Campaign tenant patch and list authorization", () => {
   });
 
   it("preserves global campaign listing for ADMIN", async () => {
-    await expect(controller.getAllCampaigns(req(UserRole.ADMIN))).resolves.toEqual([
-      { id: "admin-result" },
-    ]);
+    await expect(
+      controller.getAllCampaigns(req(UserRole.ADMIN)),
+    ).resolves.toEqual([{ id: "admin-result" }]);
     expect(getAllCampaigns).toHaveBeenCalledTimes(1);
     expect(findMany).not.toHaveBeenCalled();
   });

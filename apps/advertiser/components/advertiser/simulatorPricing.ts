@@ -37,8 +37,12 @@ function requireIllustrativeRate(sourceId: string): number {
   }
   return value;
 }
-export const SCREEN_MONTHLY_RATE = requireIllustrativeRate("screen-monthly-rate-rd");
-export const PRODUCTION_FEE = requireIllustrativeRate("creative-production-fee");
+export const SCREEN_MONTHLY_RATE = requireIllustrativeRate(
+  "screen-monthly-rate-rd",
+);
+export const PRODUCTION_FEE = requireIllustrativeRate(
+  "creative-production-fee",
+);
 export const DAILY_ACTIVE_HOURS = 10;
 export const ATTENTION_RATE = 0.4;
 export const FIXED_FREQUENCY_SECONDS = 30;

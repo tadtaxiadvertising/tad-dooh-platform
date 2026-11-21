@@ -293,7 +293,9 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
   });
 
   it("rejects forged legacy advertiser JWTs even if unsigned claims say ADVERTISER", async () => {
-    const token = jwt.sign(legacyPayload, "different-secret", { expiresIn: "1h" });
+    const token = jwt.sign(legacyPayload, "different-secret", {
+      expiresIn: "1h",
+    });
     verifyAdvertiserSession.mockRejectedValueOnce(
       new UnauthorizedException("Session invalid"),
     );
@@ -348,8 +350,9 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
         }),
       }),
     } as unknown as ExecutionContext;
-    expect(() => tenantGuard.canActivate(otherTenantContext))
-      .toThrow(UnauthorizedException);
+    expect(() => tenantGuard.canActivate(otherTenantContext)).toThrow(
+      UnauthorizedException,
+    );
   });
 
   it("rejects otherwise trusted legacy claims without an email", async () => {
@@ -383,5 +386,4 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     expect(verifyAdvertiserSession).not.toHaveBeenCalled();
     expect(getUser).not.toHaveBeenCalled();
   });
-
 });

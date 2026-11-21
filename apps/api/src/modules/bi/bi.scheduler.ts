@@ -110,7 +110,9 @@ export class BiScheduler {
    */
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async handleIdempotencyCleanup() {
-    this.logger.log("🔎 [IDEMPOTENCY_RETENTION] Checking records for reconciliation/archival...");
+    this.logger.log(
+      "🔎 [IDEMPOTENCY_RETENTION] Checking records for reconciliation/archival...",
+    );
     try {
       // An old lock may represent a payment that committed just before
       // an API crash. Never release it based on age alone.

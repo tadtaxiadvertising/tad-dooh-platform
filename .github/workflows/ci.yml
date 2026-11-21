@@ -45,9 +45,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ -d packages/ui/src ]; then
-            pnpm dlx prettier --check "packages/ui/src/**/*.{ts,tsx}"
+            pnpm dlx prettier@3.9.10 --check "packages/ui/src/**/*.{ts,tsx}"
           fi
-          pnpm dlx prettier --check "apps/**/*.{ts,tsx}"
+          pnpm dlx prettier@3.9.10 --check "apps/**/*.{ts,tsx}"
 
       - name: Lint (ESLint)
         run: |

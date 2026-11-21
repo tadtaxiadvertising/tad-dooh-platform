@@ -37,7 +37,11 @@ describe("QrScan referral statistics tenant isolation", () => {
 
   it("routes a DRIVER through database ownership instead of the admin metrics path", async () => {
     await expect(
-      controller.getReferralStats("REF-OWN", "7", req(UserRole.DRIVER, "driver-1")),
+      controller.getReferralStats(
+        "REF-OWN",
+        "7",
+        req(UserRole.DRIVER, "driver-1"),
+      ),
     ).resolves.toEqual({ success: true, stats: { totalScans: 2 } });
     expect(driverStats).toHaveBeenCalledWith("REF-OWN", "driver-1", 7);
     expect(adminStats).not.toHaveBeenCalled();
@@ -49,17 +53,24 @@ describe("QrScan referral statistics tenant isolation", () => {
     [req(UserRole.DRIVER, ""), "driver empty entity ID"],
     [req("ADVERTISER", "driver-1"), "unprivileged role"],
   ];
-  it.each(deniedRequests)("rejects %s (%s) before accessing any statistics", async (request) => {
-    await expect(
-      controller.getReferralStats("REF-OTHER", undefined, request),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-    expect(adminStats).not.toHaveBeenCalled();
-    expect(driverStats).not.toHaveBeenCalled();
-  });
+  it.each(deniedRequests)(
+    "rejects %s (%s) before accessing any statistics",
+    async (request) => {
+      await expect(
+        controller.getReferralStats("REF-OTHER", undefined, request),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(adminStats).not.toHaveBeenCalled();
+      expect(driverStats).not.toHaveBeenCalled();
+    },
+  );
 
   it("rejects an invalid days window before either metrics path", async () => {
     await expect(
-      controller.getReferralStats("REF-OWN", "366", req(UserRole.DRIVER, "driver-1")),
+      controller.getReferralStats(
+        "REF-OWN",
+        "366",
+        req(UserRole.DRIVER, "driver-1"),
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(adminStats).not.toHaveBeenCalled();
     expect(driverStats).not.toHaveBeenCalled();
@@ -75,10 +86,11 @@ describe("QrScan referral statistics tenant isolation", () => {
 
     beforeEach(() => {
       jest.resetAllMocks();
-      driverRead.mockImplementation(async ({ where }: { where: { id: string; referralCode: string } }) =>
-        where.id === "driver-1" && where.referralCode === "REF-OWN"
-          ? { id: "driver-1" }
-          : null,
+      driverRead.mockImplementation(
+        async ({ where }: { where: { id: string; referralCode: string } }) =>
+          where.id === "driver-1" && where.referralCode === "REF-OWN"
+            ? { id: "driver-1" }
+            : null,
       );
       scanRead.mockResolvedValue([
         { id: "scan-1", converted: true, driverId: "driver-1" },
@@ -87,7 +99,11 @@ describe("QrScan referral statistics tenant isolation", () => {
     });
 
     it("queries only the authenticated driver's exact referral code", async () => {
-      const stats = await service.getDriverReferralStats("REF-OWN", "driver-1", 30);
+      const stats = await service.getDriverReferralStats(
+        "REF-OWN",
+        "driver-1",
+        30,
+      );
       expect(stats.totalScans).toBe(2);
       expect(stats.conversions).toBe(1);
       expect(driverRead).toHaveBeenCalledWith({
@@ -108,12 +124,15 @@ describe("QrScan referral statistics tenant isolation", () => {
       ["REF-OWN", "other-driver"],
       ["REF-OWN", ""],
       ["", "driver-1"],
-    ])("blocks foreign or missing ownership for code=%s driver=%s before any scan read", async (code, driver) => {
-      await expect(
-        service.getDriverReferralStats(code, driver, 30),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-      expect(scanRead).not.toHaveBeenCalled();
-    });
+    ])(
+      "blocks foreign or missing ownership for code=%s driver=%s before any scan read",
+      async (code, driver) => {
+        await expect(
+          service.getDriverReferralStats(code, driver, 30),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+        expect(scanRead).not.toHaveBeenCalled();
+      },
+    );
 
     it("fails closed on a driver lookup outage, without reading QR metrics", async () => {
       driverRead.mockRejectedValue(new Error("database unavailable"));

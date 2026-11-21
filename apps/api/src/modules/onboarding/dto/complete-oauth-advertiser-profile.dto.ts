@@ -1,9 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  Length,
-  Matches,
-} from "class-validator";
+import { IsOptional, IsString, Length, Matches } from "class-validator";
 
 /**
  * Completes the existing Supabase OAuth advertiser, never creates an account.

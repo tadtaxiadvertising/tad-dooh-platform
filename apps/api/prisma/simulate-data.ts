@@ -2,9 +2,10 @@ import type { Advertiser, Driver, Device, Campaign } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 
-const { assertLocalSeedAllowed } = require("../scripts/assert-local-seed.cjs") as {
-  assertLocalSeedAllowed: (env: NodeJS.ProcessEnv) => void;
-};
+const { assertLocalSeedAllowed } =
+  require("../scripts/assert-local-seed.cjs") as {
+    assertLocalSeedAllowed: (env: NodeJS.ProcessEnv) => void;
+  };
 assertLocalSeedAllowed(process.env);
 
 const prisma = new PrismaClient();

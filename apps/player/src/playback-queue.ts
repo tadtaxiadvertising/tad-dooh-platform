@@ -6,7 +6,10 @@
 import type { PlaybackEvent } from "./types";
 import env from "./config";
 import { buildPlaybackApiPayload } from "./playback-event-type";
-import { persistPlaybackEvent, removeAcknowledgedPlaybackEvents } from "./playback-queue-storage";
+import {
+  persistPlaybackEvent,
+  removeAcknowledgedPlaybackEvents,
+} from "./playback-queue-storage";
 
 const QUEUE_DB_NAME = "tad_playback_queue";
 const QUEUE_DB_VERSION = 1;
@@ -15,7 +18,8 @@ const QUEUE_STORE = "events";
 export class PlaybackQueue {
   private dbReady: Promise<IDBDatabase>;
   private flushTimer: ReturnType<typeof setInterval> | null = null;
-  private flushInFlight: Promise<{ sent: number; failed: number }> | null = null;
+  private flushInFlight: Promise<{ sent: number; failed: number }> | null =
+    null;
   private deviceId: string = "";
 
   constructor() {
@@ -127,7 +131,9 @@ export class PlaybackQueue {
       failed = events.length;
       // Could be network failure or an IndexedDB transaction rollback.
       // Avoid logging raw requests, credentials or stored proof payloads.
-      console.warn("[PlaybackQueue] Delivery or local ACK cleanup failed; proofs remain pending.");
+      console.warn(
+        "[PlaybackQueue] Delivery or local ACK cleanup failed; proofs remain pending.",
+      );
     }
 
     return { sent, failed };

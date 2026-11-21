@@ -39,16 +39,26 @@ export class TenantGuard implements CanActivate {
     // tenant parameter must satisfy ALL ownership checks (never first-match).
     // Do not change generic :id behavior: existing controllers depend on it.
     const params = request.params || {};
-    const scopedIds: Array<{ key: string; id: string; requiredRole?: UserRole }> = [
+    const scopedIds: Array<{
+      key: string;
+      id: string;
+      requiredRole?: UserRole;
+    }> = [
       { key: "id", id: params.id },
-      { key: "advertiserId", id: params.advertiserId, requiredRole: UserRole.ADVERTISER },
+      {
+        key: "advertiserId",
+        id: params.advertiserId,
+        requiredRole: UserRole.ADVERTISER,
+      },
       { key: "driverId", id: params.driverId, requiredRole: UserRole.DRIVER },
     ].filter((param) => param.id !== undefined);
 
     for (const param of scopedIds) {
       if (
-        typeof param.id !== "string" || !param.id.trim() ||
-        !user.entityId || user.entityId !== param.id ||
+        typeof param.id !== "string" ||
+        !param.id.trim() ||
+        !user.entityId ||
+        user.entityId !== param.id ||
         (param.requiredRole !== undefined && user.role !== param.requiredRole)
       ) {
         this.logger.warn(

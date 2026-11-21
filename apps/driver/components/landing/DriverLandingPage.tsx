@@ -94,16 +94,22 @@ const CHANNELS = [
   {
     id: "screen",
     label: "Pantalla",
-    statement: "Pantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.",
+    statement:
+      "Pantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.",
     cardEyebrow: "PUBLICIDAD A BORDO",
     cardTitle: "Tu taxi, conectado.",
     cardNote: "Una pantalla para mensajes aprobados.",
-    journey: ["Pantalla en el taxi", "Campañas elegibles", "Actividad validada"],
+    journey: [
+      "Pantalla en el taxi",
+      "Campañas elegibles",
+      "Actividad validada",
+    ],
   },
   {
     id: "sales",
     label: "Ventas",
-    statement: "Ventas: las comisiones corresponden a publicidad efectivamente aprobada, no a simples solicitudes.",
+    statement:
+      "Ventas: las comisiones corresponden a publicidad efectivamente aprobada, no a simples solicitudes.",
     cardEyebrow: "CONEXIONES COMERCIALES",
     cardTitle: "Conecta marcas con rutas.",
     cardNote: "Las ventas requieren revisión y aprobación.",
@@ -112,7 +118,8 @@ const CHANNELS = [
   {
     id: "referrals",
     label: "Referidos",
-    statement: "Referidos: el bono es único y depende de la activación y aprobación del conductor referido.",
+    statement:
+      "Referidos: el bono es único y depende de la activación y aprobación del conductor referido.",
     cardEyebrow: "RED DE CONDUCTORES",
     cardTitle: "Comparte el recorrido.",
     cardNote: "El registro por sí solo no genera un bono.",
@@ -166,7 +173,9 @@ export default function DriverLandingPage() {
   return (
     <>
       <Head>
-        <title>TAD Driver | Convierte tus viajes en oportunidades de ingresos</title>
+        <title>
+          TAD Driver | Convierte tus viajes en oportunidades de ingresos
+        </title>
         <meta
           name="description"
           content="Conoce TAD Driver: publicidad en una pantalla detrás del reposacabezas del copiloto y oportunidades por campañas elegibles, ventas aprobadas y referidos activados. Participación sujeta a aprobación y condiciones."
@@ -263,8 +272,9 @@ export default function DriverLandingPage() {
               <p className={styles.heroDescription}>
                 La pantalla TAD se instala detrás del reposacabezas del
                 copiloto, frente a los pasajeros. Explora tres formas de obtener
-                compensaciones: campañas elegibles, ventas publicitarias aprobadas
-                y conductores referidos activados. Aplican condiciones y revisión.
+                compensaciones: campañas elegibles, ventas publicitarias
+                aprobadas y conductores referidos activados. Aplican condiciones
+                y revisión.
               </p>
               <div className={styles.actions}>
                 <a className={styles.primaryButton} href="#calculadora">
@@ -282,8 +292,9 @@ export default function DriverLandingPage() {
                 </a>
               </div>
               <p className={styles.heroNote}>
-                <ShieldCheck size={15} aria-hidden="true" /> Incorporación e instalación
-                sujetas a revisión, disponibilidad y condiciones del programa.
+                <ShieldCheck size={15} aria-hidden="true" /> Incorporación e
+                instalación sujetas a revisión, disponibilidad y condiciones del
+                programa.
               </p>
             </div>
             <DriverHeroVisual />
@@ -348,8 +359,8 @@ export default function DriverLandingPage() {
                 <span>Haz que cada ruta cuente.</span>
               </h2>
               <p>
-                Conoce la propuesta, revisa los requisitos y decide si TAD encaja
-                con la forma en que trabajas.
+                Conoce la propuesta, revisa los requisitos y decide si TAD
+                encaja con la forma en que trabajas.
               </p>
             </div>
             <div className={styles.benefitGrid}>

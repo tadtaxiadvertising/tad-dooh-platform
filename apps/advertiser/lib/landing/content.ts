@@ -10,10 +10,7 @@ export type DemoObjective = keyof typeof OBJECTIVES;
 export const ROLE_CONTENT = {
   advertiser: {
     eyebrow: "TU NEGOCIO, EN EL RECORRIDO",
-    headline: [
-      "Tu marca no espera.",
-      "Va a su encuentro.",
-    ],
+    headline: ["Tu marca no espera.", "Va a su encuentro."],
     lead: "Haz que tu publicidad acompañe los recorridos de la ciudad en pantallas digitales dentro de taxis. Descubre cómo podría verse tu campaña y explora un presupuesto ilustrativo antes de contratar.",
     heroCta: "Explorar mi campaña",
     title: "Que tu marca salga a la calle.",

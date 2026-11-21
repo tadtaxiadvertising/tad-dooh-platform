@@ -174,7 +174,9 @@ export const syncOfflineQueue = async () => {
         }
       } catch (error) {
         // Never log offline payloads: they can include financial or bank data.
-        console.error("[OfflineQueue] Transport failed; queued action retained.");
+        console.error(
+          "[OfflineQueue] Transport failed; queued action retained.",
+        );
         break;
       }
     }

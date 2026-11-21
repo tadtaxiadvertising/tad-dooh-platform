@@ -90,7 +90,8 @@ export default function LandingPage() {
       typeof window === "undefined" ||
       typeof window.matchMedia !== "function" ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) return;
+    )
+      return;
     const animation = output.animate(
       [
         { transform: "translateY(3px)", opacity: 0.94 },
@@ -264,7 +265,11 @@ export default function LandingPage() {
             </ol>
           </div>
           <div className="landing-hero-stage">
-            <CityScene city={city} objective={objective} brandName={brandName} />
+            <CityScene
+              city={city}
+              objective={objective}
+              brandName={brandName}
+            />
             <div
               className="landing-stage-controls"
               role="group"
@@ -306,8 +311,8 @@ export default function LandingPage() {
             </div>
             <p className="landing-stage-privacy">
               La pantalla TAD va detrás del reposacabezas del copiloto,
-              orientada al pasajero. Esta escena es ilustrativa; el nombre de
-              tu marca no se guarda ni se incluye en los eventos de esta demo.
+              orientada al pasajero. Esta escena es ilustrativa; el nombre de tu
+              marca no se guarda ni se incluye en los eventos de esta demo.
             </p>
           </div>
         </section>
@@ -335,7 +340,9 @@ export default function LandingPage() {
           </div>
         </div>
         <TaxiScrollStory city={city} brandName={brandName} />
-        <div className="landing-wrap"><CreativePreview /></div>
+        <div className="landing-wrap">
+          <CreativePreview />
+        </div>
         <div id="como-funciona" className="landing-wrap landing-story-wrap">
           <CampaignJourney
             onStepView={(step) =>

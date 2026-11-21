@@ -80,7 +80,10 @@ export default function RequestsPage() {
       setAdminNotes("");
       alert("Notas guardadas sin aprobar ni ejecutar la solicitud.");
     } catch (err: unknown) {
-      alert("Error: " + (getErrorMessage(err) || "No se pudieron guardar las notas"));
+      alert(
+        "Error: " +
+          (getErrorMessage(err) || "No se pudieron guardar las notas"),
+      );
     } finally {
       setProcessing(false);
     }
@@ -423,30 +426,44 @@ export default function RequestsPage() {
                   Rechazar Petición
                 </button>
                 <button
-                  disabled={processing || selectedRequest.status !== "PENDING" || !canApprove(selectedRequest)}
-                  title={!canApprove(selectedRequest) ? "Aprobación automática suspendida por seguridad" : "Aprobar solicitud general"}
+                  disabled={
+                    processing ||
+                    selectedRequest.status !== "PENDING" ||
+                    !canApprove(selectedRequest)
+                  }
+                  title={
+                    !canApprove(selectedRequest)
+                      ? "Aprobación automática suspendida por seguridad"
+                      : "Aprobar solicitud general"
+                  }
                   onClick={() => handleAction(selectedRequest.id, "APPROVED")}
                   className="flex-1 py-5 bg-tad-yellow text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-xl shadow-tad-yellow/5 disabled:opacity-30"
                 >
                   Aprobar solicitud
                 </button>
               </div>
-              {!canApprove(selectedRequest) && selectedRequest.status === "PENDING" && (
-                <button
-                  disabled={processing}
-                  onClick={() => handleSaveNotes(selectedRequest.id)}
-                  className="w-full rounded-2xl border border-tad-yellow/30 bg-tad-yellow/10 px-5 py-3 text-xs font-bold text-tad-yellow hover:bg-tad-yellow/20 disabled:opacity-30"
-                >
-                  Guardar notas sin aprobar
-                </button>
-              )}
-              {!canApprove(selectedRequest) && selectedRequest.status === "PENDING" && (
-                <p role="alert" className="text-amber-300 text-xs font-medium relative z-10">
-                  Aprobación automática suspendida para esta solicitud: requiere revisión
-                  financiera o de publicación antes de ejecutar cambios en campañas y tablets.
-                  Puedes documentarla o rechazarla sin efectos automáticos.
-                </p>
-              )}
+              {!canApprove(selectedRequest) &&
+                selectedRequest.status === "PENDING" && (
+                  <button
+                    disabled={processing}
+                    onClick={() => handleSaveNotes(selectedRequest.id)}
+                    className="w-full rounded-2xl border border-tad-yellow/30 bg-tad-yellow/10 px-5 py-3 text-xs font-bold text-tad-yellow hover:bg-tad-yellow/20 disabled:opacity-30"
+                  >
+                    Guardar notas sin aprobar
+                  </button>
+                )}
+              {!canApprove(selectedRequest) &&
+                selectedRequest.status === "PENDING" && (
+                  <p
+                    role="alert"
+                    className="text-amber-300 text-xs font-medium relative z-10"
+                  >
+                    Aprobación automática suspendida para esta solicitud:
+                    requiere revisión financiera o de publicación antes de
+                    ejecutar cambios en campañas y tablets. Puedes documentarla
+                    o rechazarla sin efectos automáticos.
+                  </p>
+                )}
             </motion.div>
           </div>
         )}

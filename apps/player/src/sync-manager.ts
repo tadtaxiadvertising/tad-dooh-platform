@@ -41,7 +41,9 @@ export class SyncManager {
     schedules: CampaignSchedule[],
   ) => void;
   private onKillSwitch: (reason: string) => void;
-  private onCommands: (commands: DeviceCommand[]) => Promise<DeviceCommandResult[]>;
+  private onCommands: (
+    commands: DeviceCommand[],
+  ) => Promise<DeviceCommandResult[]>;
 
   constructor(
     cacheManager: CacheManager,
@@ -133,7 +135,9 @@ export class SyncManager {
       // every replacement file is durably available on the tablet.
       const assets = payload.media_assets || payload.videos || [];
       if (!(await prepareOfflinePlaylist(this.cacheManager, assets))) {
-        console.warn("[SyncManager] New playlist not fully cached; keeping current offline playlist.");
+        console.warn(
+          "[SyncManager] New playlist not fully cached; keeping current offline playlist.",
+        );
         return;
       }
 
@@ -188,7 +192,9 @@ export class SyncManager {
 
       const assets = manifest.playlist || [];
       if (!(await prepareOfflinePlaylist(this.cacheManager, assets))) {
-        console.warn("[SyncManager] Manifest videos not fully cached; keeping current offline playlist.");
+        console.warn(
+          "[SyncManager] Manifest videos not fully cached; keeping current offline playlist.",
+        );
         return;
       }
 

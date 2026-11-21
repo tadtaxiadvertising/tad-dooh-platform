@@ -72,20 +72,23 @@ describe("HealthController master-sync readiness", () => {
     { connected: false, masterSyncViewReady: true },
     { connected: true, masterSyncViewReady: undefined },
     null,
-  ])("fails closed with 503 when readiness metrics are degraded: %p", async (result) => {
-    metrics.mockResolvedValue(result);
-    try {
-      await controller.checkReady();
-      throw new Error("Expected readiness failure");
-    } catch (error) {
-      expect(error).toBeInstanceOf(ServiceUnavailableException);
-      const failure = error as ServiceUnavailableException;
-      expect(failure.getStatus()).toBe(503);
-      expect(failure.getResponse()).toEqual({
-        status: "degraded",
-      });
-    }
-  });
+  ])(
+    "fails closed with 503 when readiness metrics are degraded: %p",
+    async (result) => {
+      metrics.mockResolvedValue(result);
+      try {
+        await controller.checkReady();
+        throw new Error("Expected readiness failure");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ServiceUnavailableException);
+        const failure = error as ServiceUnavailableException;
+        expect(failure.getStatus()).toBe(503);
+        expect(failure.getResponse()).toEqual({
+          status: "degraded",
+        });
+      }
+    },
+  );
 
   it("masks database errors from unauthenticated readiness probes", async () => {
     metrics.mockRejectedValue(new Error("internal-connection-details"));
@@ -94,8 +97,9 @@ describe("HealthController master-sync readiness", () => {
       throw new Error("Expected readiness failure");
     } catch (error) {
       expect(error).toBeInstanceOf(ServiceUnavailableException);
-      expect(JSON.stringify((error as ServiceUnavailableException).getResponse()))
-        .not.toContain("internal-connection-details");
+      expect(
+        JSON.stringify((error as ServiceUnavailableException).getResponse()),
+      ).not.toContain("internal-connection-details");
     }
   });
 
@@ -113,5 +117,4 @@ describe("HealthController master-sync readiness", () => {
       ServiceUnavailableException,
     );
   });
-
 });

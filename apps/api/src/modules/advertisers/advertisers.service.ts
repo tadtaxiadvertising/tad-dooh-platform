@@ -91,9 +91,11 @@ export class AdvertisersService {
     if (
       claims.role !== "ADVERTISER" ||
       claims.app_metadata?.role !== "ADVERTISER" ||
-      typeof claims.sub !== "string" || !claims.sub ||
+      typeof claims.sub !== "string" ||
+      !claims.sub ||
       claims.app_metadata?.entityId !== claims.sub ||
-      typeof claims.email !== "string" || !claims.email ||
+      typeof claims.email !== "string" ||
+      !claims.email ||
       claims.purpose !== undefined
     ) {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
@@ -105,7 +107,8 @@ export class AdvertisersService {
     });
     if (
       !advertiser ||
-      advertiser.email.trim().toLowerCase() !== claims.email.trim().toLowerCase() ||
+      advertiser.email.trim().toLowerCase() !==
+        claims.email.trim().toLowerCase() ||
       !["ACTIVE", "PENDING_REVIEW"].includes(advertiser.status)
     ) {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
@@ -122,13 +125,17 @@ export class AdvertisersService {
    * Never use JWT metadata or a caller-supplied advertiser ID as the source
    * of authorization. Nest global auth guard supplies verified user data.
    */
-  async verifyOAuthAdvertiserStatus(
-    identity: { role?: string; entityId?: string | null; email?: string },
-  ): Promise<{ role: "ADVERTISER"; advertiserId: string; status: string }> {
+  async verifyOAuthAdvertiserStatus(identity: {
+    role?: string;
+    entityId?: string | null;
+    email?: string;
+  }): Promise<{ role: "ADVERTISER"; advertiserId: string; status: string }> {
     if (
       identity?.role !== "ADVERTISER" ||
-      typeof identity.entityId !== "string" || !identity.entityId.trim() ||
-      typeof identity.email !== "string" || !identity.email.trim()
+      typeof identity.entityId !== "string" ||
+      !identity.entityId.trim() ||
+      typeof identity.email !== "string" ||
+      !identity.email.trim()
     ) {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
     }
@@ -139,8 +146,11 @@ export class AdvertisersService {
     if (
       !advertiser ||
       advertiser.id !== identity.entityId ||
-      advertiser.email.trim().toLowerCase() !== identity.email.trim().toLowerCase() ||
-      !["ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING"].includes(advertiser.status)
+      advertiser.email.trim().toLowerCase() !==
+        identity.email.trim().toLowerCase() ||
+      !["ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING"].includes(
+        advertiser.status,
+      )
     ) {
       throw new UnauthorizedException("Sesión de anunciante inválida.");
     }

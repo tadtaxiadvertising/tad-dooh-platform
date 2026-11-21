@@ -43,10 +43,16 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
     jest.resetAllMocks();
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     findUnique.mockResolvedValue(commission);
-    findUniqueOrThrow.mockResolvedValue({ ...commission, status: CommissionStatus.PAID });
+    findUniqueOrThrow.mockResolvedValue({
+      ...commission,
+      status: CommissionStatus.PAID,
+    });
     updateMany.mockResolvedValue({ count: 1 });
     ledgerUpdateMany.mockResolvedValue({ count: 1 });
-    walletUpsert.mockResolvedValue({ driverId: "driver-1", availableBalance: 500 });
+    walletUpsert.mockResolvedValue({
+      driverId: "driver-1",
+      availableBalance: 500,
+    });
     walletUpdateMany.mockResolvedValue({ count: 1 });
     ledgerCreate.mockResolvedValue({ id: "reversal-1" });
   });
@@ -111,18 +117,19 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
         status: "PENDING",
         [corruptField]: corruptValue,
       };
-      ledgerUpdateMany.mockImplementation(async ({ where }: {
-        where: Record<string, string | number>;
-      }) => ({
-        count: Object.entries(where).every(
-          ([key, expected]) => ledgerRow[key] === expected,
-        )
-          ? 1
-          : 0,
-      }));
+      ledgerUpdateMany.mockImplementation(
+        async ({ where }: { where: Record<string, string | number> }) => ({
+          count: Object.entries(where).every(
+            ([key, expected]) => ledgerRow[key] === expected,
+          )
+            ? 1
+            : 0,
+        }),
+      );
 
-      await expect(service.approveCommission("commission-1", "admin-1"))
-        .rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        service.approveCommission("commission-1", "admin-1"),
+      ).rejects.toBeInstanceOf(ConflictException);
       expect(ledgerUpdateMany).toHaveBeenCalledTimes(1);
       expect(walletUpsert).not.toHaveBeenCalled();
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
@@ -131,9 +138,13 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
   );
 
   it("rejects already-approved commissions before writing a ledger or balance", async () => {
-    findUnique.mockResolvedValue({ ...commission, status: CommissionStatus.APPROVED });
-    await expect(service.approveCommission("commission-1", "admin-1"))
-      .rejects.toBeInstanceOf(ConflictException);
+    findUnique.mockResolvedValue({
+      ...commission,
+      status: CommissionStatus.APPROVED,
+    });
+    await expect(
+      service.approveCommission("commission-1", "admin-1"),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(updateMany).not.toHaveBeenCalled();
     expect(ledgerUpdateMany).not.toHaveBeenCalled();
     expect(walletUpsert).not.toHaveBeenCalled();
@@ -141,15 +152,18 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
 
   it("rejects a competing approval that loses the atomic PENDING claim", async () => {
     updateMany.mockResolvedValue({ count: 0 });
-    await expect(service.approveCommission("commission-1", "admin-2"))
-      .rejects.toBeInstanceOf(ConflictException);
+    await expect(
+      service.approveCommission("commission-1", "admin-2"),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(ledgerUpdateMany).not.toHaveBeenCalled();
     expect(walletUpsert).not.toHaveBeenCalled();
   });
 
   it("credits only one of two concurrent approvals even when both read PENDING", async () => {
     let claims = 0;
-    updateMany.mockImplementation(async () => ({ count: ++claims === 1 ? 1 : 0 }));
+    updateMany.mockImplementation(async () => ({
+      count: ++claims === 1 ? 1 : 0,
+    }));
     const attempts = await Promise.allSettled([
       service.approveCommission("commission-1", "admin-1"),
       service.approveCommission("commission-1", "admin-2"),
@@ -164,8 +178,9 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
     "blocks approval when source ledger update affects %s records",
     async (count) => {
       ledgerUpdateMany.mockResolvedValue({ count });
-      await expect(service.approveCommission("commission-1", "admin-1"))
-        .rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        service.approveCommission("commission-1", "admin-1"),
+      ).rejects.toBeInstanceOf(ConflictException);
       expect(walletUpsert).not.toHaveBeenCalled();
       // This update is inside $transaction: actual DB rollback must be
       // checked in staging, not inferred from a mocked transaction.
@@ -175,8 +190,9 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
 
   it("rejects a missing commission with no balance mutation", async () => {
     findUnique.mockResolvedValue(null);
-    await expect(service.approveCommission("missing", "admin-1"))
-      .rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.approveCommission("missing", "admin-1"),
+    ).rejects.toBeInstanceOf(NotFoundException);
     expect(walletUpsert).not.toHaveBeenCalled();
   });
 
@@ -330,18 +346,26 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
   });
 
   it("rejects conflicting revocation with no compensating ledger or debit", async () => {
-    findUnique.mockResolvedValue({ ...commission, status: CommissionStatus.APPROVED });
+    findUnique.mockResolvedValue({
+      ...commission,
+      status: CommissionStatus.APPROVED,
+    });
     updateMany.mockResolvedValue({ count: 0 });
-    await expect(service.revokeCommission("commission-1", "fraud", "admin-1"))
-      .rejects.toBeInstanceOf(ConflictException);
+    await expect(
+      service.revokeCommission("commission-1", "fraud", "admin-1"),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(ledgerCreate).not.toHaveBeenCalled();
     expect(walletUpdateMany).not.toHaveBeenCalled();
   });
 
   it("rejects replay of revoked commission with no balance debit", async () => {
-    findUnique.mockResolvedValue({ ...commission, status: CommissionStatus.REVOKED });
-    await expect(service.revokeCommission("commission-1", "fraud", "admin-2"))
-      .rejects.toBeInstanceOf(ConflictException);
+    findUnique.mockResolvedValue({
+      ...commission,
+      status: CommissionStatus.REVOKED,
+    });
+    await expect(
+      service.revokeCommission("commission-1", "fraud", "admin-2"),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(updateMany).not.toHaveBeenCalled();
     expect(walletUpdateMany).not.toHaveBeenCalled();
   });
@@ -370,7 +394,10 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
 
   it("rejects a caller-supplied paidAt without checking or writing a database", async () => {
     await expect(
-      service.markCommissionPaid("commission-1", new Date("2026-11-01T12:00:00.000Z")),
+      service.markCommissionPaid(
+        "commission-1",
+        new Date("2026-11-01T12:00:00.000Z"),
+      ),
     ).rejects.toThrow("confirmación bancaria");
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(findUnique).not.toHaveBeenCalled();
@@ -378,5 +405,4 @@ describe("CommissionService atomic wallet/ledger transitions", () => {
     expect(ledgerCreate).not.toHaveBeenCalled();
     expect(walletUpdateMany).not.toHaveBeenCalled();
   });
-
 });

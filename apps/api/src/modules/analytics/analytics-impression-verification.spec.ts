@@ -84,9 +84,7 @@ describe("AnalyticsService impression verification breakdown", () => {
 
   it("keeps 0 as the empty verified or unverified bucket, without negative counts", async () => {
     groupBy.mockImplementation(async ({ by }: { by: string[] }) =>
-      by[0] === "verified"
-        ? [{ verified: false, _count: { _all: 3 } }]
-        : [],
+      by[0] === "verified" ? [{ verified: false, _count: { _all: 3 } }] : [],
     );
     const result = await makeService().getAnalyticsSummary();
     expect(result).toMatchObject({

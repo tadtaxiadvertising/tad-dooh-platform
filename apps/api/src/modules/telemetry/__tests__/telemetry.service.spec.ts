@@ -26,7 +26,9 @@ describe("TelemetryService Security & Rate Limit", () => {
     const maliciousDeviceId = "dev-123'; DROP TABLE users; --";
     mockPrismaService.$queryRaw.mockResolvedValue([{ count: 1 }]);
 
-    await expect(service.checkPlaybackRateLimit(maliciousDeviceId, 1)).resolves.toBe(true);
+    await expect(
+      service.checkPlaybackRateLimit(maliciousDeviceId, 1),
+    ).resolves.toBe(true);
 
     expect(mockPrismaService.$queryRaw).toHaveBeenCalledTimes(1);
     const [strings, deviceId, windowStart, requested, limit] =
@@ -85,16 +87,24 @@ describe("TelemetryService Security & Rate Limit", () => {
         return [{ count: used }];
       },
     );
-    await expect(service.checkPlaybackRateLimit("TAD-DEVICE", 20)).resolves.toBe(true);
-    await expect(service.checkPlaybackRateLimit("TAD-DEVICE", 40)).resolves.toBe(true);
-    await expect(service.checkPlaybackRateLimit("TAD-DEVICE", 1)).resolves.toBe(false);
+    await expect(
+      service.checkPlaybackRateLimit("TAD-DEVICE", 20),
+    ).resolves.toBe(true);
+    await expect(
+      service.checkPlaybackRateLimit("TAD-DEVICE", 40),
+    ).resolves.toBe(true);
+    await expect(service.checkPlaybackRateLimit("TAD-DEVICE", 1)).resolves.toBe(
+      false,
+    );
     expect(used).toBe(60);
   });
 
   it.each([0, -1, 1.5, 61, NaN, Infinity])(
     "rejects an invalid batch size %s without any DB query",
     async (count) => {
-      await expect(service.checkPlaybackRateLimit("TAD-DEVICE", count)).resolves.toBe(false);
+      await expect(
+        service.checkPlaybackRateLimit("TAD-DEVICE", count),
+      ).resolves.toBe(false);
       expect(mockPrismaService.$queryRaw).not.toHaveBeenCalled();
       expect(mockPrismaService.$executeRaw).not.toHaveBeenCalled();
     },

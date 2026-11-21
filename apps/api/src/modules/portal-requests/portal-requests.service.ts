@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
@@ -9,7 +14,10 @@ export class PortalRequestsService {
    * A referenced campaign must belong to the authenticated advertiser.
    * A matching request body advertiserId is NOT evidence of ownership.
    */
-  async advertiserOwnsCampaign(campaignId: string, advertiserId: string): Promise<boolean> {
+  async advertiserOwnsCampaign(
+    campaignId: string,
+    advertiserId: string,
+  ): Promise<boolean> {
     if (!campaignId || !advertiserId) return false;
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
@@ -173,5 +181,4 @@ export class PortalRequestsService {
       where: { id },
     });
   }
-
 }

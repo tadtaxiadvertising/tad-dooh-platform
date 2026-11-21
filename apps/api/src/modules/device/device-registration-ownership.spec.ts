@@ -29,8 +29,11 @@ describe("DeviceService public registration ownership isolation", () => {
       status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
     };
     findUnique.mockResolvedValue(stored);
-    update.mockImplementation(async ({ data }: { data: Record<string, unknown> }) =>
-      ({ ...stored, ...data }),
+    update.mockImplementation(
+      async ({ data }: { data: Record<string, unknown> }) => ({
+        ...stored,
+        ...data,
+      }),
     );
 
     const result = await service.registerDevice({
@@ -63,8 +66,11 @@ describe("DeviceService public registration ownership isolation", () => {
       driverId: null,
     };
     findUnique.mockResolvedValue(stored);
-    update.mockImplementation(async ({ data }: { data: Record<string, unknown> }) =>
-      ({ ...stored, ...data }),
+    update.mockImplementation(
+      async ({ data }: { data: Record<string, unknown> }) => ({
+        ...stored,
+        ...data,
+      }),
     );
 
     const result = await service.registerDevice({
@@ -78,8 +84,12 @@ describe("DeviceService public registration ownership isolation", () => {
 
   it("creates new hardware as pending without assigning an untrusted driver", async () => {
     findUnique.mockResolvedValue(null);
-    create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) =>
-      ({ id: "device-new", driverId: null, ...data }),
+    create.mockImplementation(
+      async ({ data }: { data: Record<string, unknown> }) => ({
+        id: "device-new",
+        driverId: null,
+        ...data,
+      }),
     );
 
     const result = await service.registerDevice({

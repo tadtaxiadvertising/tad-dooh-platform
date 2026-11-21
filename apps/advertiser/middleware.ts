@@ -1,6 +1,4 @@
-import {
-  AUTH_COOKIE_MAX_AGE,
-} from "@tad/services/session-cookies";
+import { AUTH_COOKIE_MAX_AGE } from "@tad/services/session-cookies";
 import { isPublicLegalPath } from "@tad/services/cookie-consent";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -40,8 +38,10 @@ function advertiserSessionVerificationUrl(): string | null {
     const url = new URL(configured);
     if (
       (url.protocol !== "http:" && url.protocol !== "https:") ||
-      url.username || url.password
-    ) return null;
+      url.username ||
+      url.password
+    )
+      return null;
     const basePath = url.pathname
       .replace(/\/api\/v1\/?$/, "")
       .replace(/\/api\/?$/, "")
@@ -78,13 +78,19 @@ async function verifyOAuthAdvertiserStatus(
     if (!res.ok) return null;
     const data: unknown = await res.json();
     if (
-      !data || typeof data !== "object" ||
-      !("role" in data) || data.role !== EXPECTED_ROLE ||
+      !data ||
+      typeof data !== "object" ||
+      !("role" in data) ||
+      data.role !== EXPECTED_ROLE ||
       !("status" in data) ||
-      !["ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING"].includes(String(data.status)) ||
-      !("advertiserId" in data) || typeof data.advertiserId !== "string" ||
+      !["ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING"].includes(
+        String(data.status),
+      ) ||
+      !("advertiserId" in data) ||
+      typeof data.advertiserId !== "string" ||
       !data.advertiserId
-    ) return null;
+    )
+      return null;
     return { role: EXPECTED_ROLE, status: String(data.status) };
   } catch {
     return null;
@@ -114,11 +120,16 @@ async function verifyLegacyAdvertiserToken(
     if (!res.ok) return null;
     const data: unknown = await res.json();
     if (
-      !data || typeof data !== "object" ||
-      !("role" in data) || data.role !== EXPECTED_ROLE ||
-      !("status" in data) || typeof data.status !== "string" ||
-      !("advertiserId" in data) || typeof data.advertiserId !== "string"
-    ) return null;
+      !data ||
+      typeof data !== "object" ||
+      !("role" in data) ||
+      data.role !== EXPECTED_ROLE ||
+      !("status" in data) ||
+      typeof data.status !== "string" ||
+      !("advertiserId" in data) ||
+      typeof data.advertiserId !== "string"
+    )
+      return null;
     return { role: EXPECTED_ROLE, status: data.status };
   } catch {
     return null;
@@ -135,7 +146,7 @@ async function verifiedSession(request: NextRequest): Promise<{
 
   // Supabase SSR can verify OAuth sessions only when its canonical cookie
   // exists. Browser-created legacy sb-access-token is not such a session.
-  const canonical = cookies.some(cookie =>
+  const canonical = cookies.some((cookie) =>
     /^sb-.+-auth-token(?:\.\d+)?$/.test(cookie.name),
   );
   if (canonical) {
@@ -190,7 +201,9 @@ async function verifiedSession(request: NextRequest): Promise<{
 
   // Legacy password sessions are verified by the same API that issued them.
   // Never send a canonical-only OAuth token to a potentially stale legacy API.
-  const legacyToken = cookies.find(cookie => cookie.name === "sb-access-token")?.value;
+  const legacyToken = cookies.find(
+    (cookie) => cookie.name === "sb-access-token",
+  )?.value;
   const session = legacyToken
     ? await verifyLegacyAdvertiserToken(legacyToken)
     : null;
@@ -204,20 +217,26 @@ export async function middleware(request: NextRequest) {
   // Preserve public onboarding, exact auth callback and static routes.
   if (
     PUBLIC_PATHS.has(pathname) &&
-    pathname !== LOGIN_PATH && pathname !== "/login"
-  ) return NextResponse.next();
+    pathname !== LOGIN_PATH &&
+    pathname !== "/login"
+  )
+    return NextResponse.next();
   if (
     pathname.startsWith("/icons/") ||
     pathname.startsWith("/_next/") ||
     pathname === "/favicon.ico"
-  ) return NextResponse.next();
+  )
+    return NextResponse.next();
 
   const isLogin = pathname === LOGIN_PATH || pathname === "/login";
   const isLanding = pathname === "/";
-  const hasSessionCookie = request.cookies.getAll().some(cookie =>
-    cookie.name === "sb-access-token" ||
-    /^sb-.+-auth-token(?:\.\d+)?$/.test(cookie.name),
-  );
+  const hasSessionCookie = request.cookies
+    .getAll()
+    .some(
+      (cookie) =>
+        cookie.name === "sb-access-token" ||
+        /^sb-.+-auth-token(?:\.\d+)?$/.test(cookie.name),
+    );
 
   if (!hasSessionCookie) {
     if (isLogin || isLanding) return NextResponse.next();
@@ -232,7 +251,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // A valid JWT does not authorize access to suspended or unknown states.
-  if (!["ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING"].includes(session.status)) {
+  if (
+    !["ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING"].includes(session.status)
+  ) {
     return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
   }
 

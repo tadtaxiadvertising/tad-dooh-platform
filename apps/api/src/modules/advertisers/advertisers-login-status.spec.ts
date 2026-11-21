@@ -34,7 +34,7 @@ describe("AdvertisersService password-login status alignment", () => {
 
   it.each(["ACTIVE", "PENDING_REVIEW"])(
     "issues a verifiable advertiser token for %s",
-    async status => {
+    async (status) => {
       findUnique.mockResolvedValueOnce({
         id: "advertiser-1",
         email: "adv@example.test",
@@ -42,7 +42,10 @@ describe("AdvertisersService password-login status alignment", () => {
         status,
         companyName: "Test Merchant",
       });
-      const session = await service.login("adv@example.test", "fixture-password");
+      const session = await service.login(
+        "adv@example.test",
+        "fixture-password",
+      );
       expect(session.status).toBe(status);
       expect(session.role).toBe("ADVERTISER");
       const payload = jwt.verify(session.access_token, fixtureSecret, {
@@ -50,7 +53,8 @@ describe("AdvertisersService password-login status alignment", () => {
       }) as jwt.JwtPayload;
       expect(payload.sub).toBe("advertiser-1");
       expect(payload.app_metadata).toEqual({
-        role: "ADVERTISER", entityId: "advertiser-1",
+        role: "ADVERTISER",
+        entityId: "advertiser-1",
       });
       // Align issue-time status with the current database-backed verifier.
       findUnique.mockResolvedValue({
@@ -58,24 +62,28 @@ describe("AdvertisersService password-login status alignment", () => {
         email: "adv@example.test",
         status,
       });
-      await expect(service.verifyAdvertiserSession(session.access_token))
-        .resolves.toMatchObject({
-          role: "ADVERTISER", status, advertiserId: "advertiser-1",
-        });
+      await expect(
+        service.verifyAdvertiserSession(session.access_token),
+      ).resolves.toMatchObject({
+        role: "ADVERTISER",
+        status,
+        advertiserId: "advertiser-1",
+      });
     },
   );
 
   it.each(["SUSPENDED", "DISABLED", "UNKNOWN"])(
     "does not issue an unusable signed session to %s accounts",
-    async status => {
+    async (status) => {
       findUnique.mockResolvedValueOnce({
         id: "advertiser-1",
         email: "adv@example.test",
         password: passwordHash,
         status,
       });
-      await expect(service.login("adv@example.test", "fixture-password"))
-        .rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(
+        service.login("adv@example.test", "fixture-password"),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     },
   );
 
@@ -86,13 +94,15 @@ describe("AdvertisersService password-login status alignment", () => {
       password: passwordHash,
       status: "SUSPENDED",
     });
-    await expect(service.login("adv@example.test", "incorrect-password"))
-      .rejects.toThrow("Credenciales inválidas");
+    await expect(
+      service.login("adv@example.test", "incorrect-password"),
+    ).rejects.toThrow("Credenciales inválidas");
   });
 
   it("rejects unknown email before attempting signed-session issuance", async () => {
     findUnique.mockResolvedValue(null);
-    await expect(service.login("unknown@example.test", "fixture-password"))
-      .rejects.toThrow("Credenciales inválidas");
+    await expect(
+      service.login("unknown@example.test", "fixture-password"),
+    ).rejects.toThrow("Credenciales inválidas");
   });
 });

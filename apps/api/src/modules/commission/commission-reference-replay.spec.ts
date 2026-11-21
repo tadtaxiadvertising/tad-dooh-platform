@@ -17,8 +17,8 @@ describe("CommissionService reference binds one economic event", () => {
     financialTransaction: { create: ledgerCreate },
   };
   const prisma = {
-    $transaction: jest.fn(
-      async (cb: (client: typeof tx) => Promise<unknown>) => cb(tx),
+    $transaction: jest.fn(async (cb: (client: typeof tx) => Promise<unknown>) =>
+      cb(tx),
     ),
     commission: { findUnique: winnerFindUnique },
   };
@@ -61,19 +61,35 @@ describe("CommissionService reference binds one economic event", () => {
     ["other driver", { driverId: "driver-2" }],
     ["different amount", { amount: 501 }],
     ["different source", { sourceType: CommissionSourceType.ADVERTISER_SALE }],
-    ["different referred driver", { metadata: { referredDriverId: "new-driver-2" } }],
+    [
+      "different referred driver",
+      { metadata: { referredDriverId: "new-driver-2" } },
+    ],
     ["missing referred driver", { metadata: {} }],
-    ["different campaign", { metadata: { referredDriverId: "new-driver-1", campaignId: "campaign-1" } }],
-  ])("rejects reference replay for %s before any financial write", async (_description, change) => {
-    findFirst.mockResolvedValue(existing);
-    await expect(service.createIdempotent({
-      ...input,
-      ...(change as Partial<CreateCommissionInput>),
-    })).rejects.toBeInstanceOf(ConflictException);
-    expect(commissionCreate).not.toHaveBeenCalled();
-    expect(ledgerCreate).not.toHaveBeenCalled();
-    expect(winnerFindUnique).not.toHaveBeenCalled();
-  });
+    [
+      "different campaign",
+      {
+        metadata: {
+          referredDriverId: "new-driver-1",
+          campaignId: "campaign-1",
+        },
+      },
+    ],
+  ])(
+    "rejects reference replay for %s before any financial write",
+    async (_description, change) => {
+      findFirst.mockResolvedValue(existing);
+      await expect(
+        service.createIdempotent({
+          ...input,
+          ...(change as Partial<CreateCommissionInput>),
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(commissionCreate).not.toHaveBeenCalled();
+      expect(ledgerCreate).not.toHaveBeenCalled();
+      expect(winnerFindUnique).not.toHaveBeenCalled();
+    },
+  );
 
   it("creates one commission and one pending ledger when reference is new", async () => {
     const result = await service.createIdempotent(input);
@@ -97,9 +113,13 @@ describe("CommissionService reference binds one economic event", () => {
 
   it("refuses a concurrent P2002 winner for a different event", async () => {
     commissionCreate.mockRejectedValue({ code: "P2002" });
-    winnerFindUnique.mockResolvedValue({ ...existing, driverId: "other-driver" });
-    await expect(service.createIdempotent(input))
-      .rejects.toBeInstanceOf(ConflictException);
+    winnerFindUnique.mockResolvedValue({
+      ...existing,
+      driverId: "other-driver",
+    });
+    await expect(service.createIdempotent(input)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
     expect(ledgerCreate).not.toHaveBeenCalled();
   });
 

@@ -126,8 +126,10 @@ async function appendOfflineCoords(coords: TelemetryCoord[]): Promise<void> {
     const store = tx.objectStore("telemetry");
     coords.forEach((coord) => store.put({ ...coord, status: "offline" }));
     tx.oncomplete = () => resolve();
-    tx.onabort = () => reject(tx.error ?? new Error("GPS_OFFLINE_WRITE_FAILED"));
-    tx.onerror = () => reject(tx.error ?? new Error("GPS_OFFLINE_WRITE_FAILED"));
+    tx.onabort = () =>
+      reject(tx.error ?? new Error("GPS_OFFLINE_WRITE_FAILED"));
+    tx.onerror = () =>
+      reject(tx.error ?? new Error("GPS_OFFLINE_WRITE_FAILED"));
   });
 }
 
@@ -144,7 +146,9 @@ async function removeCoordsByKeys(
     keys.forEach((key) => {
       const read = store.get(key);
       read.onsuccess = () => {
-        if ((read.result as StoredTelemetryCoord | undefined)?.status === status) {
+        if (
+          (read.result as StoredTelemetryCoord | undefined)?.status === status
+        ) {
           store.delete(key);
         }
       };
@@ -281,7 +285,12 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
           const processedKeys = chunk.map((c) => c.ts);
 
           try {
-            const res = await postTrackBatch(apiBase, driverId, deviceId, chunk);
+            const res = await postTrackBatch(
+              apiBase,
+              driverId,
+              deviceId,
+              chunk,
+            );
             if (res.status === 402) {
               triggerKillSwitch({
                 setLock,
@@ -398,7 +407,12 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
             return;
           }
 
-          const res = await postTrackBatch(apiBase, driverId, deviceId, combined);
+          const res = await postTrackBatch(
+            apiBase,
+            driverId,
+            deviceId,
+            combined,
+          );
 
           if (res.status === 402) {
             triggerKillSwitch({

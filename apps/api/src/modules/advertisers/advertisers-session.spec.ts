@@ -9,8 +9,11 @@ describe("Advertiser server-issued session verification", () => {
   const secret = "fixture-only-hs256-secret-not-production";
   const findUnique = jest.fn();
   const prisma = { advertiser: { findUnique } };
-  const config = { get: jest.fn((key: string) =>
-    key === "SUPABASE_JWT_SECRET" ? secret : undefined) };
+  const config = {
+    get: jest.fn((key: string) =>
+      key === "SUPABASE_JWT_SECRET" ? secret : undefined,
+    ),
+  };
   const service = new AdvertisersService(prisma as never, config as never);
   const controller = new AdvertisersController(service);
 
@@ -29,7 +32,9 @@ describe("Advertiser server-issued session verification", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     findUnique.mockResolvedValue({
-      id: "advertiser-1", email: "adv@example.test", status: "ACTIVE",
+      id: "advertiser-1",
+      email: "adv@example.test",
+      status: "ACTIVE",
     });
   });
 
@@ -37,7 +42,9 @@ describe("Advertiser server-issued session verification", () => {
     const token = sign();
     const session = await service.verifyAdvertiserSession(token);
     expect(session).toEqual({
-      role: "ADVERTISER", advertiserId: "advertiser-1", status: "ACTIVE",
+      role: "ADVERTISER",
+      advertiserId: "advertiser-1",
+      status: "ACTIVE",
     });
     expect(findUnique).toHaveBeenCalledWith({
       where: { id: "advertiser-1" },
@@ -46,18 +53,30 @@ describe("Advertiser server-issued session verification", () => {
   });
 
   it("never trusts an unsigned token, wrong signing key or expired signature", async () => {
-    const unsigned = jwt.sign(legacyPayload, "wrong-secret", { algorithm: "HS256" });
+    const unsigned = jwt.sign(legacyPayload, "wrong-secret", {
+      algorithm: "HS256",
+    });
     const expired = jwt.sign(legacyPayload, secret, {
-      algorithm: "HS256", expiresIn: -5,
+      algorithm: "HS256",
+      expiresIn: -5,
     });
     const none = [
-      Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url"),
+      Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString(
+        "base64url",
+      ),
       Buffer.from(JSON.stringify(legacyPayload)).toString("base64url"),
       "",
     ].join(".");
-    for (const token of ["not-a-jwt", none, unsigned, expired, "a".repeat(8200)]) {
-      await expect(service.verifyAdvertiserSession(token)).rejects
-        .toBeInstanceOf(UnauthorizedException);
+    for (const token of [
+      "not-a-jwt",
+      none,
+      unsigned,
+      expired,
+      "a".repeat(8200),
+    ]) {
+      await expect(
+        service.verifyAdvertiserSession(token),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     }
     expect(findUnique).not.toHaveBeenCalled();
   });
@@ -71,44 +90,59 @@ describe("Advertiser server-issued session verification", () => {
       sign({ sub: "" }),
     ];
     for (const token of invalid) {
-      await expect(service.verifyAdvertiserSession(token)).rejects
-        .toBeInstanceOf(UnauthorizedException);
+      await expect(
+        service.verifyAdvertiserSession(token),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     }
     expect(findUnique).not.toHaveBeenCalled();
   });
 
   it("refuses deleted advertisers and identity email mismatches", async () => {
     findUnique.mockResolvedValueOnce(null);
-    await expect(service.verifyAdvertiserSession(sign())).rejects
-      .toBeInstanceOf(UnauthorizedException);
+    await expect(
+      service.verifyAdvertiserSession(sign()),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     findUnique.mockResolvedValueOnce({
-      id: "advertiser-1", email: "other@example.test", status: "ACTIVE",
+      id: "advertiser-1",
+      email: "other@example.test",
+      status: "ACTIVE",
     });
-    await expect(service.verifyAdvertiserSession(sign())).rejects
-      .toBeInstanceOf(UnauthorizedException);
+    await expect(
+      service.verifyAdvertiserSession(sign()),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it("keeps pending-review users in onboarding but rejects suspended users", async () => {
     findUnique.mockResolvedValueOnce({
-      id: "advertiser-1", email: "adv@example.test", status: "PENDING_REVIEW",
+      id: "advertiser-1",
+      email: "adv@example.test",
+      status: "PENDING_REVIEW",
     });
     const pending = await service.verifyAdvertiserSession(sign());
     expect(pending.status).toBe("PENDING_REVIEW");
     findUnique.mockResolvedValueOnce({
-      id: "advertiser-1", email: "adv@example.test", status: "SUSPENDED",
+      id: "advertiser-1",
+      email: "adv@example.test",
+      status: "SUSPENDED",
     });
-    await expect(service.verifyAdvertiserSession(sign())).rejects
-      .toBeInstanceOf(UnauthorizedException);
+    await expect(
+      service.verifyAdvertiserSession(sign()),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it("requires an auth header and never treats client-supplied role as evidence", async () => {
-    expect(Reflect.getMetadata(
-      IS_PUBLIC_KEY, AdvertisersController.prototype.verifySession,
-    )).toBe(true);
-    await expect(controller.verifySession(undefined)).rejects
-      .toBeInstanceOf(UnauthorizedException);
-    await expect(controller.verifySession("Bearer not-valid")).rejects
-      .toBeInstanceOf(UnauthorizedException);
+    expect(
+      Reflect.getMetadata(
+        IS_PUBLIC_KEY,
+        AdvertisersController.prototype.verifySession,
+      ),
+    ).toBe(true);
+    await expect(controller.verifySession(undefined)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    await expect(
+      controller.verifySession("Bearer not-valid"),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     const result = await controller.verifySession("Bearer " + sign());
     expect(result.advertiserId).toBe("advertiser-1");
   });

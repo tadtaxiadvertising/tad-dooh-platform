@@ -48,11 +48,15 @@ export class PortalRequestsController {
       if (
         body.driverId ||
         (body.advertiserId && body.advertiserId !== user.entityId) ||
-        (body.campaignId && !await this.portalRequestsService.advertiserOwnsCampaign(
-          body.campaignId, user.entityId,
-        ))
+        (body.campaignId &&
+          !(await this.portalRequestsService.advertiserOwnsCampaign(
+            body.campaignId,
+            user.entityId,
+          )))
       ) {
-        throw new ForbiddenException("No puedes crear solicitudes para otra cuenta.");
+        throw new ForbiddenException(
+          "No puedes crear solicitudes para otra cuenta.",
+        );
       }
       return this.portalRequestsService.create({
         ...body,
@@ -67,7 +71,9 @@ export class PortalRequestsController {
         body.campaignId ||
         (body.driverId && body.driverId !== user.entityId)
       ) {
-        throw new ForbiddenException("No puedes crear solicitudes para otra cuenta.");
+        throw new ForbiddenException(
+          "No puedes crear solicitudes para otra cuenta.",
+        );
       }
       return this.portalRequestsService.create({
         ...body,

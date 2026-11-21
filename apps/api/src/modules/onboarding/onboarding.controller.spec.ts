@@ -44,7 +44,9 @@ describe("OnboardingController security boundary", () => {
       discountPercent: 40,
     });
     const request = {
-      expectedScreens: 1, campaignMonths: 1, includeProduction: false,
+      expectedScreens: 1,
+      campaignMonths: 1,
+      includeProduction: false,
       referralCode: "DRIVER_TEST_1",
     };
     const response = await controller.quote(request);

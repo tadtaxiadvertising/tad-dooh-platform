@@ -8,7 +8,11 @@ import { NotificationsService } from "../notifications/notifications.service";
 import * as crypto from "crypto";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { AuthUser } from "../auth/auth.types";
-import { calculateAdvertiserOffer, calculateImpact, ImpactOutput } from "@tad/impact-calculator";
+import {
+  calculateAdvertiserOffer,
+  calculateImpact,
+  ImpactOutput,
+} from "@tad/impact-calculator";
 import { ReferralService } from "../referral/referral.service";
 import type { Prisma } from "@prisma/client";
 import { deviceIdentityWhere } from "./device-identity-lookup";
@@ -1260,8 +1264,14 @@ export class CampaignService {
     // This simulation has no referral code, so it must use the REAL base
     // tariff, not RD$1,500 (the conditional 40%-discounted driver rate).
     // Keep historical BUSINESS_RULES untouched for old financial records.
-    if (typeof budgetRD !== "number" || !Number.isFinite(budgetRD) || budgetRD < 0) {
-      throw new BadRequestException("El presupuesto debe ser un monto válido no negativo.");
+    if (
+      typeof budgetRD !== "number" ||
+      !Number.isFinite(budgetRD) ||
+      budgetRD < 0
+    ) {
+      throw new BadRequestException(
+        "El presupuesto debe ser un monto válido no negativo.",
+      );
     }
     const costPerScreen = calculateAdvertiserOffer({
       screens: 1,

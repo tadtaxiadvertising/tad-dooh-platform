@@ -30,7 +30,10 @@ export default function AdvertiserPendingReview() {
             TAD · Plataforma de anunciantes
           </p>
           <div className="inline-flex items-center gap-3 rounded-full border border-[#FDCB01]/35 bg-[#FDCB01]/10 px-4 py-2 mb-6">
-            <span className="h-2 w-2 rounded-full bg-[#FDCB01]" aria-hidden="true" />
+            <span
+              className="h-2 w-2 rounded-full bg-[#FDCB01]"
+              aria-hidden="true"
+            />
             <span className="text-sm font-semibold text-[#FDCB01]">
               Solicitud en revisión
             </span>

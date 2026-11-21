@@ -84,3 +84,22 @@ module.exports = {
   isExecutableNonTestSource,
   containsEmbeddedPostgresPassword,
 };
+
+test("weekly security audit never passes credentials via psql URL or curl header argv", () => {
+  const src = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  assert.doesNotMatch(src, /postgres:\$DB_PASSWORD@/);
+  assert.doesNotMatch(src, /(?:-H|--header)\s+["']Authorization: Bearer \$SUPABASE_ACCESS_TOKEN/);
+  assert.match(src, /export PGPASSWORD="\$DB_PASSWORD"/);
+  assert.match(src, /curl -fsS --config -/);
+  assert.match(src, /PGHOST="db\.\$SUPABASE_PROJECT_REF\.supabase\.co"/);
+});
+
+test("weekly public audit artifacts contain counts only, never raw queries or lints", () => {
+  const src = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  assert.match(src, /advisories-summary\.json/);
+  assert.doesNotMatch(src, /path: advisories\.json/);
+  assert.doesNotMatch(src, /SELECT pid,[^\n]*query|AS duration, query/);
+  assert.doesNotMatch(src, /Storage usage: \$STORAGE_TOTAL/);
+  assert.doesNotMatch(src, /\.name\) - \\(\.detail\)/);
+  assert.match(src, /active_queries_over_30_seconds/);
+});

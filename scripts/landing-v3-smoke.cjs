@@ -593,12 +593,24 @@ async function main() {
               const span = rect.height - innerHeight;
               const progressBar = story.querySelector('[class*="progressTrack"] > div');
               const trackWidth = progressBar?.parentElement?.getBoundingClientRect().width ?? 0;
-              const stages = Object.fromEntries(['taxi', 'tablet', 'report'].map(name => [
-                name,
-                Number.parseFloat(getComputedStyle(
-                  story.querySelector('[data-tad-stage="' + name + '"]')
-                ).opacity),
-              ]));
+              const stages = Object.fromEntries(['taxi', 'tablet', 'report'].map(name => {
+                const scene = story.querySelector('[data-tad-stage="' + name + '"]');
+                const animations = scene.getAnimations().slice(0, 3).map(animation => ({
+                  playState: animation.playState,
+                  timeline: animation.timeline?.constructor?.name ?? null,
+                  keyframes: typeof animation.effect?.getKeyframes === 'function'
+                    ? animation.effect.getKeyframes().slice(0, 8).map(keyframe => ({
+                      opacity: keyframe.opacity ?? null, offset: keyframe.offset ?? null,
+                    }))
+                    : [],
+                }));
+                return [name, {
+                  computedOpacity: Number.parseFloat(getComputedStyle(scene).opacity),
+                  inlineOpacity: scene.style.opacity,
+                  cssAnimationName: getComputedStyle(scene).animationName,
+                  animations,
+                }];
+              }));
               return {
                 ratio,
                 scrollY: Math.round(scrollY),

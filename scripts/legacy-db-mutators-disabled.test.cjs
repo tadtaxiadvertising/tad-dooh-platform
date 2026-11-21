@@ -10,6 +10,7 @@ const root = path.resolve(__dirname, "..");
 const retired = [
   "apps/api/scripts/apply-v12-schema.cjs",
   "apps/api/scripts/dba_remediation.cjs",
+  "apps/api/scripts/clean-db.ts",
   "apps/api/create-playlist-items-table.js",
   "apps/api/fix-rls.js",
   "apps/api/fix-rls.ts",

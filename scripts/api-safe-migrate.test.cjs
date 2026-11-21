@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
+const { inspectLocalMigration } = require("../apps/api/scripts/assert-local-prisma-migration.cjs");
 
 const windows = process.platform === "win32";
 // Match the real-shell harness used by api-entrypoint-env.test.cjs.
@@ -229,4 +230,64 @@ test("new post-migration drift still fails closed after successful migration", (
   assert.equal(result.status, 31);
   assert.match(result.output, /schema drift detected/);
   assert.match(result.output, /migration invoked/);
+});
+
+test("developer Prisma migrate command cannot bypass the local-only gate", () => {
+  assert.equal(
+    pkg.scripts["prisma:migrate"],
+    "node scripts/assert-local-prisma-migration.cjs && prisma migrate dev",
+  );
+  assert.equal(pkg.scripts.clean, "ts-node scripts/clean-db.ts");
+});
+
+test("local-only migrate dev accepts only explicit opt-in and loopback DB", () => {
+  const base = {
+    NODE_ENV: "development",
+    TAD_APPROVE_LOCAL_MIGRATION: "YES",
+    DATABASE_URL: "postgresql://local-user:synthetic-secret@127.0.0.1:5432/tad_dev",
+  };
+  assert.equal(inspectLocalMigration(base), null);
+  assert.equal(inspectLocalMigration({ ...base, DATABASE_URL: "postgres://u:p@localhost:5432/dev" }), null);
+  assert.equal(inspectLocalMigration({ ...base, DATABASE_URL: "postgres://u:p@[::1]:5432/dev" }), null);
+});
+
+test("local Prisma migration refuses production/staging/undefined NODE_ENV and missing approval", () => {
+  const env = {
+    NODE_ENV: "development",
+    TAD_APPROVE_LOCAL_MIGRATION: "YES",
+    DATABASE_URL: "postgres://u:synthetic-secret@localhost:5432/dev",
+  };
+  for (const value of ["production", "staging", "", undefined]) {
+    assert.equal(inspectLocalMigration({ ...env, NODE_ENV: value }), "NON_DEVELOPMENT_ENVIRONMENT");
+  }
+  for (const value of ["no", "", undefined]) {
+    assert.equal(inspectLocalMigration({ ...env, TAD_APPROVE_LOCAL_MIGRATION: value }), "EXPLICIT_LOCAL_APPROVAL_REQUIRED");
+  }
+  assert.equal(inspectLocalMigration({ ...env, TAD_EXPECTED_SUPABASE_PROJECT_REF: "ltdcdhqixvbpdcitthqf" }), "PINNED_SUPABASE_PROJECT_PRESENT");
+});
+
+test("local migration refuses remote, malformed and absent database targets", () => {
+  const env = { NODE_ENV: "development", TAD_APPROVE_LOCAL_MIGRATION: "YES" };
+  for (const value of [undefined, "", "postgres://u:synthetic-secret@db.aaaaaaaaaaaaaaaaaaaa.supabase.co/postgres", "postgres://u:synthetic-secret@aws-0-us-west-2.pooler.supabase.com/postgres", "postgres://u:synthetic-secret@192.168.1.10/dev", "not-a-url", "https://localhost/dev"]) {
+    assert.notEqual(inspectLocalMigration({ ...env, DATABASE_URL: value }), null);
+  }
+});
+
+test("local migration refusal CLI never exposes database URLs or passwords", () => {
+  const script = path.join(root, "apps/api/scripts/assert-local-prisma-migration.cjs");
+  const fixture = "postgres://u:synthetic-secret@db.aaaaaaaaaaaaaaaaaaaa.supabase.co/postgres";
+  const env = {
+    PATH: "",
+    NODE_ENV: "development",
+    TAD_APPROVE_LOCAL_MIGRATION: "YES",
+    DATABASE_URL: fixture,
+  };
+  if (windows) env.SYSTEMROOT = process.env.SYSTEMROOT || process.env.SystemRoot || "";
+  const result = spawnSync(process.execPath, [script], {
+    cwd: root, env, encoding: "utf8", windowsHide: true, timeout: 4000,
+  });
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\[migration\] REFUSED \(NON_LOCAL_DATABASE_TARGET\)/);
+  assert.doesNotMatch(result.stdout + result.stderr, /synthetic-secret|db\.aaaaaaaaaaaaaaaaaaaa|postgres:\/\//);
 });

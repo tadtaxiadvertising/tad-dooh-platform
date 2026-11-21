@@ -226,7 +226,7 @@ jobs:
           
           if [ "$NEW_WARN_COUNT" -gt 0 ]; then
             echo "::warning::NEW WARNINGS DETECTED ($NEW_WARN_COUNT)"
-            echo "$NEW_WARNS" | jq -r '.[] | "WARN: \(.name) - \(.detail)"'
+            echo "$NEW_WARNS" | jq -r '.[] | "WARN: \(.name)"'
           fi
           
           # Fail if grants found

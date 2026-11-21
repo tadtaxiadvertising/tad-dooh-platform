@@ -31,6 +31,15 @@ if [ -z "${TAD_EXPECTED_SUPABASE_PROJECT_REF:-}" ]; then
   echo "[migration] REFUSED: TAD_EXPECTED_SUPABASE_PROJECT_REF is required (independently confirmed)." >&2
   exit 1
 fi
+# Reject noncanonical textual aliases BEFORE checking the actual target.
+# The offline parser trims/lowercases refs; a raw shell equality check would
+# otherwise let uppercase/padded aliases bypass the incident-specific freeze.
+case "${TAD_EXPECTED_SUPABASE_PROJECT_REF:-}" in
+  *[!a-z0-9]*)
+    echo "[migration] REFUSED: project ref must be lowercase ASCII without whitespace." >&2
+    exit 1
+    ;;
+esac
 node ../../scripts/verify-supabase-runtime-target.cjs
 
 # Retain the existing runtime/migration consistency preflight as defense in depth.

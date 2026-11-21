@@ -6,7 +6,7 @@
  *  - Entornos con conectividad inestable (3G, offline-first)
  *  - CI/CD en VPS con recursos limitados (Easypanel)
  */
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig } from "@playwright/test";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3004";
 

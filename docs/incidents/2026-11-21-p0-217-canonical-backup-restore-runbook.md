@@ -121,6 +121,21 @@ After the exports, use an organization-approved encryption tool/key to create an
 5. On the **clone only**, compare tables, columns/types, PK/FK/indexes, RLS and grants, functions/triggers, migration-history metadata, and aggregate row counts against the recorded source snapshot. Preserve the existing drift (23 missing tables, UUID/TEXT conflicts) as baseline evidence; a successful clone does **not** imply Prisma parity. Run apps/api/scripts/check-prisma-drift.cjs with an inspection-only role against the clone; an expected nonzero drift result is not a backup failure.
 6. Perform a second rehearsal restoring from the off-site encrypted copy, not only from the local plaintext export, to prove end-to-end recovery. Record start/end UTC, RPO and measured RTO, reviewer, object-count comparisons and any restore errors, never customer records or credentials.
 
+### Read-only missing-object inventory (2026-11-21; NOT a migration plan)
+
+Fresh catalog check on the owner-confirmed project found exactly these **23** absent Prisma-model tables (compare to the full current Prisma DMMF when preparing actual repair):
+
+```text
+active_ads, advertiser_subscriptions, analytics_events, bi_dashboard_snapshots,
+campaign_metrics, commission_ledger, commissions, contract_acceptances,
+conversation_messages, conversations, conversion_events, fleets, leads,
+payment_evidence, payment_intents, payment_verifications, playlists,
+portal_requests, qr_scans, reconciliation_reports, referral_attributions,
+settlement_batches, users
+```
+
+The current `schema.prisma` defines relationships requiring careful dependency ordering: `conversation_messages` references `conversations`; `payment_evidence` and `payment_verifications` reference `payment_intents`; `payment_intents` and `referral_attributions` reference `leads`; `commissions` references `drivers` and optional `settlement_batches`; `playlists` references `campaigns`. These are **Prisma source-level relations**, not proof of existing PostgreSQL foreign keys. The currently present referenced tables may have incompatible UUID/TEXT identifiers. Before creating ANY FK, reconcile actual physical column types, preserved data and target model types on a restored clone. Do not replay the historical migrations as-is or infer financial safety from a new empty ledger table.
+
 ## Step 3: schema repair **after** restore evidence
 
 - Freeze the source schema/data point-in-time and capture a fresh read-only Prisma/catalog diff with the exact main SHA. Never rewrite old migration SQL files or force history resolution.

@@ -52,8 +52,8 @@ test("all cinematic stage/caption visual transforms derive from the same JS scro
       name + " must be sampled with the function-based transform",
     );
   }
-  assert.match(story, /interpolateScrollProgress\(scrollYProgress\.get\(\), \[0\.69, 0\.83\], \[0, 1\]\)/);
-  assert.match(story, /interpolateScrollProgress\(scrollYProgress\.get\(\), \[0, 0\.24, 0\.39\], \[1, 1, 0\]\)/);
+  assert.match(story, /interpolateScrollProgress\(\s*scrollYProgress\.get\(\),\s*\[0\.69,\s*0\.83\],\s*\[0,\s*1\],?\s*\)/);
+  assert.match(story, /interpolateScrollProgress\(\s*scrollYProgress\.get\(\),\s*\[0,\s*0\.24,\s*0\.39\],\s*\[1,\s*1,\s*0\],?\s*\)/);
 });
 
 test("hero entrance keeps no-JS headings opaque from the first frame", () => {

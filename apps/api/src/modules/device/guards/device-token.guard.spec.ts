@@ -20,12 +20,6 @@ describe("DeviceTokenGuard device ownership", () => {
 
   const contextFor = (overrides: Record<string, unknown> = {}) => {
     const request = {
-      headers: {
-        "x-device-token": jwt.sign(
-          { deviceId: "TAD-A", type: "DEVICE_AUTH" },
-          signingKey,
-        ),
-      },
       body: { deviceId: "TAD-A" },
       query: {},
       params: {},
@@ -126,19 +120,24 @@ describe("DeviceTokenGuard device ownership", () => {
     expect(request).toHaveProperty("authenticatedDeviceId", "TAD-A");
   });
 
-  it.each([
+  const crossDeviceCases: Array<[Record<string, unknown>, string]> = [
     [{ body: { deviceId: "TAD-B" } }, "POST /device/sync"],
     [{ body: { device_id: "TAD-B" } }, "POST /device/bulk-sync"],
     [{ query: { device_id: "TAD-B" } }, "GET /assets/manifest"],
     [{ headers: { "x-device-id": "TAD-B" } }, "conflicting device header"],
     [{ params: { deviceId: "TAD-B" } }, "path-scoped device"],
-  ])("rejects cross-device access (%s, %s)", async (override) => {
-    const { context } = contextFor(override);
-    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
-    expect(findUnique).not.toHaveBeenCalled();
-  });
+  ];
+
+  it.each(crossDeviceCases)(
+    "rejects cross-device access (%s, %s)",
+    async (override) => {
+      const { context } = contextFor(override);
+      await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+      expect(findUnique).not.toHaveBeenCalled();
+    },
+  );
 
   it("allows the command ACK route's command-id path without treating it as a device", async () => {
     const { context } = contextFor({ params: { id: "command-uuid" } });

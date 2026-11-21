@@ -651,6 +651,9 @@ export class AnalyticsService {
 
 export interface AnalyticsSummary {
   totalImpressions: number;
+  verifiedImpressions: number;
+  unverifiedImpressions: number;
+  impressionMetricBasis: "raw";
   activeNodes: number;
   totalScans: number;
   ctr: number;

@@ -201,29 +201,22 @@ describe("CommissionService", () => {
       expect(result.status).toBe("APPROVED");
     });
 
-    it("should create new batch when no commissions pending", async () => {
-      mockPrisma.settlementBatch.findUnique.mockResolvedValue(null);
-      mockPrisma.commission.findMany.mockResolvedValue([]);
-      mockPrisma.settlementBatch.create.mockResolvedValue({
-        id: "batch-new",
-        period: "2026-09",
-        referents: [],
-        grossTotal: 0,
-        netTotal: 0,
-        withholdings: 0,
-        status: "APPROVED",
-        approvedAt: new Date(),
-        paidAt: null,
-        createdAt: new Date(),
-      });
+    it(
+      "rejects a zero-commission settlement so later approvals remain eligible",
+      async () => {
+        mockPrisma.settlementBatch.findUnique.mockResolvedValue(null);
+        mockPrisma.commission.findMany.mockResolvedValue([]);
 
-      const result = await service.generateMonthlySettlement({
-        month: 9,
-        year: 2026,
-        generatedBy: "admin-1",
-      });
+        await expect(
+          service.generateMonthlySettlement({
+            month: 9,
+            year: 2026,
+            generatedBy: "admin-1",
+          }),
+        ).rejects.toThrow("has no approved commissions");
 
-      expect(result.grossTotal).toBe(0);
-    });
+        expect(mockPrisma.settlementBatch.create).not.toHaveBeenCalled();
+      },
+    );
   });
 });

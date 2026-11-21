@@ -216,7 +216,11 @@ describe("DriversService.assignDevice atomic handoff", () => {
       where: { OR: [{ deviceId: string }, { id: string }] };
     }) => {
       const id = where.OR[0].deviceId === "TAD-SECOND" ? "second-target" : "target-tablet";
-      return { id, deviceId: where.OR[0].deviceId };
+      return {
+        id,
+        deviceId: where.OR[0].deviceId,
+        driverId: links.get(id) ?? null,
+      };
     });
 
     await Promise.all([

@@ -50,7 +50,7 @@ while ($null -ne $cursor) {
     $cursor = $cursor.Parent
 }
 $cliVersion = (& supabase --version | Select-Object -First 1).Trim()
-if ($LASTEXITCODE -ne 0 -or $cliVersion -notmatch '^3\\.') {
+if ($LASTEXITCODE -ne 0 -or $cliVersion -notmatch '^3\.') {
     throw "REFUSED: this runbook requires verified Supabase CLI v3."
 }
 & supabase db dump --help
@@ -96,10 +96,10 @@ After copying the manifest and the three SQL files onto the encrypted operator v
 ~~~powershell
 $env:TAD_EXPECTED_SUPABASE_PROJECT_REF = "ltdcdhqixvbpdcitthqf"
 try {
-    & node .\\scripts\\verify-supabase-backup-export.cjs $destination
+    & node .\scripts\verify-supabase-backup-export.cjs $destination
     if ($LASTEXITCODE -ne 0) { throw "Export-integrity check refused or failed." }
 } finally {
-    Remove-Item Env:\\TAD_EXPECTED_SUPABASE_PROJECT_REF -ErrorAction SilentlyContinue
+    Remove-Item Env:\TAD_EXPECTED_SUPABASE_PROJECT_REF -ErrorAction SilentlyContinue
 }
 ~~~
 

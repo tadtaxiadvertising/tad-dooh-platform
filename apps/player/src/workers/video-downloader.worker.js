@@ -297,6 +297,9 @@ async function handleDownloadAssets(message) {
         }
 
         const blob = await response.blob();
+        if (blob.size === 0) {
+          throw new Error('Empty media response');
+        }
         if (blob.size > MAX_VIDEO_SIZE_BYTES) {
           throw new Error('Asset exceeds MAX_VIDEO_SIZE_BYTES (' + blob.size + ' bytes)');
         }

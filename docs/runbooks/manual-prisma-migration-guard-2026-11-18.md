@@ -18,15 +18,16 @@ Current `apps/api/prisma/schema.prisma` uses `env("DATABASE_URL")` for the datas
 Both manual npm scripts call a single `apps/api/scripts/migrate-safe.sh` wrapper:
 
 1. Requires explicit `TAD_APPROVE_MANUAL_MIGRATION=YES`. An unattended invocation with no flag fails closed.
-2. Checks `DATABASE_URL`, `SUPABASE_URL` and `DIRECT_URL` presence without logging values.
-3. Runs existing `node ./scripts/check-supabase-target.cjs` to verify matching Supabase project identifiers and reject unverified or wrong-project hosts.
-4. Uses `DATABASE_URL="$DIRECT_URL" pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma` only for the migration subprocess, keeping runtime `DATABASE_URL` unchanged.
-5. After `migrate deploy` returns successfully, uses the existing read-only `check-prisma-drift.cjs` against `DIRECT_URL` to compare all Prisma-model tables, columns, identifier types and relation types with PostgreSQL metadata. If the schema still differs, it returns nonzero and `start:migrate` does **not** start the application.
-6. Propagates migration/verification failures. No `db push`, `--accept-data-loss`, schema reset, automatic token generation or hidden retry.
+2. Checks `DATABASE_URL`, `SUPABASE_URL`, `DIRECT_URL` and the **independently owner-confirmed** `TAD_EXPECTED_SUPABASE_PROJECT_REF` without logging their values.
+3. Runs `node ../../scripts/verify-supabase-runtime-target.cjs` from `apps/api` to require all three URL project references to match that independently chosen ref; unscoped pooler user names and mismatches fail closed, before any SQL writes.
+4. Retains `node ./scripts/check-supabase-target.cjs` as a second consistency check between Auth, runtime and migration URLs.
+5. Uses `DATABASE_URL="$DIRECT_URL" pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma` only for the migration subprocess, keeping runtime `DATABASE_URL` unchanged.
+6. After `migrate deploy` returns successfully, uses the existing read-only `check-prisma-drift.cjs` against `DIRECT_URL` to compare all Prisma-model tables, columns, identifier types, relations and GPS contract. If any drift remains, it returns nonzero and `start:migrate` does **not** start the application.
+7. Propagates failures. No `db push`, `--accept-data-loss`, schema reset, automatic token generation or hidden retry.
 
 **Important transactional limitation:** `migrate deploy` can already have committed SQL migrations before this *postcondition* discovers drift. A failed postcheck does **not** roll those migrations back and must not be described as a no-write outcome. Run only after snapshot, independent schema review and staging tests. The drift script reads `information_schema` metadata, not customer rows, and never prints connection strings.
 
-The normal official Docker entrypoint remains unchanged and uses its own existing target check and `migrate deploy`. This patch concerns manual/legacy npm entry points only.
+The current Docker API entrypoint performs **read-only** target and Prisma-parity checks; it does **not** run `migrate deploy`. This guard concerns the separate, explicitly authorized manual npm migration entry points.
 
 ## Required operator preconditions
 
@@ -36,9 +37,10 @@ The normal official Docker entrypoint remains unchanged and uses its own existin
 - Run `pnpm exec prisma migrate status --schema=./prisma/schema.prisma` from `apps/api` on the verified staging connection (using the correct controlled environment). Review drift before applying.
 - Only with approved change window and supervised target identity, execute the exact same versioned migration against the intended environment.
 
-Manual commands (only after those prerequisites):
+Manual commands (only after those prerequisites, with the expected project ref **provided privately by the infrastructure owner**; never infer it from repository templates):
 ```bash
 cd apps/api
+: "${TAD_EXPECTED_SUPABASE_PROJECT_REF:?operator must pin the approved project ref}"
 TAD_APPROVE_MANUAL_MIGRATION=YES npm run deploy:migrate
 # or, only where application start after migrations is intentional:
 TAD_APPROVE_MANUAL_MIGRATION=YES npm run start:migrate
@@ -48,6 +50,7 @@ TAD_APPROVE_MANUAL_MIGRATION=YES npm run start:migrate
 
 ```bash
 node --test scripts/api-safe-migrate.test.cjs
+node --test scripts/verify-supabase-runtime-target.test.cjs
 node --test scripts/api-entrypoint-env.test.cjs apps/api/scripts/check-supabase-target.test.cjs
 pnpm --filter api run build
 ```

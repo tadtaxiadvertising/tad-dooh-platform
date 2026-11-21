@@ -24,8 +24,16 @@ if [ -z "${DIRECT_URL:-}" ]; then
   exit 1
 fi
 
-# Ensures both URLs belong to the same Supabase project. Fail closed when
-# the ref cannot be established; do not touch the DB on mismatch.
+# Independently pin the *canonical* project before making ANY schema write.
+# Matching runtime and migration URLs alone cannot prove the destination is
+# the project authorized by the infrastructure owner.
+if [ -z "${TAD_EXPECTED_SUPABASE_PROJECT_REF:-}" ]; then
+  echo "[migration] REFUSED: TAD_EXPECTED_SUPABASE_PROJECT_REF is required (independently confirmed)." >&2
+  exit 1
+fi
+node ../../scripts/verify-supabase-runtime-target.cjs
+
+# Retain the existing runtime/migration consistency preflight as defense in depth.
 node ./scripts/check-supabase-target.cjs
 
 # Prisma's datasource uses DATABASE_URL; temporarily point ONLY this

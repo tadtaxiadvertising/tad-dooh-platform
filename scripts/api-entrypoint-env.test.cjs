@@ -67,6 +67,13 @@ pnpm() {
   fi
   return 17
 }
+sleep() {
+  if [ "$#" -ne 1 ] || [ "$1" != "90" ]; then
+    echo '[test] unexpected cooldown'
+    return 93
+  fi
+  echo '[test] restart cooldown requested'
+}
 `;
 
 function runEntrypoint(environment = {}) {
@@ -156,122 +163,68 @@ for (const [description, environment] of [
   ["unset", {}],
   ["empty", { JWT_SECRET: "" }],
 ]) {
-  test(`the real API entrypoint fails closed with a clear JWT diagnostic when JWT_SECRET is ${description}`, () => {
+  test("entrypoint fails closed when JWT_SECRET is " + description, () => {
     const { status, output } = runEntrypoint(environment);
     assert.equal(status, 1);
     assert.match(output, /FATAL: JWT_SECRET not configured/);
-    assertSafeMissingDiagnostics(output, [
-      "JWT_SECRET",
-      "DATABASE_URL",
-      "SUPABASE_URL",
-      "DIRECT_URL",
-    ]);
-    assert.doesNotMatch(output, /Applying Prisma migrations/);
+    assertSafeMissingDiagnostics(output, ["JWT_SECRET","DATABASE_URL","SUPABASE_URL","DIRECT_URL"]);
+    assert.match(output, /90-second idle cooldown/);
+    assert.match(output, /\[test\] restart cooldown requested/);
     assert.equal(output.includes(migrationMarker), false);
     assertNoNodeStart(output);
   });
 }
 
-test("the real API entrypoint reports missing DIRECT_URL safely after JWT validation", () => {
-  const { status, output } = runEntrypoint({
-    JWT_SECRET: fixtures.JWT_SECRET,
-    DATABASE_URL: fixtures.DATABASE_URL,
-    SUPABASE_URL: fixtures.SUPABASE_URL,
+for (const missing of ["DATABASE_URL", "SUPABASE_URL", "DIRECT_URL"]) {
+  test("missing " + missing + " fails closed with cooldown before database checks", () => {
+    const env = { ...fixtures };
+    delete env[missing];
+    const { status, output } = runEntrypoint(env);
+    assert.equal(status, 1);
+    assert.match(output, new RegExp("FATAL: " + missing + " is required"));
+    assert.doesNotMatch(output, /\[test\] Supabase target verified|schema parity verified/);
+    assert.match(output, /90-second idle cooldown/);
+    assert.match(output, /\[test\] restart cooldown requested/);
+    assert.equal(output.includes(migrationMarker), false);
+    assertNoNodeStart(output);
   });
-  assert.equal(status, 1);
-  assert.match(output, /\[entrypoint\] JWT_SECRET=SET/);
-  assert.match(output, /FATAL: DIRECT_URL is required/);
-  assertSafeMissingDiagnostics(output, [
-    "DATABASE_URL",
-    "SUPABASE_URL",
-    "DIRECT_URL",
-  ]);
-  assert.equal(output.includes(migrationMarker), false);
-  assertNoNodeStart(output);
-});
+}
 
-test("the real entrypoint rejects missing runtime DATABASE_URL before Prisma preflight", () => {
-  const { status, output } = runEntrypoint({
-    JWT_SECRET: fixtures.JWT_SECRET,
-    SUPABASE_URL: fixtures.SUPABASE_URL,
-    DIRECT_URL: fixtures.DIRECT_URL,
-  });
-  assert.equal(status, 1);
-  assert.match(output, /FATAL: DATABASE_URL is required/);
-  assert.equal(output.includes(migrationMarker), false);
-  assert.doesNotMatch(output, /Applying Prisma migrations/);
-  assertNoNodeStart(output);
-});
-
-test("the real entrypoint rejects missing SUPABASE_URL before Prisma preflight", () => {
-  const { status, output } = runEntrypoint({
-    JWT_SECRET: fixtures.JWT_SECRET,
-    DATABASE_URL: fixtures.DATABASE_URL,
-    DIRECT_URL: fixtures.DIRECT_URL,
-  });
-  assert.equal(status, 1);
-  assert.match(output, /FATAL: SUPABASE_URL is required/);
-  assert.equal(output.includes(migrationMarker), false);
-  assert.doesNotMatch(output, /Applying Prisma migrations/);
-  assertNoNodeStart(output);
-});
-
-test("the real entrypoint rejects target-check failure before any migration", () => {
-  const { status, output } = runEntrypoint({
-    ...fixtures,
-    TAD_TEST_PREFLIGHT_FAIL: "1",
-  });
+test("Supabase target mismatch blocks the API before any drift check or migration", () => {
+  const { status, output } = runEntrypoint({ ...fixtures, TAD_TEST_PREFLIGHT_FAIL: "1" });
   assert.equal(status, 18);
   assert.match(output, /\[test\] Supabase target rejected/);
+  assert.match(output, /\[test\] restart cooldown requested/);
   assert.equal(output.includes(migrationMarker), false);
+  assert.doesNotMatch(output, /schema parity verified/);
   assertNoNodeStart(output);
 });
 
-test("the real API entrypoint propagates migration failure without starting Node or logging values", () => {
-  const { status, output } = runEntrypoint(fixtures);
-  assert.equal(status, 17);
-  for (const name of Object.keys(fixtures)) {
-    assert.ok(
-      output.includes(`[entrypoint] ${name}=SET`),
-      `${name} must be reported as SET.`,
-    );
-  }
-  assert.equal(output.includes(migrationMarker), true);
-  assert.doesNotMatch(output, /Prisma migrations applied/);
-  assert.doesNotMatch(output, /parameter not set|unbound variable/i);
-  assertNoNodeStart(output);
-});
-
-test("the real entrypoint refuses to start after migration when schema parity fails", () => {
-  const { status, output } = runEntrypoint({
-    ...fixtures,
-    TAD_TEST_MIGRATION_SUCCEED: "1",
-    TAD_TEST_DRIFT_FAIL: "1",
-  });
+test("Prisma drift still fails closed with original status but no migration", () => {
+  const { status, output } = runEntrypoint({ ...fixtures, TAD_TEST_DRIFT_FAIL: "1" });
   assert.equal(status, 31);
   assert.match(output, /\[test\] schema drift detected/);
-  assert.equal(output.includes(migrationMarker), true);
-  assert.doesNotMatch(output, /Prisma migrations applied; schema parity verified/);
+  assert.match(output, /90-second idle cooldown/);
+  assert.match(output, /\[test\] restart cooldown requested/);
+  assert.equal(output.includes(migrationMarker), false);
+  assert.doesNotMatch(output, /Prisma schema parity verified; no migrations executed/);
   assertNoNodeStart(output);
 });
 
-test("the real entrypoint starts only after clean migrations AND matching schema", {
+test("clean schema starts API without migration or a restart cooldown", {
   skip: windows ? "No portable POSIX fake node on Windows Git Bash" : false,
 }, () => {
-  const { status, output } = runEntrypoint({
-    ...fixtures,
-    TAD_TEST_MIGRATION_SUCCEED: "1",
-  });
+  const { status, output } = runEntrypoint(fixtures);
   assert.equal(status, 0);
   assert.match(output, /\[test\] Supabase target verified/);
   assert.match(output, /\[test\] schema parity verified/);
-  assert.match(output, /Prisma migrations applied; schema parity verified/);
+  assert.match(output, /Prisma schema parity verified; no migrations executed/);
   assert.match(output, /\[test\] API exec reached/);
+  assert.equal(output.includes(migrationMarker), false);
+  assert.doesNotMatch(output, /restart cooldown requested/);
 });
 
-test("failure of Prisma migrations never invokes the read-only parity check", () => {
-  const { status, output } = runEntrypoint(fixtures);
-  assert.equal(status, 17);
-  assert.doesNotMatch(output, /\[test\] schema parity verified|schema drift detected/);
-  assertNoNodeStart(output);
+test("runtime startup contains no automatic Prisma migration or db push", () => {
+  assert.doesNotMatch(entrypoint, /pnpm\s+exec\s+prisma\s+migrate|prisma\s+db\s+push|migrate\s+resolve|--accept-data-loss/);
+  assert.match(entrypoint, /check-prisma-drift\.cjs/);
 });

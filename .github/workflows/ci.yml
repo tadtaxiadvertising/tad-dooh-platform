@@ -134,6 +134,7 @@ jobs:
           node --test scripts/ci-e2e-isolation.test.cjs
           node --test scripts/ci-docker-matrix.test.cjs scripts/ghcr-api-promotion-contract.test.cjs scripts/tracked-postgres-secrets-guard.test.cjs
           node --test scripts/api-entrypoint-env.test.cjs
+          node --test scripts/api-docker-ownership.test.cjs
           node --test scripts/easypanel-host-triage.test.cjs
           node --test scripts/api-safe-migrate.test.cjs
           node --test apps/api/scripts/prisma-drift-core.test.cjs

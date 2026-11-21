@@ -46,3 +46,36 @@ The merged change is a **preventive smallest-safe-change mitigation**, not a con
 3. As soon as control-panel access is restored, disable GitHub **Auto Deploy** on every application rebuilding from this repository. Record deployment SHA/image digests and preserve rollback paths.
 4. Reserve panel/host CPU and RAM, configure Docker Buildx builder resource limits and app reservations/limits, then build outside the VPS. Never ship production env to Docker build arguments.
 5. Require executed green CI, staging smoke, schema parity and backup validation before promoting a fixed immutable image. Missing Prisma tables remain a separate #217 blocker.
+
+## Update — 2026-11-21 00:20 UTC: PR #408 is now merged
+
+PR #408 was merged in `main` at `3f44a14`. It groups *routine* Dependabot version updates but **cannot stop EasyPanel builds** from any subsequent push to `main`. The actual GitHub-to-EasyPanel auto-deployment setting and the deployment SHA are not observable with current access. No new merge to main is safe until provider console recovery or explicit isolation from GitHub webhooks.
+
+### First responder: provider console, not EasyPanel UI or SSH
+
+If both EasyPanel admin and SSH are inaccessible, use the **VPS provider's web/KVM/serial/rescue console**, or contact provider support to check the host. The repository now includes `scripts/easypanel-host-triage.sh` for this purpose **only when a trusted copy is available on the VPS** (do not fetch arbitrary remote scripts as root). This script collects only:
+
+- UTC time, uptime and system load; RAM/swap, disk and inode capacity;
+- Docker daemon and Swarm state;
+- names/replica counts, EasyPanel and Traefik task states;
+- Docker disk **summary** and *aggregate* kernel OOM count.
+
+It **does not** fetch environmental secrets, URLs, full logs, Docker task errors, credentials or customer data; it does not restart/scale/alter any service, run a Docker cleanup or migrate a DB.
+
+Run with `sh scripts/easypanel-host-triage.sh` from a verified checkout or script copy **on the host**. The Node fixture test is `node --test scripts/easypanel-host-triage.test.cjs`. The script tests were executed on a local synthetic environment (POSIX syntax, static no-write constraints and synthetic redaction, 3/3 passed). They are **not** evidence the production host is healthy.
+
+If the script or repository is not available from the provider console, ask provider support for: RAM/swap exhaustion, OOM kills, root and Docker disk/inode availability, Docker daemon health, EasyPanel/Traefik task state and concurrent Docker builder processes. Preserve evidence **without posting full env vars, Docker build args or log dumps**.
+
+### Interpretation and safe next actions
+
+- **Out-of-memory/OOM:** stop or cap the identified build/restart source after confirming process ownership; reserve OS/EasyPanel headroom; switch to prebuilt images generated externally. Do not blindly increase timeouts.
+- **Full disk/inodes:** identify build cache and container-log usage; take snapshots first. Never delete volumes, databases, Swarm state, or indiscriminately `docker system prune --volumes`.
+- **Docker not active:** determine whether OS, disks or Docker daemon failed before restarting. A blind daemon or VPS reboot can cause additional outage.
+- **Docker active, EasyPanel failing:** inspect the panel service status and *sanitized* error details via provider console before a controlled restart. Restore management access first, not `tad-api` at the expense of the host.
+- **Panel restored:** disable GitHub **Auto Deploy** for all TAD GitHub-backed apps (EasyPanel supports `disableAppGithubDeploy`), preserve deployment SHA/image digest, configure constrained or remote Docker builders, and use reviewed immutable image digests from a secure registry. Never share the panel API bearer token.
+
+Sources: [EasyPanel App](https://easypanel.io/docs/services/app), [disable GitHub auto-deploy API](https://easypanel.io/docs/api/services/app/disableAppGithubDeploy), [Docker builders](https://easypanel.io/docs/builders).
+
+### Release gate
+
+Even though the API no-migrate-on-boot mitigation (#406) is merged, **its deployment and production validation remain unknown**. Prisma model/schema drift (#217) still blocks safe API startup. GitHub CI/Docker jobs have been observed failing without executed steps (#147), so their red status must not be claimed as executed application tests. Do not merge, trigger GHCR promotion or perform manual EasyPanel redeploy until production control-plane access and test execution are restored.

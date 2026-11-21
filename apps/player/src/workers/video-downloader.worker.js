@@ -228,7 +228,7 @@ async function handleSyncAssets(message) {
     // trust that status unless the blob is actually cached and current.
     if (existingTask && existingTask.status === 'done' &&
       existingTask.checksum === (asset.checksum || null) &&
-      await hasStoredVideo(asset)) {
+      await hasStoredVideo(asset).catch(function () { return false; })) {
       skipped++;
       tasks.push(existingTask);
       continue;

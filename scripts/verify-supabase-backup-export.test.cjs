@@ -62,6 +62,18 @@ test("refuses export directory nested within the repository root", () => withFix
   assert.equal(await checkExport(f.directory, REF, path.dirname(f.directory)), "IN_REPOSITORY");
 }));
 
+test("refuses backup directory nested inside any other Git checkout", () => withFixture(async f => {
+  const otherRepo = await fs.promises.mkdtemp(path.join(os.tmpdir(), "tad-unrelated-repo-"));
+  try {
+    await fs.promises.mkdir(path.join(otherRepo, ".git"));
+    const movedBackup = path.join(otherRepo, "private-backup");
+    await fs.promises.cp(f.directory, movedBackup, { recursive: true });
+    assert.equal(await checkExport(movedBackup, REF), "IN_REPOSITORY");
+  } finally {
+    await fs.promises.rm(otherRepo, { recursive: true, force: true });
+  }
+}));
+
 test("refuses symlinked SQL artifacts", { skip: process.platform === "win32" }, () => withFixture(async f => {
   await fs.promises.unlink(path.join(f.directory, "roles.sql"));
   await fs.promises.symlink(path.join(f.directory, "schema.sql"), path.join(f.directory, "roles.sql"));

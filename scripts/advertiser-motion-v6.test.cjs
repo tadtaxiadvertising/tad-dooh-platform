@@ -56,6 +56,14 @@ test("all cinematic stage/caption visual transforms derive from the same JS scro
   assert.match(story, /interpolateScrollProgress\(scrollYProgress\.get\(\), \[0, 0\.24, 0\.39\], \[1, 1, 0\]\)/);
 });
 
+test("hero entrance keeps no-JS headings opaque from the first frame", () => {
+  const entry = css.match(/@keyframes advertiserHeroIn\s*\{([\s\S]*?)\n\}/)?.[1];
+  assert.ok(entry, "The cinematic hero entrance should remain defined.");
+  assert.doesNotMatch(entry, /opacity\s*:/, "The entrance must not hide SSR/no-JS text.");
+  assert.match(entry, /translate3d\(0, 24px, 0\)/);
+  assert.match(entry, /translate3d\(0, 0, 0\)/);
+});
+
 test("white page style remains scoped to the landing, keeping CTA and legible form controls", () => {
   assert.match(css, /Advertiser Motion V6/);
   assert.match(css, /background: #ffffff;/);

@@ -55,7 +55,7 @@ const boundary = `node() {
         echo "[fixture] drift check used wrong database" >&2
         return 93
       fi
-      if [ "\${TAD_TEST_DRIFT_FAIL:-}" = "1" ]; then
+      if [ "\${TAD_TEST_DRIFT_FAIL:-}" = "1" ] || { [ "\${TAD_TEST_DRIFT_POST_FAIL:-}" = "1" ] && [ "\${TAD_TEST_MIGRATION_INVOKED:-}" = "1" ]; }; then
         echo "[fixture] schema drift detected" >&2
         return 31
       fi
@@ -76,6 +76,7 @@ pnpm() {
     echo "[fixture] invalid migration contract" >&2
     return 92
   fi
+  TAD_TEST_MIGRATION_INVOKED=1
   echo "[fixture] migration invoked"
   return "\${TAD_TEST_MIGRATE_STATUS:-23}"
 }
@@ -157,7 +158,8 @@ test("only direct DB URL reaches versioned migrate deploy, and failure propagate
   assert.match(result.output, /\[fixture\] target checked/);
   assert.ok(result.output.includes(migrateMarker));
   assert.doesNotMatch(result.output, /db push|accept-data-loss/);
-  assert.doesNotMatch(result.output, /schema verified|schema drift detected/);
+  assert.equal((result.output.match(/schema verified/g) || []).length, 1, "preflight ran, postflight did not");
+  assert.doesNotMatch(result.output, /schema drift detected/);
 });
 
 test("successful migration is not declared complete until schema parity passes", () => {
@@ -165,14 +167,22 @@ test("successful migration is not declared complete until schema parity passes",
   assert.equal(result.status, 0);
   assert.match(result.output, /migration invoked/);
   assert.match(result.output, /pinned project checked/);
-  assert.match(result.output, /schema verified/);
+  assert.equal((result.output.match(/schema verified/g) || []).length, 2, "check before and after migration");
 });
 
-test("post-migration missing schema fails closed instead of returning success", () => {
+test("preexisting schema drift refuses before migration starts", () => {
+  const result = execute({ ...fixtures, TAD_TEST_DRIFT_FAIL: "1" });
+  assert.equal(result.status, 31);
+  assert.match(result.output, /schema drift detected/);
+  assert.match(result.output, /REFUSED: preexisting schema drift/);
+  assert.doesNotMatch(result.output, /migration invoked/);
+});
+
+test("new post-migration drift still fails closed after successful migration", () => {
   const result = execute({
     ...fixtures,
     TAD_TEST_MIGRATE_STATUS: "0",
-    TAD_TEST_DRIFT_FAIL: "1",
+    TAD_TEST_DRIFT_POST_FAIL: "1",
   });
   assert.equal(result.status, 31);
   assert.match(result.output, /schema drift detected/);

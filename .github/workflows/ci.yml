@@ -87,6 +87,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared impact calculator before consumer checks
+        run: |
+          set -euo pipefail
+          pnpm --filter @tad/impact-calculator run build
+
       - name: TypeScript check (all workspaces)
         run: |
           set -euo pipefail
@@ -117,6 +122,16 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build shared impact calculator before consumer checks
+        run: |
+          set -euo pipefail
+          pnpm --filter @tad/impact-calculator run build
+
+      - name: Verify built impact calculator public contract
+        run: |
+          set -euo pipefail
+          node --test scripts/impact-calculator-build-contract.test.cjs
 
       - name: Run API tests
         run: |

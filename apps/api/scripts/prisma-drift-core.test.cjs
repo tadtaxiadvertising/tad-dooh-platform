@@ -240,3 +240,27 @@ test("GPS SQL contract ignores schemas without a Telemetry model", () => {
   });
   assert.equal(report.gpsSqlContractIssueCount, 0);
 });
+
+test("GPS SQL contract blocks startup when geography exists but PostGIS is missing", () => {
+  const report = auditGpsSqlContract({
+    models: gpsModel,
+    tables: gpsTable,
+    columns: geographyColumn,
+    extensions: [],
+  });
+  assert.deepEqual(report.gpsSqlContractIssues, [
+    { code: "POSTGIS_EXTENSION_MISSING" },
+  ]);
+});
+
+test("GPS SQL contract does not mistake another extension for PostGIS", () => {
+  const report = auditGpsSqlContract({
+    models: gpsModel,
+    tables: gpsTable,
+    columns: geographyColumn,
+    extensions: [{ extname: "pgcrypto" }],
+  });
+  assert.deepEqual(report.gpsSqlContractIssues, [
+    { code: "POSTGIS_EXTENSION_MISSING" },
+  ]);
+});

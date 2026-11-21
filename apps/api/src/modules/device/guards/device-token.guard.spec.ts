@@ -128,13 +128,16 @@ describe("DeviceTokenGuard device ownership", () => {
     [{ params: { deviceId: "TAD-B" } }, "path-scoped device"],
   ];
 
-  it.each(crossDeviceCases)("rejects cross-device access (%s, %s)", async (override) => {
-    const { context } = contextFor(override);
-    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
-    expect(findUnique).not.toHaveBeenCalled();
-  });
+  it.each(crossDeviceCases)(
+    "rejects cross-device access (%s, %s)",
+    async (override) => {
+      const { context } = contextFor(override);
+      await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+      expect(findUnique).not.toHaveBeenCalled();
+    },
+  );
 
   it("allows the command ACK route's command-id path without treating it as a device", async () => {
     const { context } = contextFor({ params: { id: "command-uuid" } });

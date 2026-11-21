@@ -207,9 +207,12 @@ jobs:
           echo "=== AUDIT RESULT ==="
           
           # Fail on new ERRORs (excluding known blocked ones)
-          KNOWN_BLOCKED_ERRORS='["rls_disabled_in_public"]'
+          # Do not suppress every RLS-disabled table by lint name.
+          # The only legacy exception is the exact extension-managed object;
+          # missing/unknown metadata fails closed and remains a NEW_ERROR.
+          KNOWN_BLOCKED_ERRORS='{"name":"rls_disabled_in_public","schema":"public","table":"spatial_ref_sys"}'
           NEW_ERRORS=$(echo "$ADVISORIES" | jq --argjson known "$KNOWN_BLOCKED_ERRORS" \
-            '[.[] | select(.level=="ERROR" and ((.name | IN($known[])) | not))]')
+            '[.[] | select(.level=="ERROR" and ((.name == $known.name and .metadata.schema == $known.schema and .metadata.name == $known.table) | not))]')
           NEW_ERROR_COUNT=$(echo "$NEW_ERRORS" | jq 'length')
           
           if [ "$NEW_ERROR_COUNT" -gt 0 ]; then

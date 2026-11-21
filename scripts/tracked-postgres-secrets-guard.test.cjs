@@ -135,6 +135,9 @@ test("weekly audit severity filters include only unknown errors and warnings", {
     { level: "INFO", name: "informational" },
     { level: "WARN", name: "known_warning" },
     { level: "WARN", name: "new_warning" },
+    { level: "ERROR", name: "rls_disabled_in_public", metadata: { schema: "public", name: "spatial_ref_sys" } },
+    { level: "ERROR", name: "rls_disabled_in_public", metadata: { schema: "public", name: "new_unprotected_table" } },
+    { level: "ERROR", name: "rls_disabled_in_public", metadata: { schema: "private", name: "spatial_ref_sys" } },
     { level: "ERROR", name: "rls_disabled_in_public" },
     { level: "ERROR", name: "new_security_error" },
   ];
@@ -143,9 +146,13 @@ test("weekly audit severity filters include only unknown errors and warnings", {
       input: JSON.stringify(items), encoding: "utf8", timeout: 4000,
     });
     assert.equal(run.status, 0, "jq severity filter failed");
-    return JSON.parse(run.stdout).map(item => item.name);
+    return JSON.parse(run.stdout).map(item => item.metadata?.name || item.name);
   }
-  assert.deepEqual(apply(filterFor("NEW_ERRORS"), ["rls_disabled_in_public"]), ["new_security_error"]);
+  assert.deepEqual(
+    apply(filterFor("NEW_ERRORS"), { name: "rls_disabled_in_public", schema: "public", table: "spatial_ref_sys" }),
+    ["new_unprotected_table", "spatial_ref_sys", "rls_disabled_in_public", "new_security_error"],
+    "RLS missing on any new public table must never be suppressed by lint name",
+  );
   assert.deepEqual(apply(filterFor("NEW_WARNS"), ["known_warning"]), ["new_warning"]);
 });
 

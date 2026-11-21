@@ -118,3 +118,64 @@ test("weekly Supabase audit shell block parses with its heredoc after YAML inden
   });
   assert.equal(parsed.status, 0, "Bash syntax check refused (no secret values printed)");
 });
+
+test("weekly audit severity filters include only unknown errors and warnings", {
+  skip: process.platform === "win32",
+}, () => {
+  const src = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  const lines = src.split(/\r?\n/);
+  function filterFor(variable) {
+    const line = lines.findIndex(value => value.includes(variable + '=$(echo "$ADVISORIES" | jq --argjson known '));
+    assert.ok(line >= 0, "Expected " + variable + " filter");
+    const expression = lines[line + 1].trim();
+    assert.ok(expression.startsWith("'[") && expression.endsWith("]')"), "Expected literal jq array filter");
+    return expression.slice(1, -2);
+  }
+  const items = [
+    { level: "INFO", name: "informational" },
+    { level: "WARN", name: "known_warning" },
+    { level: "WARN", name: "new_warning" },
+    { level: "ERROR", name: "rls_disabled_in_public" },
+    { level: "ERROR", name: "new_security_error" },
+  ];
+  function apply(expr, known) {
+    const run = spawnSync("jq", ["--argjson", "known", JSON.stringify(known), expr], {
+      input: JSON.stringify(items), encoding: "utf8", timeout: 4000,
+    });
+    assert.equal(run.status, 0, "jq severity filter failed");
+    return JSON.parse(run.stdout).map(item => item.name);
+  }
+  assert.deepEqual(apply(filterFor("NEW_ERRORS"), ["rls_disabled_in_public"]), ["new_security_error"]);
+  assert.deepEqual(apply(filterFor("NEW_WARNS"), ["known_warning"]), ["new_warning"]);
+});
+
+test("weekly audit exits nonzero for each independent dangerous condition", {
+  skip: process.platform === "win32",
+}, () => {
+  const src = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  const match = src.match(/          if \[ "\$NEW_ERROR_COUNT" -gt 0 \] \|\|[\s\S]*?\n          fi/);
+  assert.ok(match, "Expected the real counter-based fail-closed decision");
+  const shellCode = match[0].split("\n").map(line => line.replace(/^ {10}/, "")).join("\n");
+  const cases = [
+    [{}, 0],
+    [{ NEW_ERROR_COUNT: "1" }, 1],
+    [{ GRANT_COUNT: "1" }, 1],
+    [{ MUTABLE_FUNCS: "1" }, 1],
+    [{ DB_SIZE_MB: "451" }, 1],
+  ];
+  for (const [changes, expected] of cases) {
+    const run = spawnSync("bash", ["-c", shellCode], {
+      env: {
+        PATH: process.env.PATH || "",
+        NEW_ERROR_COUNT: "0",
+        GRANT_COUNT: "0",
+        MUTABLE_FUNCS: "0",
+        DB_SIZE_MB: "0",
+        ...changes,
+      },
+      encoding: "utf8", timeout: 4000,
+    });
+    assert.equal(run.status, expected, "Unexpected safety verdict");
+  }
+  assert.doesNotMatch(shellCode, /\$\{(?:new_errors|new_grants|mutable_funcs|db_critical):-false\}/);
+});

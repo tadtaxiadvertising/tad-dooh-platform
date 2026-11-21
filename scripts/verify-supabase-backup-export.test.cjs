@@ -1,0 +1,97 @@
+"use strict";
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const crypto = require("node:crypto");
+const { spawnSync } = require("node:child_process");
+const { checkExport } = require("./verify-supabase-backup-export.cjs");
+
+const REF = "aaaaaaaaaaaaaaaaaaaa";
+const SCRIPT = path.join(__dirname, "verify-supabase-backup-export.cjs");
+async function fixture() {
+  const directory = await fs.promises.mkdtemp(path.join(os.tmpdir(), "tad-backup-verify-"));
+  const files = [];
+  for (const file of ["roles.sql", "schema.sql", "data.sql"]) {
+    const content = `-- synthetic export fixture ${file}\n`;
+    await fs.promises.writeFile(path.join(directory, file), content);
+    files.push({ file, bytes: Buffer.byteLength(content), sha256: crypto.createHash("sha256").update(content).digest("hex").toUpperCase() });
+  }
+  const manifest = { project_ref: REF, exported_at_utc: "20261121T193500Z", restore_verified: false, files };
+  const save = () => fs.promises.writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await save();
+  return { directory, manifest, save, cleanup: () => fs.promises.rm(directory, { recursive: true, force: true }) };
+}
+
+async function withFixture(callback) {
+  const f = await fixture();
+  try { return await callback(f); } finally { await f.cleanup(); }
+}
+
+test("accepts three matching local dump files without declaring restoration", () => withFixture(async f => {
+  assert.equal(await checkExport(f.directory, REF), "EXPORT_INTEGRITY_PASS_RESTORE_UNVERIFIED");
+}));
+
+test("refuses missing or mismatched canonical project", () => withFixture(async f => {
+  assert.equal(await checkExport(f.directory, ""), "EXPECTED_REF_REQUIRED");
+  assert.equal(await checkExport(f.directory, "bbbbbbbbbbbbbbbbbbbb"), "INVALID_MANIFEST");
+}));
+
+test("refuses tampered SQL content", () => withFixture(async f => {
+  await fs.promises.appendFile(path.join(f.directory, "data.sql"), "-- extra row\n");
+  assert.equal(await checkExport(f.directory, REF), "EXPORT_MISMATCH");
+}));
+
+test("refuses manifest that asserts restore without an independent trial", () => withFixture(async f => {
+  f.manifest.restore_verified = true;
+  await f.save();
+  assert.equal(await checkExport(f.directory, REF), "INVALID_MANIFEST");
+}));
+
+test("refuses missing, duplicate, or traversal artifact names", () => withFixture(async f => {
+  f.manifest.files[2].file = f.manifest.files[1].file;
+  await f.save();
+  assert.equal(await checkExport(f.directory, REF), "INVALID_MANIFEST");
+  f.manifest.files[2].file = "../outside.sql";
+  await f.save();
+  assert.equal(await checkExport(f.directory, REF), "INVALID_MANIFEST");
+}));
+
+test("refuses export directory nested within the repository root", () => withFixture(async f => {
+  assert.equal(await checkExport(f.directory, REF, path.dirname(f.directory)), "IN_REPOSITORY");
+}));
+
+test("refuses symlinked SQL artifacts", { skip: process.platform === "win32" }, () => withFixture(async f => {
+  await fs.promises.unlink(path.join(f.directory, "roles.sql"));
+  await fs.promises.symlink(path.join(f.directory, "schema.sql"), path.join(f.directory, "roles.sql"));
+  assert.equal(await checkExport(f.directory, REF), "EXPORT_MISMATCH");
+}));
+
+test("refuses symlinked manifest", { skip: process.platform === "win32" }, () => withFixture(async f => {
+  await fs.promises.rename(path.join(f.directory, "manifest.json"), path.join(f.directory, "real-manifest.json"));
+  await fs.promises.symlink(path.join(f.directory, "real-manifest.json"), path.join(f.directory, "manifest.json"));
+  assert.equal(await checkExport(f.directory, REF), "INVALID_MANIFEST");
+}));
+
+test("refuses extraneous fields that could carry sensitive material", () => withFixture(async f => {
+  f.manifest.private_password = "SYNTHETIC_DO_NOT_LOG";
+  await f.save();
+  assert.equal(await checkExport(f.directory, REF), "INVALID_MANIFEST");
+}));
+
+test("CLI emits verdicts only without private directory or SQL content", () => withFixture(async f => {
+  const run = ref => spawnSync(process.execPath, [SCRIPT, f.directory], {
+    encoding: "utf8", timeout: 5000, windowsHide: true,
+    env: { PATH: process.env.PATH || "", TAD_EXPECTED_SUPABASE_PROJECT_REF: ref },
+  });
+  const ok = run(REF);
+  assert.equal(ok.status, 0);
+  assert.match(ok.stdout, /EXPORT_INTEGRITY_PASS_RESTORE_UNVERIFIED/);
+  const denied = run("bbbbbbbbbbbbbbbbbbbb");
+  assert.equal(denied.status, 1);
+  for (const message of [ok.stdout, ok.stderr, denied.stdout, denied.stderr]) {
+    assert.doesNotMatch(message, /synthetic export fixture|SYNTHETIC_DO_NOT_LOG/);
+    assert.ok(!message.includes(f.directory));
+  }
+}));

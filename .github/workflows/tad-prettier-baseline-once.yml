@@ -33,9 +33,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "47d17c3e0155da45e21ee2e1ca17bb067cb3376d"
+          git merge-base --is-ancestor "47d17c3e0155da45e21ee2e1ca17bb067cb3376d" HEAD
           test -z "$(git status --porcelain)"
-          test "$(git branch --show-current)" = "chore/prettier-baseline-pinned-20261121"
+          test "$GITHUB_REF_NAME" = "chore/prettier-baseline-pinned-20261121"
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
       - name: Apply only pinned Prettier to TS and TSX

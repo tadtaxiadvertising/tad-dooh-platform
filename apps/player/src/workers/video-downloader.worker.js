@@ -127,15 +127,10 @@ function putTask(task) {
   return openDatabase().then(function (db) {
     return new Promise(function (resolve, reject) {
       const tx = db.transaction(STORE, 'readwrite');
-      const store = tx.objectStore(STORE);
-      const request = store.put(task);
-
-      request.onsuccess = function () {
-        resolve();
-      };
-      request.onerror = function () {
-        reject(request.error);
-      };
+      tx.oncomplete = function () { resolve(); };
+      tx.onabort = function () { reject(tx.error || new Error('VIDEO_TASK_WRITE_ABORTED')); };
+      tx.onerror = function () { reject(tx.error || new Error('VIDEO_TASK_WRITE_FAILED')); };
+      tx.objectStore(STORE).put(task);
     });
   });
 }
@@ -150,25 +145,17 @@ function updateTaskStatus(id, status) {
     return new Promise(function (resolve, reject) {
       const tx = db.transaction(STORE, 'readwrite');
       const store = tx.objectStore(STORE);
+      let updated;
+      tx.oncomplete = function () { resolve(updated); };
+      tx.onabort = function () { reject(tx.error || new Error('VIDEO_TASK_STATUS_ABORTED')); };
+      tx.onerror = function () { reject(tx.error || new Error('VIDEO_TASK_STATUS_FAILED')); };
       const getReq = store.get(id);
 
       getReq.onsuccess = function () {
         const task = getReq.result;
-        if (!task) {
-          resolve(undefined);
-          return;
-        }
-        task.status = status;
-        const putReq = store.put(task);
-        putReq.onsuccess = function () {
-          resolve(task);
-        };
-        putReq.onerror = function () {
-          reject(putReq.error);
-        };
-      };
-      getReq.onerror = function () {
-        reject(getReq.error);
+        if (!task) return;
+        updated = Object.assign({}, task, { status: status });
+        store.put(updated);
       };
     });
   });

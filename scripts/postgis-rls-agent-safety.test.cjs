@@ -24,8 +24,16 @@ test("PostGIS skill uses read-only triage and does not claim live schema fixed",
 });
 
 test("PostGIS skill never suggests executable DDL/DML or retired mutation commands", () => {
-  const blocks = [...skill.matchAll(/```(?:sql|bash|sh)\n([\s\S]*?)```/g)].map(m => m[1]);
+  // On Windows, git autocrlf can convert Markdown from LF to CRLF.
+  // The safety scan must inspect the same SQL fences on either platform.
+  const extractSqlBlocks = (source) =>
+    [...source.matchAll(/```(?:sql|bash|sh)\r?\n([\s\S]*?)```/g)].map(m => m[1]);
+  const lf = skill.replace(/\r\n/g, "\n");
+  const crlf = lf.replace(/\n/g, "\r\n");
+  const blocks = extractSqlBlocks(skill);
   assert.ok(blocks.length >= 2, "Expected catalog-only SQL examples");
+  assert.equal(extractSqlBlocks(lf).length, blocks.length, "LF must detect the same SQL fences");
+  assert.equal(extractSqlBlocks(crlf).length, blocks.length, "CRLF must detect the same SQL fences");
   for (const block of blocks) {
     assert.doesNotMatch(block, /\b(?:ALTER|GRANT|REVOKE|CREATE|DROP|TRUNCATE|INSERT|UPDATE|DELETE|DO)\b/i);
     assert.doesNotMatch(block, /(?:node|ts-node)\s+.*(?:fix-rls|dba_remediation)/i);

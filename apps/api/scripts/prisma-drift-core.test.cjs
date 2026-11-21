@@ -3,6 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { auditPrismaSchema } = require("./prisma-drift-core.cjs");
+const { auditGpsSqlContract } = require("./prisma-gps-contract.cjs");
 
 const stringId = { name: "id", type: "String", kind: "scalar", isId: true };
 const models = [
@@ -189,4 +190,77 @@ test("existing String primary-key validator remains distinct from scalar drift",
   });
   assert.equal(report.idTypeMismatchCount, 1);
   assert.equal(report.scalarTypeMismatchCount, 0);
+});
+
+const gpsModel = [{ name: "Telemetry", dbName: "telemetry", fields: [] }];
+const gpsTable = [{ table_name: "telemetry" }];
+const geographyColumn = [{ table_name: "telemetry", column_name: "coords", udt_name: "geography" }];
+const postgisExtension = [{ extname: "postgis" }];
+
+test("GPS SQL contract detects missing geography column and PostGIS", () => {
+  const report = auditGpsSqlContract({
+    models: gpsModel, tables: gpsTable, columns: [], extensions: [],
+  });
+  assert.deepEqual(report.gpsSqlContractIssues.map(({ code }) => code), [
+    "GPS_COORDS_COLUMN_MISSING", "POSTGIS_EXTENSION_MISSING",
+  ]);
+  assert.equal(report.gpsSqlContractIssueCount, 2);
+});
+
+test("GPS SQL contract accepts the required geography/PostGIS metadata", () => {
+  assert.deepEqual(auditGpsSqlContract({
+    models: gpsModel, tables: gpsTable,
+    columns: geographyColumn, extensions: postgisExtension,
+  }), { gpsSqlContractIssueCount: 0, gpsSqlContractIssues: [] });
+});
+
+test("GPS SQL contract rejects a geometry column instead of geography", () => {
+  const report = auditGpsSqlContract({
+    models: gpsModel, tables: gpsTable,
+    columns: [{ ...geographyColumn[0], udt_name: "geometry" }],
+    extensions: postgisExtension,
+  });
+  assert.deepEqual(report.gpsSqlContractIssues, [{
+    code: "GPS_COORDS_TYPE_MISMATCH",
+    table: "telemetry", column: "coords", expected: "geography", actual: "geometry",
+  }]);
+});
+
+test("GPS SQL contract does not duplicate missing-table drift", () => {
+  const report = auditGpsSqlContract({
+    models: gpsModel, tables: [], columns: [], extensions: [],
+  });
+  assert.equal(report.gpsSqlContractIssueCount, 0);
+});
+
+test("GPS SQL contract ignores schemas without a Telemetry model", () => {
+  const report = auditGpsSqlContract({
+    models: [{ name: "Wallet", dbName: "wallets", fields: [] }],
+    tables: gpsTable, columns: [], extensions: [],
+  });
+  assert.equal(report.gpsSqlContractIssueCount, 0);
+});
+
+test("GPS SQL contract blocks startup when geography exists but PostGIS is missing", () => {
+  const report = auditGpsSqlContract({
+    models: gpsModel,
+    tables: gpsTable,
+    columns: geographyColumn,
+    extensions: [],
+  });
+  assert.deepEqual(report.gpsSqlContractIssues, [
+    { code: "POSTGIS_EXTENSION_MISSING" },
+  ]);
+});
+
+test("GPS SQL contract does not mistake another extension for PostGIS", () => {
+  const report = auditGpsSqlContract({
+    models: gpsModel,
+    tables: gpsTable,
+    columns: geographyColumn,
+    extensions: [{ extname: "pgcrypto" }],
+  });
+  assert.deepEqual(report.gpsSqlContractIssues, [
+    { code: "POSTGIS_EXTENSION_MISSING" },
+  ]);
 });

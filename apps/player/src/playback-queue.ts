@@ -123,9 +123,11 @@ export class PlaybackQueue {
           `[PlaybackQueue] Batch unacknowledged: HTTP ${response.status}, reason=${acknowledgement?.reason || "PARTIAL_OR_INVALID_ACK"}`,
         );
       }
-    } catch (err) {
+    } catch {
       failed = events.length;
-      console.warn("[PlaybackQueue] Network error during flush:", err);
+      // Could be network failure or an IndexedDB transaction rollback.
+      // Avoid logging raw requests, credentials or stored proof payloads.
+      console.warn("[PlaybackQueue] Delivery or local ACK cleanup failed; proofs remain pending.");
     }
 
     return { sent, failed };

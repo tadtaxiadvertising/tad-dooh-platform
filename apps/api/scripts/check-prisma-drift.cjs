@@ -8,6 +8,7 @@
 
 const { Prisma, PrismaClient } = require("@prisma/client");
 const { auditPrismaSchema } = require("./prisma-drift-core.cjs");
+const { auditGpsSqlContract } = require("./prisma-gps-contract.cjs");
 
 const models = Prisma.dmmf.datamodel.models;
 const connectionUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
@@ -32,14 +33,23 @@ if (!connectionUrl) {
       FROM information_schema.columns
       WHERE table_schema = 'public'
     `;
-    const report = auditPrismaSchema({ models, tables, columns });
+    // DMMF can omit Unsupported("geography(...)") fields required by the
+    // GPS raw SQL path. Inspect PostGIS extension metadata separately.
+    const extensions = await prisma.$queryRaw`
+      SELECT extname FROM pg_extension WHERE extname = 'postgis'
+    `;
+    const report = {
+      ...auditPrismaSchema({ models, tables, columns }),
+      ...auditGpsSqlContract({ models, tables, columns, extensions }),
+    };
     console.log(JSON.stringify(report, null, 2));
     if (
       report.missingTableCount ||
       report.missingColumnCount ||
       report.idTypeMismatchCount ||
       report.scalarTypeMismatchCount ||
-      report.relationTypeMismatchCount
+      report.relationTypeMismatchCount ||
+      report.gpsSqlContractIssueCount
     ) {
       process.exitCode = 1;
     }

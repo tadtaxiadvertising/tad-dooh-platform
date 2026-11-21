@@ -356,7 +356,9 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
   });
 
   it("rejects otherwise trusted legacy claims without an email", async () => {
-    const { email: _omitted, ...withoutEmail } = legacyPayload;
+    const withoutEmail = Object.fromEntries(
+      Object.entries(legacyPayload).filter(([claim]) => claim !== "email"),
+    );
     const token = jwt.sign(withoutEmail, secret, { expiresIn: "1h" });
     const { context, request } = contextFor(token);
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(

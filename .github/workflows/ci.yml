@@ -122,6 +122,12 @@ jobs:
           set -euo pipefail
           pnpm --filter driver run test:unit:offline
 
+      - name: Player offline Proof-of-Play durability and event contracts (Node 22)
+        run: |
+          set -euo pipefail
+          pnpm --filter tad-player run test:pop
+          pnpm --filter tad-player run test:pop-storage
+
       # The root tests/e2e tree includes authenticated production audits and
       # mutating driver-registration flows. Never execute those against live
       # systems in an unprivileged push/PR job. Public browser E2E runs in the

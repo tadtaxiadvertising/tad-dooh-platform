@@ -2,7 +2,7 @@
 
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { execFileSync } = require("node:child_process");
+const { execFileSync, spawnSync } = require("node:child_process");
 const { readFileSync } = require("node:fs");
 const path = require("node:path");
 
@@ -102,4 +102,19 @@ test("weekly public audit artifacts contain counts only, never raw queries or li
   assert.doesNotMatch(src, /Storage usage: \$STORAGE_TOTAL/);
   assert.equal(src.includes(String.raw`\(.detail)`), false);
   assert.match(src, /active_queries_over_30_seconds/);
+});
+
+test("weekly Supabase audit shell block parses with its heredoc after YAML indentation", {
+  skip: process.platform === "win32",
+}, () => {
+  const src = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  const match = src.match(/      - name: Run Security Audit\n        id: audit\n        run: \|\n([\s\S]*?)(?=\n      - name: |$)/);
+  assert.ok(match, "Expected audit script block");
+  const shellSource = match[1].split("\n").map(line =>
+    line.startsWith("          ") ? line.slice(10) : line,
+  ).join("\n");
+  const parsed = spawnSync("bash", ["-n"], {
+    input: shellSource, encoding: "utf8", timeout: 4000,
+  });
+  assert.equal(parsed.status, 0, "Bash syntax check refused (no secret values printed)");
 });

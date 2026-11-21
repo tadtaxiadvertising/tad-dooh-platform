@@ -34,7 +34,8 @@ for (const name of retired) {
     assert.doesNotMatch(code, /rejectUnauthorized\s*:\s*false/);
   });
 
-  if (!name.endsWith(".ts")) {
+  {
+    // Node 22 can also execute this deliberately JavaScript-compatible .ts stub.
     test(`retired mutator exits nonzero without exposing credentials: ${name}`, () => {
       const env = {
         NODE_ENV: "production",

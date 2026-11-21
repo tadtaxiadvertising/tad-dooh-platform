@@ -1,52 +1,13 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+#!/usr/bin/env node
+"use strict";
 
-const sqlFunction = `
-CREATE OR REPLACE FUNCTION public.activate_driver_on_payment()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF (NEW.category = 'SUSCRIPCION' AND NEW.amount >= 6000.00) THEN
-        UPDATE public.drivers
-        SET 
-            status = 'OPERATIVO',
-            subscription_paid = TRUE,
-            subscription_end = NOW() + INTERVAL '30 days',
-            onboarding_status = 'COMPLETED'
-        WHERE id = NEW.entity_id;
-        RAISE NOTICE 'Driver % activado exitosamente por pago de suscripción.', NEW.entity_id;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-`;
-
-const sqlTrigger = `
-DROP TRIGGER IF EXISTS tr_activate_driver_on_payment ON public.financial_transactions;
-`;
-
-const sqlCreateTrigger = `
-CREATE TRIGGER tr_activate_driver_on_payment
-AFTER INSERT ON public.financial_transactions
-FOR EACH ROW
-EXECUTE FUNCTION public.activate_driver_on_payment();
-`;
-
-async function main() {
-  console.log('🚀 Aplicando Trigger de Activación Financiera...');
-  try {
-    console.log('  - Creando función...');
-    await prisma.$executeRawUnsafe(sqlFunction);
-    console.log('  - Eliminando trigger anterior (si existe)...');
-    await prisma.$executeRawUnsafe(sqlTrigger);
-    console.log('  - Creando nuevo trigger...');
-    await prisma.$executeRawUnsafe(sqlCreateTrigger);
-    console.log('✅ Todo aplicado exitosamente.');
-  } catch (error) {
-    console.error('❌ Error al aplicar el trigger:', error);
-    process.exit(1);
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-main();
+// RETIRED — historical one-off script (financial activation trigger replacement).
+// These operations bypass the verified schema/migration review gate.
+// Preserve the original source in Git history for P0 incident forensics.
+// Any future fix must be a reviewed, forward-only Prisma migration rehearsed
+// against an isolated restorable backup of the canonical Supabase project.
+console.error(
+  "[migration] REFUSED: legacy database mutation command retired (apps/api/scratch/apply_activation_trigger.js). " +
+    "Do not run ad-hoc SQL against TAD; follow incident #217 recovery gates.",
+);
+process.exitCode = 1;

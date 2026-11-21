@@ -162,7 +162,7 @@ test("only direct DB URL reaches versioned migrate deploy, and failure propagate
   assert.match(result.output, /\[fixture\] target checked/);
   assert.ok(result.output.includes(migrateMarker));
   assert.doesNotMatch(result.output, /db push|accept-data-loss/);
-  assert.equal((result.output.match(/schema verified/g) || []).length, 1, "preflight ran, postflight did not");
+  assert.doesNotMatch(result.output, /schema verified/, "no postcheck after failed migration");
   assert.doesNotMatch(result.output, /schema drift detected/);
 });
 
@@ -171,23 +171,36 @@ test("successful migration is not declared complete until schema parity passes",
   assert.equal(result.status, 0);
   assert.match(result.output, /migration invoked/);
   assert.match(result.output, /pinned project checked/);
-  assert.equal((result.output.match(/schema verified/g) || []).length, 2, "check before and after migration");
+  assert.equal((result.output.match(/schema verified/g) || []).length, 1, "postcheck only; pending migrations are permitted on healthy other targets");
 });
 
-test("preexisting schema drift refuses before migration starts", () => {
-  const result = execute({ ...fixtures, TAD_TEST_DRIFT_FAIL: "1" });
+test("P0 canonical project is frozen before SQL, even with bypass-looking flags", () => {
+  const result = execute({
+    ...fixtures,
+    TAD_EXPECTED_SUPABASE_PROJECT_REF: "ltdcdhqixvbpdcitthqf",
+    TAD_ALLOW_UNSAFE_MIGRATION: "YES",
+    TAD_APPROVE_SCHEMA_REPAIR: "YES",
+    TAD_TEST_MIGRATE_STATUS: "0",
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.output, /P0 #217 production project frozen/);
+  assert.match(result.output, /pinned project checked/);
+  assert.match(result.output, /target checked/);
+  assert.doesNotMatch(result.output, /migration invoked|schema verified/);
+});
+
+test("other target retains post-migration drift check", () => {
+  const result = execute({ ...fixtures, TAD_TEST_MIGRATE_STATUS: "0", TAD_TEST_DRIFT_FAIL: "1" });
   assert.equal(result.status, 31);
   assert.match(result.output, /schema drift detected/);
-  assert.match(result.output, /REFUSED: preexisting schema drift/);
-  assert.doesNotMatch(result.output, /migration invoked/);
+  assert.match(result.output, /migration invoked/);
 });
 
-test("catalog query failure also blocks Prisma without a database write", () => {
-  const result = execute({ ...fixtures, TAD_TEST_DRIFT_QUERY_ERROR: "1" });
+test("other target fails closed when post-migration catalog inspection is unavailable", () => {
+  const result = execute({ ...fixtures, TAD_TEST_MIGRATE_STATUS: "0", TAD_TEST_DRIFT_QUERY_ERROR: "1" });
   assert.equal(result.status, 2);
   assert.match(result.output, /catalog inspection unavailable/);
-  assert.match(result.output, /REFUSED: preexisting schema drift \(2\)/);
-  assert.doesNotMatch(result.output, /migration invoked/);
+  assert.match(result.output, /migration invoked/);
 });
 
 test("new post-migration drift still fails closed after successful migration", () => {

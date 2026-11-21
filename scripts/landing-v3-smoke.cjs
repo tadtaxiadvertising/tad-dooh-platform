@@ -583,7 +583,53 @@ async function main() {
         };
         for (const [fraction, dominant] of [[0.07, 'taxi'], [0.52, 'tablet'], [0.92, 'report'], [0.07, 'taxi']]) {
           const opacity = await motionOpacityAt(fraction, dominant);
-          assert.ok(opacity >= 0.7, dominant + ' should be the visible stage at progress ' + fraction + ': ' + opacity);
+          if (opacity < 0.7) {
+            // Diagnostic read-only geometry: reveal no page data or credentials.
+            const sample = () => normalPage.evaluate(ratio => {
+              const story = document.querySelector('#motion-story');
+              if (!story) return { missingStory: true };
+              const rect = story.getBoundingClientRect();
+              const start = scrollY + rect.top;
+              const span = rect.height - innerHeight;
+              const progressBar = story.querySelector('[class*="progressTrack"] > div');
+              const trackWidth = progressBar?.parentElement?.getBoundingClientRect().width ?? 0;
+              const stages = Object.fromEntries(['taxi', 'tablet', 'report'].map(name => [
+                name,
+                Number.parseFloat(getComputedStyle(
+                  story.querySelector('[data-tad-stage="' + name + '"]')
+                ).opacity),
+              ]));
+              return {
+                ratio,
+                scrollY: Math.round(scrollY),
+                desiredScrollY: Math.round(start + Math.max(1, span) * ratio),
+                maxScrollY: Math.round(document.documentElement.scrollHeight - innerHeight),
+                viewportHeight: innerHeight,
+                storyHeight: Math.round(rect.height),
+                storyTop: Math.round(rect.top),
+                framerProgress: trackWidth > 0
+                  ? Number((progressBar.getBoundingClientRect().width / trackWidth).toFixed(6))
+                  : null,
+                barStyleWidth: progressBar?.style.width ?? null,
+                stageOpacity: stages,
+                motionReady: story.getAttribute('data-motion-ready'),
+                reducedMotion: story.getAttribute('data-reduced-motion'),
+                scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
+              };
+            }, fraction);
+            const first = await sample();
+            // An additional five animation frames are observed only after a
+            // failure; this never relaxes the original two-RAF assertion.
+            await normalPage.evaluate(async () => {
+              for (let frame = 0; frame < 5; frame += 1) {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+              }
+            });
+            const afterFiveFrames = await sample();
+            assert.fail(dominant + ' stage opacity at progress ' + fraction + ': '
+              + opacity + '; initial=' + JSON.stringify(first)
+              + '; afterFiveFrames=' + JSON.stringify(afterFiveFrames));
+          }
         }
         const stickyTop = await normalPage.locator('#motion-story > div:first-child')
           .evaluate(element => Number.parseFloat(getComputedStyle(element).top));

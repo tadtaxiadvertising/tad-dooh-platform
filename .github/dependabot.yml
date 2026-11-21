@@ -1,8 +1,8 @@
 # Dependabot Configuration
 # ----------------------------
 # Mantiene automáticamente las dependencias actualizadas.
-# Se ejecuta semanalmente el viernes a las 09:00 UTC.
-# Solo actualiza minor/patch versions. Los cambios se abren en PRs separados.
+# Calendario escalonado cada viernes: npm 09:00, Docker 10:00, Actions 11:00 UTC.
+# Minor/patch rutinarios agrupados por ecosistema; seguridad conserva PRs propios.
 # ULTRA-SEGURO: no actualiza versiones mayores sin revisión manual.
 
 version: 2

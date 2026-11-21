@@ -9,7 +9,7 @@ const workerSource = readFileSync(
 );
 
 /** Deterministic, transaction-aware IndexedDB fixture; no network/devices. */
-function makeWorker({ failCacheWrite = false, failFetch = false } = {}) {
+function makeWorker({ failCacheWrite = false, failFetch = false, emptyBlob = false } = {}) {
   const databases = new Map();
   const messages = [];
   let onMessage;
@@ -94,7 +94,7 @@ function makeWorker({ failCacheWrite = false, failFetch = false } = {}) {
   const fakeFetch = async (url) => failFetch
     ? { ok: false, status: 404, headers: { get: () => null } }
     : { ok: true, status: 200, headers: { get: () => null },
-        blob: async () => new Blob(["fixture video " + url]) };
+        blob: async () => new Blob(emptyBlob ? [] : ["fixture video " + url]) };
   const self = {
     addEventListener(type, listener) {
       if (type === "message") onMessage = listener;
@@ -168,6 +168,34 @@ test("a failed video-cache commit never reports a completed offline download", a
 
 test("HTTP errors do not manufacture downloaded offline media", async () => {
   const ctx = makeWorker({ failFetch: true });
+  await ctx.send("SYNC_ASSETS", "s1", [asset]);
+  const status = await ctx.send("DOWNLOAD_ASSETS", "d1");
+  assert.equal(status.finished, 0);
+  assert.equal(status.failed, 1);
+});
+
+test("a fully committed cached task is skipped without duplicate download work", async () => {
+  const ctx = makeWorker();
+  await ctx.send("SYNC_ASSETS", "s1", [asset]);
+  await ctx.send("DOWNLOAD_ASSETS", "d1");
+  const second = await ctx.send("SYNC_ASSETS", "s2", [asset]);
+  assert.equal(second.enqueued, 0);
+  assert.equal(second.skipped, 1);
+});
+
+test("a changed checksum requeues the same URL for a new content version", async () => {
+  const ctx = makeWorker();
+  await ctx.send("SYNC_ASSETS", "s1", [asset]);
+  await ctx.send("DOWNLOAD_ASSETS", "d1");
+  const changed = { ...asset, checksum: "different-checksum" };
+  assert.equal((await ctx.send("SYNC_ASSETS", "s2", [changed])).enqueued, 1);
+  await ctx.send("DOWNLOAD_ASSETS", "d2");
+  const cached = ctx.databases.get("tad_video_cache").stores.get("videos").get(asset.url);
+  assert.equal(cached.checksum, "different-checksum");
+});
+
+test("empty media is never marked cached or completed", async () => {
+  const ctx = makeWorker({ emptyBlob: true });
   await ctx.send("SYNC_ASSETS", "s1", [asset]);
   const status = await ctx.send("DOWNLOAD_ASSETS", "d1");
   assert.equal(status.finished, 0);

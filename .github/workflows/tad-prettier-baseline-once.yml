@@ -68,8 +68,12 @@ jobs:
             if (ts.isParenthesizedExpression(node)) return shape(node.expression);
             const children = [];
             ts.forEachChild(node, child => children.push(shape(child)));
-            const value = typeof node.text === "string" ? node.text :
-              ts.isIdentifier(node) ? String(node.escapedText) : null;
+            // JSX whitespace can be reflowed by a formatter without
+            // changing the JSX element/attribute structure or literal tokens.
+            const value = ts.isJsxText(node)
+              ? node.text.replace(/\s+/g, " ").trim()
+              : typeof node.text === "string" ? node.text
+              : ts.isIdentifier(node) ? String(node.escapedText) : null;
             return [node.kind, value, children];
           }
           for (const file of changed) {

@@ -29,6 +29,8 @@ jobs:
           cache: pnpm
       - name: Reproducible dependency install
         run: pnpm install --frozen-lockfile
+      - name: Build shared impact calculator before API checks
+        run: pnpm --filter @tad/impact-calculator run build
       - name: Real multipart overflow and lockfile regression
         run: node --test scripts/runtime-upload-security.test.cjs
       - name: API unit regression

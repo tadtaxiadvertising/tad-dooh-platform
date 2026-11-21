@@ -4,6 +4,7 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { execFileSync, spawnSync } = require("node:child_process");
 const { readFileSync } = require("node:fs");
+const vm = require("node:vm");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
@@ -185,4 +186,74 @@ test("weekly audit exits nonzero for each independent dangerous condition", {
     assert.equal(run.status, expected, "Unexpected safety verdict");
   }
   assert.doesNotMatch(shellCode, /\$\{(?:new_errors|new_grants|mutable_funcs|db_critical):-false\}/);
+});
+
+test("weekly audit always reports any failure even when the audit never produced outputs", () => {
+  const src = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  const section = src.split("      - name: Create GitHub Issue on failure\n")[1]
+    ?.split("      - name: Slack Notification on failure\n")[0];
+  assert.ok(section, "Expected the weekly incident reporting step");
+  assert.match(section, /^\s*if: failure\(\)$/m);
+  assert.doesNotMatch(section, /if: failure\(\) &&/);
+  assert.doesNotMatch(section, /labels:\s*\[/);
+  assert.doesNotMatch(section, /assignees:\s*\[/);
+  assert.match(section, /AUDIT_OUTCOME: \$\{\{ steps\.audit\.outcome \}\}/);
+  assert.match(section, /if \(fs\.existsSync\('\.\/advisories-summary\.json'\)\)/);
+});
+
+test("weekly audit failure reporter creates sanitized issue without summary, after early error, or with findings", async () => {
+  const src = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  const section = src.split("      - name: Create GitHub Issue on failure\n")[1]
+    ?.split("      - name: Slack Notification on failure\n")[0];
+  assert.ok(section, "Expected the weekly incident reporter");
+  const body = section.split("          script: |\n")[1]?.split("\n")
+    .map(line => line.startsWith("            ") ? line.slice(12) : line).join("\n");
+  assert.ok(body?.includes("await github.rest.issues.create"), "Missing GitHub issue action");
+  async function simulate(summary, env) {
+    const created = [];
+    const syntheticFs = {
+      existsSync: () => summary !== undefined,
+      readFileSync: () => summary,
+    };
+    const result = vm.runInNewContext("(async () => {\n" + body + "\n})()", {
+      require(name) {
+        assert.equal(name, "fs");
+        return syntheticFs;
+      },
+      process: { env },
+      Date,
+      context: { repo: { owner: "fixture", repo: "fixture" }, runId: 4242 },
+      github: { rest: { issues: { create: async issue => { created.push(issue); } } } },
+    }, { timeout: 2000 });
+    await result;
+    assert.equal(created.length, 1, "Every failure must emit exactly one issue");
+    const issue = created[0];
+    assert.equal(issue.owner, "fixture");
+    assert.equal(issue.repo, "fixture");
+    assert.ok(issue.title.includes("4242"));
+    assert.doesNotMatch(issue.body, /SYNTHETIC_PRIVATE_URL|SYNTHETIC_PASSWORD|raw-sql-text/);
+    assert.equal(issue.labels, undefined);
+    assert.equal(issue.assignees, undefined);
+    return issue.body;
+  }
+  const early = await simulate(undefined, { AUDIT_OUTCOME: "failure" });
+  assert.match(early, /Audit interrupted/);
+  assert.match(early, /Unavailable/);
+
+  const malformed = await simulate("{ not json } SYNTHETIC_PASSWORD", { AUDIT_OUTCOME: "failure" });
+  assert.match(malformed, /Unavailable/);
+
+  const substantive = await simulate(
+    JSON.stringify({
+      ERROR_COUNT: 3, WARN_COUNT: 2, INFO_COUNT: 1,
+      raw_sql: "raw-sql-text", credentials: "SYNTHETIC_PASSWORD",
+    }),
+    { AUDIT_OUTCOME: "failure", AUDIT_NEW_ERRORS: "true", AUDIT_NEW_GRANTS: "true" },
+  );
+  assert.match(substantive, /New security ERRORs detected/);
+  assert.match(substantive, /Client-role table grants/);
+  assert.match(substantive, /ERROR: 3, WARN: 2, INFO: 1/);
+
+  const nonAudit = await simulate(undefined, { AUDIT_OUTCOME: "success" });
+  assert.match(nonAudit, /Workflow failed in setup, artifact upload/);
 });

@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "test:pop": "node --experimental-strip-types --test tests/unit/playback-event-type.test.mjs",
     "test:pop-storage": "node --experimental-strip-types --test tests/unit/playback-queue-storage.test.mjs",
+    "test:offline-cache": "node --experimental-strip-types --test tests/unit/offline-playlist-ready.test.mjs tests/unit/video-download-worker-cache.test.mjs",
     "preview": "vite preview",
     "lint": "eslint src/"
   },

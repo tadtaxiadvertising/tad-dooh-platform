@@ -13,6 +13,7 @@ import type {
 import { CacheManager } from "./cache-manager";
 import { PlaybackQueue } from "./playback-queue";
 import env from "./config";
+import { prepareOfflinePlaylist } from "./offline-playlist-ready";
 
 // ─── Browser Battery API (W3C) ───
 // The W3C Battery Status API is not part of the installed lib.dom.d.ts.
@@ -127,14 +128,13 @@ export class SyncManager {
         return;
       }
 
-      // Download + cache new assets
+      // The worker only ACKs that a download was scheduled, not that the
+      // file is cached. Preserve the current offline playlist and hash until
+      // every replacement file is durably available on the tablet.
       const assets = payload.media_assets || payload.videos || [];
-      if (assets.length > 0) {
-        const result = await this.cacheManager.cacheVideos(assets);
-        console.log(
-          `[SyncManager] Cached ${result.cached}/${assets.length} assets (${result.failed} failed)`,
-        );
-        await this.cacheManager.evictStaleAssets(assets);
+      if (!(await prepareOfflinePlaylist(this.cacheManager, assets))) {
+        console.warn("[SyncManager] New playlist not fully cached; keeping current offline playlist.");
+        return;
       }
 
       this.lastSyncHash = payload.sync_hash;
@@ -187,12 +187,9 @@ export class SyncManager {
       }
 
       const assets = manifest.playlist || [];
-      if (assets.length > 0) {
-        const result = await this.cacheManager.cacheVideos(assets);
-        console.log(
-          `[SyncManager] Manifest cached ${result.cached}/${assets.length} assets`,
-        );
-        await this.cacheManager.evictStaleAssets(assets);
+      if (!(await prepareOfflinePlaylist(this.cacheManager, assets))) {
+        console.warn("[SyncManager] Manifest videos not fully cached; keeping current offline playlist.");
+        return;
       }
 
       this.lastSyncHash = manifest.etag;

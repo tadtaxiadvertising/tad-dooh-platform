@@ -28,6 +28,21 @@ Official references:
 - https://supabase.com/docs/reference/cli/introduction
 - https://supabase.com/docs/guides/database/connecting-to-postgres
 
+## P0 stop gate: MANAGED_SCHEMA_COVERAGE_UNVERIFIED
+
+**Important correction verified against the current [Supabase CLI v3 `db dump` reference](https://supabase.com/docs/reference/cli/supabase-db-dump):** the CLI's containerized `pg_dump` excludes **Supabase-managed schemas** such as `auth`, `storage`, and extension-managed schemas. Therefore, the `roles.sql`, `schema.sql`, and `data.sql` commands below create **only a partial logical export**, not an independently recoverable TAD backup. Adding `--data-only` does **not** establish coverage of managed schemas. The SHA-256 verifier merely checks these three files and must continue to return `EXPORT_INTEGRITY_PASS_RESTORE_UNVERIFIED`.
+
+**Live evidence, read-only as of 2026-11-21:** `auth.users` contains 13 rows; `storage.buckets` contains 2 buckets; `storage.objects` contains 11 metadata records. These are aggregate counts, not exported records, and may change. TAD must **not** claim complete recoverability or approve schema writes based on this three-file export.
+
+Before approving the **full backup/restore gate**, the infrastructure owner and an independent reviewer must document, on a **private encrypted evidence ledger**, successful recovery of:
+
+1. **Managed Auth state:** an independently approved, version-compatible method to preserve and restore the necessary `auth` identities and related managed metadata (including user IDs and identity-provider relationships), plus any custom Auth schema changes/policies; use a Supabase-supported workflow or reviewed PostgreSQL procedure appropriate for the target. Merely exporting application-side `public.users` (which is currently absent) is not Auth recovery.
+2. **Managed Storage state:** bucket configuration, RLS/policies and `storage.objects` metadata **plus the actual object bytes** from every bucket; object metadata alone does not contain uploaded media. Preserve checksums and use secure, restricted APIs or provider-backed export with privately held credentials.
+3. **Service configuration:** required Auth providers, signing-key and secrets-rotation state (incident #244), SMTP, external integrations, Edge Functions, Realtime publications and extension versions. The SQL dump cannot recreate the complete Supabase project configuration.
+4. **Isolated restore proof:** replay from the **off-site encrypted copy** to a separate authorized, side-effect-disabled target, not production. Compare source and clone point-in-time aggregate counts with [the read-only restore baseline SQL](sql/2026-11-21-restore-readonly-proof.sql), verify actual Storage object-byte hashes, confirm user identities and run safe login/device reconciliation without emailing users or issuing payouts. Document failure/success status, target identity, checksums, RPO/RTO and reviewer approval **without** disclosing records or credentials.
+
+Until all four are verified, report **`MANAGED_SCHEMA_COVERAGE_UNVERIFIED`** and **`RESTORE_NOT_VERIFIED`**; maintain incident #217 as P0 and the migration/deployment freeze. Do **not** improvise a live `pg_dump`/admin export targeting privileged managed tables or enable broad `anon`/`authenticated` grants just to complete this checklist; design and rehearse that separate export with the owner first. The official [Supabase backup/restore guide](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore) also calls out special handling for custom `auth`/`storage` changes.
+
 ## Step 1: owner-operated logical export on Windows (no production writes)
 
 Supabase's current CLI documentation describes three complementary logical exports: roles, schema and data. The CLI version matters (v3 uses --remote=<ref|branch|url> and targets local by default). Review the **installed** supabase db dump --help before these commands. Docker Desktop is required by the CLI workflow. Run in a private PowerShell session with an authenticated Supabase CLI session, not with a password embedded into command arguments.
@@ -110,7 +125,7 @@ Expected success code: `EXPORT_INTEGRITY_PASS_RESTORE_UNVERIFIED`. A successful 
 CLI version rationale: [Supabase CLI v3 changed remote targeting](https://supabase.com/changelog/supabase-cli-v3) and documents `--remote=<ref|branch|url>` for `db dump`. Explicit project targeting is mandatory; no unqualified `supabase db dump` command is permitted.
 
 
-**Important limits:** a nonempty dump or matching checksum is **not proof of completeness or recoverability**. The default Supabase CLI schema export filters Supabase-managed schemas; data and role exports have different coverage. Check the actual scope of auth users/identities, Storage metadata, custom Auth/Storage policies and project configuration during the restore trial. Do not publish counts that could identify individuals. Separately export actual **Storage bucket object bytes** to the approved encrypted off-site destination; database backup alone contains only their metadata. Configuration for third-party Auth providers, secrets, SMTP, hooks and Edge Functions also needs a separate confidential inventory.
+**Important limits:** these three SQL artifacts deliberately remain a **partial export** until the managed-schema stop gate above is independently satisfied. A nonempty dump or matching checksum is **not proof of completeness or recoverability**. The default Supabase CLI schema export filters Supabase-managed schemas; data and role exports have different coverage. Check the actual scope of auth users/identities, Storage metadata, custom Auth/Storage policies and project configuration during the restore trial. Do not publish counts that could identify individuals. Separately export actual **Storage bucket object bytes** to the approved encrypted off-site destination; database backup alone contains only their metadata. Configuration for third-party Auth providers, secrets, SMTP, hooks and Edge Functions also needs a separate confidential inventory.
 
 After the exports, use an organization-approved encryption tool/key to create an encrypted off-site copy, check its read-back/hash and retention, then restrict or remove intermediary plaintext from the encrypted staging area according to the data-handling policy. Do not send the backup itself to this conversation or the repository. The manifest remains **private**.
 
@@ -153,6 +168,7 @@ The current `schema.prisma` defines relationships requiring careful dependency o
 | Project Free/ACTIVE/PG17 | Supabase metadata checked 2026-11-21 | Verified |
 | Production schema parity | 23 expected model tables absent on connected project | FAIL — correct blocking behavior |
 | Manual logical export | No dump produced through the available Supabase integration | PENDING |
+| Managed Auth/Storage schema + identity metadata coverage | CLI default dump excludes managed schemas; source contains live managed records | **BLOCKER — MANAGED_SCHEMA_COVERAGE_UNVERIFIED** |
 | Off-site encrypted retention | No artifact/hash attested | PENDING |
 | Independent Storage object backup | Not attested | PENDING |
 | Isolated full restore + data integrity | No restore attempt attested | PENDING |

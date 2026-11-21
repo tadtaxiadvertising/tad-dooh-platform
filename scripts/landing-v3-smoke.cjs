@@ -583,7 +583,30 @@ async function main() {
         };
         for (const [fraction, dominant] of [[0.07, 'taxi'], [0.52, 'tablet'], [0.92, 'report'], [0.07, 'taxi']]) {
           const opacity = await motionOpacityAt(fraction, dominant);
-          assert.ok(opacity >= 0.7, dominant + ' should be the visible stage at progress ' + fraction + ': ' + opacity);
+          if (opacity < 0.7) {
+            // Geometry only: no page content, user data or runtime credentials.
+            const geometry = await normalPage.evaluate(ratio => {
+              const element = document.querySelector('#motion-story');
+              if (!element) return { missingStory: true };
+              const rect = element.getBoundingClientRect();
+              const start = scrollY + rect.top;
+              const span = rect.height - innerHeight;
+              return {
+                ratio,
+                scrollY: Math.round(scrollY),
+                desiredScrollY: Math.round(start + Math.max(1, span) * ratio),
+                maxScrollY: Math.round(document.documentElement.scrollHeight - innerHeight),
+                viewportHeight: innerHeight,
+                storyHeight: Math.round(rect.height),
+                storyTop: Math.round(rect.top),
+                motionReady: element.getAttribute('data-motion-ready'),
+                reducedMotion: element.getAttribute('data-reduced-motion'),
+                scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
+              };
+            }, fraction);
+            assert.fail(dominant + ' stage opacity at progress ' + fraction + ': ' + opacity
+              + '; scroll geometry=' + JSON.stringify(geometry));
+          }
         }
         const stickyTop = await normalPage.locator('#motion-story > div:first-child')
           .evaluate(element => Number.parseFloat(getComputedStyle(element).top));

@@ -29,6 +29,22 @@ async function withFixture(callback) {
   try { return await callback(f); } finally { await f.cleanup(); }
 }
 
+test("recovery runbook refuses to treat CLI SQL dumps as managed Auth/Storage backup", () => {
+  const runbook = fs.readFileSync(
+    path.resolve(__dirname, "../docs/incidents/2026-11-21-p0-217-canonical-backup-restore-runbook.md"),
+    "utf8",
+  );
+  assert.match(runbook, /MANAGED_SCHEMA_COVERAGE_UNVERIFIED/);
+  assert.match(runbook, /Supabase-managed schemas/);
+  assert.match(runbook, /`auth`/);
+  assert.match(runbook, /`storage`/);
+  assert.match(runbook, /actual object bytes/);
+  assert.match(runbook, /off-site encrypted copy/);
+  assert.match(runbook, /RESTORE_NOT_VERIFIED/);
+  assert.match(runbook, /EXPORT_INTEGRITY_PASS_RESTORE_UNVERIFIED/);
+  assert.match(runbook, /migration\/deployment freeze/);
+});
+
 test("accepts three matching local dump files without declaring restoration", () => withFixture(async f => {
   assert.equal(await checkExport(f.directory, REF), "EXPORT_INTEGRITY_PASS_RESTORE_UNVERIFIED");
 }));

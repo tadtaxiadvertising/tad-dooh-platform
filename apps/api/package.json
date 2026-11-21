@@ -25,7 +25,7 @@
     "prisma:drift:test": "node --test scripts/prisma-drift-core.test.cjs",
     "db:target:test": "node --test scripts/check-supabase-target.test.cjs",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate": "node scripts/assert-local-prisma-migration.cjs && prisma migrate dev",
     "prisma:studio": "prisma studio",
     "clean": "ts-node scripts/clean-db.ts",
     "cleanup:logs": "ts-node scripts/cleanup-old-logs.ts",

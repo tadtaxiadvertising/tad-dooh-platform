@@ -281,6 +281,11 @@ test("runtime security CI inherits exact root pnpm packageManager version", () =
   assert.equal(rootPackage.packageManager, "pnpm@10.34.9");
   assert.match(workflow, /uses: pnpm\/action-setup@v4/);
   assert.doesNotMatch(workflow, /version:\s*10(?:\s|$)/m);
+  const sharedBuild = workflow.indexOf("pnpm --filter @tad/impact-calculator run build");
+  const apiTests = workflow.indexOf("pnpm --filter api test --runInBand");
+  const apiTypecheck = workflow.indexOf("pnpm exec tsc --noEmit --project apps/api/tsconfig.json");
+  assert.ok(sharedBuild > 0 && sharedBuild < apiTests && sharedBuild < apiTypecheck, "Build dependency before API checks");
+
 });
 
 test("local migration refusal CLI never exposes database URLs or passwords", () => {

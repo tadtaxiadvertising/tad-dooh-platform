@@ -70,10 +70,15 @@ jobs:
             ts.forEachChild(node, child => children.push(shape(child)));
             // JSX whitespace can be reflowed by a formatter without
             // changing the JSX element/attribute structure or literal tokens.
+            const capturesLiteralText =
+              ts.isLiteralExpression(node) ||
+              node.kind === ts.SyntaxKind.TemplateHead ||
+              node.kind === ts.SyntaxKind.TemplateMiddle ||
+              node.kind === ts.SyntaxKind.TemplateTail;
             const value = ts.isJsxText(node)
               ? node.text.replace(/\s+/g, " ").trim()
-              : typeof node.text === "string" ? node.text
-              : ts.isIdentifier(node) ? String(node.escapedText) : null;
+              : ts.isIdentifier(node) ? String(node.escapedText)
+              : capturesLiteralText ? String(node.text) : null;
             return [node.kind, value, children];
           }
           for (const file of changed) {

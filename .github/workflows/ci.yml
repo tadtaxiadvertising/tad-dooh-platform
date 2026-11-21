@@ -146,6 +146,7 @@ jobs:
       - name: Run safe cross-portal integration contracts
         run: |
           set -euo pipefail
+          node --test scripts/advertiser-impact-alias-contract.test.cjs
           node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
           node --test scripts/simulator-key-security.test.cjs scripts/next-security-contract.test.cjs
           node --test scripts/ci-e2e-isolation.test.cjs

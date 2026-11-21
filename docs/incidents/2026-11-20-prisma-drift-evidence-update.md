@@ -10,12 +10,12 @@
 - Direct read-only database queries on the connected, ACTIVE_HEALTHY Supabase project show **33 public base tables** (includes non-model tables), and **23 Prisma migration rows** with `finished_at IS NOT NULL` and `rolled_back_at IS NULL`. The list of public tables confirms critical absences: `users`, `commission_ledger`, `commissions`, `payment_intents`, `payment_evidence`, `settlement_batches`, `playlists`, and more.
 - **11 historical Prisma migration rows** have nonempty `logs` containing failure/error indicators despite being marked finished: `20260309_add_drivers_and_subscriptions`, `20260424_v12_schema_sync`, `20260521_add_media_asset_processing_fields`, `20260628_add_schedule_and_weight_fields`, `20260916_gin_indexes`, `20260916_wallet_unification`, `20260917_add_currency_to_financial_transactions`, `20260917_campaign_targeting_jsonb`, `20260921_phase6_commissions_qr_conversation_metrics`, `20261012_campaign_notification_dedup`, `20261012_telemetry_gps_burst_fix`. Historical logs are evidence of attempted errors, not by themselves proof that each migration remains wholly unapplied.
 - `information_schema.columns` confirms `campaigns.id`, `devices.id`, `financial_transactions.id`, and `campaign_expirations.id` are `uuid` while `drivers.id` is `text`. The current Prisma schema declares String identifiers without `@db.Uuid` for some UUID-backed models; do not fix this by blind type conversion.
-- `apps/api/docker-entrypoint.sh` invokes `migrate deploy` followed by the read-only `check-prisma-drift.cjs`; `set -eu` causes startup to stop if drift is detected. This is intentional fail-closed protection. The supplied repeated log prefaces are consistent with repeated startup attempts but do not prove the deployment orchestrator's exact restart policy.
+- The **current** `apps/api/docker-entrypoint.sh` performs the Supabase-target preflight and read-only `check-prisma-drift.cjs` only; it **does not execute `migrate deploy`**. The explicitly approved manual migration script is `apps/api/scripts/migrate-safe.sh`. Startup stops if drift is detected. Earlier logs/documentation may describe a superseded entrypoint; do not conflate historical migration attempts with the current read-only startup failure.
 - The project's connection validation verifies matching Supabase refs between `DATABASE_URL`, `DIRECT_URL` and `SUPABASE_URL` inside EasyPanel, but **does not prove** that the independently connected Supabase project is the same as that deployment; the visible pooler host only shows region.
 
 ## Root cause assessment
 
-**Confirmed mechanism:** Prisma migration metadata reports completion despite an incomplete live schema, so `migrate deploy` has no pending SQL to execute. The deliberate schema-parity gate blocks NestJS startup.  
+**Confirmed mechanism:** Prisma migration metadata reports completion despite an incomplete live schema. Re-running `migrate deploy` alone would not reconstruct these objects because the associated historical migrations are marked complete. The current read-only schema-parity gate deliberately blocks NestJS startup.  
 **Likely historical contributors:** failed migration attempts later marked completed, pre-existing UUID/TEXT model mismatches, and dependencies missing during prior migration runs (see `docs/incidents/2026-11-07-prisma-production-schema-drift.md`). **The exact provenance of every missing table is not yet proven.**
 
 ## Safe recovery gates
@@ -53,3 +53,43 @@ Read-only `pg_proc` inspection confirms both functions use invoker privileges, n
 ### SQL inventory execution check
 
 The complete eight-statement, SELECT-only SQL inventory was executed against the connected Supabase project on 2026-11-20 and returned without a SQL error; the final result was the function privilege metadata above. Major report sections were also checked individually (migration counts/SQLSTATEs, table availability, relationship mismatches, RLS grants, row counts). This is verification of **read-only diagnostics**, not production schema repair.
+
+
+## 2026-11-21 forensic and recovery-gate update (read-only)
+
+**Source revision:** GitHub `main` at `953c7c1e160f05caa6c84b428d65169920116ba7`, together with metadata queries through the connected Supabase project. This is a continuation of the **P0** incident, not approval to restore, deploy or bypass the API parity guard.
+
+### Current deployment contract (corrects outdated historical narrative)
+
+The present `apps/api/docker-entrypoint.sh` performs target-reference checks and read-only Prisma schema-parity verification; **no schema migrations run at API startup**. The separate `apps/api/scripts/migrate-safe.sh` requires explicit `TAD_APPROVE_MANUAL_MIGRATION=YES` for reviewed migration operations and performs a parity postcheck. Historical migration execution and the current startup behavior must not be confused.
+
+### Source/database checksum comparison
+
+- All **23 of 23** recorded Prisma migration SQL SHA-256 checksums match the corresponding `apps/api/prisma/migrations/*/migration.sql` content on the compared `main` revision.
+- Two January 2026 files require **CRLF** normalization to reproduce the stored SHA-256, consistent with historical Windows line endings. Their SQL payloads are not shown to differ.
+- All 23 rows are marked finished; **11 retain historical SQL error logs**. Safe SQLSTATE-only extraction (without log bodies) found `42P01`, `42804`, `42883`, `25001`, `42601`. Do not infer that a failed migration successfully applied its intended SQL or infer a specific operator command solely from these flags.
+- **Do not edit old SQL checksums, delete migration history or use `migrate resolve --applied`** as a substitute for restoring missing schema.
+
+### Project identity and backup capability — mandatory gates
+
+- The connected Supabase organization reports **plan `free`**. Supabase documents daily managed backups for **Pro, Team and Enterprise**, and recommends **manual off-site logical backups** for Free. Consequently a managed daily backup, PITR or a usable restore point **must not be assumed**. This does not prove that no operator-created backup exists. Official reference: https://supabase.com/docs/guides/platform/backups
+- No Supabase development branches were returned by the connected project's `list_branches` call. Creating a new project or development branch may incur costs; do not provision one without explicit cost review and authorization.
+- The older `verify-production.ps1` committed in **September 2026** identifies `tadprod` (`tockqchhrzkopvjncdaj`) as the expected migration destination. The **October 2026** `easypanel-env-template.md` instead references `ltdcdhqixvbpdcitthqf`. On inspection, the latter is `ACTIVE_HEALTHY` and `tadprod` is `INACTIVE`. Neither repository file alone proves which is the canonical production data store, and the EasyPanel runtime URL values were not read.
+- **Do not execute the old `verify-production.ps1` as an authority to switch projects.** An authorized EasyPanel operator must confirm the active runtime project's reference *privately and without exposing URL credentials*, and record the authoritative deployment configuration and where the correct business data actually resides.
+- Prior to any DDL, obtain an approved **logical export** of the confirmed target using a tool compatible with the currently installed Supabase CLI/PostgreSQL versions, store it securely off-site, and **prove restore into an isolated, non-production PostgreSQL instance** with network/side-effect safeguards. Record the restore test, object counts and rollback owner without recording secrets or personal data. A dashboard entry alone is not proof of recoverability.
+
+### Catalog integrity and exposure qualifiers
+
+- The connected project's `public` catalog contains 33 physical base tables, of which 9 have RLS enabled and 24 do not. Read-only privilege checks reported **zero** direct `SELECT` grants on these tables to either `anon` or `authenticated`, and neither role has `USAGE` on `public`. This does **not** prove external exposure, nor establish that all other roles or configurations are safe; preserve least-privilege grants and explicitly review RLS for any reconstructed public tables.
+- `wallets`, `telemetry`, `financial_transactions`, `devices` and `driver_locations` do not show declared physical FKs in the inspected catalog. The six previously observed `UUID`/`TEXT` logical relation mismatches remain a separate integrity issue. No bulk casts or assumption of referential integrity are permitted.
+- Estimated row counts from `pg_stat_user_tables` are **not exact**. Prior exact seven-table counts applied only to the connected project at that earlier query time; neither is proof that `tadprod` or any historical backup lacks customer data.
+
+### Recovery exit criteria (currently NOT MET)
+
+1. Canonical production identity confirmed independently of repo templates; security incident #244 contained and credentials rotated by the infrastructure owner.
+2. Current-target backup created, stored securely, **restored and validated** on an isolated clone without external effects.
+3. A new, reviewable **EXPAND → MIGRATE → CONTRACT** reconciliation plan preserves UUID/TEXT key mappings, wallet ledger and payment idempotency, player offline synchronization, RLS and GPS/PostGIS behavior.
+4. On a staging restore, the live Prisma drift checker reports zero missing tables/columns, zero type and relationship mismatches, and zero GPS contract issues; all 646 existing API Jest tests plus focused regression tests, runtime startup and 10x telemetry testing pass.
+5. Actual GitHub Actions jobs execute on a runner, private-branch release protections are enforced and the security/release owners approve the deployment. **Until then, do not merge a remediation or deploy**.
+
+**Actions performed for this update:** Supabase queries against metadata/catalog only and GitHub documentation changes on a non-main branch. **No secrets read or shared, no business rows exported, no migration SQL executed, no database writes and no infrastructure changes.**

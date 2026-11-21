@@ -80,11 +80,16 @@ function execute(environment) {
   );
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tad-safe-migrate-"));
   try {
+    const env = { PATH: "", TAD_APPROVE_MANUAL_MIGRATION: "YES", ...environment };
+    if (windows) {
+      // Match the working Windows Git Bash entrypoint test harness.
+      env.SYSTEMROOT = process.env.SYSTEMROOT || process.env.SystemRoot;
+    }
     const result = spawnSync(shell, shellArgs, {
       input: boundary + script,
       encoding: "utf8",
       cwd: dir,
-      env: { PATH: "", TAD_APPROVE_MANUAL_MIGRATION: "YES", ...environment },
+      env,
       timeout: 4000,
       windowsHide: true,
     });

@@ -49,8 +49,10 @@ while ($null -ne $cursor) {
     }
     $cursor = $cursor.Parent
 }
-& supabase --version
-if ($LASTEXITCODE -ne 0) { throw "Supabase CLI unavailable." }
+$cliVersion = (& supabase --version | Select-Object -First 1).Trim()
+if ($LASTEXITCODE -ne 0 -or $cliVersion -notmatch '^3\\.') {
+    throw "REFUSED: this runbook requires verified Supabase CLI v3."
+}
 & supabase db dump --help
 if ($LASTEXITCODE -ne 0) { throw "Cannot verify installed dump flags." }
 
@@ -86,6 +88,25 @@ $manifest = [PSCustomObject]@{
 $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $destination "manifest.json") -Encoding UTF8
 Write-Host "EXPORT_COMPONENTS_WRITTEN_TO_PRIVATE_ENCRYPTED_VOLUME; RESTORE_NOT_YET_VERIFIED"
 ~~~
+
+### Offline export-integrity gate (not restore proof)
+
+After copying the manifest and the three SQL files onto the encrypted operator volume, run this verifier **from the checkout's repository root**. It only reads local hashes, rejects unexpected fields/paths, blocks a backup directory inside Git, and prints a verdict without printing any file content or private path. It does not prove disk encryption, off-site retention, Auth/Storage completeness or recoverability. The three files and manifest **must never** be committed.
+
+~~~powershell
+$env:TAD_EXPECTED_SUPABASE_PROJECT_REF = "ltdcdhqixvbpdcitthqf"
+try {
+    & node .\\scripts\\verify-supabase-backup-export.cjs $destination
+    if ($LASTEXITCODE -ne 0) { throw "Export-integrity check refused or failed." }
+} finally {
+    Remove-Item Env:\\TAD_EXPECTED_SUPABASE_PROJECT_REF -ErrorAction SilentlyContinue
+}
+~~~
+
+Expected success code: `EXPORT_INTEGRITY_PASS_RESTORE_UNVERIFIED`. A successful integrity check is **not** a verified restore, so do not flip `restore_verified` to true or unlock a production migration gate.
+
+CLI version rationale: [Supabase CLI v3 changed remote targeting](https://supabase.com/changelog/supabase-cli-v3) and documents `--remote=<ref|branch|url>` for `db dump`. Explicit project targeting is mandatory; no unqualified `supabase db dump` command is permitted.
+
 
 **Important limits:** a nonempty dump or matching checksum is **not proof of completeness or recoverability**. The default Supabase CLI schema export filters Supabase-managed schemas; data and role exports have different coverage. Check the actual scope of auth users/identities, Storage metadata, custom Auth/Storage policies and project configuration during the restore trial. Do not publish counts that could identify individuals. Separately export actual **Storage bucket object bytes** to the approved encrypted off-site destination; database backup alone contains only their metadata. Configuration for third-party Auth providers, secrets, SMTP, hooks and Edge Functions also needs a separate confidential inventory.
 

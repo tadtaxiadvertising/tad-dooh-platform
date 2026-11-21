@@ -5,6 +5,7 @@
 
 import type { PlaybackEvent } from "./types";
 import env from "./config";
+import { buildPlaybackApiPayload } from "./playback-event-type";
 
 const QUEUE_DB_NAME = "tad_playback_queue";
 const QUEUE_DB_VERSION = 1;
@@ -88,19 +89,9 @@ export class PlaybackQueue {
     let failed = 0;
 
     try {
-      const payload = events.map((e) => ({
-        deviceId: e.device_id,
-        videoId: e.video_id,
-        eventType:
-          e.event_type === "play_start"
-            ? "START"
-            : e.event_type === "play_confirm"
-              ? "END"
-              : "END",
-        lat: e.lat,
-        lng: e.lng,
-        clientTimestamp: new Date(e.timestamp).toISOString(),
-      }));
+      // Fail closed on unrecognized persisted event kinds: an invalid
+      // offline record must not become a verified billable END.
+      const payload = buildPlaybackApiPayload(events);
 
       const response = await fetch(`${env.API_URL}/telemetry/playback-batch`, {
         method: "POST",

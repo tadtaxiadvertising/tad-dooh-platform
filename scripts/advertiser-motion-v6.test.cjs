@@ -38,6 +38,32 @@ test("motion scrub includes reversible stages and a non-pinned reduced-motion fa
   assert.doesNotMatch(story, /preventDefault\(|onWheel=|window\.addEventListener/);
 });
 
+test("all cinematic stage/caption visual transforms derive from the same JS scroll value", () => {
+  // A native ViewTimeline mapping previously painted taxi and report with
+  // wrong opacities while the shared progress indicator showed 92%.
+  assert.match(story, /function interpolateScrollProgress\(/);
+  assert.match(story, /scrollYProgress\.get\(\)/);
+  for (const name of [
+    "taxiOpacity", "taxiX", "taxiScale", "tabletOpacity", "tabletScale",
+    "reportOpacity", "reportY", "firstCaption", "secondCaption", "thirdCaption",
+  ]) {
+    assert.ok(
+      story.includes("const " + name + " = useTransform(() =>"),
+      name + " must be sampled with the function-based transform",
+    );
+  }
+  assert.match(story, /interpolateScrollProgress\(scrollYProgress\.get\(\), \[0\.69, 0\.83\], \[0, 1\]\)/);
+  assert.match(story, /interpolateScrollProgress\(scrollYProgress\.get\(\), \[0, 0\.24, 0\.39\], \[1, 1, 0\]\)/);
+});
+
+test("hero entrance keeps no-JS headings opaque from the first frame", () => {
+  const entry = css.match(/@keyframes advertiserHeroIn\s*\{([\s\S]*?)\n\}/)?.[1];
+  assert.ok(entry, "The cinematic hero entrance should remain defined.");
+  assert.doesNotMatch(entry, /opacity\s*:/, "The entrance must not hide SSR/no-JS text.");
+  assert.match(entry, /translate3d\(0, 24px, 0\)/);
+  assert.match(entry, /translate3d\(0, 0, 0\)/);
+});
+
 test("white page style remains scoped to the landing, keeping CTA and legible form controls", () => {
   assert.match(css, /Advertiser Motion V6/);
   assert.match(css, /background: #ffffff;/);

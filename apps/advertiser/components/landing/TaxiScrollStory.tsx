@@ -40,6 +40,30 @@ const scenes = [
 ] as const;
 
 /**
+ * Linear clamp/interpolation for the small local scroll narrative.
+ *
+ * The native ViewTimeline accelerator in Motion 12.43.0 has been observed
+ * returning different effective progress for each scene opacity despite the
+ * public progress bar showing the correct value. Function-based transforms
+ * stay synchronized to the same scrollYProgress MotionValue.
+ */
+function interpolateScrollProgress(
+  progress: number,
+  stops: readonly number[],
+  values: readonly number[],
+): number {
+  if (progress <= stops[0]) return values[0];
+  for (let index = 1; index < stops.length; index += 1) {
+    if (progress <= stops[index]) {
+      const fraction = (progress - stops[index - 1]) /
+        (stops[index] - stops[index - 1]);
+      return values[index - 1] + fraction * (values[index] - values[index - 1]);
+    }
+  }
+  return values[values.length - 1];
+}
+
+/**
  * Scrubbed narrative built from CSS-only local art. This component never
  * contacts the player, telemetry API or advertiser storage.
  * Without JavaScript, on mobile, and with reduced motion, the three chapters
@@ -56,35 +80,35 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
     target: sectionRef,
     offset: ["start start", "end end"],
   });
-  const taxiOpacity = useTransform(scrollYProgress, [0, 0.24, 0.39], [1, 1, 0]);
-  const taxiX = useTransform(scrollYProgress, [0, 0.34], [0, 110]);
-  const taxiScale = useTransform(scrollYProgress, [0, 0.36], [1, 1.14]);
-  const tabletOpacity = useTransform(
-    scrollYProgress,
-    [0.27, 0.4, 0.66, 0.77],
-    [0, 1, 1, 0],
+  const taxiOpacity = useTransform(() =>
+    interpolateScrollProgress(scrollYProgress.get(), [0, 0.24, 0.39], [1, 1, 0]),
   );
-  const tabletScale = useTransform(
-    scrollYProgress,
-    [0.26, 0.44, 0.66],
-    [0.78, 1, 1.04],
+  const taxiX = useTransform(() =>
+    interpolateScrollProgress(scrollYProgress.get(), [0, 0.34], [0, 110]),
   );
-  const reportOpacity = useTransform(scrollYProgress, [0.69, 0.83], [0, 1]);
-  const reportY = useTransform(scrollYProgress, [0.67, 0.89], [44, 0]);
-  const firstCaption = useTransform(
-    scrollYProgress,
-    [0, 0.18, 0.31, 0.4],
-    [1, 1, 0.7, 0],
+  const taxiScale = useTransform(() =>
+    interpolateScrollProgress(scrollYProgress.get(), [0, 0.36], [1, 1.14]),
   );
-  const secondCaption = useTransform(
-    scrollYProgress,
-    [0.3, 0.42, 0.6, 0.72],
-    [0, 1, 1, 0],
+  const tabletOpacity = useTransform(() =>
+    interpolateScrollProgress(scrollYProgress.get(), [0.27, 0.4, 0.66, 0.77], [0, 1, 1, 0]),
   );
-  const thirdCaption = useTransform(
-    scrollYProgress,
-    [0.66, 0.79, 1],
-    [0, 1, 1],
+  const tabletScale = useTransform(() =>
+    interpolateScrollProgress(scrollYProgress.get(), [0.26, 0.44, 0.66], [0.78, 1, 1.04]),
+  );
+  const reportOpacity = useTransform(() =>
+    interpolateScrollProgress(scrollYProgress.get(), [0.69, 0.83], [0, 1]),
+  );
+  const reportY = useTransform(() =>
+    interpolateScrollProgress(scrollYProgress.get(), [0.67, 0.89], [44, 0]),
+  );
+  const firstCaption = useTransform(() =>
+    interpolateScrollProgress(scrollYProgress.get(), [0, 0.18, 0.31, 0.4], [1, 1, 0.7, 0]),
+  );
+  const secondCaption = useTransform(() =>
+    interpolateScrollProgress(scrollYProgress.get(), [0.3, 0.42, 0.6, 0.72], [0, 1, 1, 0]),
+  );
+  const thirdCaption = useTransform(() =>
+    interpolateScrollProgress(scrollYProgress.get(), [0.66, 0.79, 1], [0, 1, 1]),
   );
   const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
   const captions = [firstCaption, secondCaption, thirdCaption];

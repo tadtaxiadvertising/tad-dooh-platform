@@ -741,9 +741,11 @@
   .landing :global(.landing-hero-copy > .landing-lead) { animation-delay: 180ms; }
   .landing :global(.landing-hero-copy > .landing-hero-actions) { animation-delay: 270ms; }
 }
+/* Keep SSR and no-JS hero text legible from the first frame.
+   Entrance motion remains transform-only, never hiding essential text. */
 @keyframes advertiserHeroIn {
-  from { opacity: 0; transform: translate3d(0, 24px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+  from { transform: translate3d(0, 24px, 0); }
+  to { transform: translate3d(0, 0, 0); }
 }
 @media (max-width: 760px) {
   .landing :global(.landing-header) { height: 78px; }

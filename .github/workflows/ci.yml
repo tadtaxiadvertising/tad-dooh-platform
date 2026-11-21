@@ -29,6 +29,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
+      - name: Verify lockfile mappings before dependency installation
+        run: |
+          set -euo pipefail
+          node --test scripts/check-pnpm-lockfile-unique.test.cjs
+          node scripts/check-pnpm-lockfile-unique.cjs
+
       - name: Verify pinned overrides match the frozen lockfile
         run: node --test scripts/pnpm-overrides-contract.test.cjs
 

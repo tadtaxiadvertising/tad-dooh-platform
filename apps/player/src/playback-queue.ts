@@ -5,7 +5,7 @@
 
 import type { PlaybackEvent } from "./types";
 import env from "./config";
-import { toPlaybackApiEventType } from "./playback-event-type";
+import { buildPlaybackApiPayload } from "./playback-event-type";
 
 const QUEUE_DB_NAME = "tad_playback_queue";
 const QUEUE_DB_VERSION = 1;
@@ -89,22 +89,9 @@ export class PlaybackQueue {
     let failed = 0;
 
     try {
-      const payload = events.map((e) => {
-        const eventType = toPlaybackApiEventType(e.event_type);
-        if (!eventType) {
-          // A malformed or future offline event must never become a billable
-          // playback completion. Keep this batch queued for reconciliation.
-          throw new Error("UNSUPPORTED_PLAYBACK_EVENT_TYPE");
-        }
-        return {
-          deviceId: e.device_id,
-          videoId: e.video_id,
-          eventType,
-          lat: e.lat,
-          lng: e.lng,
-          clientTimestamp: new Date(e.timestamp).toISOString(),
-        };
-      });
+      // Fail closed on unrecognized persisted event kinds: an invalid
+      // offline record must not become a verified billable END.
+      const payload = buildPlaybackApiPayload(events);
 
       const response = await fetch(`${env.API_URL}/telemetry/playback-batch`, {
         method: "POST",

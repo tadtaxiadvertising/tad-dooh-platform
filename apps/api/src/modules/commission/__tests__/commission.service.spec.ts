@@ -201,7 +201,7 @@ describe("CommissionService", () => {
       expect(result.status).toBe("APPROVED");
     });
 
-    it("rejects creating a zero-commission settlement so later approvals remain eligible", async () => {
+    it("rejects a zero-commission settlement so later approvals remain eligible", async () => {
       mockPrisma.settlementBatch.findUnique.mockResolvedValue(null);
       mockPrisma.commission.findMany.mockResolvedValue([]);
 

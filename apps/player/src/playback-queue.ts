@@ -6,6 +6,7 @@
 import type { PlaybackEvent } from "./types";
 import env from "./config";
 import { buildPlaybackApiPayload } from "./playback-event-type";
+import { persistPlaybackEvent } from "./playback-queue-storage";
 
 const QUEUE_DB_NAME = "tad_playback_queue";
 const QUEUE_DB_VERSION = 1;
@@ -43,19 +44,10 @@ export class PlaybackQueue {
 
   async saveToQueue(event: PlaybackEvent): Promise<void> {
     const db = await this.dbReady;
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(QUEUE_STORE, "readwrite");
-      const store = tx.objectStore(QUEUE_STORE);
-      const entry = {
-        id: `${event.video_id}_${event.timestamp}`,
-        ...event,
-        device_id: this.deviceId || event.device_id,
-        queuedAt: Date.now(),
-      };
-      const req = store.put(entry);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
-    });
+    // IDBRequest.onsuccess precedes the transaction commit and is not a
+    // durability receipt. Propagate abort/errors so a caller cannot claim a
+    // Proof-of-Play was persisted when IndexedDB rolled the transaction back.
+    return persistPlaybackEvent(db, QUEUE_STORE, event, this.deviceId);
   }
 
   // Reconnect, visibility and the periodic timer can call flush at once.

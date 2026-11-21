@@ -273,6 +273,21 @@ test("local migration refuses remote, malformed and absent database targets", ()
   }
 });
 
+test("runtime security CI inherits exact root pnpm packageManager version", () => {
+  const rootPackage = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+  const workflow = fs.readFileSync(
+    path.join(root, ".github/workflows/runtime-security-regression.yml"), "utf8",
+  );
+  assert.equal(rootPackage.packageManager, "pnpm@10.34.9");
+  assert.match(workflow, /uses: pnpm\/action-setup@v4/);
+  assert.doesNotMatch(workflow, /version:\s*10(?:\s|$)/m);
+  const sharedBuild = workflow.indexOf("pnpm --filter @tad/impact-calculator run build");
+  const apiTests = workflow.indexOf("pnpm --filter api test --runInBand");
+  const apiTypecheck = workflow.indexOf("pnpm exec tsc --noEmit --project apps/api/tsconfig.json");
+  assert.ok(sharedBuild > 0 && sharedBuild < apiTests && sharedBuild < apiTypecheck, "Build dependency before API checks");
+
+});
+
 test("local migration refusal CLI never exposes database URLs or passwords", () => {
   const script = path.join(root, "apps/api/scripts/assert-local-prisma-migration.cjs");
   const fixture = "postgres://u:synthetic-secret@db.aaaaaaaaaaaaaaaaaaaa.supabase.co/postgres";

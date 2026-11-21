@@ -1,41 +1,13 @@
-const { Client } = require('pg');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+#!/usr/bin/env node
+"use strict";
 
-const sqlFilePath = path.join(__dirname, '../v12_supabase_schema.sql');
-const dbUrl = process.env.DATABASE_URL;
-
-async function applySchema() {
-  if (!dbUrl) {
-    console.error('❌ Error: DATABASE_URL no encontrada en el .env');
-    process.exit(1);
-  }
-
-  console.log('🚀 Iniciando migración automática TAD v12 PRO (JS-Version)...');
-  
-  const client = new Client({
-    connectionString: dbUrl,
-    ssl: { rejectUnauthorized: false }
-  });
-
-  try {
-    await client.connect();
-    console.log('✅ Conexión establecida con Supabase.');
-
-    const sql = fs.readFileSync(sqlFilePath, 'utf8');
-    console.log(`📄 Leyendo esquema v12 (${sql.length} bytes)...`);
-
-    await client.query(sql);
-    console.log('🎉 ¡Esquema v12 aplicado exitosamente!');
-
-  } catch (err) {
-    console.error('❌ Error fatal durante la migración:');
-    console.error(err);
-    process.exit(1);
-  } finally {
-    await client.end();
-  }
-}
-
-applySchema();
+// RETIRED — historical one-off script (raw v12 schema deployment).
+// These operations bypass the verified schema/migration review gate.
+// Preserve the original source in Git history for P0 incident forensics.
+// Any future fix must be a reviewed, forward-only Prisma migration rehearsed
+// against an isolated restorable backup of the canonical Supabase project.
+console.error(
+  "[migration] REFUSED: legacy database mutation command retired (apps/api/scripts/apply-v12-schema.cjs). " +
+    "Do not run ad-hoc SQL against TAD; follow incident #217 recovery gates.",
+);
+process.exitCode = 1;

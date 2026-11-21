@@ -336,13 +336,17 @@ jobs:
       - name: Slack Notification on failure
         if: failure() && env.SLACK_WEBHOOK_URL != ''
         run: |
-          curl -X POST -H 'Content-type: application/json' \
+          curl -fsS -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"🔴 *Security Audit Failed* for TAD DOOH\nProject: \`ltdcdhqixvbpdcitthqf\`\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>\nCheck GitHub Actions for details.\"}" \
-            "$SLACK_WEBHOOK_URL"
+            --config - <<CURL_CONFIG
+          url = "$SLACK_WEBHOOK_URL"
+          CURL_CONFIG
 
       - name: Slack Notification on success
         if: success() && env.SLACK_WEBHOOK_URL != ''
         run: |
-          curl -X POST -H 'Content-type: application/json' \
+          curl -fsS -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"✅ *Security Audit Passed* for TAD DOOH\nProject: \`ltdcdhqixvbpdcitthqf\`\nNo new security regressions.\"}" \
-            "$SLACK_WEBHOOK_URL"
+            --config - <<CURL_CONFIG
+          url = "$SLACK_WEBHOOK_URL"
+          CURL_CONFIG

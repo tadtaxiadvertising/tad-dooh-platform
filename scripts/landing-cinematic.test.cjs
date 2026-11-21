@@ -11,7 +11,7 @@ test("Advertiser cinematic scene follows its existing campaign city, with real b
   const scene = read("apps/advertiser/components/landing/CityScene.tsx");
   const styles = read("apps/advertiser/components/landing/landing.module.css");
 
-  assert.match(landing, /<CityScene city=\{city\} objective=\{objective\}/);
+  assert.match(landing, /<CityScene\s+city=\{city\}\s+objective=\{objective\}/);
   assert.match(landing, /className="landing-hero-cities"/);
   assert.match(landing, /aria-pressed=\{city === choice\}/);
   assert.match(landing, /setCity\(choice\)/);
@@ -109,7 +109,7 @@ test("in-car brand preview stays local, bounded and understandable without chang
   const scene = read("apps/advertiser/components/landing/CityScene.tsx");
   const css = read("apps/advertiser/components/landing/landing.module.css");
   assert.match(landing, /const \[brandName, setBrandName\] = useState\(""\)/);
-  assert.match(landing, /<CityScene city=\{city\} objective=\{objective\} brandName=\{brandName\}/);
+  assert.match(landing, /<CityScene\s+city=\{city\}\s+objective=\{objective\}\s+brandName=\{brandName\}/);
   assert.match(landing, /id="hero-brand-name"/);
   assert.match(landing, /autoComplete="off"/);
   assert.match(landing, /maxLength=\{24\}/);

@@ -100,6 +100,6 @@ test("weekly public audit artifacts contain counts only, never raw queries or li
   assert.doesNotMatch(src, /path: advisories\.json/);
   assert.doesNotMatch(src, /SELECT pid,[^\n]*query|AS duration, query/);
   assert.doesNotMatch(src, /Storage usage: \$STORAGE_TOTAL/);
-  assert.doesNotMatch(src, /\.name\) - \\(\.detail\)/);
+  assert.equal(src.includes(String.raw`\(.detail)`), false);
   assert.match(src, /active_queries_over_30_seconds/);
 });

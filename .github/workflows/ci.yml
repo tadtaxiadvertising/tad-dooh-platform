@@ -47,7 +47,13 @@ jobs:
           if [ -d packages/ui/src ]; then
             pnpm dlx prettier@3.9.10 --check "packages/ui/src/**/*.{ts,tsx}"
           fi
-          pnpm dlx prettier@3.9.10 --check "apps/**/*.{ts,tsx}"
+          pnpm dlx prettier@3.9.10 --check "apps/**/*.{ts,tsx}" || {
+            pnpm dlx prettier@3.9.10 --write apps/api/src/modules/drivers/__tests__/drivers-admin-device-assignment-atomic.spec.ts
+            echo "=== TAD_PRETTIER_DIAGNOSTIC_DIFF_BEGIN ==="
+            git diff -- apps/api/src/modules/drivers/__tests__/drivers-admin-device-assignment-atomic.spec.ts
+            echo "=== TAD_PRETTIER_DIAGNOSTIC_DIFF_END ==="
+            exit 1
+          }
 
       - name: Lint (ESLint)
         run: |

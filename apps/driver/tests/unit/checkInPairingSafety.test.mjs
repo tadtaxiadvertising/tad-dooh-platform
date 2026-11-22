@@ -5,26 +5,37 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const checkIn = readFileSync(path.join(root, "apps/driver/pages/check-in.tsx"), "utf8");
+const checkIns = ["driver", "admin", "advertiser"].map((portal) => ({
+  portal,
+  source: readFileSync(path.join(root, "apps", portal, "pages/check-in.tsx"), "utf8"),
+}));
 const gateway = readFileSync(path.join(root, "packages/services/mobile-gateway.ts"), "utf8");
 
-test("an untrusted QR remains a locator, never the authenticated telemetry device ID", () => {
-  assert.match(checkIn, /startTadTracking\(id, apiBaseUrl\)/);
-  assert.doesNotMatch(
-    checkIn,
-    /localStorage\s*\.\s*setItem\s*\(\s*["'`]TAD_DEVICE_ID["'`]/,
-  );
+test("a public QR never silently becomes a trusted telemetry device ID", () => {
+  for (const { portal, source } of checkIns) {
+    assert.match(source, /startTadTracking\(id, apiBaseUrl\)/, portal);
+    assert.doesNotMatch(
+      source,
+      /localStorage\s*\.\s*setItem\s*\(\s*["'`]TAD_DEVICE_ID["'`]/,
+      portal,
+    );
+  }
 });
 
-test("check-in clearly distinguishes local GPS collection from a secure pairing", () => {
-  assert.match(checkIn, /Emparejamiento pendiente/);
-  assert.match(checkIn, /QR detectado · sin vincular/);
-  assert.match(checkIn, /ENVÍO PENDIENTE/);
-  assert.doesNotMatch(checkIn, /LINK_OK|Dispositivo Enlazado/);
+test("all check-in dashboards distinguish local GPS from secure pairing", () => {
+  for (const { portal, source } of checkIns) {
+    assert.match(source, /Emparejamiento pendiente/, portal);
+    assert.match(source, /QR detectado · sin vincular/, portal);
+    assert.match(source, /ENVÍO PENDIENTE/, portal);
+    assert.match(source, /hasDeviceCredential:\s*false/, portal);
+    assert.doesNotMatch(source, /LINK_OK|Dispositivo Enlazado/, portal);
+  }
 });
 
-test("gateway exposes only in-memory device credential status, not a scanned QR", () => {
+test("gateway derives credential status from memory, never a scanned QR", () => {
   assert.match(gateway, /hasDeviceCredential:\s*currentCredential\s*!==\s*null/);
-  assert.match(checkIn, /hasDeviceCredential:\s*false/);
-  assert.match(gateway, /currentCredential = \{ \.\.\.credential \};[\s\S]*?emitState\(currentStatus, currentError\)/);
+  assert.match(
+    gateway,
+    /currentCredential = \{ \.\.\.credential \};[\s\S]*?emitState\(currentStatus, currentError\)/,
+  );
 });

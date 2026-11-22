@@ -96,6 +96,8 @@ configurations.all {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
+
     // ─── Jetpack Compose ──────────────────────────────────────────────
     val composeBom = platform("androidx.compose:compose-bom:2025.01.01")
     implementation(composeBom)

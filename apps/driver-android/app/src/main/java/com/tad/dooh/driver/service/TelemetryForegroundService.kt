@@ -48,9 +48,8 @@ import retrofit2.HttpException
  * 1. **5-minute strict debounce** — [FLUSH_INTERVAL_MS] = 300 000 ms.
  *    GPS captures continuously but only flushes to backend every 5 min.
  *
- * 2. **Max 500 offline records** — [MAX_OFFLINE_RECORDS] = 500.
- *    When offline, coords accumulate in Room with status "offline".
- *    Oldest are evicted beyond 500.
+ * 2. **Durable offline GPS** — unsent coordinates remain in Room.
+ *    Never evict unacknowledged points during extended outages.
  *
  * 3. **Drip-sync 50 chunks** — [DRIP_CHUNK_SIZE] = 50.
  *    Offline queue syncs in 50-item chunks with random delay
@@ -77,9 +76,6 @@ class TelemetryForegroundService : Service() {
         /** 5-minute strict debounce — GPS captures continuously,
          *  flushes to backend every 300 000 ms. */
         const val FLUSH_INTERVAL_MS = 300_000L
-
-        /** Maximum offline records before eviction kicks in. */
-        const val MAX_OFFLINE_RECORDS = 500
 
         /** Drip-sync chunk size — offline queue uploads in 50-item groups. */
         const val DRIP_CHUNK_SIZE = 50
@@ -287,8 +283,8 @@ class TelemetryForegroundService : Service() {
      * 2. POST them as a single [TrackBatchRequest] to `/fleet/track-batch`.
      * 3. **On success**: delete "batch" records from Room, then attempt
      *    offline queue drip-sync in 50-item chunks.
-     * 4. **On failure (offline)**: move "batch" → "offline" in Room,
-     *    evict oldest records beyond [MAX_OFFLINE_RECORDS].
+     * 4. **On failure (offline)**: atomically mark only this snapshot offline
+     *    for a future retry without evicting unacknowledged GPS.
      * 5. **On 402 (kill-switch)**: stop self, set [GlobalState.isKillSwitchActive],
      *    clear auth, broadcast [ACTION_FORCE_LOGOUT].
      */
@@ -315,10 +311,15 @@ class TelemetryForegroundService : Service() {
 
         try {
             val response = apiService.trackBatch(request)
-            Log.i(TAG, "Flush success — saved=${response.saved}, skipped=${response.skipped}")
+            if (!response.acknowledges(points.size)) {
+                Log.w(TAG, "Incomplete GPS receipt; retaining ${points.size} points for retry")
+                moveBatchToOffline(batchCoords)
+                return
+            }
+            Log.i(TAG, "Flush GPS receipt — count=${response.count}, input=${response.input}")
 
-            // ── Delete flushed batch records ──────────────────────────────
-            telemetryDao.deleteByStatus("batch")
+            // Delete only the acknowledged snapshot; new GPS fixes stay queued.
+            telemetryDao.deleteAcknowledgedBatch(batchCoords.map { it.ts })
 
             // ── Attempt offline queue drip-sync after successful flush ────
             serviceScope.launch { dripSyncOfflineQueue() }
@@ -346,27 +347,12 @@ class TelemetryForegroundService : Service() {
     }
 
     /**
-     * Moves batch coords to offline status in Room and enforces the
-     * 500-record cap.
-     *
-     * Uses a Room transaction to ensure atomicity — no GPS update can
-     * interleave between the status-change writes and the batch cleanup.
+     * Moves only the failed batch snapshot to offline status in one SQL
+     * statement. Concurrently captured GPS must remain intact, and no
+     * unacknowledged record is evicted.
      */
     private suspend fun moveBatchToOffline(coords: List<TelemetryEntity>) {
-        val offlineCoords = coords.map { it.copy(status = "offline") }
-
-        // ── Atomic status transition inside Room transaction ──────────────
-        // Sequential insert + delete (no Room transaction needed)
-        telemetryDao.insertAll(offlineCoords)
-        telemetryDao.deleteByStatus("batch")
-
-        // ── Enforce 500-record offline cap ──────────────────────────────
-        val offlineCount = telemetryDao.countByStatus("offline")
-        if (offlineCount > MAX_OFFLINE_RECORDS) {
-            val excess = offlineCount - MAX_OFFLINE_RECORDS
-            telemetryDao.evictOldestOffline(excess)
-            Log.d(TAG, "Evicted $excess oldest offline records (cap=$MAX_OFFLINE_RECORDS)")
-        }
+        telemetryDao.markBatchOffline(coords.map { it.ts })
     }
 
     // ─── Offline queue drip-sync ────────────────────────────────────────
@@ -403,7 +389,11 @@ class TelemetryForegroundService : Service() {
 
             try {
                 val response = apiService.trackBatch(request)
-                Log.d(TAG, "Drip-sync chunk OK — saved=${response.saved}, skipped=${response.skipped}")
+                if (!response.acknowledges(points.size)) {
+                    Log.w(TAG, "Incomplete offline GPS receipt; retaining chunk for retry")
+                    return
+                }
+                Log.d(TAG, "Drip-sync receipt — count=${response.count}, input=${response.input}")
 
                 // ── Delete successfully synced chunk ──────────────────────
                 telemetryDao.deleteByTsList(chunk.map { it.ts })

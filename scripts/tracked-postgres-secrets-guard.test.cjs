@@ -110,9 +110,12 @@ test("weekly Supabase audit shell block parses with its heredoc after YAML inden
   skip: process.platform === "win32",
 }, () => {
   const src = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
-  const match = src.match(/      - name: Run Security Audit\n        id: audit\n        run: \|\n([\s\S]*?)(?=\n      - name: |$)/);
-  assert.ok(match, "Expected audit script block");
-  const shellSource = match[1].split("\n").map(line =>
+  const auditStep = src.split("      - name: Run Security Audit\n")[1]
+    ?.split("\n      - name: ")[0];
+  assert.ok(auditStep, "Expected audit step");
+  const shellBody = auditStep.split("        run: |\n")[1];
+  assert.ok(shellBody, "Expected audit run script block");
+  const shellSource = shellBody.split("\n").map(line =>
     line.startsWith("          ") ? line.slice(10) : line,
   ).join("\n");
   const parsed = spawnSync("bash", ["-n"], {

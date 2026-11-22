@@ -20,6 +20,7 @@ import {
 } from "../../common/constants/business-rules";
 import { PayrollAuditService } from "./payroll-audit.service";
 import { ReferralService } from "../referral/referral.service";
+import { deviceIdentityWhere } from "../campaign/device-identity-lookup";
 
 export interface AuthUser {
   id: string;
@@ -702,10 +703,21 @@ export class DriversService {
     };
     assertEligibleForDevice(driver);
 
-    const device = await this.prisma.device.findFirst({
-      where: { OR: [{ deviceId }, { id: deviceId }] },
+    // Do not send hardware identifiers through devices.id (PostgreSQL UUID).
+    // A UUID-looking hardware ID can also collide with a different device PK.
+    const devices = await this.prisma.device.findMany({
+      where: deviceIdentityWhere(deviceId),
+      take: 2,
     });
-    if (!device) throw new Error("Dispositivo no encontrado en el inventario");
+    if (devices.length === 0) {
+      throw new BadRequestException(
+        "Dispositivo no encontrado en el inventario",
+      );
+    }
+    if (devices.length > 1) {
+      throw new BadRequestException("Identificador de dispositivo ambiguo");
+    }
+    const device = devices[0];
 
     // Keep driver handoffs serialized, including concurrent assignments to
     // different tablets. Updating the driver row takes a PostgreSQL row lock

@@ -68,6 +68,7 @@ let swMessageListener: ((event: MessageEvent) => void) | null = null;
 let onlineListener: (() => void) | null = null;
 let storageFailed = false;
 let inFlightController: AbortController | null = null;
+let releaseTrackingLock: (() => void) | null = null;
 
 function storageKey(deviceId: string): string {
   return `${STORAGE_PREFIX}${encodeURIComponent(deviceId)}`;
@@ -186,7 +187,64 @@ export function startTadTracking(
     }
   }
 
+  // localStorage has no atomic compare-and-swap. Only one tab per device
+  // may capture, retry or acknowledge GPS. Never use an unsafe write fallback.
+  const locks = navigator.locks;
+  if (!locks || typeof locks.request !== "function") {
+    emitState(
+      "GPS_ERROR",
+      "Este navegador no permite bloqueo GPS seguro entre pestañas.",
+    );
+    return;
+  }
+
   stopTadTracking();
+  const version = sessionVersion;
+  emitState("INITIALIZING");
+
+  void locks
+    .request(
+      `tad-gps-writer:${encodeURIComponent(deviceId)}`,
+      { mode: "exclusive", ifAvailable: true },
+      async (lock) => {
+        if (version !== sessionVersion) return;
+        if (!lock) {
+          emitState(
+            "GPS_ERROR",
+            "GPS activo en otra pestaña. Cierra la otra pestaña e inténtalo nuevamente.",
+          );
+          return;
+        }
+
+        // Keep the exclusive browser lock until stop/unmount. Browser crashes
+        // automatically release it; queued GPS remains in localStorage.
+        let release!: () => void;
+        const hold = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        releaseTrackingLock = release;
+        try {
+          initializeTracking(deviceId, baseUrl, credential);
+          await hold;
+        } finally {
+          if (releaseTrackingLock === release) {
+            releaseTrackingLock = null;
+          }
+        }
+      },
+    )
+    .catch(() => {
+      if (version === sessionVersion) {
+        emitState("GPS_ERROR", "No se pudo adquirir el bloqueo GPS seguro.");
+      }
+    });
+}
+
+function initializeTracking(
+  deviceId: string,
+  baseUrl: string,
+  credential?: GatewayDeviceCredential,
+): void {
   currentDeviceId = deviceId;
   apiBaseUrl = baseUrl;
   currentCredential = null;
@@ -422,6 +480,10 @@ function handleSuspension(): void {
 export function stopTadTracking(): void {
   sessionVersion++;
   inFlightController?.abort();
+  // Release after invalidating the old session, so a former tab cannot
+  // acknowledge a queue that a new tab now owns.
+  releaseTrackingLock?.();
+  releaseTrackingLock = null;
   currentCredential = null;
   if (watchId !== null) {
     navigator.geolocation.clearWatch(watchId);

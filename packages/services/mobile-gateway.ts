@@ -69,6 +69,7 @@ let onlineListener: (() => void) | null = null;
 let storageFailed = false;
 let inFlightController: AbortController | null = null;
 let releaseTrackingLock: (() => void) | null = null;
+let acquiringTrackingLock: AbortController | null = null;
 
 function storageKey(deviceId: string): string {
   return `${STORAGE_PREFIX}${encodeURIComponent(deviceId)}`;
@@ -202,22 +203,24 @@ export function startTadTracking(
   const version = sessionVersion;
   emitState("INITIALIZING");
 
+  // Wait briefly for a previous mount to release its lease. A competing
+  // long-lived tab cannot stall this one indefinitely or overwrite its data.
+  const acquisition = new AbortController();
+  acquiringTrackingLock = acquisition;
+  const deadline = setTimeout(() => acquisition.abort(), 500);
   void locks
     .request(
       `tad-gps-writer:${encodeURIComponent(deviceId)}`,
-      { mode: "exclusive", ifAvailable: true },
-      async (lock) => {
-        if (version !== sessionVersion) return;
-        if (!lock) {
-          emitState(
-            "GPS_ERROR",
-            "GPS activo en otra pestaña. Cierra la otra pestaña e inténtalo nuevamente.",
-          );
-          return;
+      { mode: "exclusive", signal: acquisition.signal },
+      async () => {
+        clearTimeout(deadline);
+        if (acquiringTrackingLock === acquisition) {
+          acquiringTrackingLock = null;
         }
+        if (version !== sessionVersion) return;
 
-        // Keep the exclusive browser lock until stop/unmount. Browser crashes
-        // automatically release it; queued GPS remains in localStorage.
+        // Keep the browser lock until stop/unmount. A crashed tab releases
+        // its lock automatically while its GPS points stay in localStorage.
         let release!: () => void;
         const hold = new Promise<void>((resolve) => {
           release = resolve;
@@ -235,7 +238,16 @@ export function startTadTracking(
     )
     .catch(() => {
       if (version === sessionVersion) {
-        emitState("GPS_ERROR", "No se pudo adquirir el bloqueo GPS seguro.");
+        emitState(
+          "GPS_ERROR",
+          "GPS en otra pestaña o sin bloqueo disponible. Cierra la otra pestaña.",
+        );
+      }
+    })
+    .finally(() => {
+      clearTimeout(deadline);
+      if (acquiringTrackingLock === acquisition) {
+        acquiringTrackingLock = null;
       }
     });
 }
@@ -479,6 +491,8 @@ function handleSuspension(): void {
 /** Stops capture but never deletes queued GPS or legacy offline data. */
 export function stopTadTracking(): void {
   sessionVersion++;
+  acquiringTrackingLock?.abort();
+  acquiringTrackingLock = null;
   inFlightController?.abort();
   // Release after invalidating the old session, so a former tab cannot
   // acknowledge a queue that a new tab now owns.

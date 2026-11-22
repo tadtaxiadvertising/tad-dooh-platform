@@ -32,7 +32,8 @@ describe("Campaign tenant patch and list authorization", () => {
       active: true,
     });
     updateCampaign.mockResolvedValue({ id: "campaign-1" });
-    findMany.mockResolvedValue([{ id: "campaign-1" }]);
+    // Prisma include returns both relation arrays, even when empty.
+    findMany.mockResolvedValue([{ id: "campaign-1", mediaAssets: [], media: [] }]);
     getAllCampaigns.mockResolvedValue([{ id: "admin-result" }]);
   });
 
@@ -171,7 +172,35 @@ describe("Campaign tenant patch and list authorization", () => {
     const data = await controller.getAllCampaigns(
       req(UserRole.ADVERTISER, "advertiser-A"),
     );
-    expect(data).toEqual([{ id: "campaign-1" }]);
+    expect(data).toEqual([{ id: "campaign-1", mediaAssets: [], media: [] }]);
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { advertiserId: "advertiser-A" } }),
+    );
+    expect(getAllCampaigns).not.toHaveBeenCalled();
+  });
+
+  it("preserves both MIME response aliases without broadening tenant scope", async () => {
+    findMany.mockResolvedValue([
+      {
+        id: "campaign-1",
+        mediaAssets: [],
+        media: [{ id: "media-1", mimeType: "video/mp4" }],
+      },
+    ]);
+
+    const data = await controller.getAllCampaigns(
+      req(UserRole.ADVERTISER, "advertiser-A"),
+    );
+
+    expect(data).toEqual([
+      {
+        id: "campaign-1",
+        mediaAssets: [],
+        media: [
+          { id: "media-1", mimeType: "video/mp4", mime_type: "video/mp4" },
+        ],
+      },
+    ]);
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { advertiserId: "advertiser-A" } }),
     );

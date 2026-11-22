@@ -1,7 +1,16 @@
 import type { AuthenticatedRequest } from "../auth/auth.types";
-import { Body, Controller, Get, Param, Post, Req } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import { FleetService } from "./fleet.service";
 import { Public } from "../auth/decorators/public.decorator";
+import { DeviceTokenGuard } from "../device/guards/device-token.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { UserRole } from "../auth/decorators/roles.decorator";
 
@@ -110,7 +119,10 @@ export class FleetController {
     return this.fleetService.getTrackingSummary(advertiserId);
   }
 
+  // Public to the portal JWT guard, but never anonymous: only provisioned
+  // hardware with a purpose-bound DEVICE_AUTH credential may upload GPS.
   @Public()
+  @UseGuards(DeviceTokenGuard)
   @Post("track-batch")
   async trackBatch(@Body() data: TrackBatchDto) {
     return this.fleetService.ingestTelemetryBatch(data);

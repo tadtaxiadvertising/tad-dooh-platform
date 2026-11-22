@@ -16,12 +16,45 @@ function browserFixture() {
   let failWrites = false;
   const events = new Map();
   const calls = [];
+  // Simulates Web Locks' cross-tab exclusive lease and abortable queue.
+  const lockQueues = new Map();
   let responder = async () => new Response(JSON.stringify({ count: 1, input: 1 }));
 
   Object.defineProperty(globalThis, "navigator", {
     configurable: true,
     value: {
       onLine: true,
+      locks: {
+        request(name, options, callback) {
+          const predecessor = lockQueues.get(name) || Promise.resolve();
+          let release;
+          const reservation = new Promise((resolve) => { release = resolve; });
+          lockQueues.set(name, reservation);
+
+          const work = predecessor.then(async () => {
+            try {
+              if (options.signal?.aborted) throw new Error("AbortError");
+              return await callback({ name, mode: "exclusive" });
+            } finally {
+              release();
+              if (lockQueues.get(name) === reservation) lockQueues.delete(name);
+            }
+          });
+
+          const abort = new Promise((_, reject) => {
+            if (options.signal?.aborted) {
+              reject(new Error("AbortError"));
+            } else {
+              options.signal?.addEventListener(
+                "abort",
+                () => reject(new Error("AbortError")),
+                { once: true },
+              );
+            }
+          });
+          return Promise.race([work, abort]);
+        },
+      },
       geolocation: {
         watchPosition(onPosition) {
           const id = nextWatch++;
@@ -110,13 +143,18 @@ async function until(predicate) {
   assert.fail("expected asynchronous GPS state transition did not occur");
 }
 
+async function begin(gateway, deviceId = "TAD-A") {
+  gateway.startTadTracking(deviceId, "https://api.example.invalid");
+  await until(() => gateway.getGatewayState().status !== "INITIALIZING");
+}
+
 test("unpaired QR captures locally, never uploads and leaves legacy data intact", async () => {
   const env = browserFixture();
   const legacy = JSON.stringify([{ timestamp: "legacy" }]);
   env.storage.set("tad_gps_batch", legacy);
   const gateway = await gatewayModule();
   try {
-    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    await begin(gateway, "TAD-A");
     env.fix(Date.parse("2026-11-22T01:00:00Z"));
     assert.equal(env.pending("TAD-A").length, 1);
     assert.equal(env.storage.get("tad_gps_batch"), legacy);
@@ -137,7 +175,7 @@ test("valid ACK removes only in-flight GPS; concurrent capture remains durable",
     complete = resolve;
   }));
   try {
-    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    await begin(gateway, "TAD-A");
     env.fix(Date.parse("2026-11-22T01:00:00Z"));
     assert.equal(gateway.authorizeTadTracking(authorization("TAD-A")), true);
     await until(() => typeof complete === "function");
@@ -167,7 +205,7 @@ test("unauthorized response and ambiguous 200 never acknowledge GPS", async () =
     const gateway = await gatewayModule();
     env.setResponder(async () => new Response(JSON.stringify(body), { status }));
     try {
-      gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+      await begin(gateway, "TAD-A");
       env.fix(Date.parse("2026-11-22T02:00:00Z"));
       gateway.authorizeTadTracking(authorization("TAD-A"));
       await until(() => gateway.getGatewayState().status === "OFFLINE");
@@ -184,7 +222,7 @@ test("HTTP 402 suspends uploads but preserves the offline queue", async () => {
   const gateway = await gatewayModule();
   env.setResponder(async () => new Response(JSON.stringify({}), { status: 402 }));
   try {
-    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    await begin(gateway, "TAD-A");
     env.fix(Date.parse("2026-11-22T03:00:00Z"));
     gateway.authorizeTadTracking(authorization("TAD-A"));
     await until(() => gateway.getGatewayState().status === "SUSPENDED");
@@ -199,15 +237,15 @@ test("two QR device queues never mix across stops and reloads", async () => {
   const env = browserFixture();
   const gateway = await gatewayModule();
   try {
-    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    await begin(gateway, "TAD-A");
     env.fix(Date.parse("2026-11-22T04:00:00Z"));
     gateway.stopTadTracking();
-    gateway.startTadTracking("TAD-B", "https://api.example.invalid");
+    await begin(gateway, "TAD-B");
     env.fix(Date.parse("2026-11-22T04:00:01Z"));
     assert.equal(env.pending("TAD-A").length, 1);
     assert.equal(env.pending("TAD-B").length, 1);
     gateway.stopTadTracking();
-    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    await begin(gateway, "TAD-A");
     assert.equal(gateway.getGatewayState().batchSize, 1);
   } finally {
     gateway.stopTadTracking();
@@ -218,7 +256,7 @@ test("storage quota failure cannot truncate previously persisted GPS", async () 
   const env = browserFixture();
   const gateway = await gatewayModule();
   try {
-    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    await begin(gateway, "TAD-A");
     env.fix(Date.parse("2026-11-22T05:00:00Z"));
     assert.equal(env.pending("TAD-A").length, 1);
     env.failStorageWrites();
@@ -236,7 +274,7 @@ test("unpaired QR never advertises GPS as synced or actively transmitting", asyn
   const env = browserFixture();
   const gateway = await gatewayModule();
   try {
-    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    await begin(gateway, "TAD-A");
     assert.equal(gateway.getGatewayState().status, "OFFLINE");
     assert.equal(gateway.getGatewayState().totalSynced, 0);
     assert.equal(env.calls.length, 0);
@@ -253,12 +291,57 @@ test("verified pairing restores TRACKING state with empty queue", async () => {
   const env = browserFixture();
   const gateway = await gatewayModule();
   try {
-    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    await begin(gateway, "TAD-A");
     assert.equal(gateway.getGatewayState().status, "OFFLINE");
     assert.equal(gateway.authorizeTadTracking(authorization("TAD-B")), false);
     assert.equal(gateway.getGatewayState().status, "OFFLINE");
     assert.equal(gateway.authorizeTadTracking(authorization("TAD-A")), true);
     assert.equal(gateway.getGatewayState().status, "TRACKING");
+    assert.equal(env.calls.length, 0);
+  } finally {
+    gateway.stopTadTracking();
+  }
+});
+
+test("second tab cannot overwrite GPS while first tab owns device lock", async () => {
+  const env = browserFixture();
+  const first = await gatewayModule();
+  const second = await gatewayModule();
+  try {
+    await begin(first, "TAD-A");
+    second.startTadTracking("TAD-A", "https://api.example.invalid");
+    await until(() => second.getGatewayState().status === "GPS_ERROR");
+    assert.match(second.getGatewayState().error, /otra pestaña/i);
+
+    env.fix(Date.parse("2026-11-22T07:00:00Z"));
+    assert.equal(env.pending("TAD-A").length, 1);
+
+    first.stopTadTracking();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    await begin(second, "TAD-A");
+    env.fix(Date.parse("2026-11-22T07:00:01Z"));
+    assert.equal(env.pending("TAD-A").length, 2);
+    assert.equal(env.pending("TAD-A")[1].timestamp, "2026-11-22T07:00:01.000Z");
+  } finally {
+    first.stopTadTracking();
+    second.stopTadTracking();
+  }
+});
+
+test("browser without Web Locks fails closed and preserves existing GPS", async () => {
+  const env = browserFixture();
+  const key = "tad_gps_batch_device:TAD-A";
+  const stored = JSON.stringify([{ ...FIXTURE, timestamp: "2026-11-22T08:00:00Z" }]);
+  env.storage.set(key, stored);
+  delete globalThis.navigator.locks;
+
+  const gateway = await gatewayModule();
+  try {
+    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    assert.equal(gateway.getGatewayState().status, "GPS_ERROR");
+    assert.match(gateway.getGatewayState().error, /bloqueo GPS seguro/i);
+    assert.equal(env.storage.get(key), stored);
     assert.equal(env.calls.length, 0);
   } finally {
     gateway.stopTadTracking();

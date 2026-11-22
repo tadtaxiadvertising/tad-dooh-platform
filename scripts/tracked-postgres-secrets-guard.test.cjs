@@ -309,3 +309,68 @@ test("Slack weekly notifications never expose webhook URL through curl process a
     }
   }
 });
+
+test("weekly audit secrets are scoped to the exact consuming steps, never the job", () => {
+  const workflow = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  const jobHeader = workflow.split("    steps:\n")[0];
+  assert.doesNotMatch(jobHeader, /^    env:/m, "No job-wide secret env");
+  function stepSection(name) {
+    const match = workflow.split("      - name: " + name + "\n")[1]
+      ?.split("\n      - name: ")[0];
+    assert.ok(match, "Missing step " + name);
+    return match;
+  }
+
+  for (const name of [
+    "Checkout repository",
+    "Setup Supabase CLI",
+    "Upload advisories artifact",
+    "Create GitHub Issue on failure",
+  ]) {
+    const section = stepSection(name);
+    assert.doesNotMatch(section, /\$\{\{\s*secrets\./, name + " must not receive privileged secrets");
+    assert.doesNotMatch(section, /^\s*SUPABASE_ACCESS_TOKEN:/m);
+    assert.doesNotMatch(section, /^\s*DB_PASSWORD:/m);
+    assert.doesNotMatch(section, /^\s*SLACK_WEBHOOK_URL:/m);
+  }
+
+  const audit = stepSection("Run Security Audit");
+  assert.match(audit, /        env:\n/);
+  assert.match(audit, /SUPABASE_PROJECT_REF: \$\{\{ secrets\.SUPABASE_PROJECT_REF/);
+  assert.match(audit, /SUPABASE_ACCESS_TOKEN: \$\{\{ secrets\.SUPABASE_ACCESS_TOKEN \}\}/);
+  assert.match(audit, /DB_PASSWORD: \$\{\{ secrets\.DB_PASSWORD \}\}/);
+  assert.doesNotMatch(audit, /SLACK_WEBHOOK_URL: \$\{\{/);
+
+  for (const [name, outcome] of [
+    ["Slack Notification on failure", "failure"],
+    ["Slack Notification on success", "success"],
+  ]) {
+    const section = stepSection(name);
+    assert.match(section, new RegExp("if: " + outcome + "\\(\\)"));
+    assert.match(section, /        env:\n          SLACK_WEBHOOK_URL: \$\{\{ secrets\.SLACK_WEBHOOK_URL \}\}/);
+    assert.match(section, /if \[ -z "\$\{SLACK_WEBHOOK_URL:-\}" \]; then\n\s*exit 0/);
+    assert.doesNotMatch(section, /\$\{\{\s*secrets\.(?:DB_PASSWORD|SUPABASE_ACCESS_TOKEN)/);
+  }
+});
+
+test("weekly Slack steps safely skip when webhook secret is absent", {
+  skip: process.platform === "win32",
+}, () => {
+  const workflow = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  for (const name of ["Slack Notification on success", "Slack Notification on failure"]) {
+    const section = workflow.split("      - name: " + name + "\n")[1]
+      ?.split("\n      - name: ")[0];
+    assert.ok(section);
+    const script = section.split("        run: |\n")[1].split("\n")
+      .map(line => line.startsWith("          ") ? line.slice(10) : line)
+      .join("\n").replace(/\$\{\{[^}]*\}\}/g, "synthetic-gh-value");
+    // Bash syntactic checks must not send a network request or need credentials.
+    const testRun = spawnSync("bash", ["-n"], { input: script, encoding: "utf8", timeout: 4000 });
+    assert.equal(testRun.status, 0);
+    const run = spawnSync("bash", ["-c", "curl(){ exit 98; }\n" + script], {
+      env: { PATH: process.env.PATH || "" }, encoding: "utf8", timeout: 4000,
+    });
+    assert.equal(run.status, 0, "Missing optional webhook must skip without calling curl");
+    assert.doesNotMatch(run.stdout + run.stderr, /synthetic-gh-value/);
+  }
+});

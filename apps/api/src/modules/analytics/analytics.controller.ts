@@ -12,11 +12,13 @@ import {
   Inject,
   forwardRef,
   ForbiddenException,
+  UseGuards,
 } from "@nestjs/common";
 import type { Response } from "express";
 import { AnalyticsService } from "./analytics.service";
 import { WhatsAppService } from "../notifications/whatsapp.service";
 import { InvoiceService } from "../finance/invoice.service";
+import { DeviceTokenGuard } from "../device/guards/device-token.guard";
 import { PrismaService } from "../prisma/prisma.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
@@ -221,7 +223,10 @@ export class AnalyticsController {
     res.end(pdf);
   }
 
-  @Public() // El celular del chofer no tiene el JWT del admin dashboard
+  // Device JWT is separate from Supabase portal JWT; require possession
+  // of an authorized DEVICE_AUTH token for this specific hardware device.
+  @Public()
+  @UseGuards(DeviceTokenGuard)
   @Post("external-gps")
   @HttpCode(HttpStatus.OK)
   async trackExternalGps(

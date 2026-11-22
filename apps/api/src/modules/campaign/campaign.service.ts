@@ -16,6 +16,7 @@ import {
 import { ReferralService } from "../referral/referral.service";
 import type { Prisma } from "@prisma/client";
 import { deviceIdentityWhere } from "./device-identity-lookup";
+import { withLegacyCampaignMedia } from "../media/media-mime-contract";
 
 interface SyncMediaAsset {
   id?: string;
@@ -51,7 +52,6 @@ const mediaSafeSelect = {
   name: true,
   filename: true,
   originalFilename: true,
-  mime_type: true,
   mimeType: true,
   durationSeconds: true,
   width: true,
@@ -796,7 +796,7 @@ export class CampaignService {
   }
 
   async getAllCampaigns() {
-    return this.prisma.campaign.findMany({
+    const campaigns = await this.prisma.campaign.findMany({
       // SRE Cache Bust: Adding a trivial condition to force PgBouncer to parse a new Prepared Statement
       // after the schedule_days column was added in the database.
       where: { id: { not: "00000000-0000-0000-0000-000000000000" } },
@@ -806,16 +806,18 @@ export class CampaignService {
       },
       orderBy: { createdAt: "desc" },
     });
+    return campaigns.map(withLegacyCampaignMedia);
   }
 
   async getCampaignById(id: string) {
-    return this.prisma.campaign.findUnique({
+    const campaign = await this.prisma.campaign.findUnique({
       where: { id },
       include: {
         mediaAssets: { select: mediaAssetSafeSelect },
         media: { select: mediaSafeSelect },
       },
     });
+    return campaign ? withLegacyCampaignMedia(campaign) : null;
   }
 
   /**

@@ -1,7 +1,12 @@
 import { errorMessage } from "../../utils/error.util";
 import { CreateCampaignDto } from "./dto/create-campaign.dto";
 import { AddMediaAssetDto } from "./dto/add-media-asset.dto";
-import { Injectable, BadRequestException, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { SupabaseService } from "../supabase/supabase.service";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -470,10 +475,28 @@ export class CampaignService {
   // pg_advisory_xact_lock(device) — elimina el TOCTOU del count previo.
   async assignCampaignToDevice(deviceId: string, campaignId: string) {
     return await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"dc:" + deviceId})::bigint)`;
+      // Both the hardware ID and database UUID are accepted at the API edge.
+      // DeviceCampaign stores the database UUID serialized as TEXT.
+      const matches = await tx.device.findMany({
+        where: deviceIdentityWhere(deviceId),
+        select: { id: true, deviceId: true },
+        take: 2,
+      });
+
+      if (matches.length === 0) {
+        throw new NotFoundException("Dispositivo no encontrado");
+      }
+      if (matches.length > 1) {
+        // A UUID-looking hardware ID can collide with a different device PK.
+        // Fail closed rather than assign inventory to an arbitrary device.
+        throw new BadRequestException("Identificador de dispositivo ambiguo");
+      }
+
+      const canonicalId = matches[0].id;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"dc:" + canonicalId})::bigint)`;
 
       const currentCount = await tx.deviceCampaign.count({
-        where: { device_id: deviceId },
+        where: { device_id: canonicalId },
       });
 
       if (currentCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
@@ -483,7 +506,7 @@ export class CampaignService {
       }
 
       return tx.deviceCampaign.create({
-        data: { device_id: deviceId, campaign_id: campaignId },
+        data: { device_id: canonicalId, campaign_id: campaignId },
       });
     });
   }

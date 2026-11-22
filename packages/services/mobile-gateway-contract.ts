@@ -85,3 +85,15 @@ export function isCompleteGatewayGpsReceipt(
     count <= input
   );
 }
+
+/**
+ * Remove only the object instances present in the acknowledged snapshot.
+ * A concurrently captured point, even with an identical timestamp, survives.
+ */
+export function unacknowledgedGatewayGpsPoints(
+  queued: readonly GatewayGpsPoint[],
+  acknowledgedSnapshot: readonly GatewayGpsPoint[],
+): GatewayGpsPoint[] {
+  const confirmed = new Set(acknowledgedSnapshot);
+  return queued.filter((point) => !confirmed.has(point));
+}

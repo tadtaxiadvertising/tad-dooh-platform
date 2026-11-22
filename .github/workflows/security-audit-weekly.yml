@@ -15,13 +15,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     
-    env:
-      # NEVER hardcode project refs. Set as repo secret: SUPABASE_PROJECT_REF
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF || 'REPLACE_WITH_SECRET' }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,6 +26,12 @@ jobs:
 
       - name: Run Security Audit
         id: audit
+        # Privileged API and PostgreSQL credentials are needed ONLY here;
+        # never inherit them in checkout, setup, artifact or GitHub-script.
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF || 'REPLACE_WITH_SECRET' }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           set -euo pipefail
 
@@ -334,8 +333,14 @@ jobs:
             });
 
       - name: Slack Notification on failure
-        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        if: failure()
+        # The Slack webhook is a credential; only this notification receives it.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            exit 0
+          fi
           curl -fsS -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"🔴 *Security Audit Failed* for TAD DOOH\nProject: \`ltdcdhqixvbpdcitthqf\`\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>\nCheck GitHub Actions for details.\"}" \
             --config - <<CURL_CONFIG
@@ -343,8 +348,14 @@ jobs:
           CURL_CONFIG
 
       - name: Slack Notification on success
-        if: success() && env.SLACK_WEBHOOK_URL != ''
+        if: success()
+        # The Slack webhook is a credential; only this notification receives it.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            exit 0
+          fi
           curl -fsS -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"✅ *Security Audit Passed* for TAD DOOH\nProject: \`ltdcdhqixvbpdcitthqf\`\nNo new security regressions.\"}" \
             --config - <<CURL_CONFIG

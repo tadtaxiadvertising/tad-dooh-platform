@@ -893,7 +893,8 @@ export class FleetService {
     //    y previene que el mismo (deviceId, timestamp) duplique filas.
     const telemetryData = data.points.map((p) => ({
       driverId: driverLookupId,
-      deviceId: data.deviceId,
+      // driver_locations.device_id is UUID; data.deviceId is hardware TEXT.
+      deviceId: device.id,
       latitude: p.lat,
       longitude: p.lng,
       speed: p.speed,

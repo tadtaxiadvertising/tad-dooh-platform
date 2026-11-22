@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, develop, validation/mobile-gateway-ci-20261122]
   pull_request:
-    branches: [main]
+    branches: [main, validation/mobile-gateway-pr-target-20261122]
 
 # ─── GATES ───────────────────────────────────────────────────────────────────────
 env:

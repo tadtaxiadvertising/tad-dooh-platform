@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "validation/mobile-gateway-pr-target-20261122"]
 
 jobs:
   build:

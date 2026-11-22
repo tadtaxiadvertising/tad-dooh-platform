@@ -142,8 +142,8 @@ module.exports = {
 
 if (require.main === module) {
   try {
-    run({ mode: process.argv.length === 2 ? "--plan" : process.argv[2] });
     if (process.argv.length > 3) throw new Error("UNEXPECTED_ARGUMENTS");
+    run({ mode: process.argv.length === 2 ? "--plan" : process.argv[2] });
   } catch (error) {
     console.error("[protect-main] REFUSED (" + error.message + "). No claim of completed protection.");
     process.exitCode = 1;

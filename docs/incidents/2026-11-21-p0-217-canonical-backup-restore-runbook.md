@@ -129,6 +129,33 @@ CLI version rationale: [Supabase CLI v3 changed remote targeting](https://supaba
 
 After the exports, use an organization-approved encryption tool/key to create an encrypted off-site copy, check its read-back/hash and retention, then restrict or remove intermediary plaintext from the encrypted staging area according to the data-handling policy. Do not send the backup itself to this conversation or the repository. The manifest remains **private**.
 
+## Separate offline Storage object-byte checkpoint (NOT full backup or restore proof)
+
+**Why:** Supabase stores Storage object metadata separately from actual files. Its [database backup guidance](https://supabase.com/docs/guides/platform/backups) says backups do not include Storage files. Its [download guide](https://supabase.com/docs/guides/storage/management/download-objects) documents authorized file downloads. The current three-SQL verifier cannot recover media bytes.
+
+**Read-only inventory observed 2026-11-21:** 11 Storage metadata rows, 11 distinct bucket/name pairs, in 2 buckets. These counts do NOT mean files have been downloaded. The operator must refresh them privately at export time, coordinating a consistent snapshot or approved write-quiescence window.
+
+1. An authorized owner separately enumerates source Storage object identities and uses an approved restricted Storage download/S3-compatible transfer to obtain the original bytes, including required versions. Compare the inventory in private. Never upload keys, object names, customer data or dumps to GitHub, CI or chat. Avoid transformed previews.
+2. Put files on an existing encrypted, ACL-controlled, off-repository volume under a separate storage-bytes directory. Name binaries with opaque hex paths such as objects/0000000000000001.blob, not bucket/object names. Use normal files, no symlinks or hardlinks.
+3. Privately create storage-manifest.json with exactly: project_ref, exported_at_utc (YYYYMMDDTHHMMSSZ), restore_verified (false), source_object_count (integer from an independently captured inventory) and files. Each file entry has exactly bucket_id, object_name, file, bytes (zero allowed) and sha256 (64 hex digits). This mapping is sensitive; never commit or share it.
+4. Verify offline with the independently confirmed source count. The commands never contact Supabase:
+
+~~~powershell
+$env:TAD_EXPECTED_SUPABASE_PROJECT_REF = "ltdcdhqixvbpdcitthqf"
+$env:TAD_EXPECTED_STORAGE_OBJECT_COUNT = "<private source inventory count>"
+try {
+  node scripts/verify-supabase-storage-byte-export.cjs "<encrypted off-repo directory>/storage-bytes"
+  if ($LASTEXITCODE -ne 0) { throw "Private Storage file integrity verification refused." }
+} finally {
+  Remove-Item Env:\TAD_EXPECTED_SUPABASE_PROJECT_REF -ErrorAction SilentlyContinue
+  Remove-Item Env:\TAD_EXPECTED_STORAGE_OBJECT_COUNT -ErrorAction SilentlyContinue
+}
+~~~
+
+Expected result: **STORAGE_BYTES_HASHED_COVERAGE_AND_RESTORE_UNVERIFIED**. This checks only that each **local** file matches its declared byte length and SHA-256 hash and the listed file count matches the **separately supplied count**. It does NOT prove complete source inventory coverage, correct remote-object identity, disk encryption, off-site retention, consistent capture time, Auth/Storage metadata completeness, or the isolated restore. A manifest can be inaccurate despite its hashes matching. The verifier never reads actual Supabase objects or performs network/DB requests.
+
+**P0 stop remains:** repeat the verification against the encrypted off-site copy after restoring it to an isolated target, validate object identity and bucket policy using the independent source inventory, verify Auth and application data, and obtain authorized recovery-owner approval. Continue reporting MANAGED_SCHEMA_COVERAGE_UNVERIFIED and RESTORE_NOT_VERIFIED. No production migrations/deployments authorized.
+
 ## Step 2: isolated restore rehearsal (mandatory, not yet done)
 
 1. Provision only an **explicitly approved** disposable local Supabase-compatible environment or separate isolated project. A managed staging project may incur billing; get approval first. Match PostgreSQL major and relevant extension/managed-schema versions. **Never use either production ref or the inactive tadprod project as an implicit restore target.**

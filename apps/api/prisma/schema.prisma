@@ -285,7 +285,7 @@ model DeviceHeartbeat {
 }
 
 model PlaybackEvent {
-  id          String   @id @default(uuid())
+  id          String   @id @default(uuid()) @db.Uuid
   deviceId    String   @map("device_id")
   eventType   String   @map("event_type")
   videoId     String   @map("video_id")
@@ -308,7 +308,7 @@ model PlaybackEvent {
 }
 
 model MediaAsset {
-  id               String   @id @default(uuid())
+  id               String   @id @default(uuid()) @db.Uuid
   campaignId       String   @map("campaign_id")
   type             String
   filename         String
@@ -823,7 +823,7 @@ model SystemSetting {
 }
 
 model CampaignIntent {
-  id              String   @id @default(uuid())
+  id              String   @id @default(uuid()) @db.Uuid
   brandName       String   @map("brand_name")
   budget          Float
   expectedScreens Int      @map("expected_screens")

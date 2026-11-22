@@ -66,7 +66,7 @@ const STATUS_CONFIG: Record<
   },
   TRACKING: {
     icon: <Navigation className="w-10 h-10 animate-pulse" />,
-    label: "GPS ACTIVO",
+    label: "GPS LOCAL ACTIVO",
     color: "text-tad-yellow",
     bgColor: "bg-tad-yellow/5",
     borderColor: "border-tad-yellow/20",
@@ -75,7 +75,7 @@ const STATUS_CONFIG: Record<
   },
   BUFFERING: {
     icon: <MapPin className="w-10 h-10" />,
-    label: "BUFFERING DATA",
+    label: "GPS GUARDADO LOCALMENTE",
     color: "text-blue-400",
     bgColor: "bg-blue-500/5",
     borderColor: "border-blue-500/20",
@@ -149,6 +149,7 @@ export default function CheckIn() {
     totalSynced: 0,
     lastSyncAt: null,
     deviceId: null,
+    hasDeviceCredential: false,
     error: null,
   });
 
@@ -198,9 +199,6 @@ export default function CheckIn() {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
     const params = new URLSearchParams(window.location.search);
     const id = params.get("deviceId");
 
@@ -209,6 +207,8 @@ export default function CheckIn() {
       return;
     }
 
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
     setDeviceId(id);
     onGatewayStateChange((state) => {
       setGatewayState({ ...state });
@@ -370,19 +370,49 @@ export default function CheckIn() {
                 </p>
               ) : (
                 <div className="flex items-center justify-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
+                  <span
+                    className={clsx(
+                      "w-1.5 h-1.5 rounded-full",
+                      gatewayState.hasDeviceCredential
+                        ? "bg-emerald-500"
+                        : "bg-amber-400",
+                    )}
+                  />
                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                    LINK_OK
+                    {gatewayState.hasDeviceCredential
+                      ? "CREDENCIAL CARGADA"
+                      : "ENVÍO PENDIENTE"}
                   </span>
                 </div>
               )}
             </div>
           </div>
 
+          {deviceId &&
+            !gatewayState.hasDeviceCredential &&
+            gatewayState.status !== "SUSPENDED" &&
+            gatewayState.status !== "GPS_ERROR" && (
+              <div
+                role="status"
+                className="mt-5 flex gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-left"
+              >
+                <ShieldCheck className="w-5 h-5 shrink-0 text-amber-300" />
+                <div>
+                  <p className="text-sm font-bold text-amber-200">
+                    Emparejamiento pendiente
+                  </p>
+                  <p className="mt-1 text-xs text-gray-300 leading-relaxed">
+                    Las coordenadas se conservan localmente. Escanear un QR no
+                    autoriza su envío al servidor.
+                  </p>
+                </div>
+              </div>
+            )}
+
           <div className="grid grid-cols-3 gap-3 mt-8">
             <MetricBox
-              label="Buffer"
-              value={`${gatewayState.batchSize}/10`}
+              label="Pendientes"
+              value={gatewayState.batchSize}
               icon={<Database className="w-3.5 h-3.5" />}
               progress={Math.min(10, gatewayState.batchSize) * 10}
             />
@@ -405,7 +435,9 @@ export default function CheckIn() {
               <div className="flex items-center justify-center gap-3 mb-3">
                 <div className="h-px w-6 bg-gray-700" />
                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                  Dispositivo Enlazado
+                  {gatewayState.hasDeviceCredential
+                    ? "Credencial recibida"
+                    : "QR detectado · sin vincular"}
                 </p>
                 <div className="h-px w-6 bg-gray-700" />
               </div>

@@ -1,43 +1,31 @@
 /**
- * TAD MOBILE GATEWAY - TRACKING MODULE (TypeScript)
- * ================================================
- * Responsabilidad: Capturar GPS, hacer batching (10:1), persistir offline y enviar al backend.
- * Regla de Negocio: Detener todo y bloquear UI si el backend devuelve HTTP 402 (Falta de Pago).
+ * QR check-in mobile GPS gateway.
  *
- * Métricas de Optimización:
- *   - Sin batching: 60 req/min × 100 taxis × 8h = 2,880,000 req/día
- *   - Con batching (10:1): 1 req/min × 100 taxis × 8h = 48,000 req/día
- *   - Ahorro: 98.3% de requests eliminados.
- *
- * Resiliencia:
- *   - Si el taxi pierde señal (túnel, zona rural), las coordenadas se acumulan en localStorage.
- *   - Cuando recupera 4G/WiFi, dispara todo el bloque retenido en un solo POST.
- *   - Si el POST falla a mitad de ejecución, el batch se restaura (rollback) al localStorage.
+ * Offline-first: a point is never removed until the Fleet API acknowledges
+ * the exact batch. QR hardware IDs do not authorize GPS uploads (#233).
  */
+import {
+  buildGatewayGpsBatch,
+  GATEWAY_GPS_BATCH_LIMIT,
+  isCompleteGatewayGpsReceipt,
+  unacknowledgedGatewayGpsPoints,
+  type GatewayDeviceCredential,
+  type GatewayGpsPoint,
+} from "./mobile-gateway-contract";
 
-import { supabase } from './supabase';
-
-// ============================================
-// TYPES
-// ============================================
-export interface GpsPoint {
-  latitude: number;
-  longitude: number;
-  speed: number;
-  timestamp: string;
-}
+export type GpsPoint = GatewayGpsPoint;
 
 export type GatewayStatus =
-  | 'IDLE'
-  | 'INITIALIZING'
-  | 'TRACKING'
-  | 'BUFFERING'
-  | 'SYNCING'
-  | 'SYNCED'
-  | 'OFFLINE'
-  | 'GPS_ERROR'
-  | 'SUSPENDED'
-  | 'DEVICE_NOT_FOUND';
+  | "IDLE"
+  | "INITIALIZING"
+  | "TRACKING"
+  | "BUFFERING"
+  | "SYNCING"
+  | "SYNCED"
+  | "OFFLINE"
+  | "GPS_ERROR"
+  | "SUSPENDED"
+  | "DEVICE_NOT_FOUND";
 
 export interface GatewayState {
   status: GatewayStatus;
@@ -50,295 +38,357 @@ export interface GatewayState {
 
 export type GatewayListener = (state: GatewayState) => void;
 
-// ============================================
-// CONSTANTS
-// ============================================
-const STORAGE_KEY = 'tad_gps_batch';
-const BATCH_THRESHOLD = 10;           // Enviar cada 10 puntos
-const FALLBACK_INTERVAL_MS = 60_000;  // Forzar envío cada 60 seg (1 min) como máximo
+const LEGACY_STORAGE_KEY = "tad_gps_batch";
+const STORAGE_PREFIX = "tad_gps_batch_device:";
+const BATCH_THRESHOLD = 10;
+const FALLBACK_INTERVAL_MS = 60_000;
+const HTTP_TIMEOUT_MS = 15_000;
 const GEO_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
-  maximumAge: 10_000,   // Reusar posición de hasta 10s
-  timeout: 5_000,       // Abortar si GPS tarda +5s
+  maximumAge: 10_000,
+  timeout: 5_000,
 };
 
-// ============================================
-// MODULE STATE (Singleton)
-// ============================================
 let gpsBatch: GpsPoint[] = [];
 let watchId: number | null = null;
 let fallbackTimer: ReturnType<typeof setInterval> | null = null;
+let nextUploadTimer: ReturnType<typeof setTimeout> | null = null;
 let isSuspended = false;
+let syncing = false;
 let totalSynced = 0;
 let lastSyncAt: string | null = null;
 let currentDeviceId: string | null = null;
-let currentDriverId: string | null = null;
+let currentCredential: GatewayDeviceCredential | null = null;
+let currentStatus: GatewayStatus = "IDLE";
+let currentError: string | null = null;
 let listener: GatewayListener | null = null;
-let apiBaseUrl = '';
+let apiBaseUrl = "";
+let sessionVersion = 0;
+let swMessageListener: ((event: MessageEvent) => void) | null = null;
+let onlineListener: (() => void) | null = null;
+let storageFailed = false;
+let inFlightController: AbortController | null = null;
 
-// ============================================
-// PUBLIC API
-// ============================================
+function storageKey(deviceId: string): string {
+  return `${STORAGE_PREFIX}${encodeURIComponent(deviceId)}`;
+}
 
-/**
- * Registra un listener para recibir cambios de estado en tiempo real.
- * El componente React usa esto para actualizar la UI.
- */
+function emitState(status: GatewayStatus, error: string | null = null): void {
+  currentStatus = status;
+  currentError = error;
+  listener?.(getGatewayState());
+}
+
 export function onGatewayStateChange(fn: GatewayListener): void {
   listener = fn;
 }
 
-/**
- * Retorna el estado actual del gateway sin suscribirse a cambios.
- */
 export function getGatewayState(): GatewayState {
   return {
-    status: isSuspended ? 'SUSPENDED' : 'IDLE',
+    status: currentStatus,
     batchSize: gpsBatch.length,
     totalSynced,
     lastSyncAt,
     deviceId: currentDeviceId,
-    error: null,
+    error: currentError,
   };
 }
 
 /**
- * Inicia el Mobile Gateway de tracking GPS.
- * @param deviceId - El ID del dispositivo (TAD-XXXX) escaneado del QR de la tablet.
- * @param baseUrl - URL base del API (ej: http://localhost:3000/api en dev).
+ * A verified pairing flow may supply a purpose-bound DEVICE_AUTH token in
+ * memory. Neither a QR value nor OFFLINE_LICENSE is accepted as credentials.
+ * Until #233 supplies credentials, capture and persist GPS without uploading.
  */
-export function startTadTracking(deviceId: string, baseUrl: string): void {
-  if (isSuspended) {
-    emitState('SUSPENDED', 'Servicio suspendido por falta de pago.');
+export function authorizeTadTracking(
+  credential: GatewayDeviceCredential,
+): boolean {
+  if (
+    !currentDeviceId ||
+    credential.deviceId !== currentDeviceId ||
+    !credential.driverId?.trim() ||
+    !credential.deviceToken?.trim() ||
+    isSuspended
+  ) {
+    return false;
+  }
+
+  currentCredential = { ...credential };
+  if (navigator.onLine) {
+    void checkAndUpload(true);
+  }
+  return true;
+}
+
+/** Store the entire next state before replacing the in-memory queue. */
+function persistQueue(next: GpsPoint[]): boolean {
+  if (!currentDeviceId) return false;
+  try {
+    localStorage.setItem(storageKey(currentDeviceId), JSON.stringify(next));
+    gpsBatch = next;
+    storageFailed = false;
+    return true;
+  } catch {
+    storageFailed = true;
+    return false;
+  }
+}
+
+function loadQueue(deviceId: string): GpsPoint[] | null {
+  try {
+    const raw = localStorage.getItem(storageKey(deviceId));
+    if (!raw) return [];
+    const data: unknown = JSON.parse(raw);
+    if (
+      !Array.isArray(data) ||
+      !data.every(
+        (point) =>
+          point &&
+          typeof point === "object" &&
+          typeof point.latitude === "number" &&
+          typeof point.longitude === "number" &&
+          typeof point.speed === "number" &&
+          typeof point.timestamp === "string",
+      )
+    ) {
+      return null;
+    }
+    return data as GpsPoint[];
+  } catch {
+    // Never overwrite or delete an unreadable queue.
+    return null;
+  }
+}
+
+/**
+ * Starts GPS collection. Missing device credentials are expected until
+ * pairing; they keep every point queued and do not trigger an insecure upload.
+ */
+export function startTadTracking(
+  deviceId: string,
+  baseUrl: string,
+  credential?: GatewayDeviceCredential,
+): void {
+  if (!deviceId?.trim() || deviceId.length > 128 || !baseUrl?.trim()) {
+    emitState("GPS_ERROR", "Identidad o dirección de API inválida.");
     return;
+  }
+  if (isSuspended) {
+    emitState("SUSPENDED", "Suscripción pendiente; GPS retenido localmente.");
+    return;
+  }
+  if (storageFailed && gpsBatch.length > 0) {
+    if (currentDeviceId !== deviceId || !persistQueue(gpsBatch)) {
+      emitState("GPS_ERROR", "Hay GPS sin guardar; no se puede reiniciar.");
+      return;
+    }
+  }
+
+  stopTadTracking();
+  currentDeviceId = deviceId;
+  apiBaseUrl = baseUrl;
+  currentCredential = null;
+
+  const saved = loadQueue(deviceId);
+  if (saved === null) {
+    emitState("GPS_ERROR", "Cola GPS local ilegible; no se sobrescribirán datos.");
+    return;
+  }
+  gpsBatch = saved;
+
+  // Old unscoped data has no trustworthy device ownership. Preserve it for
+  // audited migration rather than silently reassigning it to a scanned QR.
+  try {
+    if (localStorage.getItem(LEGACY_STORAGE_KEY)) {
+      console.warn("Legacy GPS queue retained for explicit device reconciliation.");
+    }
+  } catch {
+    // The per-device queue is already loaded; retain it in memory.
   }
 
   if (!navigator.geolocation) {
-    emitState('GPS_ERROR', 'Geolocalización no soportada por el navegador.');
+    emitState("GPS_ERROR", "Geolocalización no disponible.");
     return;
   }
 
-  currentDeviceId = deviceId;
-  apiBaseUrl = baseUrl;
+  emitState("INITIALIZING");
 
-  // Restaurar batch pendiente del localStorage (Offline-first)
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        gpsBatch = parsed;
-        console.log(`📦 Restaurados ${gpsBatch.length} puntos GPS del almacenamiento local.`);
-      }
-    }
-  } catch {
-    // localStorage corrupto, empezar limpio
-    localStorage.removeItem(STORAGE_KEY);
-    gpsBatch = [];
-  }
+  onlineListener = () => {
+    void checkAndUpload(true);
+  };
+  window.addEventListener("online", onlineListener);
 
-  emitState('INITIALIZING');
-  console.log(`📡 Iniciando Mobile Gateway para el dispositivo: ${deviceId}`);
-
-  // Registro de Background Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then((reg) => {
-        console.log('✅ Service Worker registrado con éxito:', reg.scope);
-      })
-      .catch((err) => console.log('⚠️ Error registrando SW:', err));
-
-    // Escuchar comandos del SW (para sync en 2do plano)
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'FLUSH_TELEMETRY') {
-        console.log('🔄 SW Background Sync activado, flusheando datos...');
-        checkAndUpload(deviceId, true);
-      }
+  if ("serviceWorker" in navigator) {
+    void navigator.serviceWorker.register("/service-worker.js").catch(() => {
+      // Foreground capture does not require service-worker registration.
     });
+    swMessageListener = (event: MessageEvent) => {
+      if (event.data?.type === "FLUSH_TELEMETRY") {
+        void checkAndUpload(true);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", swMessageListener);
   }
 
-  // 1. watchPosition: Escucha cambios de posición (más eficiente que polling)
   watchId = navigator.geolocation.watchPosition(
     (position) => {
       if (isSuspended) return;
-
-      const { latitude, longitude, speed } = position.coords;
+      const capturedAt = new Date(position.timestamp);
+      if (!Number.isFinite(capturedAt.getTime())) {
+        emitState("GPS_ERROR", "Marca temporal de GPS inválida.");
+        return;
+      }
       const point: GpsPoint = {
-        latitude,
-        longitude,
-        speed: speed ?? 0,
-        timestamp: new Date().toISOString(),
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        speed: position.coords.speed ?? 0,
+        timestamp: capturedAt.toISOString(),
       };
 
-      gpsBatch.push(point);
-      persistBatch();
-
-      // Feedback inmediato al componente
-      if (gpsBatch.length < BATCH_THRESHOLD) {
-        emitState('BUFFERING');
+      const next = [...gpsBatch, point];
+      if (!persistQueue(next)) {
+        // Stop recording new, non-durable coordinates; never truncate old GPS.
+        gpsBatch = next;
+        if (watchId !== null) {
+          navigator.geolocation.clearWatch(watchId);
+          watchId = null;
+        }
+        emitState("GPS_ERROR", "Almacenamiento GPS lleno o no disponible.");
+        return;
       }
-
-      // Intentar subir si llegamos al threshold
-      checkAndUpload(deviceId);
+      emitState("BUFFERING");
+      if (gpsBatch.length >= BATCH_THRESHOLD) {
+        void checkAndUpload();
+      }
     },
     (error) => {
-      console.error('Error obteniendo GPS:', error.message);
-      emitState('GPS_ERROR', `Error GPS: ${error.message}`);
+      emitState("GPS_ERROR", `Fallo de geolocalización: ${error.message}`);
     },
     GEO_OPTIONS,
   );
 
-  // 2. Fallback timer: Forzar subida cada 60 seg aunque no haya 10 puntos
-  //    (ej: taxi en tapón, en estación, etc.)
   fallbackTimer = setInterval(() => {
-    if (gpsBatch.length > 0 && !isSuspended) {
-      checkAndUpload(deviceId, true);
+    if (gpsBatch.length > 0) {
+      void checkAndUpload(true);
     }
   }, FALLBACK_INTERVAL_MS);
 
-  emitState('TRACKING');
+  emitState("TRACKING");
+  if (credential) {
+    authorizeTadTracking(credential);
+  } else if (gpsBatch.length > 0) {
+    void checkAndUpload(true);
+  }
 }
 
-/**
- * Detiene el tracking GPS y limpia los timers.
- * Llamar al desmontar el componente React.
- */
-export function stopTadTracking(): void {
-  if (watchId !== null) {
-    navigator.geolocation.clearWatch(watchId);
-    watchId = null;
+async function checkAndUpload(force = false): Promise<void> {
+  if (
+    syncing ||
+    isSuspended ||
+    !currentDeviceId ||
+    gpsBatch.length === 0 ||
+    (!force && gpsBatch.length < BATCH_THRESHOLD)
+  ) {
+    return;
   }
-  if (fallbackTimer !== null) {
-    clearInterval(fallbackTimer);
-    fallbackTimer = null;
-  }
-  console.log('🛑 Mobile Gateway detenido.');
-}
-
-// ============================================
-// INTERNAL
-// ============================================
-
-/**
- * Lógica central de sincronización con el backend.
- * Envía el batch acumulado cuando:
- *   a) Se alcanzan 10 puntos (threshold),  ó
- *   b) Han pasado 60 segundos (force=true).
- * 
- * Si no hay internet, retiene las coordenadas en localStorage.
- * Si el POST falla, restaura el batch al almacenamiento local (rollback).
- */
-async function checkAndUpload(deviceId: string, force = false): Promise<void> {
-  if (isSuspended) return;
-  if (gpsBatch.length < BATCH_THRESHOLD && !force) return;
-
-  // Verificar conectividad antes de intentar
   if (!navigator.onLine) {
-    console.warn('📵 Sin conexión. Reteniendo coordenadas localmente...');
-    emitState('OFFLINE');
-    // Si offline, registrar background sync para que se ejecute al reconectar
-    if ('serviceWorker' in navigator && 'SyncManager' in window) {
-      navigator.serviceWorker.ready.then(sw => {
-        // @ts-ignore
-        sw.sync.register('sync-tad-telemetry').catch(e => console.error('Error registrando sync', e));
-      });
-    }
+    emitState("OFFLINE", "Sin conexión; coordenadas GPS conservadas.");
+    return;
+  }
+  if (!currentCredential) {
+    emitState("OFFLINE", "Esperando emparejamiento seguro del dispositivo.");
     return;
   }
 
-  // 1. PRIMER PASO: Obtener el driverId si no lo tenemos
-  if (!currentDriverId) {
-    emitState('SYNCING');
-    try {
-      const response = await fetch(`${apiBaseUrl}/fleet/track-batch`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-device-id': deviceId 
-        },
-        body: JSON.stringify({ deviceId, locations: [] }), 
-      });
-
-      if (response.status === 402 || response.status === 403) {
-        handleSuspension();
-        return;
-      }
-
-      if (response.ok) {
-        const data = await response.json();
-        currentDriverId = data.driverId;
-      } else {
-        throw new Error('Error de enlace con central');
-      }
-    } catch (err: any) {
-      if (err.message === '402' || err.message === 'SUSPENDED') return;
-      console.warn('⚠️ Fallo enlace inicial:', err.message);
-      emitState('OFFLINE', 'Esperando red para enlazar...');
-      return; 
-    }
+  const deviceId = currentDeviceId;
+  const version = sessionVersion;
+  const credential = currentCredential;
+  const snapshot = gpsBatch.slice(0, GATEWAY_GPS_BATCH_LIMIT);
+  let payload: ReturnType<typeof buildGatewayGpsBatch>;
+  try {
+    payload = buildGatewayGpsBatch(deviceId, credential, snapshot);
+  } catch {
+    emitState("GPS_ERROR", "Lote GPS inválido; se conserva para revisión.");
+    return;
   }
 
-  // 2. SEGUNDO PASO: Enviar el batch acumulado
-  const payload = [...gpsBatch];
-  gpsBatch = [];
-  localStorage.removeItem(STORAGE_KEY);
-
-  emitState('SYNCING');
-
+  syncing = true;
+  emitState("SYNCING");
+  const controller = new AbortController();
+  inFlightController = controller;
+  const timeout = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
+  let acknowledged = false;
   try {
     const response = await fetch(`${apiBaseUrl}/fleet/track-batch`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-device-id': deviceId 
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Device-Id": deviceId,
+        "X-Device-Token": credential.deviceToken,
       },
-      body: JSON.stringify({ 
-        deviceId, 
-        driverId: currentDriverId,
-        locations: payload.map(p => ({
-          lat: p.latitude,
-          lng: p.longitude,
-          speed: p.speed,
-          ts: p.timestamp
-        }))
-      }),
+      body: JSON.stringify(payload),
+      signal: controller.signal,
     });
 
-    if (response.status === 402 || response.status === 403) {
+    // A stop/restart or device switch must not ACK a different queue.
+    if (version !== sessionVersion || currentDeviceId !== deviceId) return;
+
+    if (response.status === 402) {
       handleSuspension();
       return;
     }
-
+    if (response.status === 401 || response.status === 403) {
+      currentCredential = null;
+      emitState("OFFLINE", "Credencial no autorizada; GPS pendiente sin borrar.");
+      return;
+    }
     if (!response.ok) {
-      throw new Error(`Cloud API Error: ${response.status}`);
+      throw new Error(`HTTP ${response.status}`);
     }
 
-    // Éxito
-    totalSynced += payload.length;
+    const receipt: unknown = await response.json();
+    if (version !== sessionVersion || currentDeviceId !== deviceId) return;
+    if (!isCompleteGatewayGpsReceipt(receipt, snapshot.length)) {
+      emitState("OFFLINE", "ACK GPS incompleto; lote retenido.");
+      return;
+    }
+
+    const remaining = unacknowledgedGatewayGpsPoints(gpsBatch, snapshot);
+    if (!persistQueue(remaining)) {
+      emitState("GPS_ERROR", "No se pudo confirmar el borrado local; se reintentará.");
+      return;
+    }
+
+    totalSynced += snapshot.length;
     lastSyncAt = new Date().toISOString();
-    console.log(`✅ Batch de ${payload.length} coordenadas sincronizado con API. Total: ${totalSynced}`);
-    emitState('SYNCED');
-
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(`☁️ Error de sincronización API: `, errorMessage);
-
-    // Rollback: Restaurar datos al inicio del array para reintentar después
-    gpsBatch = [...payload, ...gpsBatch];
-    persistBatch();
-    emitState('OFFLINE', 'Modo Buffer: Red inestable.');
+    acknowledged = true;
+    emitState("SYNCED");
+  } catch {
+    if (version === sessionVersion) {
+      emitState("OFFLINE", "No se confirmó GPS en la API; reintento pendiente.");
+    }
+  } finally {
+    clearTimeout(timeout);
+    if (inFlightController === controller) {
+      inFlightController = null;
+    }
+    syncing = false;
+    if (
+      acknowledged &&
+      gpsBatch.length > 0 &&
+      currentCredential &&
+      version === sessionVersion
+    ) {
+      nextUploadTimer = setTimeout(() => {
+        nextUploadTimer = null;
+        void checkAndUpload(true);
+      }, 200);
+    }
   }
 }
 
-/**
- * Bloqueo total (Kill Switch).
- * Se ejecuta cuando el backend devuelve HTTP 402.
- * Detiene el GPS, limpia el storage, y notifica al componente.
- */
 function handleSuspension(): void {
   isSuspended = true;
-
-  // Detener el GPS para no gastar batería
+  currentCredential = null;
   if (watchId !== null) {
     navigator.geolocation.clearWatch(watchId);
     watchId = null;
@@ -347,49 +397,33 @@ function handleSuspension(): void {
     clearInterval(fallbackTimer);
     fallbackTimer = null;
   }
-
-  // Limpiar datos locales
-  localStorage.removeItem(STORAGE_KEY);
-  gpsBatch = [];
-
-  console.error('🛑 SERVICIO SUSPENDIDO — Suscripción de RD$6,000 vencida.');
-  emitState('SUSPENDED', 'Suscripción anual vencida. Contacte a TAD.');
+  // HTTP 402 suspends uploads; it never authorizes deletion of queued GPS.
+  emitState("SUSPENDED", "Suscripción suspendida; GPS conservado.");
 }
 
-/**
- * Persiste el batch actual en localStorage.
- * Defensivo: Si localStorage está lleno, descarta gracefully.
- */
-function persistBatch(): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(gpsBatch));
-  } catch {
-    // QuotaExceeded: Descartar los puntos más viejos para hacer espacio
-    if (gpsBatch.length > BATCH_THRESHOLD * 5) {
-      gpsBatch = gpsBatch.slice(-BATCH_THRESHOLD * 2);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(gpsBatch));
-      } catch {
-        // Si aún falla, continuar solo en memoria
-        console.warn('⚠️ localStorage lleno. Operando solo en memoria.');
-      }
-    }
+/** Stops capture but never deletes queued GPS or legacy offline data. */
+export function stopTadTracking(): void {
+  sessionVersion++;
+  inFlightController?.abort();
+  currentCredential = null;
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  if (fallbackTimer !== null) {
+    clearInterval(fallbackTimer);
+    fallbackTimer = null;
+  }
+  if (nextUploadTimer !== null) {
+    clearTimeout(nextUploadTimer);
+    nextUploadTimer = null;
+  }
+  if (onlineListener) {
+    window.removeEventListener("online", onlineListener);
+    onlineListener = null;
+  }
+  if (swMessageListener && "serviceWorker" in navigator) {
+    navigator.serviceWorker.removeEventListener("message", swMessageListener);
+    swMessageListener = null;
   }
 }
-
-/**
- * Emite el estado actual al listener registrado (componente React).
- */
-function emitState(status: GatewayStatus, error: string | null = null): void {
-  if (listener) {
-    listener({
-      status,
-      batchSize: gpsBatch.length,
-      totalSynced,
-      lastSyncAt,
-      deviceId: currentDeviceId,
-      error,
-    });
-  }
-}
-

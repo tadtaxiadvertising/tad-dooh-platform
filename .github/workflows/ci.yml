@@ -2,7 +2,7 @@ name: CI Quality Gates
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, validation/mobile-gateway-ci-20261122]
   pull_request:
     branches: [main]
 

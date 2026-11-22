@@ -4,6 +4,7 @@ import {
   buildGatewayGpsBatch,
   isCompleteGatewayGpsReceipt,
   GATEWAY_GPS_BATCH_LIMIT,
+  unacknowledgedGatewayGpsPoints,
 } from "../../../../packages/services/mobile-gateway-contract.ts";
 
 const device = "TAD-100";
@@ -87,4 +88,26 @@ test("rejects incomplete, incompatible, unsafe, or missing ACKs", () => {
     assert.equal(isCompleteGatewayGpsReceipt(receipt, 2), false);
   }
   assert.equal(isCompleteGatewayGpsReceipt({ count: 0, input: 0 }, 0), false);
+});
+
+test("ACK removes only the exact snapshot and preserves concurrently captured GPS", () => {
+  const first = { ...point };
+  const newlyCaptured = { ...point };
+  const afterAck = unacknowledgedGatewayGpsPoints(
+    [first, newlyCaptured],
+    [first],
+  );
+  assert.deepEqual(afterAck, [newlyCaptured]);
+  assert.equal(afterAck[0], newlyCaptured);
+});
+
+test("10x bounded chunk leaves all future GPS pending for subsequent ACKs", () => {
+  const all = Array.from({ length: GATEWAY_GPS_BATCH_LIMIT * 10 }, (_, i) => ({
+    ...point,
+    timestamp: new Date(Date.parse(point.timestamp) + i).toISOString(),
+  }));
+  const first = all.slice(0, GATEWAY_GPS_BATCH_LIMIT);
+  const afterAck = unacknowledgedGatewayGpsPoints(all, first);
+  assert.equal(afterAck.length, GATEWAY_GPS_BATCH_LIMIT * 9);
+  assert.equal(afterAck[0], all[GATEWAY_GPS_BATCH_LIMIT]);
 });

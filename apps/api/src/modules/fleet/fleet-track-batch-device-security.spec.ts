@@ -49,9 +49,9 @@ describe("Fleet track-batch device possession gate", () => {
 
   it("rejects missing credentials before looking up a device", async () => {
     const guard = new DeviceTokenGuard({ device: { findUnique } } as never);
-    await expect(guard.canActivate(makeContext("TAD-A"))).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      guard.canActivate(makeContext("TAD-A")),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(findUnique).not.toHaveBeenCalled();
     expect(ingestTelemetryBatch).not.toHaveBeenCalled();
   });
@@ -65,10 +65,12 @@ describe("Fleet track-batch device possession gate", () => {
     expect(ingestTelemetryBatch).not.toHaveBeenCalled();
   });
 
-  it("rejects an offline playback license used as a device credential", async () => {
+  it("rejects OFFLINE_LICENSE tokens", async () => {
     const guard = new DeviceTokenGuard({ device: { findUnique } } as never);
     await expect(
-      guard.canActivate(makeContext("TAD-A", tokenFor("TAD-A", "OFFLINE_LICENSE"))),
+      guard.canActivate(
+        makeContext("TAD-A", tokenFor("TAD-A", "OFFLINE_LICENSE")),
+      ),
     ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(findUnique).not.toHaveBeenCalled();
   });

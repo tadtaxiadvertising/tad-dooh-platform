@@ -12,6 +12,7 @@
     "test:e2e:offline": "playwright test tests/e2e/offline-resilience.spec.ts --project=offline-resilience",
     "test:e2e:auth": "playwright test tests/e2e/auth-kiosk-flow.spec.ts",
     "test:e2e:gps": "playwright test tests/e2e/gps-batch-sync.spec.ts",
+    "test:e2e:gps-idb": "playwright test tests/e2e/mobile-gateway-indexeddb.spec.ts --reporter=line",
     "test:e2e:report": "playwright show-report",
     "test:e2e:ci": "playwright test --reporter=github",
     "test": "playwright test",

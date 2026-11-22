@@ -316,20 +316,27 @@ test("three independent UUID primary keys use native PostgreSQL UUID types", () 
     ["MediaAsset", "media_assets"],
     ["PlaybackEvent", "playback_events"],
   ]) {
-    const model = schema.match(new RegExp(`^model ${name} \\{([\\s\\S]*?)^\\}`, "m"))?.[1];
+    const model = schema.match(
+      new RegExp(`^model ${name} \\{([\\s\\S]*?)^\\}`, "m"),
+    )?.[1];
     assert.ok(model, `Missing model ${name}`);
-    assert.match(model, /^\\s*id\\s+String\\s+@id\\s+@default\\(uuid\\(\\)\\)\\s+@db\\.Uuid\\s*$/m);
+    assert.match(
+      model,
+      /^\s*id\s+String\s+@id\s+@default\(uuid\(\)\)\s+@db\.Uuid\s*$/m,
+    );
     assert.ok(model.includes(`@@map("${table}")`));
   }
 
   // Simulated catalog result: the Prisma DMMF nativeType is Uuid, and physical
   // PostgreSQL keys remain uuid, without touching financial/offline row data.
   const report = auditPrismaSchema({
-    models: ["campaign_intents", "media_assets", "playback_events"].map((table) => ({
-      name: table,
-      dbName: table,
-      fields: [{ ...stringId, nativeType: ["Uuid", []] }],
-    })),
+    models: ["campaign_intents", "media_assets", "playback_events"].map(
+      (table) => ({
+        name: table,
+        dbName: table,
+        fields: [{ ...stringId, nativeType: ["Uuid", []] }],
+      }),
+    ),
     tables: ["campaign_intents", "media_assets", "playback_events"].map(
       (table_name) => ({ table_name }),
     ),

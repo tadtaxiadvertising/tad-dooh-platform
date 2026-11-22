@@ -273,9 +273,7 @@ describe("DriversService.assignDevice atomic handoff", () => {
     prisma.device.findMany.mockImplementation(
       async ({ where }: { where: { deviceId: string } }) => {
         const id =
-          where.deviceId === "TAD-SECOND"
-            ? "second-target"
-            : "target-tablet";
+          where.deviceId === "TAD-SECOND" ? "second-target" : "target-tablet";
         const target = {
           id,
           deviceId: where.deviceId,

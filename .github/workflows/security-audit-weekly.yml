@@ -179,18 +179,26 @@ jobs:
             WHERE n.nspname = 'public' AND p.proname = 'st_estimatedextent';
             "
           
-          # 10. Recent Errors (last 24h)
+          # 10. Long-idle transactions. pg_stat_activity is a live
+          # activity view, NOT an error log (it has no log_time column).
           echo ""
-          echo "--- 10. Recent Errors (24h) ---"
-          psql -X -v ON_ERROR_STOP=1 \
+          echo "--- 10. Idle transactions over 5 minutes ---"
+          IDLE_TXN_COUNT=$(psql -X -v ON_ERROR_STOP=1 \
             -c "
-            SELECT 
-              count(*) as error_count,
-              max(log_time) as last_error
+            SELECT count(*)::integer
             FROM pg_catalog.pg_stat_activity
-            WHERE state = 'idle in transaction' 
+            WHERE datname = current_database()
+              AND state = 'idle in transaction'
               AND state_change < now() - interval '5 minutes';
-            " 2>/dev/null || echo "pg_stat_activity check skipped (permissions)"
+            " -t -A | head -1)
+          if ! [[ "$IDLE_TXN_COUNT" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid idle-transaction count from PostgreSQL."
+            exit 1
+          fi
+          echo "Idle transactions older than five minutes: $IDLE_TXN_COUNT"
+          if [ "$IDLE_TXN_COUNT" -gt 0 ]; then
+            echo "::warning::Long-idle transactions detected ($IDLE_TXN_COUNT)."
+          fi
           
           # Long-running queries
           psql -X -v ON_ERROR_STOP=1 \

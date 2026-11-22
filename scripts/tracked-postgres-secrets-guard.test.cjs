@@ -377,3 +377,56 @@ test("weekly Slack steps safely skip when webhook secret is absent", {
     assert.doesNotMatch(run.stdout + run.stderr, /synthetic-gh-value/);
   }
 });
+
+test("weekly PostgreSQL audit reads valid idle-transaction columns, not nonexistent error logs", () => {
+  const src = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  const section = src.split("          # 10. Long-idle transactions.")[1]
+    ?.split("          # Long-running queries")[0];
+  assert.ok(section, "Expected idle-transaction audit block");
+  assert.match(section, /pg_catalog\.pg_stat_activity/);
+  assert.match(section, /state_change < now\(\) - interval '5 minutes'/);
+  assert.match(section, /datname = current_database\(\)/);
+  assert.match(section, /SELECT count\(\*\)::integer/);
+  assert.doesNotMatch(section, /max\(log_time\)|as error_count|check skipped \(permissions\)/);
+  assert.match(section, /if ! \[\[ "\$IDLE_TXN_COUNT" =~ \^\[0-9\]\+\$ \]\]; then/);
+});
+
+test("weekly idle-transaction count warns on real signals and refuses malformed or failed SQL", {
+  skip: process.platform === "win32",
+}, () => {
+  const src = readFileSync(path.join(root, ".github/workflows/security-audit-weekly.yml"), "utf8");
+  const section = src.split("          # 10. Long-idle transactions.")[1]
+    ?.split("          # Long-running queries")[0];
+  assert.ok(section, "Expected idle-transaction Bash block");
+  // split() starts after the heading's period, in the middle of its comment.
+  // Drop that partial first line before evaluating the rest as Bash.
+  const script = section.split("\n").slice(1).map(line =>
+    line.startsWith("          ") ? line.slice(10) : line,
+  ).join("\n");
+
+  function run(output, broken = false) {
+    const stub = broken
+      ? 'psql(){ return 7; }\n'
+      : 'psql(){ printf "%s\\n" "$TAD_TEST_IDLE_COUNT"; }\n';
+    return spawnSync("bash", ["-c", "set -euo pipefail\n" + stub + script], {
+      env: { PATH: process.env.PATH || "", TAD_TEST_IDLE_COUNT: output },
+      encoding: "utf8", timeout: 4000,
+    });
+  }
+  const clean = run("0");
+  assert.equal(clean.status, 0);
+  assert.match(clean.stdout, /Idle transactions older than five minutes: 0/);
+  assert.doesNotMatch(clean.stdout + clean.stderr, /::warning::/);
+
+  const busy = run("2");
+  assert.equal(busy.status, 0);
+  assert.match(busy.stdout, /::warning::Long-idle transactions detected \(2\)/);
+
+  const malformed = run("not-a-number");
+  assert.equal(malformed.status, 1);
+  assert.match(malformed.stdout + malformed.stderr, /Invalid idle-transaction count/);
+
+  const queryFailure = run("0", true);
+  assert.notEqual(queryFailure.status, 0, "SQL failure must stop the audit");
+  assert.doesNotMatch(queryFailure.stdout + queryFailure.stderr, /check skipped/i);
+});

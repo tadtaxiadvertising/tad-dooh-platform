@@ -34,13 +34,10 @@ describe("CampaignService — 15-Slot Limit & Advisory Locking", () => {
   let txMock: TransactionMock;
 
   beforeEach(async () => {
+    const canonicalDevice = { id: canonicalId, deviceId: "DEV-1" };
     txMock = {
       $executeRaw: jest.fn().mockResolvedValue(1),
-      device: {
-        findMany: jest.fn().mockResolvedValue([
-          { id: canonicalId, deviceId: "DEV-1" },
-        ]),
-      },
+      device: { findMany: jest.fn().mockResolvedValue([canonicalDevice]) },
       deviceCampaign: {
         count: jest.fn(),
         create: jest.fn(),

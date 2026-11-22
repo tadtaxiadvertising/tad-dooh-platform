@@ -20,6 +20,7 @@ import { Public } from "../auth/decorators/public.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { UserRole } from "../auth/decorators/roles.decorator";
 import { MediaService } from "../media/media.service";
+import { withLegacyCampaignMedia } from "../media/media-mime-contract";
 import { PrismaService } from "../prisma/prisma.service";
 import { VideoGeneratorService } from "./video-generator.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
@@ -44,7 +45,6 @@ const mediaSafeSelect = {
   name: true,
   filename: true,
   originalFilename: true,
-  mime_type: true,
   mimeType: true,
   durationSeconds: true,
   width: true,
@@ -319,7 +319,7 @@ export class CampaignController {
       if (typeof entityId !== "string" || !entityId.trim()) {
         throw new ForbiddenException("Perfil de anunciante inválido.");
       }
-      return this.prisma.campaign.findMany({
+      const campaigns = await this.prisma.campaign.findMany({
         where: { advertiserId: entityId },
         include: {
           mediaAssets: { select: mediaAssetSafeSelect },
@@ -327,6 +327,7 @@ export class CampaignController {
         },
         orderBy: { createdAt: "desc" },
       });
+      return campaigns.map(withLegacyCampaignMedia);
     }
     if (role !== UserRole.ADMIN) {
       throw new ForbiddenException(

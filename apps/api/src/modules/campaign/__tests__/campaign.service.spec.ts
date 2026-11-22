@@ -132,7 +132,8 @@ describe("CampaignService — 15-Slot Limit & Advisory Locking", () => {
       });
       expect(txMock.deviceCampaign.create).not.toHaveBeenCalled();
     });
-    it("supports an internal UUID without interpreting it as hardware only", async () => {
+
+    it("accepts a canonical UUID", async () => {
       txMock.deviceCampaign.count.mockResolvedValue(0);
       txMock.deviceCampaign.create.mockResolvedValue({
         device_id: canonicalId,
@@ -163,7 +164,7 @@ describe("CampaignService — 15-Slot Limit & Advisory Locking", () => {
       expect(txMock.deviceCampaign.create).not.toHaveBeenCalled();
     });
 
-    it("refuses ambiguous UUID-looking hardware IDs without altering inventory", async () => {
+    it("rejects ambiguous UUID hardware IDs", async () => {
       txMock.device.findMany.mockResolvedValue([
         { id: canonicalId, deviceId: "OTHER-HW" },
         {

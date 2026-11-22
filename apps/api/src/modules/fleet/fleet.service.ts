@@ -4,6 +4,7 @@ import { DeviceService } from "../device/device.service";
 import { SupabaseService } from "../supabase/supabase.service";
 import { TrackBatchDto, GPS_TRACK_BATCH_LIMIT } from "./dto/track-batch.dto";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
+import { deviceIdentityWhere } from "../campaign/device-identity-lookup";
 
 @Injectable()
 export class FleetService {
@@ -777,8 +778,23 @@ export class FleetService {
    * Obtiene la ruta reciente (trail) de un dispositivo específico.
    */
   async getDeviceRecentPath(deviceId: string) {
-    const locations = await this.prisma.driverLocation.findMany({
-      where: { deviceId },
+    // The route accepts a hardware ID or a canonical device UUID.
+    // driver_locations.device_id is physically UUID, not hardware TEXT.
+    const devices = await this.prisma.device.findMany({
+      where: deviceIdentityWhere(deviceId),
+      select: { id: true },
+      take: 2,
+    });
+    if (devices.length === 0) return [];
+    if (devices.length > 1) {
+      throw new HttpException(
+        "DEVICE_IDENTITY_AMBIGUOUS",
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    return this.prisma.driverLocation.findMany({
+      where: { deviceId: devices[0].id },
       orderBy: { timestamp: "desc" },
       take: 60,
       select: {
@@ -788,7 +804,6 @@ export class FleetService {
         timestamp: true,
       },
     });
-    return locations;
   }
 
   /**

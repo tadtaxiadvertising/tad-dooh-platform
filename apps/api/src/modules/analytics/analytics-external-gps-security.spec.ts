@@ -24,10 +24,7 @@ describe("External GPS device possession gate", () => {
     updateDeviceLocationFromMobile.mockResolvedValue({ id: "device-uuid" });
   });
 
-  const makeContext = (
-    hardwareId: string,
-    token?: string,
-  ): ExecutionContext =>
+  const makeContext = (hardwareId: string, token?: string): ExecutionContext =>
     ({
       switchToHttp: () => ({
         getRequest: () => ({

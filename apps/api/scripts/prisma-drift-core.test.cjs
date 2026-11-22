@@ -269,13 +269,13 @@ test("CampaignExpiration Prisma mappings match existing physical UUID and snake_
   const fs = require("node:fs");
   const path = require("node:path");
   const source = fs.readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
-  const model = source.match(/^model CampaignExpiration\\s*\\{([\\s\\S]*?)^\\}/m)?.[1];
+  const model = source.match(/^model CampaignExpiration\s*\{([\s\S]*?)^\}/m)?.[1];
   assert.ok(model, "CampaignExpiration model must exist");
   const fields = new Map(
     model
-      .split(/\\r?\\n/)
+      .split(/\r?\n/)
       .map((line) => {
-        const match = line.trim().match(/^([A-Za-z][A-Za-z0-9_]*)\\s+/);
+        const match = line.trim().match(/^([A-Za-z][A-Za-z0-9_]*)\s+/);
         return match ? [match[1], line.trim()] : null;
       })
       .filter(Boolean),
@@ -290,6 +290,6 @@ test("CampaignExpiration Prisma mappings match existing physical UUID and snake_
     assert.ok(fields.get(field)?.includes(`@map("${column}")`), field);
   }
   for (const field of ["id", "campaignId"]) {
-    assert.match(fields.get(field) || "", /@db\\.Uuid\\b/, field);
+    assert.match(fields.get(field) || "", /@db\.Uuid\b/, field);
   }
 });

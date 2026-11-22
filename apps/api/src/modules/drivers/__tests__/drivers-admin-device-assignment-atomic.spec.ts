@@ -75,6 +75,11 @@ describe("DriversService.assignDevice atomic handoff", () => {
       },
     };
 
+    const targetDevice = {
+      id: "target-tablet",
+      deviceId: "TAD-TARGET",
+      driverId: null,
+    };
     const prisma = {
       driver: {
         findUnique: jest.fn().mockResolvedValue({
@@ -84,13 +89,7 @@ describe("DriversService.assignDevice atomic handoff", () => {
         }),
       },
       device: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            id: "target-tablet",
-            deviceId: "TAD-TARGET",
-            driverId: null,
-          },
-        ]),
+        findMany: jest.fn().mockResolvedValue([targetDevice]),
         update: jest.fn(),
         updateMany: jest.fn(),
       },
@@ -186,7 +185,7 @@ describe("DriversService.assignDevice atomic handoff", () => {
     });
   });
 
-  it("rejects an ambiguous UUID device identity before unlinking hardware", async () => {
+  it("rejects an ambiguous UUID device ID", async () => {
     const { service, prisma, tx, links } = makeHarness();
     const uuid = "9c783afa-605f-4688-932a-46883711ba04";
     prisma.device.findMany.mockResolvedValueOnce([
@@ -277,13 +276,12 @@ describe("DriversService.assignDevice atomic handoff", () => {
           where.deviceId === "TAD-SECOND"
             ? "second-target"
             : "target-tablet";
-        return [
-          {
-            id,
-            deviceId: where.deviceId,
-            driverId: links.get(id) ?? null,
-          },
-        ];
+        const target = {
+          id,
+          deviceId: where.deviceId,
+          driverId: links.get(id) ?? null,
+        };
+        return [target];
       },
     );
 

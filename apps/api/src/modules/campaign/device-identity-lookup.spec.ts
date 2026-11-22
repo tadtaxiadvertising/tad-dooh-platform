@@ -46,7 +46,7 @@ describe("deviceIdentityWhereMany", () => {
     expect(deviceIdentityWhereMany([])).toEqual({
       deviceId: { in: [] },
     });
-    const invalidUuid = "9c783afa-BAD0-4688-932a-46883711ba04";
+    const invalidUuid = "9c783afa-GAD0-4688-932a-46883711ba04";
     expect(deviceIdentityWhereMany([invalidUuid])).toEqual({
       deviceId: { in: [invalidUuid] },
     });

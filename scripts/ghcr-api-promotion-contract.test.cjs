@@ -229,6 +229,25 @@ test("main protection verifies all safeguards after applying, not just a success
   }), /POST_WRITE_PROTECTION_INCOMPLETE/);
   assert.equal(bad.calls.filter(c => c.method === "PUT").length, 1);
 
+  // The GitHub API response must include a real nonzero review count;
+  // missing (undefined) count must never be accepted as a protected branch.
+  const desired = protection.protectionPayload();
+  const missingReviewCount = {
+    required_status_checks: desired.required_status_checks,
+    enforce_admins: { enabled: true },
+    required_pull_request_reviews: {
+      ...desired.required_pull_request_reviews,
+      required_approving_review_count: undefined,
+    },
+    required_conversation_resolution: { enabled: true },
+    allow_force_pushes: { enabled: false },
+    allow_deletions: { enabled: false },
+  };
+  assert.throws(
+    () => protection.assertInstalled(missingReviewCount),
+    /POST_WRITE_PROTECTION_INCOMPLETE/,
+  );
+
   const fixture = stubProtectionApi();
   const messages = [];
   const result = protection.run({

@@ -122,6 +122,8 @@ test("unpaired QR captures locally, never uploads and leaves legacy data intact"
     assert.equal(env.storage.get("tad_gps_batch"), legacy);
     assert.equal(env.calls.length, 0);
     assert.equal(gateway.getGatewayState().batchSize, 1);
+    assert.equal(gateway.getGatewayState().status, "OFFLINE");
+    assert.match(gateway.getGatewayState().error, /emparejamiento seguro/i);
   } finally {
     gateway.stopTadTracking();
   }
@@ -225,6 +227,39 @@ test("storage quota failure cannot truncate previously persisted GPS", async () 
     assert.equal(gateway.getGatewayState().batchSize, 2);
     assert.equal(gateway.getGatewayState().status, "GPS_ERROR");
     assert.equal(env.cleared.length, 1);
+  } finally {
+    gateway.stopTadTracking();
+  }
+});
+
+test("unpaired QR never advertises GPS as synced or actively transmitting", async () => {
+  const env = browserFixture();
+  const gateway = await gatewayModule();
+  try {
+    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    assert.equal(gateway.getGatewayState().status, "OFFLINE");
+    assert.equal(gateway.getGatewayState().totalSynced, 0);
+    assert.equal(env.calls.length, 0);
+
+    env.fix(Date.parse("2026-11-22T06:00:00Z"));
+    assert.equal(gateway.getGatewayState().status, "OFFLINE");
+    assert.equal(env.pending("TAD-A").length, 1);
+  } finally {
+    gateway.stopTadTracking();
+  }
+});
+
+test("verified pairing restores TRACKING state with empty queue", async () => {
+  const env = browserFixture();
+  const gateway = await gatewayModule();
+  try {
+    gateway.startTadTracking("TAD-A", "https://api.example.invalid");
+    assert.equal(gateway.getGatewayState().status, "OFFLINE");
+    assert.equal(gateway.authorizeTadTracking(authorization("TAD-B")), false);
+    assert.equal(gateway.getGatewayState().status, "OFFLINE");
+    assert.equal(gateway.authorizeTadTracking(authorization("TAD-A")), true);
+    assert.equal(gateway.getGatewayState().status, "TRACKING");
+    assert.equal(env.calls.length, 0);
   } finally {
     gateway.stopTadTracking();
   }

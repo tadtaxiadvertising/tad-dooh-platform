@@ -91,7 +91,8 @@ function assertInstalled(config) {
       !Array.isArray(checks.checks) ||
       !checks.checks.some(c => c.context === CHECK_NAME && c.app_id === GITHUB_ACTIONS_APP_ID) ||
       config?.enforce_admins?.enabled !== true ||
-      approvals?.required_approving_review_count < 1 ||
+      !Number.isInteger(approvals?.required_approving_review_count) ||
+      approvals.required_approving_review_count < 1 ||
       approvals?.dismiss_stale_reviews !== true ||
       approvals?.require_last_push_approval !== true ||
       config?.required_conversation_resolution?.enabled !== true ||

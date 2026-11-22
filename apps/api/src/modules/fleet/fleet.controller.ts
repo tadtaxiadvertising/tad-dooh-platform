@@ -1,5 +1,13 @@
 import type { AuthenticatedRequest } from "../auth/auth.types";
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import { FleetService } from "./fleet.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { DeviceTokenGuard } from "../device/guards/device-token.guard";

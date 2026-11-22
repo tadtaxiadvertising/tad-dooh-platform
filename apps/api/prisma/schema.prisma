@@ -393,7 +393,7 @@ model Driver {
 }
 
 model FinancialTransaction {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @db.Uuid
   type      String
   category  String
   amount    Float
@@ -417,7 +417,7 @@ model FinancialTransaction {
 }
 
 model PayrollPayment {
-  id           String    @id @default(uuid())
+  id           String    @id @default(uuid()) @db.Uuid
   driverId     String    @map("driver_id")
   amount       Float
   month        Int
@@ -520,7 +520,7 @@ model PortalRequest {
 }
 
 model DriverLocation {
-  id          String   @id @default(uuid())
+  id          String   @id @default(uuid()) @db.Uuid
   driverId    String   @map("driver_id")
   deviceId    String   @map("device_id")
   latitude    Float
@@ -764,7 +764,7 @@ model SettlementBatch {
 }
 
 model Telemetry {
-  id        String                                @id @default(uuid())
+  id        String                                @id @default(uuid()) @db.Uuid
   driverId  String                                @map("driver_id")
   coords    Unsupported("geography(Point, 4326)")
   speed     Float
@@ -786,7 +786,7 @@ model Telemetry {
 }
 
 model Wallet {
-  id                String @id @default(uuid())
+  id                String @id @default(uuid()) @db.Uuid
   driverId          String @unique @map("driver_id")
   availableBalance  Float  @default(0.0) @map("available_balance")
   pendingWithdrawal Float  @default(0.0) @map("pending_withdrawal")

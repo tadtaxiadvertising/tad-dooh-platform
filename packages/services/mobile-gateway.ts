@@ -114,7 +114,10 @@ export function authorizeTadTracking(
 
   currentCredential = { ...credential };
   if (navigator.onLine) {
+    emitState("TRACKING");
     void checkAndUpload(true);
+  } else {
+    emitState("OFFLINE", "GPS guardado localmente hasta recuperar la conexión.");
   }
   return true;
 }
@@ -213,7 +216,13 @@ export function startTadTracking(
   emitState("INITIALIZING");
 
   onlineListener = () => {
-    void checkAndUpload(true);
+    if (!currentCredential) {
+      emitState("OFFLINE", "Esperando emparejamiento seguro del dispositivo.");
+    } else if (gpsBatch.length > 0) {
+      void checkAndUpload(true);
+    } else {
+      emitState("TRACKING");
+    }
   };
   window.addEventListener("online", onlineListener);
 
@@ -255,6 +264,14 @@ export function startTadTracking(
         emitState("GPS_ERROR", "Almacenamiento GPS lleno o no disponible.");
         return;
       }
+      if (!currentCredential) {
+        emitState("OFFLINE", "GPS guardado localmente; falta emparejamiento seguro.");
+        return;
+      }
+      if (!navigator.onLine) {
+        emitState("OFFLINE", "Sin conexión; coordenadas GPS conservadas.");
+        return;
+      }
       emitState("BUFFERING");
       if (gpsBatch.length >= BATCH_THRESHOLD) {
         void checkAndUpload();
@@ -272,11 +289,11 @@ export function startTadTracking(
     }
   }, FALLBACK_INTERVAL_MS);
 
-  emitState("TRACKING");
-  if (credential) {
-    authorizeTadTracking(credential);
-  } else if (gpsBatch.length > 0) {
-    void checkAndUpload(true);
+  if (!credential || !authorizeTadTracking(credential)) {
+    emitState(
+      "OFFLINE",
+      "GPS grabándose localmente; esperando emparejamiento seguro.",
+    );
   }
 }
 

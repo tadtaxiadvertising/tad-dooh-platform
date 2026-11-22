@@ -84,11 +84,13 @@ describe("DriversService.assignDevice atomic handoff", () => {
         }),
       },
       device: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: "target-tablet",
-          deviceId: "TAD-TARGET",
-          driverId: null,
-        }),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: "target-tablet",
+            deviceId: "TAD-TARGET",
+            driverId: null,
+          },
+        ]),
         update: jest.fn(),
         updateMany: jest.fn(),
       },
@@ -175,6 +177,38 @@ describe("DriversService.assignDevice atomic handoff", () => {
     expect(prisma.device.update).not.toHaveBeenCalled();
   });
 
+  it("uses only the hardware predicate for non-UUID tablet IDs", async () => {
+    const { service, prisma } = makeHarness();
+    await service.assignDevice("driver-1", "TAD-TARGET");
+    expect(prisma.device.findMany).toHaveBeenCalledWith({
+      where: { deviceId: "TAD-TARGET" },
+      take: 2,
+    });
+  });
+
+  it("rejects an ambiguous UUID device identity before unlinking hardware", async () => {
+    const { service, prisma, tx, links } = makeHarness();
+    const uuid = "9c783afa-605f-4688-932a-46883711ba04";
+    prisma.device.findMany.mockResolvedValueOnce([
+      { id: uuid, deviceId: "TAD-OTHER", driverId: null },
+      {
+        id: "a27af095-edb0-43e7-a9e5-466a892ad943",
+        deviceId: uuid,
+        driverId: null,
+      },
+    ]);
+    await expect(service.assignDevice("driver-1", uuid)).rejects.toThrow(
+      "Identificador de dispositivo ambiguo",
+    );
+    expect(prisma.device.findMany).toHaveBeenCalledWith({
+      where: { OR: [{ id: uuid }, { deviceId: uuid }] },
+      take: 2,
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.device.updateMany).not.toHaveBeenCalled();
+    expect(links.get("old-tablet")).toBe("driver-1");
+  });
+
   it("rejects a blocked driver even with completed onboarding", async () => {
     const { service, prisma, tx, links } = makeHarness();
     prisma.driver.findUnique.mockResolvedValueOnce({
@@ -237,21 +271,19 @@ describe("DriversService.assignDevice atomic handoff", () => {
   it("serializes concurrent admin handoffs for the same driver", async () => {
     const { service, prisma, tx, links } = makeHarness();
     links.set("second-target", null);
-    prisma.device.findFirst.mockImplementation(
-      async ({
-        where,
-      }: {
-        where: { OR: [{ deviceId: string }, { id: string }] };
-      }) => {
+    prisma.device.findMany.mockImplementation(
+      async ({ where }: { where: { deviceId: string } }) => {
         const id =
-          where.OR[0].deviceId === "TAD-SECOND"
+          where.deviceId === "TAD-SECOND"
             ? "second-target"
             : "target-tablet";
-        return {
-          id,
-          deviceId: where.OR[0].deviceId,
-          driverId: links.get(id) ?? null,
-        };
+        return [
+          {
+            id,
+            deviceId: where.deviceId,
+            driverId: links.get(id) ?? null,
+          },
+        ];
       },
     );
 
@@ -338,7 +370,7 @@ describe("DriversService.assignDevice atomic handoff", () => {
 
   it("does not unlink a driver when the target device does not exist", async () => {
     const { service, prisma, links } = makeHarness();
-    prisma.device.findFirst.mockResolvedValueOnce(null);
+    prisma.device.findMany.mockResolvedValueOnce([]);
     await expect(service.assignDevice("driver-1", "MISSING")).rejects.toThrow(
       "Dispositivo no encontrado",
     );
@@ -363,11 +395,13 @@ describe("DriversService.assignDevice atomic handoff", () => {
   it("keeps the target linked during a repeated assignment", async () => {
     const { service, prisma, links } = makeHarness();
     links.set("target-tablet", "driver-1");
-    prisma.device.findFirst.mockResolvedValueOnce({
-      id: "target-tablet",
-      deviceId: "TAD-TARGET",
-      driverId: "driver-1",
-    });
+    prisma.device.findMany.mockResolvedValueOnce([
+      {
+        id: "target-tablet",
+        deviceId: "TAD-TARGET",
+        driverId: "driver-1",
+      },
+    ]);
     await expect(
       service.assignDevice("driver-1", "TAD-TARGET"),
     ).resolves.toEqual({ id: "target-tablet", driverId: "driver-1" });

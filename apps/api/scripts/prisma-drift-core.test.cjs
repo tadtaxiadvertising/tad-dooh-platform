@@ -346,3 +346,44 @@ test("three independent UUID primary keys use native PostgreSQL UUID types", () 
   });
   assert.equal(report.idTypeMismatchCount, 0);
 });
+
+test("five unreferenced UUID primary keys mirror the canonical PostgreSQL catalog", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const schema = fs.readFileSync(
+    path.join(__dirname, "../prisma/schema.prisma"),
+    "utf8",
+  );
+  const models = [
+    ["DriverLocation", "driver_locations"],
+    ["FinancialTransaction", "financial_transactions"],
+    ["PayrollPayment", "payroll_payments"],
+    ["Telemetry", "telemetry"],
+    ["Wallet", "wallets"],
+  ];
+  for (const [name, table] of models) {
+    const block = schema.match(
+      new RegExp("^model " + name + " \\{([\\s\\S]*?)^\\}", "m"),
+    )?.[1];
+    assert.ok(block, `Missing Prisma model ${name}`);
+    assert.match(
+      block,
+      /^\s*id\s+String\s+@id\s+@default\(uuid\(\)\)\s+@db\.Uuid\s*$/m,
+    );
+    assert.ok(block.includes(`@@map("${table}")`));
+  }
+  const report = auditPrismaSchema({
+    models: models.map(([, table]) => ({
+      name: table,
+      dbName: table,
+      fields: [{ ...stringId, nativeType: ["Uuid", []] }],
+    })),
+    tables: models.map(([, table_name]) => ({ table_name })),
+    columns: models.map(([, table_name]) => ({
+      table_name,
+      column_name: "id",
+      udt_name: "uuid",
+    })),
+  });
+  assert.equal(report.idTypeMismatchCount, 0);
+});

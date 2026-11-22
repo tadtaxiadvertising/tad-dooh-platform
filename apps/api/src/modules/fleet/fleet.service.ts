@@ -787,10 +787,7 @@ export class FleetService {
     });
     if (devices.length === 0) return [];
     if (devices.length > 1) {
-      throw new HttpException(
-        "DEVICE_IDENTITY_AMBIGUOUS",
-        HttpStatus.CONFLICT,
-      );
+      throw new HttpException("DEVICE_IDENTITY_AMBIGUOUS", HttpStatus.CONFLICT);
     }
 
     return this.prisma.driverLocation.findMany({

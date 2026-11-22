@@ -24,13 +24,6 @@ const moduleJS = ts.transpileModule(readFileSync(modulePath, "utf8"), {
   },
 }).outputText;
 
-const gps = (n: number) => ({
-  latitude: 19.45,
-  longitude: -70.69,
-  speed: n,
-  timestamp: new Date(Date.UTC(2026, 10, 22) + n * 1000).toISOString(),
-});
-
 test.beforeEach(async ({ context, page }) => {
   await context.route(BASE + "**", async (route) => {
     const isModule = route.request().url() === MODULE_URL;
@@ -47,7 +40,9 @@ test("FIFO, rollback of cross-device ACK, and idempotent retry", async ({
   page,
 }) => {
   const result = await page.evaluate(async () => {
-    const q = await import("./queue.js");
+    const q = (await import(
+      new URL("queue.js", location.href).href
+    )) as typeof import("../../../../packages/services/mobile-gateway-idb");
     const point = (speed: number) => ({
       latitude: 19.45,
       longitude: -70.69,
@@ -102,7 +97,9 @@ test("concurrent tabs commit 100 distinct records; reload preserves them", async
   await other.goto(BASE);
   const store50 = (which: number) =>
     (which === 1 ? page : other).evaluate(async (offset) => {
-      const q = await import("./queue.js");
+      const q = (await import(
+      new URL("queue.js", location.href).href
+    )) as typeof import("../../../../packages/services/mobile-gateway-idb");
       return q.enqueueDurableGps(
         "TAD-C",
         Array.from({ length: 50 }, (_, i) => ({
@@ -120,7 +117,9 @@ test("concurrent tabs commit 100 distinct records; reload preserves them", async
   expect(new Set([...a, ...b]).size).toBe(100);
   await page.reload();
   const count = await page.evaluate(async () => {
-    const q = await import("./queue.js");
+    const q = (await import(
+      new URL("queue.js", location.href).href
+    )) as typeof import("../../../../packages/services/mobile-gateway-idb");
     return q.countDurableGps("TAD-C");
   });
   expect(count).toBe(100);
@@ -131,7 +130,9 @@ test("10x batch load stays durable; ACK deletes only exact first 500", async ({
   page,
 }) => {
   const summary = await page.evaluate(async () => {
-    const q = await import("./queue.js");
+    const q = (await import(
+      new URL("queue.js", location.href).href
+    )) as typeof import("../../../../packages/services/mobile-gateway-idb");
     for (let batch = 0; batch < 10; batch++) {
       await q.enqueueDurableGps(
         "TAD-10X",

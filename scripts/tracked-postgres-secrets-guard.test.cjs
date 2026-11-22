@@ -398,7 +398,9 @@ test("weekly idle-transaction count warns on real signals and refuses malformed 
   const section = src.split("          # 10. Long-idle transactions.")[1]
     ?.split("          # Long-running queries")[0];
   assert.ok(section, "Expected idle-transaction Bash block");
-  const script = section.split("\n").map(line =>
+  // split() starts after the heading's period, in the middle of its comment.
+  // Drop that partial first line before evaluating the rest as Bash.
+  const script = section.split("\n").slice(1).map(line =>
     line.startsWith("          ") ? line.slice(10) : line,
   ).join("\n");
 

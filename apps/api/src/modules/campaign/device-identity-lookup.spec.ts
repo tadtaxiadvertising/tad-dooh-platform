@@ -38,10 +38,7 @@ describe("deviceIdentityWhereMany", () => {
   it("allows valid UUID IDs and preserves hardware matches", () => {
     const ids = ["TAD-0001", dbUuid, "TAD-0002"];
     expect(deviceIdentityWhereMany(ids)).toEqual({
-      OR: [
-        { id: { in: [dbUuid] } },
-        { deviceId: { in: ids } },
-      ],
+      OR: [{ id: { in: [dbUuid] } }, { deviceId: { in: ids } }],
     });
   });
 
@@ -49,10 +46,9 @@ describe("deviceIdentityWhereMany", () => {
     expect(deviceIdentityWhereMany([])).toEqual({
       deviceId: { in: [] },
     });
-    expect(deviceIdentityWhereMany(["9c783afa-BAD0-4688-932a-46883711ba04"])).toEqual({
-      deviceId: {
-        in: ["9c783afa-BAD0-4688-932a-46883711ba04"],
-      },
+    const invalidUuid = "9c783afa-BAD0-4688-932a-46883711ba04";
+    expect(deviceIdentityWhereMany([invalidUuid])).toEqual({
+      deviceId: { in: [invalidUuid] },
     });
   });
 });

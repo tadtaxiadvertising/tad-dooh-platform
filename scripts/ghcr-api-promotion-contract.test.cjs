@@ -79,3 +79,167 @@ test("nested .env and private-key files cannot enter the Docker context", () => 
     );
   }
 });
+
+
+const protection = require("./protect-main-branch.cjs");
+
+function stubProtectionApi(options = {}) {
+  const sha = "a".repeat(40);
+  const calls = [];
+  let installed = false;
+  let branchReads = 0;
+  const getBranch = () => ({
+    name: "main",
+    protected: installed || options.alreadyProtected === true,
+    commit: { sha: options.moveMainOnSecondRead && ++branchReads === 2 ? "b".repeat(40) : sha },
+  });
+  const summary = options.summary || {
+    name: "Summary",
+    app: { slug: "github-actions", id: 15368 },
+    started_at: "2026-11-21T22:00:00Z",
+    status: "completed",
+    conclusion: "success",
+  };
+  function api(method, route, payload) {
+    calls.push({ method, route, payload });
+    if (route === protection.BASE + "/branches/main" && method === "GET") {
+      return getBranch();
+    }
+    if (route === protection.BASE + "/rulesets" && method === "GET") {
+      return options.rules || [];
+    }
+    if (route.includes("/check-runs?") && method === "GET") {
+      return { check_runs: [summary] };
+    }
+    if (route === protection.BASE + "/branches/main/protection" && method === "PUT") {
+      installed = true;
+      return {};
+    }
+    if (route === protection.BASE + "/branches/main/protection" && method === "GET") {
+      const wanted = protection.protectionPayload();
+      return {
+        required_status_checks: wanted.required_status_checks,
+        enforce_admins: { enabled: options.incompletePostCheck ? false : true },
+        required_pull_request_reviews: wanted.required_pull_request_reviews,
+        required_conversation_resolution: { enabled: true },
+        allow_force_pushes: { enabled: false },
+        allow_deletions: { enabled: false },
+      };
+    }
+    throw new Error("Unexpected test API call: " + method + " " + route);
+  }
+  return { api, calls, sha };
+}
+
+test("main protection plan is read-only, app-pinned and matches CI Summary contract", () => {
+  const fixture = stubProtectionApi();
+  const logs = [];
+  const result = protection.run({
+    mode: "--plan",
+    env: {},
+    api: fixture.api,
+    log: text => logs.push(text),
+  });
+  assert.equal(result.applied, false);
+  assert.equal(result.sha, fixture.sha);
+  assert.ok(fixture.calls.length >= 3);
+  assert.ok(fixture.calls.every(call => call.method === "GET"));
+  assert.ok(logs.some(line => line.includes("DRY_RUN_ONLY")));
+  const wanted = protection.protectionPayload();
+  assert.deepEqual(wanted.required_status_checks.checks, [{ context: "Summary", app_id: 15368 }]);
+  assert.deepEqual(wanted.required_status_checks.contexts, ["Summary"]);
+  assert.equal(wanted.required_status_checks.strict, true);
+  assert.equal(wanted.enforce_admins, true);
+  assert.equal(wanted.required_pull_request_reviews.required_approving_review_count, 1);
+  assert.equal(wanted.required_pull_request_reviews.dismiss_stale_reviews, true);
+  assert.equal(wanted.required_pull_request_reviews.require_last_push_approval, true);
+  assert.equal(wanted.allow_force_pushes, false);
+  assert.equal(wanted.allow_deletions, false);
+  assert.equal(wanted.required_conversation_resolution, true);
+
+  const ci = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
+  assert.match(ci, /summary:\n    name: Summary/);
+  assert.match(ci, /needs: \[format, typecheck, test, prisma, security, build\]/);
+  assert.match(ci, /if: always\(\)/);
+  assert.match(ci, /\$BUILD_RESULT" != "success"/);
+});
+
+test("main protection applies only with independent explicit admin approval", () => {
+  const fixture = stubProtectionApi();
+  assert.throws(() => protection.run({
+    mode: "--apply", env: {}, api: fixture.api, log: () => {},
+  }), /EXPLICIT_ADMIN_APPROVAL_REQUIRED/);
+  assert.equal(fixture.calls.length, 0);
+  assert.throws(() => protection.run({
+    mode: "--force", env: {}, api: fixture.api, log: () => {},
+  }), /UNKNOWN_MODE/);
+  assert.equal(fixture.calls.length, 0);
+});
+
+test("main protection refuses to overwrite protected branches or rulesets", () => {
+  for (const option of [{ alreadyProtected: true }, { rules: [{ id: 42, enforcement: "active" }] }]) {
+    const fixture = stubProtectionApi(option);
+    assert.throws(() => protection.run({
+      mode: "--apply",
+      env: { TAD_APPROVE_MAIN_PROTECTION: "YES" },
+      api: fixture.api, log: () => {},
+    }), /BRANCH_ALREADY_PROTECTED|EXISTING_RULESETS/);
+    assert.equal(fixture.calls.some(c => c.method === "PUT"), false);
+  }
+});
+
+test("main protection rejects incomplete, failed or impersonated required Summary", () => {
+  const base = {
+    name: "Summary", app: { slug: "github-actions", id: 15368 },
+    status: "completed", conclusion: "success",
+  };
+  for (const summary of [
+    { ...base, conclusion: "failure" },
+    { ...base, status: "in_progress", conclusion: null },
+    { ...base, app: { slug: "untrusted-app", id: 3 } },
+    { ...base, app: { slug: "github-actions", id: 4 } },
+    { ...base, name: "Other Job" },
+  ]) {
+    const fixture = stubProtectionApi({ summary });
+    assert.throws(() => protection.run({
+      mode: "--apply",
+      env: { TAD_APPROVE_MAIN_PROTECTION: "YES" },
+      api: fixture.api, log: () => {},
+    }), /MAIN_SUMMARY_NOT_EXECUTED_AND_GREEN/);
+    assert.equal(fixture.calls.some(c => c.method === "PUT"), false);
+  }
+});
+
+test("main protection refuses moving branch before writing settings", () => {
+  const fixture = stubProtectionApi({ moveMainOnSecondRead: true });
+  assert.throws(() => protection.run({
+    mode: "--apply",
+    env: { TAD_APPROVE_MAIN_PROTECTION: "YES" },
+    api: fixture.api, log: () => {},
+  }), /MAIN_MOVED_DURING_PREFLIGHT/);
+  assert.equal(fixture.calls.some(c => c.method === "PUT"), false);
+});
+
+test("main protection verifies all safeguards after applying, not just a successful API PUT", () => {
+  const bad = stubProtectionApi({ incompletePostCheck: true });
+  assert.throws(() => protection.run({
+    mode: "--apply",
+    env: { TAD_APPROVE_MAIN_PROTECTION: "YES" },
+    api: bad.api, log: () => {},
+  }), /POST_WRITE_PROTECTION_INCOMPLETE/);
+  assert.equal(bad.calls.filter(c => c.method === "PUT").length, 1);
+
+  const fixture = stubProtectionApi();
+  const messages = [];
+  const result = protection.run({
+    mode: "--apply",
+    env: { TAD_APPROVE_MAIN_PROTECTION: "YES" },
+    api: fixture.api, log: message => messages.push(message),
+  });
+  assert.equal(result.applied, true);
+  const puts = fixture.calls.filter(c => c.method === "PUT");
+  assert.equal(puts.length, 1);
+  assert.equal(puts[0].route, protection.BASE + "/branches/main/protection");
+  assert.deepEqual(puts[0].payload, protection.protectionPayload());
+  assert.ok(messages.some(m => m.includes("TAD_MAIN_PROTECTION_VERIFIED")));
+});

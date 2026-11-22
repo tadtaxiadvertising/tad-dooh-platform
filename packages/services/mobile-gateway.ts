@@ -8,6 +8,7 @@ import {
   buildGatewayGpsBatch,
   GATEWAY_GPS_BATCH_LIMIT,
   isCompleteGatewayGpsReceipt,
+  unacknowledgedGatewayGpsPoints,
   type GatewayDeviceCredential,
   type GatewayGpsPoint,
 } from "./mobile-gateway-contract";
@@ -66,6 +67,7 @@ let sessionVersion = 0;
 let swMessageListener: ((event: MessageEvent) => void) | null = null;
 let onlineListener: (() => void) | null = null;
 let storageFailed = false;
+let inFlightController: AbortController | null = null;
 
 function storageKey(deviceId: string): string {
   return `${STORAGE_PREFIX}${encodeURIComponent(deviceId)}`;
@@ -166,7 +168,7 @@ export function startTadTracking(
   baseUrl: string,
   credential?: GatewayDeviceCredential,
 ): void {
-  if (!deviceId?.trim() || !baseUrl?.trim()) {
+  if (!deviceId?.trim() || deviceId.length > 128 || !baseUrl?.trim()) {
     emitState("GPS_ERROR", "Identidad o dirección de API inválida.");
     return;
   }
@@ -174,14 +176,11 @@ export function startTadTracking(
     emitState("SUSPENDED", "Suscripción pendiente; GPS retenido localmente.");
     return;
   }
-  if (
-    currentDeviceId &&
-    currentDeviceId !== deviceId &&
-    storageFailed &&
-    gpsBatch.length > 0
-  ) {
-    emitState("GPS_ERROR", "No se puede cambiar de dispositivo con GPS sin guardar.");
-    return;
+  if (storageFailed && gpsBatch.length > 0) {
+    if (currentDeviceId !== deviceId || !persistQueue(gpsBatch)) {
+      emitState("GPS_ERROR", "Hay GPS sin guardar; no se puede reiniciar.");
+      return;
+    }
   }
 
   stopTadTracking();
@@ -233,12 +232,16 @@ export function startTadTracking(
   watchId = navigator.geolocation.watchPosition(
     (position) => {
       if (isSuspended) return;
-      const timestamp = new Date(position.timestamp).toISOString();
+      const capturedAt = new Date(position.timestamp);
+      if (!Number.isFinite(capturedAt.getTime())) {
+        emitState("GPS_ERROR", "Marca temporal de GPS inválida.");
+        return;
+      }
       const point: GpsPoint = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         speed: position.coords.speed ?? 0,
-        timestamp,
+        timestamp: capturedAt.toISOString(),
       };
 
       const next = [...gpsBatch, point];
@@ -311,6 +314,7 @@ async function checkAndUpload(force = false): Promise<void> {
   syncing = true;
   emitState("SYNCING");
   const controller = new AbortController();
+  inFlightController = controller;
   const timeout = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
   let acknowledged = false;
   try {
@@ -342,13 +346,13 @@ async function checkAndUpload(force = false): Promise<void> {
     }
 
     const receipt: unknown = await response.json();
+    if (version !== sessionVersion || currentDeviceId !== deviceId) return;
     if (!isCompleteGatewayGpsReceipt(receipt, snapshot.length)) {
       emitState("OFFLINE", "ACK GPS incompleto; lote retenido.");
       return;
     }
 
-    const confirmed = new Set(snapshot);
-    const remaining = gpsBatch.filter((point) => !confirmed.has(point));
+    const remaining = unacknowledgedGatewayGpsPoints(gpsBatch, snapshot);
     if (!persistQueue(remaining)) {
       emitState("GPS_ERROR", "No se pudo confirmar el borrado local; se reintentará.");
       return;
@@ -364,6 +368,9 @@ async function checkAndUpload(force = false): Promise<void> {
     }
   } finally {
     clearTimeout(timeout);
+    if (inFlightController === controller) {
+      inFlightController = null;
+    }
     syncing = false;
     if (
       acknowledged &&
@@ -397,6 +404,7 @@ function handleSuspension(): void {
 /** Stops capture but never deletes queued GPS or legacy offline data. */
 export function stopTadTracking(): void {
   sessionVersion++;
+  inFlightController?.abort();
   currentCredential = null;
   if (watchId !== null) {
     navigator.geolocation.clearWatch(watchId);

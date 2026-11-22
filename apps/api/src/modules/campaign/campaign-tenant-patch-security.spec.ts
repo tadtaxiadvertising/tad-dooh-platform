@@ -33,7 +33,9 @@ describe("Campaign tenant patch and list authorization", () => {
     });
     updateCampaign.mockResolvedValue({ id: "campaign-1" });
     // Prisma include returns both relation arrays, even when empty.
-    findMany.mockResolvedValue([{ id: "campaign-1", mediaAssets: [], media: [] }]);
+    findMany.mockResolvedValue([
+      { id: "campaign-1", mediaAssets: [], media: [] },
+    ]);
     getAllCampaigns.mockResolvedValue([{ id: "admin-result" }]);
   });
 
@@ -179,7 +181,7 @@ describe("Campaign tenant patch and list authorization", () => {
     expect(getAllCampaigns).not.toHaveBeenCalled();
   });
 
-  it("preserves both MIME response aliases without broadening tenant scope", async () => {
+  it("preserves both MIME aliases and tenant scoping", async () => {
     findMany.mockResolvedValue([
       {
         id: "campaign-1",

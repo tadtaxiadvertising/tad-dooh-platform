@@ -33,6 +33,8 @@ export interface GatewayState {
   totalSynced: number;
   lastSyncAt: string | null;
   deviceId: string | null;
+  /** A purpose-bound credential was supplied in memory, not merely a QR ID. */
+  hasDeviceCredential: boolean;
   error: string | null;
 }
 
@@ -90,6 +92,7 @@ export function getGatewayState(): GatewayState {
     totalSynced,
     lastSyncAt,
     deviceId: currentDeviceId,
+    hasDeviceCredential: currentCredential !== null,
     error: currentError,
   };
 }
@@ -113,6 +116,8 @@ export function authorizeTadTracking(
   }
 
   currentCredential = { ...credential };
+  // Update UI immediately even if the queue is empty and no upload starts.
+  emitState(currentStatus, currentError);
   if (navigator.onLine) {
     void checkAndUpload(true);
   }

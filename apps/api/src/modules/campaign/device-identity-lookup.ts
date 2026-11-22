@@ -33,10 +33,7 @@ export function deviceIdentityWhereMany(
   const hardwareIds = [...values];
   return databaseIds.length
     ? {
-        OR: [
-          { id: { in: databaseIds } },
-          { deviceId: { in: hardwareIds } },
-        ],
+        OR: [{ id: { in: databaseIds } }, { deviceId: { in: hardwareIds } }],
       }
     : { deviceId: { in: hardwareIds } };
 }

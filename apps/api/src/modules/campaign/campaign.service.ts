@@ -15,7 +15,10 @@ import {
 } from "@tad/impact-calculator";
 import { ReferralService } from "../referral/referral.service";
 import type { Prisma } from "@prisma/client";
-import { deviceIdentityWhere } from "./device-identity-lookup";
+import {
+  deviceIdentityWhere,
+  deviceIdentityWhereMany,
+} from "./device-identity-lookup";
 import { withLegacyCampaignMedia } from "../media/media-mime-contract";
 
 interface SyncMediaAsset {
@@ -345,9 +348,7 @@ export class CampaignService {
   async assignCampaignToDevices(campaignId: string, idOrHwIds: string[]) {
     // 1. Fetch devices using either UUID (id) or Hardware ID (deviceId)
     const devices = await this.prisma.device.findMany({
-      where: {
-        OR: [{ id: { in: idOrHwIds } }, { deviceId: { in: idOrHwIds } }],
-      },
+      where: deviceIdentityWhereMany(idOrHwIds),
       select: { id: true, deviceId: true },
     });
 

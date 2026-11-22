@@ -1,8 +1,15 @@
-import { withLegacyCampaignMedia, withLegacyMediaMime } from "./media-mime-contract";
+import {
+  withLegacyCampaignMedia,
+  withLegacyMediaMime,
+} from "./media-mime-contract";
 
 describe("media MIME compatibility", () => {
   it("mirrors the canonical persisted MIME field under the legacy alias", () => {
-    const media = { id: "media-1", mimeType: "video/mp4", filename: "spot.mp4" };
+    const media = {
+      id: "media-1",
+      mimeType: "video/mp4",
+      filename: "spot.mp4",
+    };
     const response = withLegacyMediaMime(media);
 
     expect(response).toEqual({

@@ -17,11 +17,7 @@ describe("FleetService.getDeviceRecentPath", () => {
       device: { findMany: findDevices },
       driverLocation: { findMany: findLocations },
     };
-    const service = new FleetService(
-      prisma as never,
-      {} as never,
-      {} as never,
-    );
+    const service = new FleetService(prisma as never, {} as never, {} as never);
     return { service, findDevices, findLocations };
   };
 

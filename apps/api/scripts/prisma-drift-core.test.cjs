@@ -293,3 +293,13 @@ test("CampaignExpiration Prisma mappings match existing physical UUID and snake_
     assert.match(fields.get(field) || "", /@db\.Uuid\b/, field);
   }
 });
+
+test("Media Prisma MIME contract persists only physical mime_type", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const source = fs.readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
+  const model = source.match(/^model Media\s*\{([\s\S]*?)^\}/m)?.[1];
+  assert.ok(model, "Media model must exist");
+  assert.match(model, /^\s*mimeType\s+String\?\s+@map\("mime_type"\)\s*$/m);
+  assert.doesNotMatch(model, /^\s*mime_type\s+/m);
+});

@@ -22,6 +22,7 @@ describe("Fleet public GPS ingestion — admin device-driver binding", () => {
     speed: 20,
     timestamp: Date.UTC(2026, 10, 19, 18, 0, 0),
   };
+  const deviceUuid = "9c783afa-605f-4688-932a-46883711ba04";
   const request = {
     driverId: "driver-legitimate",
     deviceId: "TAD-TABLET-1",
@@ -31,7 +32,7 @@ describe("Fleet public GPS ingestion — admin device-driver binding", () => {
   beforeEach(() => {
     jest.resetAllMocks();
     deviceFindUnique.mockResolvedValue({
-      id: "device-row",
+      id: deviceUuid,
       deviceId: "TAD-TABLET-1",
       status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
       driverId: "driver-legitimate",
@@ -84,7 +85,7 @@ describe("Fleet public GPS ingestion — admin device-driver binding", () => {
       data: [
         {
           driverId: "driver-legitimate",
-          deviceId: "TAD-TABLET-1",
+          deviceId: deviceUuid,
           latitude: 19.45,
           longitude: -70.7,
           speed: 20,
@@ -93,6 +94,39 @@ describe("Fleet public GPS ingestion — admin device-driver binding", () => {
       ],
       skipDuplicates: true,
     });
+  });
+
+  it("does not acknowledge GPS events if persistence fails, so offline retries remain possible", async () => {
+    const persistenceError = new Error("GPS_INSERT_REJECTED");
+    createMany.mockRejectedValueOnce(persistenceError);
+
+    await expect(service.ingestTelemetryBatch(request)).rejects.toBe(
+      persistenceError,
+    );
+    expect(createMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skipDuplicates: true }),
+    );
+    expect(deviceUpdate).not.toHaveBeenCalled();
+  });
+
+  it("acknowledges duplicate GPS points without rewriting their timestamps", async () => {
+    createMany.mockResolvedValueOnce({ count: 0 });
+
+    await expect(service.ingestTelemetryBatch(request)).resolves.toEqual({
+      count: 0,
+      input: 1,
+    });
+    expect(createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            deviceId: deviceUuid,
+            timestamp: new Date(point.timestamp),
+          }),
+        ],
+        skipDuplicates: true,
+      }),
+    );
   });
 
   it("retains the existing subscription 402 kill-switch", async () => {

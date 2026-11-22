@@ -710,7 +710,9 @@ export class DriversService {
       take: 2,
     });
     if (devices.length === 0) {
-      throw new BadRequestException("Dispositivo no encontrado en el inventario");
+      throw new BadRequestException(
+        "Dispositivo no encontrado en el inventario",
+      );
     }
     if (devices.length > 1) {
       throw new BadRequestException("Identificador de dispositivo ambiguo");

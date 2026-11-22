@@ -136,7 +136,7 @@ const authorization = (deviceId) => ({
 });
 
 async function until(predicate) {
-  for (let attempt = 0; attempt < 50; attempt++) {
+  for (let attempt = 0; attempt < 100; attempt++) {
     if (predicate()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }

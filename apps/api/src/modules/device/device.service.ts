@@ -625,6 +625,12 @@ export class DeviceService {
       return { success: false, reason: "awaiting_approval" };
     }
 
+    // Never acknowledge queued GPS points that cannot be attributed to
+    // an ADMIN-approved driver. A successful ACK would drop offline events.
+    if (dto.locations?.length && !device.driverId) {
+      return { success: false, reason: "device_unassigned" };
+    }
+
     // 2. Update Heartbeat / Telemetry
     await this.prisma.device.update({
       where: { deviceId: dto.device_id },
@@ -669,7 +675,8 @@ export class DeviceService {
         `   -> Inserting ${dto.locations.length} location events`,
       );
       const locationData = dto.locations.map((l) => ({
-        deviceId: dto.device_id,
+        // driver_locations.device_id is physically UUID, not hardware TEXT.
+        deviceId: device.id,
         driverId: device.driverId ?? "",
         latitude: l.lat,
         longitude: l.lng,

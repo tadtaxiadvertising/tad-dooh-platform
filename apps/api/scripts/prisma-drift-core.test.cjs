@@ -303,3 +303,39 @@ test("Media Prisma MIME contract persists only physical mime_type", () => {
   assert.match(model, /^\s*mimeType\s+String\?\s+@map\("mime_type"\)\s*$/m);
   assert.doesNotMatch(model, /^\s*mime_type\s+/m);
 });
+
+test("three independent UUID primary keys use native PostgreSQL UUID types", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const schema = fs.readFileSync(
+    path.join(__dirname, "../prisma/schema.prisma"),
+    "utf8",
+  );
+  for (const [name, table] of [
+    ["CampaignIntent", "campaign_intents"],
+    ["MediaAsset", "media_assets"],
+    ["PlaybackEvent", "playback_events"],
+  ]) {
+    const model = schema.match(new RegExp(`^model ${name} \\{([\\s\\S]*?)^\\}`, "m"))?.[1];
+    assert.ok(model, `Missing model ${name}`);
+    assert.match(model, /^\\s*id\\s+String\\s+@id\\s+@default\\(uuid\\(\\)\\)\\s+@db\\.Uuid\\s*$/m);
+    assert.ok(model.includes(`@@map("${table}")`));
+  }
+
+  // Simulated catalog result: the Prisma DMMF nativeType is Uuid, and physical
+  // PostgreSQL keys remain uuid, without touching financial/offline row data.
+  const report = auditPrismaSchema({
+    models: ["campaign_intents", "media_assets", "playback_events"].map((table) => ({
+      name: table,
+      dbName: table,
+      fields: [{ ...stringId, nativeType: ["Uuid", []] }],
+    })),
+    tables: ["campaign_intents", "media_assets", "playback_events"].map(
+      (table_name) => ({ table_name }),
+    ),
+    columns: ["campaign_intents", "media_assets", "playback_events"].map(
+      (table_name) => ({ table_name, column_name: "id", udt_name: "uuid" }),
+    ),
+  });
+  assert.equal(report.idTypeMismatchCount, 0);
+});

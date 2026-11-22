@@ -55,6 +55,14 @@ interface TelemetryDao {
     @Query("DELETE FROM tad_telemetry WHERE status = :status")
     suspend fun deleteByStatus(status: String)
 
+    /** Atomically move only the failed snapshot to the persistent offline queue. */
+    @Query("UPDATE tad_telemetry SET status = 'offline' WHERE status = 'batch' AND ts IN (:tsList)")
+    suspend fun markBatchOffline(tsList: List<Long>)
+
+    /** Remove only a server-acknowledged batch snapshot, not concurrent GPS fixes. */
+    @Query("DELETE FROM tad_telemetry WHERE status = 'batch' AND ts IN (:tsList)")
+    suspend fun deleteAcknowledgedBatch(tsList: List<Long>)
+
     @Query("SELECT COUNT(*) FROM tad_telemetry WHERE status = :status")
     suspend fun countByStatus(status: String): Int
 
@@ -69,7 +77,7 @@ interface TelemetryDao {
     @Query("DELETE FROM tad_telemetry WHERE status = 'offline'")
     suspend fun deleteAllOffline()
 
-    /** Evict oldest offline records beyond [maxKeep], matching the expo-sqlite 500-cap */
+    /** Legacy maintenance query. Never use to truncate unacknowledged GPS. */
     @Query("""
         DELETE FROM tad_telemetry WHERE status = 'offline' AND ts IN (
             SELECT ts FROM tad_telemetry WHERE status = 'offline' ORDER BY ts ASC LIMIT :excess
@@ -85,7 +93,7 @@ interface TelemetryDao {
      * pattern.  This prevents data loss if the sync is interrupted
      * mid-queue — earlier chunks are already cleaned up.
      */
-    @Query("DELETE FROM tad_telemetry WHERE ts IN (:tsList)")
+    @Query("DELETE FROM tad_telemetry WHERE status = 'offline' AND ts IN (:tsList)")
     suspend fun deleteByTsList(tsList: List<Long>)
 
     @Query("DELETE FROM tad_telemetry")

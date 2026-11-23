@@ -209,9 +209,9 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
       </ol>
       <p className={styles.disclaimer}>
         Simulación, no una campaña activa: los símbolos QR no son escaneables,
-        los botones del celular no navegan y no hay seguimiento de pasajeros.
-        Un escaneo no equivale a una venta. La disponibilidad de destinos QR y
-        sus métricas depende de la configuración y validación de la campaña.
+        los botones del celular no navegan y no hay seguimiento de pasajeros. Un
+        escaneo no equivale a una venta. La disponibilidad de destinos QR y sus
+        métricas depende de la configuración y validación de la campaña.
       </p>
       <a href="#experiencia" className={styles.cta}>
         Simula tu campaña <ArrowRight size={18} aria-hidden="true" />

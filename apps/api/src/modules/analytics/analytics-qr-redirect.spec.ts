@@ -11,14 +11,24 @@ describe("Passenger QR redirect safety", () => {
     ["data:text/html,<script>alert(1)</script>", fallback],
     ["file:///etc/passwd", fallback],
     ["//attacker.example.invalid/offer", fallback],
-    ["https://user:pass@attacker.example.invalid/offer", fallback],
-    ["https://user@attacker.example.invalid/", fallback],
-    ["https://brand.example.invalid/offer\nLocation: https://evil.invalid", fallback],
+    [
+      "https://brand.example.invalid/offer\nLocation: https://evil.invalid",
+      fallback,
+    ],
     ["", fallback],
     [null, fallback],
     [undefined, fallback],
   ])("refuses unsafe campaign QR target %j", (candidate, expected) => {
     expect(safeQrDestinationUrl(candidate)).toBe(expected);
+  });
+
+  it("rejects destinations containing embedded user credentials", () => {
+    const target = new URL("https://brand.example.invalid/offer");
+    target.username = "fixture-user";
+    target.password = "fixture-password";
+    expect(safeQrDestinationUrl(target.toString())).toBe(fallback);
+    target.password = "";
+    expect(safeQrDestinationUrl(target.toString())).toBe(fallback);
   });
 
   it.each([
@@ -28,7 +38,7 @@ describe("Passenger QR redirect safety", () => {
     expect(safeQrDestinationUrl(target)).toBe(target);
   });
 
-  it("registers a scan but never redirects to an unsafe stored target", async () => {
+  it("records a scan but refuses an unsafe stored target", async () => {
     const findUnique = jest.fn().mockResolvedValue({
       targetUrl: "javascript:alert(1)",
     });
@@ -57,7 +67,7 @@ describe("Passenger QR redirect safety", () => {
     });
   });
 
-  it("redirects temporarily with no-store and no-referrer headers", async () => {
+  it("redirects with uncached HTTP 302 and no-referrer", async () => {
     const registerQrScan = jest
       .fn()
       .mockResolvedValue("https://brand.example.invalid/menu");

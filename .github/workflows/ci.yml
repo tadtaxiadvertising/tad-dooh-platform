@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, validation/mobile-gateway-pr-target-20261122]
 
+# CI runs untrusted PR code; no job needs repository write privileges.
+permissions:
+  contents: read
+
 # ─── GATES ───────────────────────────────────────────────────────────────────────
 env:
   NODE_VERSION: "22"

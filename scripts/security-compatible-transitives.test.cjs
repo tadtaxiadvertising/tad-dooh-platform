@@ -16,7 +16,7 @@ const expected = {
   "@nestjs/platform-express>body-parser": "1.20.9",
   "express@4>body-parser": "1.20.9",
   "express@5>body-parser": "2.4.0",
-  "next@15.5.28>postcss": "8.5.31",
+  "next@15.5.29>postcss": "8.5.33",
   "@nestjs/cli>glob": "10.5.0",
   "@angular-devkit/core>picomatch": "4.0.7",
   "@nestjs/config>lodash": "4.18.1",

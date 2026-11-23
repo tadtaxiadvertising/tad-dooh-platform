@@ -62,6 +62,43 @@ async function hashFileSafely(file, expectedSize) {
   }
 }
 
+// The JSON manifest needs the same pathname-to-descriptor protection as SQL.
+// Read with a small hard limit; never include manifest contents in diagnostics.
+async function readManifestSafely(file) {
+  const before = await fs.promises.lstat(file);
+  if (!before.isFile() || before.isSymbolicLink() ||
+      before.nlink !== 1 || before.size > 16384) return null;
+
+  const flags = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0);
+  const handle = await fs.promises.open(file, flags);
+  try {
+    const opened = await handle.stat();
+    if (!opened.isFile() || opened.nlink !== 1 ||
+        opened.ino !== before.ino || opened.dev !== before.dev ||
+        opened.size !== before.size) return null;
+
+    const chunks = [];
+    let length = 0;
+    for await (const chunk of handle.createReadStream({ autoClose: false })) {
+      length += chunk.length;
+      if (length > 16384) return null;
+      chunks.push(chunk);
+    }
+
+    const after = await handle.stat();
+    const named = await fs.promises.lstat(file);
+    if (!named.isFile() || named.isSymbolicLink() ||
+        named.nlink !== 1 || named.ino !== opened.ino || named.dev !== opened.dev ||
+        after.size !== opened.size || after.mtimeMs !== opened.mtimeMs ||
+        after.ctimeMs !== opened.ctimeMs ||
+        named.size !== after.size || named.mtimeMs !== after.mtimeMs ||
+        named.ctimeMs !== after.ctimeMs) return null;
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } finally {
+    await handle.close();
+  }
+}
+
 async function checkExport(directory, expectedRef, repositoryRoot = path.resolve(__dirname, "..")) {
   if (!REF.test(expectedRef || "")) return "EXPECTED_REF_REQUIRED";
   if (!directory || typeof directory !== "string") return "DIRECTORY_REQUIRED";
@@ -76,11 +113,8 @@ async function checkExport(directory, expectedRef, repositoryRoot = path.resolve
     if (isWithin(realRepo, realDir) || await hasGitAncestor(realDir)) return "IN_REPOSITORY";
 
     const manifestPath = path.join(realDir, "manifest.json");
-    const manifestStat = await fs.promises.lstat(manifestPath);
-    if (!manifestStat.isFile() || manifestStat.isSymbolicLink() || manifestStat.size > 16384) {
-      return "INVALID_MANIFEST";
-    }
-    const manifest = JSON.parse(await fs.promises.readFile(manifestPath, "utf8"));
+    const manifest = await readManifestSafely(manifestPath);
+    if (!manifest) return "INVALID_MANIFEST";
     if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) return "INVALID_MANIFEST";
     if (
       Object.keys(manifest).sort().join(",") !==

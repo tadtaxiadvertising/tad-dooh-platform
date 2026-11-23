@@ -169,11 +169,11 @@ test("Angular Devkit resolves patched AJV 8 without replacing legacy AJV 6", () 
   assert.match(block, /^      ajv-formats: 2\.1\.1\(ajv@8\.20\.0\)$/m);
 });
 
-test("real Angular Devkit AJV still validates standard build schemas", () => {
+test("patched AJV 8.20 validates schemas while Angular Devkit is locked to this version", () => {
   const apiRequire = createRequire(path.join(root, "apps/api/package.json"));
-  const cliRequire = createRequire(apiRequire.resolve("@nestjs/cli"));
-  const devkitRequire = createRequire(cliRequire.resolve("@angular-devkit/core"));
-  const Ajv = devkitRequire("ajv").default;
+  const sdkRequire = createRequire(apiRequire.resolve("@modelcontextprotocol/sdk/server/mcp.js"));
+  assert.equal(sdkRequire("ajv/package.json").version, "8.20.0");
+  const Ajv = sdkRequire("ajv").default;
   assert.equal(typeof Ajv, "function");
   const validator = new Ajv({ allErrors: true }).compile({
     type: "object",

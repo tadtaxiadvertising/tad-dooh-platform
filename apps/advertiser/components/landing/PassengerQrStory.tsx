@@ -110,19 +110,14 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
           role="group"
           aria-label="Tipo de promoción ilustrativa"
         >
-          {(
-            Object.entries(examples) as [
-              Example,
-              (typeof examples)[Example],
-            ][]
-          ).map(([key, value]) => (
+          {(Object.keys(examples) as Example[]).map((key) => (
             <button
               key={key}
               type="button"
               aria-pressed={selected === key}
               onClick={() => setSelected(key)}
             >
-              {value.label}
+              {examples[key].label}
             </button>
           ))}
         </div>

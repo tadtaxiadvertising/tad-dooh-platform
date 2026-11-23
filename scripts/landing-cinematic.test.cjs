@@ -129,7 +129,9 @@ test("Advertiser QR story uses a local image and reversible example previews wit
   const css = read("apps/advertiser/components/landing/passenger-qr-story.module.css");
   const image = read("apps/advertiser/public/qr-passenger-journey.svg");
   const copy = read("apps/advertiser/lib/landing/content.ts");
+  const isolatedHarness = read("scripts/landing.test.cjs");
 
+  assert.match(isolatedHarness, /'\.\/PassengerQrStory': \{ default: 'PassengerQrStory' \}/);
   assert.match(landing, /<PassengerQrStory brandName=\{brandName\} \/>/);
   assert.match(landing, /href="#interaccion-qr"/);
   assert.match(story, /useState<Example>\("restaurante"\)/);

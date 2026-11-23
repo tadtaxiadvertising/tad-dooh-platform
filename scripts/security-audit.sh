@@ -1,24 +1,32 @@
 #!/bin/bash
 # Manual Security Audit Script - Extended for Free Plan Monitoring
 # Usage: ./scripts/security-audit.sh
-# Requires: SUPABASE_ACCESS_TOKEN, DB_PASSWORD env vars
+# Requires: SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN, DB_PASSWORD in protected environment
 
 set -euo pipefail
 
-PROJECT_REF="ltdcdhqixvbpdcitthqf"
+# Target must be explicitly selected by an authorized operator.
+PROJECT_REF="${SUPABASE_PROJECT_REF:-}"
 SUPABASE_ACCESS_TOKEN="${SUPABASE_ACCESS_TOKEN:-}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 
-if [[ -z "$SUPABASE_ACCESS_TOKEN" || -z "$DB_PASSWORD" ]]; then
-    echo "Error: Set SUPABASE_ACCESS_TOKEN and DB_PASSWORD environment variables"
-    echo "  export SUPABASE_ACCESS_TOKEN='your_pat_token'"
-    echo "  export DB_PASSWORD='your_db_password'"
+if [[ ! "$PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] ||
+   [[ -z "$SUPABASE_ACCESS_TOKEN" ]] ||
+   [[ -z "$DB_PASSWORD" ]]; then
+    echo "ERROR: missing or invalid Supabase audit configuration." >&2
     exit 1
 fi
 
+# Libpq reads credentials from the environment, never from psql argv or URLs.
+export PGHOST="db.$PROJECT_REF.supabase.co"
+export PGUSER="postgres" PGDATABASE="postgres" PGPORT="5432"
+export PGPASSWORD="$DB_PASSWORD"
+
 api_get() {
-    curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-        "https://api.supabase.com/v1/projects/$PROJECT_REF$1"
+    # Supply the bearer token over stdin rather than curl argv.
+    curl -fsS --config - "https://api.supabase.com/v1/projects/$PROJECT_REF$1" <<CURL_CONFIG
+header = "Authorization: Bearer $SUPABASE_ACCESS_TOKEN"
+CURL_CONFIG
 }
 
 echo "=== Supabase Security Audit $(date -u) ==="
@@ -30,6 +38,12 @@ echo ""
 echo "--- 1. Security Advisories ---"
 ADVISORIES=$(api_get "/database/lints")
 
+# An error payload or unexpected JSON shape cannot mean zero security findings.
+if ! jq -e 'type == "array" and all(.[]; type == "object" and (.name | type == "string" and length > 0) and (.level | IN("ERROR", "WARN", "INFO")))' <<<"$ADVISORIES" >/dev/null; then
+    echo "ERROR: invalid Supabase security advisory response." >&2
+    exit 1
+fi
+
 ERROR_COUNT=$(echo "$ADVISORIES" | jq '[.[] | select(.level=="ERROR")] | length')
 WARN_COUNT=$(echo "$ADVISORIES" | jq '[.[] | select(.level=="WARN")] | length')
 INFO_COUNT=$(echo "$ADVISORIES" | jq '[.[] | select(.level=="INFO")] | length')
@@ -37,13 +51,12 @@ INFO_COUNT=$(echo "$ADVISORIES" | jq '[.[] | select(.level=="INFO")] | length')
 echo "ERROR: $ERROR_COUNT | WARN: $WARN_COUNT | INFO: $INFO_COUNT"
 echo ""
 
-echo "$ADVISORIES" | jq -r '.[] | select(.level=="ERROR" or .level=="WARN") | "\(.level): \(.name) - \(.detail)"'
+echo "$ADVISORIES" | jq -r '.[] | select(.level=="ERROR" or .level=="WARN") | "\(.level): \(.name)"'
 echo ""
 
 # 2. Database Size & Connections
 echo "--- 2. Database Size & Connections ---"
-PGPASSWORD="$DB_PASSWORD" psql \
-    "postgresql://postgres:$DB_PASSWORD@db.$PROJECT_REF.supabase.co:5432/postgres" \
+psql -X -v ON_ERROR_STOP=1 \
     -c "
     SELECT 
         pg_size_pretty(pg_database_size('postgres')) as total_db,
@@ -53,9 +66,12 @@ PGPASSWORD="$DB_PASSWORD" psql \
         (SELECT setting::int FROM pg_settings WHERE name='max_connections') as max_connections;
     "
 
-DB_SIZE_MB=$(PGPASSWORD="$DB_PASSWORD" psql \
-    "postgresql://postgres:$DB_PASSWORD@db.$PROJECT_REF.supabase.co:5432/postgres" \
+DB_SIZE_MB=$(psql -X -v ON_ERROR_STOP=1 \
     -c "SELECT round(pg_database_size('postgres')/1024/1024) as mb;" -t -A | head -1)
+if ! [[ "$DB_SIZE_MB" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: invalid database size result." >&2
+    exit 1
+fi
 echo "Database: ${DB_SIZE_MB} MB / 500 MB limit (Free)"
 
 if [ "$DB_SIZE_MB" -gt 450 ]; then
@@ -72,8 +88,11 @@ echo "--- 3. Storage Usage ---"
 STORAGE=$(api_get "/storage/buckets")
 echo "$STORAGE" | jq -r '.[] | "\(.name): \(.public // false | if . then "public" else "private" end) - \(.file_size_limit // "no limit")"'
 
-STORAGE_USAGE=$(api_get "/storage/usage" 2>/dev/null || echo '{}')
-echo "Storage usage: $STORAGE_USAGE"
+if api_get "/storage/usage" >/dev/null 2>&1; then
+    echo "Storage usage retrieved (raw metadata withheld)."
+else
+    echo "Storage usage endpoint unavailable (optional)."
+fi
 echo ""
 
 # 4. Auth Config
@@ -106,10 +125,13 @@ echo ""
 
 # 7. RLS Deny-by-Default
 echo "--- 7. RLS Deny-by-Default Check ---"
-GRANT_COUNT=$(PGPASSWORD="$DB_PASSWORD" psql \
-    "postgresql://postgres:$DB_PASSWORD@db.$PROJECT_REF.supabase.co:5432/postgres" \
+GRANT_COUNT=$(psql -X -v ON_ERROR_STOP=1 \
     -c "SELECT count(*) FROM information_schema.table_privileges WHERE grantee IN ('anon','authenticated') AND table_schema='public';" \
     -t -A | head -1)
+if ! [[ "$GRANT_COUNT" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: invalid PostgreSQL privilege count." >&2
+    exit 1
+fi
 echo "Grants to anon/authenticated on public tables: $GRANT_COUNT"
 
 if [ "$GRANT_COUNT" -gt 0 ]; then
@@ -121,20 +143,22 @@ echo ""
 
 # 8. Function search_path
 echo "--- 8. Function search_path (mutable check) ---"
-MUTABLE_FUNCS=$(PGPASSWORD="$DB_PASSWORD" psql \
-    "postgresql://postgres:$DB_PASSWORD@db.$PROJECT_REF.supabase.co:5432/postgres" \
+MUTABLE_FUNCS=$(psql -X -v ON_ERROR_STOP=1 \
     -c "
     SELECT count(*) FROM pg_proc p
     JOIN pg_namespace n ON p.pronamespace = n.oid
     WHERE n.nspname = 'public'
       AND (p.proconfig IS NULL OR NOT p.proconfig @> ARRAY['search_path=pg_catalog,public']);
     " -t -A | head -1)
+if ! [[ "$MUTABLE_FUNCS" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: invalid PostgreSQL function count." >&2
+    exit 1
+fi
 echo "Functions with mutable search_path: $MUTABLE_FUNCS"
 
 if [ "$MUTABLE_FUNCS" -gt 0 ]; then
     echo "❌ FAIL: Found mutable functions"
-    PGPASSWORD="$DB_PASSWORD" psql \
-        "postgresql://postgres:$DB_PASSWORD@db.$PROJECT_REF.supabase.co:5432/postgres" \
+    psql -X -v ON_ERROR_STOP=1 \
         -c "
         SELECT p.proname, p.proconfig 
         FROM pg_proc p
@@ -149,8 +173,7 @@ echo ""
 
 # 9. st_estimatedextent Permissions
 echo "--- 9. st_estimatedextent Permissions ---"
-PGPASSWORD="$DB_PASSWORD" psql \
-    "postgresql://postgres:$DB_PASSWORD@db.$PROJECT_REF.supabase.co:5432/postgres" \
+psql -X -v ON_ERROR_STOP=1 \
     -c "
     SELECT 
         p.proname,
@@ -165,22 +188,18 @@ echo ""
 
 # 10. Long-running queries
 echo "--- 10. Long-running Queries (>30s) ---"
-PGPASSWORD="$DB_PASSWORD" psql \
-    "postgresql://postgres:$DB_PASSWORD@db.$PROJECT_REF.supabase.co:5432/postgres" \
+psql -X -v ON_ERROR_STOP=1 \
     -c "
-    SELECT pid, now() - pg_stat_activity.query_start AS duration, query 
-    FROM pg_stat_activity 
+    SELECT count(*) AS active_queries_over_30_seconds
+    FROM pg_stat_activity
     WHERE (now() - pg_stat_activity.query_start) > interval '30 seconds'
-      AND state = 'active'
-    ORDER BY duration DESC
-    LIMIT 5;
+      AND state = 'active';
     " 2>/dev/null || echo "Query check skipped (permissions)"
 echo ""
 
 # 11. Idle in transaction
 echo "--- 11. Idle in Transaction (>5min) ---"
-PGPASSWORD="$DB_PASSWORD" psql \
-    "postgresql://postgres:$DB_PASSWORD@db.$PROJECT_REF.supabase.co:5432/postgres" \
+psql -X -v ON_ERROR_STOP=1 \
     -c "
     SELECT count(*) as count, max(state_change) as oldest
     FROM pg_stat_activity
@@ -192,11 +211,12 @@ echo ""
 echo "=== Audit Complete ==="
 
 # Summary
-KNOWN_ERRORS='["rls_disabled_in_public"]'
+# Exception applies to one extension-managed object, never to all public tables.
+KNOWN_BLOCKED_ERRORS='{"name":"rls_disabled_in_public","schema":"public","table":"spatial_ref_sys"}'
 KNOWN_WARNS='["extension_in_public","anon_security_definer_function_executable","authenticated_security_definer_function_executable"]'
 
-NEW_ERRORS=$(echo "$ADVISORIES" | jq --argjson known "$KNOWN_ERRORS" \
-    '[.[] | select(.level=="ERROR" and (.name | IN($known[])) | not)] | length')
+NEW_ERRORS=$(echo "$ADVISORIES" | jq --argjson known "$KNOWN_BLOCKED_ERRORS" \
+    '[.[] | select(.level=="ERROR" and ((.name == $known.name and .metadata.schema == $known.schema and .metadata.name == $known.table) | not))] | length')
 
 NEW_WARNS=$(echo "$ADVISORIES" | jq --argjson known "$KNOWN_WARNS" \
     '[.[] | select(.level=="WARN" and (.name | IN($known[])) | not)] | length')

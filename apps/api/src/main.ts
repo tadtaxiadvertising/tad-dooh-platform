@@ -129,7 +129,7 @@ async function bootstrap() {
       },
       methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
       allowedHeaders:
-        "Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id, X-Tablet-Id, X-Tablet-Key, X-Admin-Secret",
+        "Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id, X-Tablet-Id, X-Tablet-Key, X-Admin-Secret, X-Device-Token",
       credentials: true,
       optionsSuccessStatus: 204,
       preflightContinue: false,

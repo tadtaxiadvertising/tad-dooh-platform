@@ -34,6 +34,19 @@ export class AnalyticsController {
     private readonly invoiceService: InvoiceService,
   ) {}
 
+  // Missing advertiser ownership context must never become an unscoped
+  // cross-tenant query. Admin access remains intentionally unrestricted.
+  private advertiserScope(req: AuthenticatedRequest): string | undefined {
+    if (req.user.role !== UserRole.ADVERTISER) return undefined;
+    const entityId = req.user.entityId;
+    if (typeof entityId !== "string" || entityId.trim().length === 0) {
+      throw new ForbiddenException(
+        "Cuenta de anunciante sin identificador válido",
+      );
+    }
+    return entityId;
+  }
+
   @Post("campaign/:id/share-whatsapp")
   @Roles(UserRole.ADMIN)
   async shareReportByWhatsApp(
@@ -134,48 +147,42 @@ export class AnalyticsController {
   @Get("summary")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getAnalyticsSummary(@Req() req: AuthenticatedRequest) {
-    const { role, entityId } = req.user;
-    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    const advertiserId = this.advertiserScope(req);
     return this.analyticsService.getAnalyticsSummary(advertiserId);
   }
 
   @Get("total-impressions")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getTotalImpressions(@Req() req: AuthenticatedRequest) {
-    const { role, entityId } = req.user;
-    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    const advertiserId = this.advertiserScope(req);
     return this.analyticsService.getTotalImpressions(advertiserId);
   }
 
   @Get("anti-fraud")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getAntiFraudMetrics(@Req() req: AuthenticatedRequest) {
-    const { role, entityId } = req.user;
-    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    const advertiserId = this.advertiserScope(req);
     return this.analyticsService.getAntiFraudMetrics(advertiserId);
   }
 
   @Get("top-taxis")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getTopTaxis(@Req() req: AuthenticatedRequest) {
-    const { role, entityId } = req.user;
-    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    const advertiserId = this.advertiserScope(req);
     return this.analyticsService.getTopTaxis(advertiserId);
   }
 
   @Get("hourly")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getHourlyAnalytics(@Req() req: AuthenticatedRequest) {
-    const { role, entityId } = req.user;
-    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    const advertiserId = this.advertiserScope(req);
     return this.analyticsService.getHourlyAnalytics(advertiserId);
   }
 
   @Get("recent-plays")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getRecentPlays(@Req() req: AuthenticatedRequest) {
-    const { role, entityId } = req.user;
-    const advertiserId = role === UserRole.ADVERTISER ? entityId : undefined;
+    const advertiserId = this.advertiserScope(req);
     return this.analyticsService.getRecentPlays(advertiserId);
   }
 
@@ -186,7 +193,9 @@ export class AnalyticsController {
     @Req() req: AuthenticatedRequest,
   ) {
     const finalAdvertiserId =
-      req.user?.role === UserRole.ADVERTISER ? req.user.entityId : advertiserId;
+      req.user.role === UserRole.ADVERTISER
+        ? this.advertiserScope(req)
+        : advertiserId;
     return this.analyticsService.getPlaybackHeatmap(finalAdvertiserId);
   }
 

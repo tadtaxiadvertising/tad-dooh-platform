@@ -27,7 +27,7 @@ function importer(name) {
 test("all three web apps pin a patched Next.js maintenance release", () => {
   for (const name of ["admin", "advertiser", "driver"]) {
     const pkg = JSON.parse(read("apps/" + name + "/package.json"));
-    assert.equal(pkg.dependencies.next, "15.5.28", name);
+    assert.equal(pkg.dependencies.next, "15.5.29", name);
     if (name !== "advertiser") {
       assert.equal(pkg.devDependencies["eslint-config-next"], "15.5.28", name);
     }
@@ -38,7 +38,7 @@ test("all three web apps pin a patched Next.js maintenance release", () => {
 
 test("shared UI does not pull an obsolete Next peer back into the lockfile", () => {
   const pkg = JSON.parse(read("packages/ui/package.json"));
-  assert.equal(pkg.peerDependencies.next, ">=15.5.28 <16");
+  assert.equal(pkg.peerDependencies.next, ">=15.5.29 <16");
   const entry = importer("packages/ui");
   assert.match(entry, /next:\s*\n\s+specifier: ['"]?>=15\.5\.28 <16/);
   assert.match(entry, /version: 15\.5\.28/);

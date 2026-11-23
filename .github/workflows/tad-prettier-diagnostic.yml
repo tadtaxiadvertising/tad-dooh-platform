@@ -1,0 +1,41 @@
+name: TAD Prettier exact diff (temporary)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/tad-prettier-diagnostic.yml"
+      - "apps/**/*.ts"
+      - "apps/**/*.tsx"
+permissions:
+  contents: read
+jobs:
+  exact-format:
+    if: github.event.pull_request.number == 492
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Generate exact Prettier 3.9.10 diff without publishing it
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes prettier@3.9.10 --write \
+            apps/api/src/modules/drivers/drivers-earnings-pop.spec.ts \
+            apps/api/src/modules/telemetry/telemetry-batch-limit.spec.ts \
+            apps/api/src/modules/verified-metrics/verified-metrics-tenant-access.spec.ts \
+            apps/player/src/config.ts \
+            apps/player/src/sync-manager.ts \
+            apps/player/src/wake-up-targeting.ts
+          echo "::group::Exact formatting diff (source only; no secrets)"
+          git --no-pager diff -- \
+            apps/api/src/modules/drivers/drivers-earnings-pop.spec.ts \
+            apps/api/src/modules/telemetry/telemetry-batch-limit.spec.ts \
+            apps/api/src/modules/verified-metrics/verified-metrics-tenant-access.spec.ts \
+            apps/player/src/config.ts \
+            apps/player/src/sync-manager.ts \
+            apps/player/src/wake-up-targeting.ts
+          echo "::endgroup::"
+          echo "Diagnostic only: no push; revert this temporary workflow after applying the diff."

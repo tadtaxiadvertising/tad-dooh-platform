@@ -110,24 +110,20 @@ describe("Public QR advertiser profile privacy", () => {
   });
 
   it("does not use a matching company name to load another tenant's campaign", async () => {
-    campaignFindFirst.mockImplementation(async (args) =>
-      args.where.OR
-        ? { whatsapp: "foreign-campaign-contact" }
-        : null,
-    );
+    campaignFindFirst.mockImplementation(async (args) => {
+      if (args.where.OR) return { whatsapp: "foreign-campaign-contact" };
+      return null;
+    });
     const profile = await controller.getAdvertiserProfile("adv-1");
     expect(profile.whatsapp).toBe("published-contact");
-    expect(campaignFindFirst.mock.calls[0][0].where).not.toHaveProperty(
-      "OR",
-    );
+    expect(campaignFindFirst.mock.calls[0][0].where).not.toHaveProperty("OR");
   });
 
   it("does not expose an unpublished campaign even if its active flag is true", async () => {
-    campaignFindFirst.mockImplementation(async (args) =>
-      args.where.status === "ACTIVE"
-        ? null
-        : { whatsapp: "pending-payment-campaign-contact" },
-    );
+    campaignFindFirst.mockImplementation(async (args) => {
+      if (args.where.status === "ACTIVE") return null;
+      return { whatsapp: "pending-payment-campaign-contact" };
+    });
     const profile = await controller.getAdvertiserProfile("adv-1");
     expect(profile.whatsapp).toBe("published-contact");
     expect(campaignFindFirst.mock.calls[0][0].where).toHaveProperty(

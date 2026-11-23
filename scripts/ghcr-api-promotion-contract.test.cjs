@@ -11,6 +11,10 @@ const workflow = fs.readFileSync(
   "utf8",
 );
 const dockerignore = fs.readFileSync(path.join(root, ".dockerignore"), "utf8");
+const apiDockerignore = fs.readFileSync(
+  path.join(root, "Dockerfile.api.dockerignore"),
+  "utf8",
+);
 const dockerfile = fs.readFileSync(path.join(root, "Dockerfile.api"), "utf8");
 
 test("image promotion is manual-only, main-only and tied to current head SHA", () => {
@@ -66,17 +70,28 @@ test("promotion emits immutable digest; it never deploys or changes runtime conf
   assert.doesNotMatch(workflow, /railway\/deploy|easypanel\/deploy|docker stack deploy|kubectl apply/);
 });
 
-test("nested .env and private-key files cannot enter the Docker context", () => {
-  for (const pattern of [
-    ".env", ".env.*", "**/.env", "**/.env.*",
-    "**/.envrc", "**/.envrc.*", "**/*.pem",
-    "**/*.p8", "**/*.p12", "**/*.pfx",
-    "**/id_rsa", "**/id_ed25519",
+test("root and API Docker build contexts exclude nested credentials and agent attachments", () => {
+  // Dockerfile.api.dockerignore TAKES PRECEDENCE over the root .dockerignore
+  // when Dockerfile.api is selected; checking only the root is insufficient.
+  assert.match(dockerfile, /^COPY \. \.$/m);
+  for (const [name, content] of [
+    [".dockerignore", dockerignore],
+    ["Dockerfile.api.dockerignore", apiDockerignore],
   ]) {
-    assert.ok(
-      dockerignore.split(/\r?\n/).includes(pattern),
-      `Docker context missing exclusion pattern: ${pattern}`,
-    );
+    const lines = content.split(/\r?\n/);
+    for (const pattern of [
+      ".env", ".env.*", "**/.env", "**/.env.*",
+      "**/.envrc", "**/.envrc.*", "**/*.pem",
+      "**/*.p8", "**/*.p12", "**/*.pfx",
+      "**/id_rsa", "**/id_ed25519",
+      ".hermes", "**/.hermes",
+      "client_secret*.json", "**/client_secret*.json",
+    ]) {
+      assert.ok(
+        lines.includes(pattern),
+        `${name} missing Docker context exclusion: ${pattern}`,
+      );
+    }
   }
 });
 

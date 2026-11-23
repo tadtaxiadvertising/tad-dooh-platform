@@ -8,9 +8,11 @@ describe("AnalyticsService bounded public device-existence cache", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    findUnique.mockImplementation(async ({ where }: { where: { deviceId: string } }) => ({
-      deviceId: where.deviceId,
-    }));
+    findUnique.mockImplementation(
+      async ({ where }: { where: { deviceId: string } }) => ({
+        deviceId: where.deviceId,
+      }),
+    );
     createDevice.mockResolvedValue({ id: "unexpected-create" });
     createEvent.mockResolvedValue({ id: "event-1" });
     service = new AnalyticsService(

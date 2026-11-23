@@ -41,6 +41,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Diagnostics only for this PR: output the exact difference without modifying source.
+      - name: Diagnose QR TSX format difference
+        run: |
+          pnpm dlx prettier@3.9.10 apps/advertiser/components/landing/PassengerQrStory.tsx > /tmp/prettier-qr.tsx
+          diff -u apps/advertiser/components/landing/PassengerQrStory.tsx /tmp/prettier-qr.tsx || true
+
       - name: Format check (prettier)
         run: |
           set -euo pipefail

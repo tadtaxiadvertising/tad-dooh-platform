@@ -485,9 +485,6 @@ test("manual Supabase audit rejects malformed advisories and only excepts the ex
   const src = readFileSync(path.join(root, "scripts/security-audit.sh"), "utf8");
   const shape = src.match(/if ! jq -e '([^']+)' <<<"\$ADVISORIES"/);
   assert.ok(shape, "Manual audit must verify security-lint JSON shape before counting");
-  const cases = [
-    [{ level: "WARN", name: "known" }, true],
-  ];
   for (const [sample, expected] of [
     [[], 0],
     [[{ level: "WARN", name: "function_search_path_mutable" }], 0],

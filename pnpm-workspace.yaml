@@ -13,6 +13,7 @@ overrides:
   '@modelcontextprotocol/sdk>@hono/node-server': 2.1.6
   '@nestjs/common>file-type': 21.3.4
   '@nestjs/cli>glob': 10.5.0
+  '@angular-devkit/core>ajv': 8.20.0
   '@angular-devkit/core>picomatch': 4.0.7
   '@nestjs/config>lodash': 4.18.1
   '@nestjs/swagger>js-yaml': 4.3.2

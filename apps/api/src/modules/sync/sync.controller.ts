@@ -5,16 +5,21 @@ import {
   HttpException,
   HttpStatus,
   Res,
+  UseGuards,
 } from "@nestjs/common";
 import { SyncService } from "./sync.service";
 import { Public } from "../auth/decorators/public.decorator";
+import { DeviceTokenGuard } from "../device/guards/device-token.guard";
 import type { Response } from "express";
 
 @Controller("sync")
 export class SyncController {
   constructor(private readonly syncService: SyncService) {}
 
+  // The portal JWT is bypassed only for purpose-bound hardware auth.
+  // Never issue an OFFLINE_LICENSE based on a guessable deviceId alone.
   @Public()
+  @UseGuards(DeviceTokenGuard)
   @Get(":deviceId")
   async getDeviceManifest(
     @Param("deviceId") deviceId: string,

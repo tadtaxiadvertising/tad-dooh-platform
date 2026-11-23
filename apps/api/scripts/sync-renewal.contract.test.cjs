@@ -10,6 +10,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const controller = read("apps/api/src/modules/sync/sync.controller.ts");
 const api = read("apps/api/src/modules/device/device.service.ts");
 const player = read("apps/player/src/sync-manager.ts");
+const syncModule = read("apps/api/src/modules/sync/sync.module.ts");
+const deviceTokenGuard = read("apps/api/src/modules/device/guards/device-token.guard.ts");
 
 function between(source, start, end) {
   const from = source.indexOf(start);
@@ -65,4 +67,23 @@ test("server-blocked devices revoke JWT without wiping local media files", () =>
   assert.match(player, /localStorage\.removeItem\("TAD_OFFLINE_LICENSE"\)/);
   const revoke = between(player, "private revokeOfflineLicense()", "private persistOfflineLicense(");
   assert.doesNotMatch(revoke, /evictStaleAssets|cacheVideos|indexedDB/);
+});
+
+test("manifest issuance requires a device-bound DEVICE_AUTH token", () => {
+  // @Public skips the portal SupabaseAuthGuard only. A hardware guard MUST
+  // still protect this endpoint before any OFFLINE_LICENSE is returned.
+  assert.match(
+    controller,
+    /@Public\(\)\s*@UseGuards\(DeviceTokenGuard\)\s*@Get\(":deviceId"\)/,
+    "The public manifest route must enforce DeviceTokenGuard",
+  );
+  assert.match(syncModule, /providers:\s*\[SyncService, DeviceTokenGuard\]/);
+  assert.match(deviceTokenGuard, /if \(!token\)/);
+  assert.match(deviceTokenGuard, /decoded\.type !== "DEVICE_AUTH"/);
+  assert.match(deviceTokenGuard, /request\.params\?\.deviceId/);
+  assert.match(
+    deviceTokenGuard,
+    /matchesAuthenticatedDevice\(deviceId, requestedDeviceIds\)/,
+  );
+  assert.match(deviceTokenGuard, /device\.status !== BUSINESS_RULES\.STATUS\.DEVICE\.ACTIVE/);
 });

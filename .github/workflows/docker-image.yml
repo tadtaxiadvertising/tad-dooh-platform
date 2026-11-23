@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: ["main", "validation/mobile-gateway-pr-target-20261122"]
 
+# Docker CI builds only; it must never receive a write-capable token.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Docker Image (${{ matrix.image }})

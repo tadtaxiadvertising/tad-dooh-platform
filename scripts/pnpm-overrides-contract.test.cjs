@@ -11,7 +11,7 @@ const root = path.resolve(__dirname, "..");
 test("the workspace and frozen lockfile pin exactly the same dependency overrides", () => {
   const workspace = readOverrides();
   const locked = readOverrides("pnpm-lock.yaml");
-  assert.equal(Object.keys(workspace).length, 16);
+  assert.equal(Object.keys(workspace).length, 17);
   assert.deepEqual(workspace, locked);
   assert.equal(workspace.multer, "2.5.0");
   assert.equal(workspace["follow-redirects"], "1.16.2");
@@ -19,6 +19,7 @@ test("the workspace and frozen lockfile pin exactly the same dependency override
   assert.equal(workspace["next@15.5.29>postcss"], "8.5.33");
   assert.equal(workspace["@modelcontextprotocol/sdk>@hono/node-server"], "2.1.6");
   assert.equal(workspace["@nestjs/common>file-type"], "21.3.4");
+  assert.equal(workspace["@angular-devkit/core>ajv"], "8.20.0");
   assert.equal(Object.hasOwn(workspace, "next@15.5.28>postcss"), false);
 });
 

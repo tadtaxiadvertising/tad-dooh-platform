@@ -13,6 +13,7 @@ overrides:
   express@5>body-parser: 2.4.0
   next@15.5.29>postcss: 8.5.33
   '@modelcontextprotocol/sdk>@hono/node-server': 2.1.6
+  '@nestjs/common>file-type': 21.3.4
   '@nestjs/cli>glob': 10.5.0
   '@angular-devkit/core>picomatch': 4.0.7
   '@nestjs/config>lodash': 4.18.1
@@ -3738,10 +3739,6 @@ packages:
       '@types/react':
         optional: true
 
-  '@tokenizer/inflate@0.2.7':
-    resolution: {integrity: sha512-MADQgmZT1eKjp06jpI2yozxaU9uVs4GzzgSL+uEq7bVcJ9V1ZXQkeGNql1fsSI0gMy1vhvNTNbUqrx+pZfJVmg==}
-    engines: {node: '>=18'}
-
   '@tokenizer/inflate@0.4.1':
     resolution: {integrity: sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA==}
     engines: {node: '>=18'}
@@ -5977,10 +5974,6 @@ packages:
   file-entry-cache@8.0.0:
     resolution: {integrity: sha512-XXTUwCvisa5oacNGRP9SfNtYBNAMi+RPwBFmblZEF7N7swHYQS6/Zfk7SRwx4D5j3CH211YNRco1DEMNVfZCnQ==}
     engines: {node: '>=16.0.0'}
-
-  file-type@20.4.1:
-    resolution: {integrity: sha512-hw9gNZXUfZ02Jo0uafWLaFVPter5/k2rfcrjFJJHX/77xtSDOfJuEFb6oKlFV86FLP1SuyHMW1PSk0U9M5tKkQ==}
-    engines: {node: '>=18'}
 
   file-type@21.3.4:
     resolution: {integrity: sha512-Ievi/yy8DS3ygGvT47PjSfdFoX+2isQueoYP1cntFW1JLYAuS4GD7NUPGg4zv2iZfV52uDyk5w5Z0TdpRS6Q1g==}
@@ -11050,7 +11043,7 @@ snapshots:
 
   '@nestjs/common@10.4.22(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.1.14)(rxjs@7.8.2)':
     dependencies:
-      file-type: 20.4.1
+      file-type: 21.3.4
       iterare: 1.2.1
       reflect-metadata: 0.1.14
       rxjs: 7.8.2
@@ -12121,14 +12114,6 @@ snapshots:
       react: 19.0.0
     optionalDependencies:
       '@types/react': 19.3.0
-
-  '@tokenizer/inflate@0.2.7':
-    dependencies:
-      debug: 4.4.3
-      fflate: 0.8.3
-      token-types: 6.1.2
-    transitivePeerDependencies:
-      - supports-color
 
   '@tokenizer/inflate@0.4.1':
     dependencies:
@@ -15743,15 +15728,6 @@ snapshots:
   file-entry-cache@8.0.0:
     dependencies:
       flat-cache: 4.0.1
-
-  file-type@20.4.1:
-    dependencies:
-      '@tokenizer/inflate': 0.2.7
-      strtok3: 10.6.2
-      token-types: 6.1.2
-      uint8array-extras: 1.6.0
-    transitivePeerDependencies:
-      - supports-color
 
   file-type@21.3.4:
     dependencies:

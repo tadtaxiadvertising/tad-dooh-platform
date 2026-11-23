@@ -18,3 +18,13 @@ test("required CI Docker matrix covers all five canonical portal images", () => 
   assert.match(section, /needs: \[format, typecheck, test, prisma, security\]/);
   assert.match(workflow, /needs: \[format, typecheck, test, prisma, security, build\]/);
 });
+
+test("PR-triggered quality and Docker workflows explicitly restrict GITHUB_TOKEN", () => {
+  const root = path.resolve(__dirname, "..");
+  for (const name of ["ci.yml", "docker-image.yml"]) {
+    const content = fs.readFileSync(path.join(root, ".github/workflows", name), "utf8");
+    assert.match(content, /^permissions:\n  contents: read\s*$/m, name);
+    assert.doesNotMatch(content, /^\s+(?:contents|packages|issues|actions|checks|statuses): write\s*$/m, name);
+    assert.match(content, /^  pull_request:\s*$/m, name);
+  }
+});

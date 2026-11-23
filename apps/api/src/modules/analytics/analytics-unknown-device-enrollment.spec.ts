@@ -82,6 +82,7 @@ describe("AnalyticsService public event device enrollment", () => {
     expect(deviceCreate).toHaveBeenCalledTimes(1);
     expect(eventCreate).toHaveBeenCalledTimes(2);
   });
+
   it("preserves both concurrent first events when unique enrollment races", async () => {
     const deviceId = "CONCURRENT-HW";
     const reconciledDevice = {

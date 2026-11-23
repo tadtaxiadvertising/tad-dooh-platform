@@ -15,6 +15,11 @@ const root = path.resolve(__dirname, "..");
 function isForbiddenTrackedPath(file) {
   const normalized = file.replace(/\\/g, "/").replace(/^\.\//, "");
   const base = path.posix.basename(normalized);
+  // Ignore rules do not protect files already committed to Git. Reject all
+  // tracked agent attachments and OAuth client-secret JSON files regardless
+  // of location. The guard prints paths only, never contents or secret bytes.
+  if (normalized.toLowerCase().startsWith(".hermes/desktop-attachments/")) return true;
+  if (/^client_secret(?:[._-][^/]*)?\.json$/i.test(base)) return true;
   if (
     normalized === "apps/api/prisma-cloud-test.js" ||
     normalized === "apps/api/test_db.py"
@@ -50,10 +55,15 @@ test("sensitive tracked paths are blocked but safe examples are allowed", () => 
     "apps/api/prisma-cloud-test.js", "apps/api/test_db.py",
     "apps/api/.env", "apps/driver/.env.local", "config/.env.production",
     "private/id_ed25519", "keys/prod.pem", "certificate.p12",
+    ".hermes/desktop-attachments/example-screenshot.png",
+    ".hermes/desktop-attachments/client_secret_fixture.json",
+    "config/client_secret.json", "config/client_secret_example.json",
+    "config/CLIENT_SECRET-example.JSON",
   ]) assert.equal(isForbiddenTrackedPath(name), true, name);
   for (const name of [
     "apps/api/.env.example", ".env.example", "src/service.ts",
     "scripts/audit.test.cjs", ".npmrc",
+    "docs/oauth-client-secret-runbook.md", "config/oauth.example.json",
   ]) assert.equal(isForbiddenTrackedPath(name), false, name);
 });
 

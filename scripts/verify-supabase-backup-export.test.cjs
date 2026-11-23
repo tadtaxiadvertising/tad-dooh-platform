@@ -96,6 +96,71 @@ test("refuses symlinked SQL artifacts", { skip: process.platform === "win32" }, 
   assert.equal(await checkExport(f.directory, REF), "EXPORT_MISMATCH");
 }));
 
+test("refuses shared hardlinked SQL files even when bytes and checksum match", {
+  skip: process.platform === "win32",
+}, () => withFixture(async f => {
+  const source = path.join(f.directory, "data.sql");
+  const alias = path.join(f.directory, "data-alias.sql");
+  await fs.promises.link(source, alias);
+  assert.equal(await checkExport(f.directory, REF), "EXPORT_MISMATCH");
+}));
+
+test("refuses a SQL pathname replaced with a symlink between lstat and open", {
+  skip: process.platform === "win32",
+}, () => withFixture(async f => {
+  const target = path.join(f.directory, "data.sql");
+  const original = path.join(f.directory, "data-original.sql");
+  const open = fs.promises.open;
+  let swapped = false;
+  fs.promises.open = async function (file, ...args) {
+    if (!swapped && file === target) {
+      swapped = true;
+      await fs.promises.rename(target, original);
+      await fs.promises.symlink(original, target);
+    }
+    return open.call(this, file, ...args);
+  };
+  try {
+    assert.equal(await checkExport(f.directory, REF), "READ_OR_PARSE_FAILED");
+    assert.equal(swapped, true, "The fixture must exercise the pre-open swap");
+  } finally {
+    fs.promises.open = open;
+  }
+}));
+
+test("refuses a shared hardlinked manifest even when JSON matches", {
+  skip: process.platform === "win32",
+}, () => withFixture(async f => {
+  await fs.promises.link(
+    path.join(f.directory, "manifest.json"),
+    path.join(f.directory, "manifest-alias.json"),
+  );
+  assert.equal(await checkExport(f.directory, REF), "INVALID_MANIFEST");
+}));
+
+test("refuses a manifest swapped with a symlink after its first stat", {
+  skip: process.platform === "win32",
+}, () => withFixture(async f => {
+  const target = path.join(f.directory, "manifest.json");
+  const original = path.join(f.directory, "manifest-original.json");
+  const open = fs.promises.open;
+  let swapped = false;
+  fs.promises.open = async function (file, ...args) {
+    if (!swapped && file === target) {
+      swapped = true;
+      await fs.promises.rename(target, original);
+      await fs.promises.symlink(original, target);
+    }
+    return open.call(this, file, ...args);
+  };
+  try {
+    assert.equal(await checkExport(f.directory, REF), "READ_OR_PARSE_FAILED");
+    assert.equal(swapped, true, "The fixture must exercise the manifest swap");
+  } finally {
+    fs.promises.open = open;
+  }
+}));
+
 test("refuses symlinked manifest", { skip: process.platform === "win32" }, () => withFixture(async f => {
   await fs.promises.rename(path.join(f.directory, "manifest.json"), path.join(f.directory, "real-manifest.json"));
   await fs.promises.symlink(path.join(f.directory, "real-manifest.json"), path.join(f.directory, "manifest.json"));

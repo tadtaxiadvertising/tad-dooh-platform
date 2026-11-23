@@ -161,7 +161,9 @@ describe("Passenger QR measurement resilience", () => {
 
   it("does not query the database for incomplete tracking links", async () => {
     expect(await service.registerQrScan("", "device-1")).toBe("https://tad.do");
-    expect(await service.registerQrScan("campaign-1", "")).toBe("https://tad.do");
+    expect(await service.registerQrScan("campaign-1", "")).toBe(
+      "https://tad.do",
+    );
     expect(campaignRead).not.toHaveBeenCalled();
     expect(scanWrite).not.toHaveBeenCalled();
   });

@@ -4,7 +4,10 @@
 import { resolvePlayerApiUrl } from "./api-url";
 
 const env = {
-  API_URL: resolvePlayerApiUrl(import.meta.env.VITE_API_URL, import.meta.env.DEV),
+  API_URL: resolvePlayerApiUrl(
+    import.meta.env.VITE_API_URL,
+    import.meta.env.DEV,
+  ),
   SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || "",
   SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
   KIOSK_URL: import.meta.env.VITE_KIOSK_URL || "",

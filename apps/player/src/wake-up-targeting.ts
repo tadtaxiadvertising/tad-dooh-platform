@@ -5,13 +5,20 @@
  * This filter reduces needless sync; it is NOT an authorization control.
  */
 export function isWakeUpForDevice(message: unknown, deviceId: string): boolean {
-  if (!deviceId.trim() || !message || typeof message !== "object" || Array.isArray(message)) {
+  if (
+    !deviceId.trim() ||
+    !message ||
+    typeof message !== "object" ||
+    Array.isArray(message)
+  ) {
     return false;
   }
 
   const envelope = message as Record<string, unknown>;
-  if (envelope.type !== undefined && envelope.type !== "broadcast") return false;
-  if (envelope.event !== undefined && envelope.event !== "WAKE_UP_CALL") return false;
+  if (envelope.type !== undefined && envelope.type !== "broadcast")
+    return false;
+  if (envelope.event !== undefined && envelope.event !== "WAKE_UP_CALL")
+    return false;
 
   const data = Object.hasOwn(envelope, "payload") ? envelope.payload : envelope;
   if (!data || typeof data !== "object" || Array.isArray(data)) return false;
@@ -30,7 +37,9 @@ export function isWakeUpForDevice(message: unknown, deviceId: string): boolean {
   return (
     Array.isArray(targets) &&
     targets.length > 0 &&
-    targets.every((target) => typeof target === "string" && target.trim().length > 0) &&
+    targets.every(
+      (target) => typeof target === "string" && target.trim().length > 0,
+    ) &&
     targets.includes(deviceId)
   );
 }

@@ -1,9 +1,6 @@
 import { BadRequestException } from "@nestjs/common";
 import { TelemetryController } from "./telemetry.controller";
-import {
-  PLAYBACK_MAX_BATCH_SIZE,
-  TelemetryService,
-} from "./telemetry.service";
+import { PLAYBACK_MAX_BATCH_SIZE, TelemetryService } from "./telemetry.service";
 
 const sample = {
   deviceId: "TABLET-1",
@@ -28,12 +25,12 @@ describe("PoP batch size: fail closed before any database writes", () => {
       {} as never,
     );
 
-    await expect(controller.recordPlaybackBatch(oversized(), "valid-key")).rejects.toThrow(
-      BadRequestException,
-    );
-    await expect(controller.recordPlaybackBatch(oversized(), "valid-key")).rejects.toThrow(
-      "PLAYBACK_BATCH_TOO_LARGE",
-    );
+    await expect(
+      controller.recordPlaybackBatch(oversized(), "valid-key"),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      controller.recordPlaybackBatch(oversized(), "valid-key"),
+    ).rejects.toThrow("PLAYBACK_BATCH_TOO_LARGE");
     expect(validateDevice).not.toHaveBeenCalled();
     expect(validateTabletKey).not.toHaveBeenCalled();
     expect(recordPlaybackBatch).not.toHaveBeenCalled();
@@ -60,7 +57,9 @@ describe("PoP batch size: fail closed before any database writes", () => {
       $executeRawUnsafe: execute,
       playbackEvent: { create: jest.fn() },
     } as never);
-    await expect(service.recordPlaybackBatch([])).rejects.toThrow("EMPTY_PAYLOAD");
+    await expect(service.recordPlaybackBatch([])).rejects.toThrow(
+      "EMPTY_PAYLOAD",
+    );
     expect(execute).not.toHaveBeenCalled();
   });
 });

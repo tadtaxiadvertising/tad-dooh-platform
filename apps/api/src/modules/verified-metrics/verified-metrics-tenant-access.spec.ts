@@ -31,8 +31,8 @@ describe("VerifiedMetrics driver report tenant isolation", () => {
 
   it("ADMIN retains access under the existing global role guard", () => {
     const guard = new TenantGuard();
-    expect(guard.canActivate(context("admin-A", "driver-B", UserRole.ADMIN))).toBe(
-      true,
-    );
+    expect(
+      guard.canActivate(context("admin-A", "driver-B", UserRole.ADMIN)),
+    ).toBe(true);
   });
 });

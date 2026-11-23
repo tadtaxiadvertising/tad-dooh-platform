@@ -5,14 +5,22 @@ describe("Driver earnings require verified completed Proof-of-Play", () => {
   const sampleEvents = [
     { videoId: "VIDEO-START-ONLY", eventType: "START", verified: true },
     { videoId: "VIDEO-ERROR-ONLY", eventType: "ERROR", verified: true },
-    { videoId: "VIDEO-UNVERIFIED-END", eventType: "play_confirm", verified: false },
+    {
+      videoId: "VIDEO-UNVERIFIED-END",
+      eventType: "play_confirm",
+      verified: false,
+    },
     { videoId: "VIDEO-COMPLETED", eventType: "play_confirm", verified: true },
     { videoId: "VIDEO-COMPLETED", eventType: "play_confirm", verified: true },
   ];
 
   function setup() {
     const findMany = jest.fn(
-      async ({ where }: { where: { verified?: boolean; eventType?: string } }) => {
+      async ({
+        where,
+      }: {
+        where: { verified?: boolean; eventType?: string };
+      }) => {
         const filtered = sampleEvents.filter(
           (item) =>
             item.verified === where.verified &&
@@ -71,7 +79,11 @@ describe("Driver earnings require verified completed Proof-of-Play", () => {
   it("preserves cap and never credits start-only plays", async () => {
     const { service, findMany, count } = setup();
     findMany.mockImplementationOnce(
-      async ({ where }: { where: { verified?: boolean; eventType?: string } }) => {
+      async ({
+        where,
+      }: {
+        where: { verified?: boolean; eventType?: string };
+      }) => {
         if (where.verified !== true || where.eventType !== "play_confirm") {
           return [];
         }

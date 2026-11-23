@@ -387,7 +387,9 @@ export class SyncManager {
           void Promise.resolve()
             .then(() => client.removeChannel(channel))
             .catch(() => {
-              console.warn("[SyncManager] Supabase Realtime channel removal failed");
+              console.warn(
+                "[SyncManager] Supabase Realtime channel removal failed",
+              );
             });
         };
       },

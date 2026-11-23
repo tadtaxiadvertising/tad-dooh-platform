@@ -100,15 +100,31 @@ export class AnalyticsService {
       });
 
       if (!device) {
-        device = await this.prisma.device.create({
-          data: {
-            deviceId: dto.deviceId,
-            // Events are unauthenticated telemetry, not administrator approval.
-            // Preserve the event, but keep unknown hardware pending enrollment.
-            status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
-            lastSeen: new Date(),
-          },
-        });
+        try {
+          device = await this.prisma.device.create({
+            data: {
+              deviceId: dto.deviceId,
+              // Events are unauthenticated telemetry, not administrator approval.
+              // Preserve the event, but keep unknown hardware pending enrollment.
+              status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
+              lastSeen: new Date(),
+            },
+          });
+        } catch (error) {
+          // Concurrent first events can race on the unique deviceId.
+          // Reconcile only P2002 and only if the device now exists.
+          if (
+            !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+            error.code !== "P2002"
+          ) {
+            throw error;
+          }
+          device = await this.prisma.device.findUnique({
+            where: { deviceId: dto.deviceId },
+          });
+          if (!device) throw error;
+          this.logger.warn("ANALYTICS_DEVICE_ENROLLMENT_RACE_RECONCILED");
+        }
       }
       this.rememberKnownDevice(dto.deviceId);
     } else {

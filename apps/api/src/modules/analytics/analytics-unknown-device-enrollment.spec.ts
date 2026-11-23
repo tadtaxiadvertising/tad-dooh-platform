@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { AnalyticsService } from "./analytics.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 
@@ -80,5 +81,81 @@ describe("AnalyticsService public event device enrollment", () => {
     expect(deviceRead).toHaveBeenCalledTimes(1);
     expect(deviceCreate).toHaveBeenCalledTimes(1);
     expect(eventCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it("preserves both concurrent first events when unique enrollment races", async () => {
+    const deviceId = "CONCURRENT-HW";
+    const reconciledDevice = {
+      id: "existing-device",
+      deviceId,
+      status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
+      driverId: null,
+    };
+    const duplicate = new Prisma.PrismaClientKnownRequestError(
+      "Synthetic deviceId unique conflict",
+      { code: "P2002", clientVersion: "7.10.1" },
+    );
+    deviceRead
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(reconciledDevice);
+    deviceCreate
+      .mockResolvedValueOnce(reconciledDevice)
+      .mockRejectedValueOnce(duplicate);
+
+    const results = await Promise.all([
+      service.ingestEvent({ deviceId, eventType: "playback" }),
+      service.ingestEvent({ deviceId, eventType: "playback" }),
+    ]);
+
+    expect(results).toEqual([{ id: "event-1" }, { id: "event-1" }]);
+    expect(deviceRead).toHaveBeenCalledTimes(3);
+    expect(deviceCreate).toHaveBeenCalledTimes(2);
+    expect(deviceCreate).toHaveBeenCalledWith({
+      data: {
+        deviceId,
+        status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
+        lastSeen: expect.any(Date),
+      },
+    });
+    expect(eventCreate).toHaveBeenCalledTimes(2);
+    expect(eventCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ deviceId, processed: false }),
+    });
+  });
+
+  it("fails closed on a duplicate if no existing device can be confirmed", async () => {
+    const duplicate = new Prisma.PrismaClientKnownRequestError(
+      "Synthetic unresolved unique conflict",
+      { code: "P2002", clientVersion: "7.10.1" },
+    );
+    deviceCreate.mockRejectedValueOnce(duplicate);
+    await expect(
+      service.ingestEvent({ deviceId: "MISSING-HW", eventType: "playback" }),
+    ).rejects.toBe(duplicate);
+    expect(deviceRead).toHaveBeenCalledTimes(2);
+    expect(eventCreate).not.toHaveBeenCalled();
+
+    await expect(
+      service.ingestEvent({ deviceId: "MISSING-HW", eventType: "playback" }),
+    ).resolves.toEqual({ id: "event-1" });
+    expect(deviceRead).toHaveBeenCalledTimes(3);
+    expect(deviceCreate).toHaveBeenCalledTimes(2);
+    expect(eventCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not swallow unrelated device creation failures", async () => {
+    const failure = new Error("Synthetic database timeout");
+    deviceCreate.mockRejectedValueOnce(failure);
+
+    await expect(
+      service.ingestEvent({ deviceId: "RETRY-HW", eventType: "playback" }),
+    ).rejects.toBe(failure);
+    expect(deviceRead).toHaveBeenCalledTimes(1);
+    expect(eventCreate).not.toHaveBeenCalled();
+    await expect(
+      service.ingestEvent({ deviceId: "RETRY-HW", eventType: "playback" }),
+    ).resolves.toEqual({ id: "event-1" });
+    expect(deviceCreate).toHaveBeenCalledTimes(2);
   });
 });

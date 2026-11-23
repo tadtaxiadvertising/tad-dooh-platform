@@ -52,6 +52,8 @@ test("readiness script remains valid Bash and never masks typecheck or build exi
   assert.match(source, /TSC_OUT=\$\(timeout[^\n]+\) \|\| TSC_RC=\$\?/);
   assert.match(source, /TSC_FINAL=\$\(timeout[^\n]+\) \|\| TSC_FINAL_RC=\$\?/);
   assert.match(source, /BUILD_OUT=\$\(timeout[^\n]+\) \|\| BUILD_RC=\$\?/);
+  assert.match(source, /LINT_OUT=\$\(timeout[^\n]+\) \|\| LINT_RC=\$\?/);
+  assert.match(source, /if \[ "\$LINT_TOTAL_FAILS" -gt 0 \]; then/);
   assert.match(source, /\[ "\$\{BUILD_RC:-1\}" -ne 0 \]/);
   assert.match(source, /if \[ "\$CHECK_FAIL" -gt 0 \]; then\s+exit 1/);
   assert.doesNotMatch(source, /TSC_(?:OUT|FINAL)=([^\n]*\|\| true)/);
@@ -73,4 +75,41 @@ test("matching commit SHAs pass, but an empty commit ahead fails even with ident
   assert.equal(runMainRefGate(dir), "0:1");
   git(dir, "update-ref", "refs/remotes/origin/main", git(dir, "rev-parse", "HEAD"));
   assert.equal(runMainRefGate(dir), "1:0");
+});
+
+test("ESLint failures and missing binaries cannot be silently treated as success", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tad-eslint-gate-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const apps = ["admin", "advertiser", "driver", "player"];
+  for (const app of apps) {
+    const bin = path.join(dir, "apps", app, "node_modules", ".bin", "eslint");
+    fs.mkdirSync(path.dirname(bin), { recursive: true });
+    fs.writeFileSync(bin, "#!/bin/sh\\nexit 0\\n");
+    fs.chmodSync(bin, 0o755);
+  }
+  const start = source.indexOf("LINT_TOTAL_FAILS=0\\nfor DIR in apps/admin");
+  const end = source.indexOf("\\n# ---------- 7. TESTS", start);
+  assert.ok(start > 0 && end > start);
+
+  function lintFailures() {
+    const run = [
+      "set -euo pipefail",
+      "OK() { :; }",
+      "FAIL() { :; }",
+      source.slice(start, end),
+      'printf "%s" "$LINT_TOTAL_FAILS"',
+    ];
+    return execFileSync("bash", ["-c", run.join("\\n")], {
+      cwd: dir,
+      encoding: "utf8",
+      env: { ...process.env, ROOT: dir },
+    }).trim();
+  }
+
+  assert.equal(lintFailures(), "0");
+  const bad = path.join(dir, "apps", "driver", "node_modules", ".bin", "eslint");
+  fs.writeFileSync(bad, "#!/bin/sh\\nexit 9\\n");
+  assert.equal(lintFailures(), "1");
+  fs.rmSync(bad);
+  assert.equal(lintFailures(), "1");
 });

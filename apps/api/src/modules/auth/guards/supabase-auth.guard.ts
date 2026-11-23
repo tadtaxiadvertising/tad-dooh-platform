@@ -11,6 +11,7 @@ import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { SupabaseService } from "../../supabase/supabase.service";
 import { AdvertisersService } from "../../advertisers/advertisers.service";
 import * as jwt from "jsonwebtoken";
+import { createHash } from "node:crypto";
 import { AuthUser } from "../auth.types";
 
 /**
@@ -32,12 +33,57 @@ export class SupabaseAuthGuard implements CanActivate {
   private readonly isDev: boolean;
   private readonly allowDevBypass: boolean;
 
-  // In-memory cache to avoid repeated network calls for the same token in a short window
+  // Cache only opaque SHA-256 token digests, never raw bearer credentials.
+  // The bounded LRU avoids indefinite process-memory growth with new sessions.
   private static sessionCache = new Map<
     string,
     { user: AuthUser; expiry: number }
   >();
+  private static readonly MAX_CACHED_SESSIONS = 2_048;
+  private static nextSessionCacheSweepAt = 0;
   private readonly CACHE_TTL_MS = 10000; // 10 seconds cache for same token
+
+  private static cacheKey(token: string): string {
+    return createHash("sha256").update(token).digest("hex");
+  }
+
+  private static getCachedSession(token: string): AuthUser | undefined {
+    const key = SupabaseAuthGuard.cacheKey(token);
+    const cache = SupabaseAuthGuard.sessionCache;
+    const stored = cache.get(key);
+    if (!stored) return undefined;
+    if (stored.expiry <= Date.now()) {
+      cache.delete(key);
+      return undefined;
+    }
+    // Refresh LRU recency without extending the session validation TTL.
+    cache.delete(key);
+    cache.set(key, stored);
+    return stored.user;
+  }
+
+  private cacheVerifiedSession(token: string, user: AuthUser): void {
+    const cache = SupabaseAuthGuard.sessionCache;
+    const now = Date.now();
+    // Bounded sweep only when full: avoid a linear scan per request at 10x.
+    if (
+      cache.size >= SupabaseAuthGuard.MAX_CACHED_SESSIONS &&
+      now >= SupabaseAuthGuard.nextSessionCacheSweepAt
+    ) {
+      for (const [key, entry] of cache) {
+        if (entry.expiry <= now) cache.delete(key);
+      }
+      SupabaseAuthGuard.nextSessionCacheSweepAt = now + this.CACHE_TTL_MS;
+    }
+
+    const key = SupabaseAuthGuard.cacheKey(token);
+    cache.delete(key);
+    cache.set(key, { user, expiry: now + this.CACHE_TTL_MS });
+    if (cache.size > SupabaseAuthGuard.MAX_CACHED_SESSIONS) {
+      const oldest = cache.keys().next().value;
+      if (oldest !== undefined) cache.delete(oldest);
+    }
+  }
 
   constructor(
     private reflector: Reflector,
@@ -58,14 +104,7 @@ export class SupabaseAuthGuard implements CanActivate {
       );
     }
 
-    // Cleanup stale cache occasionally
-    if (Math.random() > 0.95) {
-      const now = Date.now();
-      for (const [token, data] of SupabaseAuthGuard.sessionCache.entries()) {
-        if (data.expiry < now) SupabaseAuthGuard.sessionCache.delete(token);
-      }
-    }
-  }
+   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
@@ -153,9 +192,9 @@ export class SupabaseAuthGuard implements CanActivate {
     }
 
     // --- CACHE LOOKUP ---
-    const cached = SupabaseAuthGuard.sessionCache.get(token);
-    if (cached && cached.expiry > Date.now()) {
-      request.user = cached.user;
+    const cachedUser = SupabaseAuthGuard.getCachedSession(token);
+    if (cachedUser) {
+      request.user = cachedUser;
       return;
     }
 
@@ -209,11 +248,8 @@ export class SupabaseAuthGuard implements CanActivate {
               entityId: payload.app_metadata?.entityId || null,
             };
 
-            // Cache sucessful validation
-            SupabaseAuthGuard.sessionCache.set(token, {
-              user: request.user,
-              expiry: Date.now() + this.CACHE_TTL_MS,
-            });
+            // Cache the verified identity without retaining the raw JWT.
+            this.cacheVerifiedSession(token, request.user);
 
             this.logger.verbose(
               `✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`,
@@ -270,11 +306,8 @@ export class SupabaseAuthGuard implements CanActivate {
           entityId,
         };
 
-        // Cache sucessful validation
-        SupabaseAuthGuard.sessionCache.set(token, {
-          user: request.user,
-          expiry: Date.now() + this.CACHE_TTL_MS,
-        });
+        // Cache the verified identity without retaining the raw JWT.
+        this.cacheVerifiedSession(token, request.user);
 
         if (roleFromMeta === "GUEST") {
           this.logger.warn(

@@ -470,6 +470,16 @@ async function main() {
       await summary.focus();
       await summary.press('Enter');
       assert.equal(await menu.evaluate(element => element.open), true);
+      const qrTarget = menu.locator('a[href="#interaccion-qr"]');
+      assert.ok(await qrTarget.count(), 'Mobile navigation must expose the passenger QR section.');
+      const qrHeight = await qrTarget.evaluate(element => element.getBoundingClientRect().height);
+      assert.ok(qrHeight >= 44, 'QR navigation link touch target must be >=44px.');
+      await qrTarget.click();
+      assert.equal(new URL(page.url()).hash, '#interaccion-qr');
+      assert.equal(await menu.evaluate(element => element.open), false);
+      await summary.focus();
+      await summary.press('Enter');
+      assert.equal(await menu.evaluate(element => element.open), true);
       const target = menu.locator('a[href="#experiencia"]');
       const height = await target.evaluate(element => element.getBoundingClientRect().height);
       assert.ok(height >= 44, 'Mobile navigation link touch target must be >=44px.');

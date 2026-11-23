@@ -11,12 +11,13 @@ const root = path.resolve(__dirname, "..");
 test("the workspace and frozen lockfile pin exactly the same dependency overrides", () => {
   const workspace = readOverrides();
   const locked = readOverrides("pnpm-lock.yaml");
-  assert.equal(Object.keys(workspace).length, 14);
+  assert.equal(Object.keys(workspace).length, 15);
   assert.deepEqual(workspace, locked);
   assert.equal(workspace.multer, "2.5.0");
   assert.equal(workspace["follow-redirects"], "1.16.2");
   assert.equal(workspace["external-editor>tmp"], "0.2.7");
   assert.equal(workspace["next@15.5.29>postcss"], "8.5.33");
+  assert.equal(workspace["@modelcontextprotocol/sdk>@hono/node-server"], "2.1.6");
   assert.equal(Object.hasOwn(workspace, "next@15.5.28>postcss"), false);
 });
 

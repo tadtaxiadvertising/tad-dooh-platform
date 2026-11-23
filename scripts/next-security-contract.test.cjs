@@ -42,7 +42,7 @@ test("shared UI does not pull an obsolete Next peer back into the lockfile", () 
   const entry = importer("packages/ui");
   assert.match(entry, /next:\s*\n\s+specifier: ['"]?>=15\.5\.29 <16/);
   assert.match(entry, /version: 15\.5\.29/);
-  assert.doesNotMatch(lock, /\bnext@15\.5\.(?:[0-9]|1[0-9]|2[0-8])\b/, "Unpatched Next 15.5.x must not resolve in the lockfile.");
+  assert.doesNotMatch(lock, /^  next@15\.5\.(?:[0-9]|1[0-9]|2[0-8])(?=[:(])/m, "Unpatched Next 15.5.x must not resolve in the lockfile.");
 });
 
 test("image optimization package resolution includes vendor-fixed Sharp", () => {

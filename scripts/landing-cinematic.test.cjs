@@ -121,3 +121,33 @@ test("in-car brand preview stays local, bounded and understandable without chang
   assert.doesNotMatch(landing, /recordPreview\(\{[^}]*brandName/);
   assert.match(landing, /setIncludeProduction\] = useState\(false\)/);
 });
+
+
+test("Advertiser QR story uses a local image and reversible example previews without API writes", () => {
+  const landing = read("apps/advertiser/components/landing/LandingPage.tsx");
+  const story = read("apps/advertiser/components/landing/PassengerQrStory.tsx");
+  const css = read("apps/advertiser/components/landing/passenger-qr-story.module.css");
+  const image = read("apps/advertiser/public/qr-passenger-journey.svg");
+  const copy = read("apps/advertiser/lib/landing/content.ts");
+
+  assert.match(landing, /<PassengerQrStory brandName=\{brandName\} \/>/);
+  assert.match(landing, /href="#interaccion-qr"/);
+  assert.match(story, /useState<Example>\("restaurante"\)/);
+  assert.match(story, /aria-pressed=\{selected === key\}/);
+  assert.match(story, /onClick=\{\(\) => setSelected\(key\)\}/);
+  assert.match(story, /aria-live="polite"/);
+  assert.match(story, /loading="lazy"/);
+  assert.match(story, /src="\/qr-passenger-journey\.svg"/);
+  assert.match(story, /brandName\.trim\(\)\.replace/);
+  for (const example of ["restaurante", "comercio", "evento"]) {
+    assert.ok(story.includes(example + ":"), "QR storyboard missing " + example);
+  }
+  assert.match(story, /no son escaneables/);
+  assert.doesNotMatch(story, /fetch\(|trackAnalyticsEvent|localStorage|createObjectURL|href=\{example\./);
+  assert.match(css, /@media \(max-width: 600px\)/);
+  assert.match(css, /\.choices button:focus-visible/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
+  assert.match(image, /^<svg[\s\S]+<\/svg>\s*$/);
+  assert.doesNotMatch(image, /<script\b|<(?:image|use)\b[^>]*https?:\/\//i);
+  assert.match(copy, /¿Cómo interactúan los pasajeros con una promoción mediante QR\?/);
+});

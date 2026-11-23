@@ -285,6 +285,44 @@ async function main() {
       assert.equal(await panel.locator('#budget-total').innerText(), totalBefore);
     });
 
+    await check('Passenger QR promotion preview works by keyboard without real scanning', async () => {
+      const story = page.locator('#interaccion-qr');
+      const controls = story.getByRole('group', { name: 'Tipo de promoción ilustrativa' });
+      const restaurant = controls.getByRole('button', { name: 'Restaurante' });
+      const commerce = controls.getByRole('button', { name: 'Comercio' });
+      const event = controls.getByRole('button', { name: 'Evento' });
+      assert.equal(await story.count(), 1);
+      assert.equal(await controls.getByRole('button').count(), 3);
+      assert.equal(await restaurant.getAttribute('aria-pressed'), 'true');
+      assert.equal(await story.locator('[data-promotion]').getAttribute('data-promotion'), 'restaurante');
+      assert.match(await story.innerText(), /Tu próxima parada tiene mucho sabor/);
+      const illustration = story.locator('img[src="/qr-passenger-journey.svg"]');
+      assert.equal(await illustration.count(), 1, 'The storyboard must use a local illustrated asset.');
+      assert.ok((await illustration.getAttribute('alt')).includes('copiloto'));
+      const illustrationResponse = await page.request.get(new URL('/qr-passenger-journey.svg', base).href);
+      assert.equal(illustrationResponse.status(), 200);
+
+      const brand = page.locator('#hero-brand-name');
+      await brand.fill('Café TAD');
+      assert.ok((await story.innerText()).includes('Café TAD'),
+        'Brand customization must be shared between hero and QR preview.');
+      await commerce.focus();
+      await commerce.press('Enter');
+      assert.equal(await commerce.getAttribute('aria-pressed'), 'true');
+      assert.equal(await restaurant.getAttribute('aria-pressed'), 'false');
+      assert.equal(await story.locator('[data-promotion]').getAttribute('data-promotion'), 'comercio');
+      assert.match(await story.innerText(), /Explora el catálogo/);
+      await event.click();
+      assert.equal(await event.getAttribute('aria-pressed'), 'true');
+      assert.match(await story.innerText(), /Conoce la programación/);
+      assert.equal(await story.locator('a[href^="http"]').count(), 0,
+        'The QR demo must not redirect to a fabricated advertiser URL.');
+      assert.match(await story.innerText(), /no son escaneables/i);
+      await brand.fill('');
+      await restaurant.click();
+      assert.equal(await story.locator('[data-promotion]').getAttribute('data-promotion'), 'restaurante');
+    });
+
     await check('Campaign story has four controllable keyboard steps', async () => {
       const story = page.locator('#recorrido-campana');
       const steps = story.locator('button[aria-pressed]');
@@ -429,6 +467,16 @@ async function main() {
       const menu = page.locator('header details.landing-mobile-menu');
       assert.equal(await menu.count(), 1, 'Mobile sections navigation must be present.');
       const summary = menu.locator('summary');
+      await summary.focus();
+      await summary.press('Enter');
+      assert.equal(await menu.evaluate(element => element.open), true);
+      const qrTarget = menu.locator('a[href="#interaccion-qr"]');
+      assert.ok(await qrTarget.count(), 'Mobile navigation must expose the passenger QR section.');
+      const qrHeight = await qrTarget.evaluate(element => element.getBoundingClientRect().height);
+      assert.ok(qrHeight >= 44, 'QR navigation link touch target must be >=44px.');
+      await qrTarget.click();
+      assert.equal(new URL(page.url()).hash, '#interaccion-qr');
+      assert.equal(await menu.evaluate(element => element.open), false);
       await summary.focus();
       await summary.press('Enter');
       assert.equal(await menu.evaluate(element => element.open), true);

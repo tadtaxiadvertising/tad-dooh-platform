@@ -539,6 +539,7 @@ function landingComponentHarness() {
       './CampaignJourney': { default: 'CampaignJourney' },
       './CreativePreview': { default: 'CreativePreview' },
       './TaxiScrollStory': { default: 'TaxiScrollStory' },
+      './PassengerQrStory': { default: 'PassengerQrStory' },
       './CityScene': { default: 'CityScene' },
       './LandingAnalytics': { default: 'LandingAnalytics' },
       './landing.module.css': { default: {} },

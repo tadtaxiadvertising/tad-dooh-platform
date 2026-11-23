@@ -11,7 +11,7 @@ export const ROLE_CONTENT = {
   advertiser: {
     eyebrow: "TU NEGOCIO, EN EL RECORRIDO",
     headline: ["Tu marca no espera.", "Va a su encuentro."],
-    lead: "Haz que tu publicidad acompañe los recorridos de la ciudad en pantallas digitales dentro de taxis. Descubre cómo podría verse tu campaña y explora un presupuesto ilustrativo antes de contratar.",
+    lead: "Tu anuncio acompaña recorridos en taxis y, cuando la campaña incorpora un QR, invita a los pasajeros a explorar tu promoción desde sus celulares. Descubre cómo podría verse y simula tu presupuesto antes de solicitar una revisión.",
     heroCta: "Explorar mi campaña",
     title: "Que tu marca salga a la calle.",
     description:
@@ -76,6 +76,10 @@ export const ROLE_FAQS: Record<
     [
       "¿Cuántas personas verán mi anuncio?",
       "Esta demo no estima alcance. Las impresiones dependen de la metodología, la actividad y los supuestos de una campaña; no equivalen a personas únicas ni a atención individual verificada.",
+    ],
+    [
+      "¿Cómo interactúan los pasajeros con una promoción mediante QR?",
+      "Una campaña puede mostrar un código QR para que quien esté interesado lo escanee con su celular y visite una página móvil de la marca. El escaneo es voluntario; no equivale a una compra, ni se garantizan visitas o conversiones. La disponibilidad y medición se validan al configurar la campaña.",
     ],
     [
       "¿Cómo empiezo una campaña?",

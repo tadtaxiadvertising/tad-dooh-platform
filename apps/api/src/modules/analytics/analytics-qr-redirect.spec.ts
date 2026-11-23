@@ -96,3 +96,85 @@ describe("Passenger QR redirect safety", () => {
     expect(redirect).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("Passenger QR measurement resilience", () => {
+  const campaignRead = jest.fn();
+  const scanWrite = jest.fn();
+  let service: AnalyticsService;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    campaignRead.mockResolvedValue({
+      targetUrl: "https://brand.example.invalid/promotion",
+    });
+    scanWrite.mockResolvedValue({ id: "scan-1" });
+    service = new AnalyticsService(
+      {
+        campaign: { findUnique: campaignRead },
+        analyticsEvent: { create: scanWrite },
+      } as never,
+      {} as never,
+    );
+  });
+
+  it("preserves the validated promotion if scan persistence fails", async () => {
+    scanWrite.mockRejectedValue(new Error("synthetic database failure"));
+
+    const destination = await service.registerQrScan("campaign-1", "device-1");
+
+    expect(destination).toBe("https://brand.example.invalid/promotion");
+    expect(scanWrite).toHaveBeenCalledTimes(1);
+    expect(scanWrite).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        campaignId: "campaign-1",
+        deviceId: "device-1",
+        eventType: "QR_SCAN",
+      }),
+    });
+  });
+
+  it("still writes one QR scan for a healthy campaign", async () => {
+    const destination = await service.registerQrScan("campaign-1", "device-1");
+
+    expect(destination).toBe("https://brand.example.invalid/promotion");
+    expect(campaignRead).toHaveBeenCalledTimes(1);
+    expect(scanWrite).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails closed and skips event writes when campaign lookup fails", async () => {
+    campaignRead.mockRejectedValue(new Error("synthetic lookup failure"));
+
+    const destination = await service.registerQrScan("campaign-1", "device-1");
+
+    expect(destination).toBe("https://tad.do");
+    expect(scanWrite).not.toHaveBeenCalled();
+  });
+
+  it("does not write an event for a nonexistent campaign", async () => {
+    campaignRead.mockResolvedValue(null);
+
+    const destination = await service.registerQrScan("missing", "device-1");
+
+    expect(destination).toBe("https://tad.do");
+    expect(scanWrite).not.toHaveBeenCalled();
+  });
+
+  it("does not query the database for incomplete tracking links", async () => {
+    expect(await service.registerQrScan("", "device-1")).toBe("https://tad.do");
+    expect(await service.registerQrScan("campaign-1", "")).toBe(
+      "https://tad.do",
+    );
+    expect(campaignRead).not.toHaveBeenCalled();
+    expect(scanWrite).not.toHaveBeenCalled();
+  });
+
+  it("never redirects to an unsafe URL even when scan persistence fails", async () => {
+    campaignRead.mockResolvedValue({ targetUrl: "javascript:alert(1)" });
+    scanWrite.mockRejectedValue(new Error("synthetic database failure"));
+
+    const destination = await service.registerQrScan("campaign-1", "device-1");
+
+    expect(destination).toBe("https://tad.do");
+    expect(scanWrite).toHaveBeenCalledTimes(1);
+  });
+});

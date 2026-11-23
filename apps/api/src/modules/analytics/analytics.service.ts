@@ -521,14 +521,26 @@ export class AnalyticsService {
   async registerQrScan(campaignId: string, deviceId: string): Promise<string> {
     if (!campaignId || !deviceId) return QR_FALLBACK_URL;
 
+    // Resolve and validate the destination first. An analytics write failure
+    // must never replace an already-validated advertiser offer with the TAD
+    // fallback, but an unavailable campaign lookup must still fail closed.
+    let destination: string;
     try {
-      // Buscamos la campaña para obtener su URL de destino
       const campaign = await this.prisma.campaign.findUnique({
         where: { id: campaignId },
         select: { targetUrl: true },
       });
+      if (!campaign) return QR_FALLBACK_URL;
+      destination = safeQrDestinationUrl(campaign.targetUrl);
+    } catch {
+      // Never log untrusted query identifiers or raw DB error details.
+      this.logger.warn("QR campaign lookup failed; using safe fallback");
+      return QR_FALLBACK_URL;
+    }
 
-      // Registro del evento QR_SCAN (fire-and-forget pattern)
+    // Best-effort measurement, awaited for durability while the DB is healthy.
+    // Scans must not be reported as persisted if the database rejects the event.
+    try {
       await this.prisma.analyticsEvent.create({
         data: {
           eventType: "QR_SCAN",
@@ -538,16 +550,12 @@ export class AnalyticsService {
           occurredAt: new Date(),
         },
       });
-
-      this.logger.log(
-        `📱 QR Scan registrado — Campaign: ${campaignId}, Device: ${deviceId}`,
-      );
-
-      return safeQrDestinationUrl(campaign?.targetUrl);
-    } catch (error) {
-      this.logger.error(`Error registrando QR scan: ${error.message}`);
-      return QR_FALLBACK_URL;
+      this.logger.log("QR scan event persisted");
+    } catch {
+      this.logger.warn("QR scan persistence failed; preserving destination");
     }
+
+    return destination;
   }
 
   // ============================================

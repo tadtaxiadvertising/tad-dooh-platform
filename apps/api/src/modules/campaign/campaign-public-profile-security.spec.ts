@@ -107,6 +107,8 @@ describe("Public QR advertiser profile privacy", () => {
       },
       orderBy: { updatedAt: "desc" },
     });
+    const lookup = campaignFindFirst.mock.calls[0][0];
+    expect(lookup.where.startDate.lte).toBe(lookup.where.endDate.gte);
   });
 
   it("does not use a matching company name to load another tenant's campaign", async () => {

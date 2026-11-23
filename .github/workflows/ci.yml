@@ -41,12 +41,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # TEMPORARY PR diagnostic: show exact formatting delta, without modifying the working tree.
-      - name: Diagnose passenger QR formatting diff
-        run: |
-          pnpm dlx prettier@3.9.10 apps/advertiser/components/landing/PassengerQrStory.tsx > /tmp/tad-qr-prettier.tsx
-          diff -u apps/advertiser/components/landing/PassengerQrStory.tsx /tmp/tad-qr-prettier.tsx || true
-
       - name: Format check (prettier)
         run: |
           set -euo pipefail

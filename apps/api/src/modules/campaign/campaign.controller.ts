@@ -141,7 +141,7 @@ export class CampaignController {
       select: {
         id: true,
         companyName: true,
-        contactName: true,
+        status: true,
         whatsapp: true,
         instagram: true,
         facebook: true,
@@ -152,7 +152,11 @@ export class CampaignController {
       },
     });
 
-    if (!advertiser) throw new NotFoundException("Anunciante no encontrado");
+    // The QR landing is public. Never expose inactive advertisers or
+    // internal contact names. Only published commerce details may be returned.
+    if (!advertiser || advertiser.status !== "ACTIVE") {
+      throw new NotFoundException("Anunciante no encontrado");
+    }
 
     // Buscar si hay una campaña activa para este anunciante que tenga links personalizados
     // (Buscamos la campaña más reciente por nombre o ID de anunciante si tuviéramos la relación fuerte)
@@ -171,7 +175,9 @@ export class CampaignController {
 
     // Si hay campaña, sobreescribimos los links del anunciante con los de la campaña (si existen en la campaña)
     const profile = {
-      ...advertiser,
+      id: advertiser.id,
+      companyName: advertiser.companyName,
+      productsData: advertiser.productsData,
       whatsapp: activeCampaign?.whatsapp || advertiser.whatsapp,
       instagram: activeCampaign?.instagram || advertiser.instagram,
       facebook: activeCampaign?.facebook || advertiser.facebook,

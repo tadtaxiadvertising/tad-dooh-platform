@@ -152,6 +152,40 @@ test("NestJS FileTypeValidator accepts real PNG magic bytes and rejects MIME spo
   }), false, "Untrusted file extension or client MIME must not bypass validation");
 });
 
+test("Angular Devkit resolves patched AJV 8 without replacing legacy AJV 6", () => {
+  assert.equal(overrides["@angular-devkit/core>ajv"], "8.20.0");
+  assert.match(lock, /^  ajv@8\.20\.0:$/m);
+  assert.doesNotMatch(lock, /^  ajv@8\.12\.0:$/m);
+  assert.match(lock, /^  ajv@6\.15\.0:$/m);
+
+  const snapshots = lock.split("\nsnapshots:\n")[1];
+  assert.ok(snapshots, "Expected frozen lock snapshots");
+  const angular = /^  '@angular-devkit\/core@17\.3\.11[^\n]*:\n/m.exec(snapshots);
+  assert.ok(angular, "Expected Angular Devkit 17 build tool");
+  const tail = snapshots.slice(angular.index + angular[0].length);
+  const next = tail.search(/^  \S/m);
+  const block = next === -1 ? tail : tail.slice(0, next);
+  assert.match(block, /^      ajv: 8\.20\.0$/m);
+  assert.match(block, /^      ajv-formats: 2\.1\.1\(ajv@8\.20\.0\)$/m);
+});
+
+test("real Angular Devkit AJV still validates standard build schemas", () => {
+  const apiRequire = createRequire(path.join(root, "apps/api/package.json"));
+  const cliRequire = createRequire(apiRequire.resolve("@nestjs/cli"));
+  const devkitRequire = createRequire(cliRequire.resolve("@angular-devkit/core"));
+  const Ajv = devkitRequire("ajv").default;
+  assert.equal(typeof Ajv, "function");
+  const validator = new Ajv({ allErrors: true }).compile({
+    type: "object",
+    required: ["route"],
+    properties: { route: { type: "string", pattern: "^/" } },
+    additionalProperties: false,
+  });
+  assert.equal(validator({ route: "/campaign" }), true);
+  assert.equal(validator({ route: "campaign" }), false);
+  assert.equal(validator({ route: "/campaign", unexpected: true }), false);
+});
+
 test("security lock preparation workflow does not reach main", () => {
   const exists = fs.existsSync(path.join(root,
     ".github/workflows/security-compatible-lockfile-generator.yml"));

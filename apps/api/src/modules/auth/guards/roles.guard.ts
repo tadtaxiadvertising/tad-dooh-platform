@@ -40,7 +40,7 @@ export class RolesGuard implements CanActivate {
     // RBAC Check: el rol viene inyectado por el SupabaseAuthGuard previo (del JWT)
     if (!user || !user.role) {
       // Never serialize the principal: it may contain PII or untrusted claims.
-      this.logger.warn("RBAC_DENIED_MISSING_ROLE");
+      this.logger.error("RBAC_DENIED_MISSING_ROLE");
       throw new ForbiddenException(
         "No tienes permisos suficientes para acceder a este recurso.",
       );

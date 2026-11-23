@@ -104,13 +104,14 @@ export class AnalyticsController {
   }
 
   @Get("campaign/:id")
+  @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getCampaignAnalytics(
     @Param("id") campaignId: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const { role, entityId } = req.user;
-    // If advertiser, we should check if they own the campaign, but for now we trust the ID if provided via frontend or handle it in service
-    // For simplicity, we can just check ownership here if it's an advertiser
+    // The global RolesGuard limits this route to ADMIN / ADVERTISER.
+    // A logged-in advertiser may only read metrics for their own campaign.
     if (role === UserRole.ADVERTISER) {
       const campaign = await this.prisma.campaign.findUnique({
         where: { id: campaignId },

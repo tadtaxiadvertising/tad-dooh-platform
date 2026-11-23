@@ -158,17 +158,24 @@ export class CampaignController {
       throw new NotFoundException("Anunciante no encontrado");
     }
 
-    // Buscar si hay una campaña activa para este anunciante que tenga links personalizados
-    // (Buscamos la campaña más reciente por nombre o ID de anunciante si tuviéramos la relación fuerte)
+    // Public QR overrides must belong to this advertiser by immutable ID.
+    // Name-based matching can select an unrelated brand with the same name.
+    // Campaign.active defaults to true, so require published status as well.
     const activeCampaign = await this.prisma.campaign.findFirst({
       where: {
-        OR: [
-          { advertiserId: advertiser.id },
-          { advertiser: advertiser.companyName }, // Legacy fallback por nombre
-        ],
+        advertiserId: advertiser.id,
+        status: "ACTIVE",
         active: true,
         startDate: { lte: new Date() },
         endDate: { gte: new Date() },
+      },
+      select: {
+        whatsapp: true,
+        instagram: true,
+        facebook: true,
+        websiteUrl: true,
+        pedidosYaUrl: true,
+        uberEatsUrl: true,
       },
       orderBy: { updatedAt: "desc" },
     });

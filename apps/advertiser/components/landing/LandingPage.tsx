@@ -36,6 +36,7 @@ import {
 import CampaignJourney from "./CampaignJourney";
 import CreativePreview from "./CreativePreview";
 import TaxiScrollStory from "./TaxiScrollStory";
+import PassengerQrStory from "./PassengerQrStory";
 import CityScene from "./CityScene";
 import LandingAnalytics from "./LandingAnalytics";
 import styles from "./landing.module.css";
@@ -150,6 +151,7 @@ export default function LandingPage() {
         </a>
         <nav aria-label="Navegación principal" className="landing-nav">
           <a href="#como-funciona">Cómo funciona</a>
+          <a href="#interaccion-qr">Promociones con QR</a>
           <a href="#experiencia">Simula tu campaña</a>
           <a href="#preguntas">Preguntas</a>
         </nav>
@@ -163,6 +165,9 @@ export default function LandingPage() {
               }
             >
               Cómo funciona
+            </a>
+            <a href="#interaccion-qr" onClick={(e) => e.currentTarget.closest("details")?.removeAttribute("open")}>
+              Promociones con QR
             </a>
             <a
               href="#experiencia"
@@ -340,6 +345,7 @@ export default function LandingPage() {
           </div>
         </div>
         <TaxiScrollStory city={city} brandName={brandName} />
+        <PassengerQrStory />
         <div className="landing-wrap">
           <CreativePreview />
         </div>

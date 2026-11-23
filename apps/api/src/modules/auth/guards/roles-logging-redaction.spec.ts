@@ -43,8 +43,8 @@ describe("RolesGuard denial log redaction", () => {
     expect(() => guard.canActivate(context(undefined))).toThrow(
       ForbiddenException,
     );
-    expect(warnings).toHaveBeenCalledWith("RBAC_DENIED_MISSING_ROLE");
-    expect(errors).not.toHaveBeenCalled();
+    expect(errors).toHaveBeenCalledWith("RBAC_DENIED_MISSING_ROLE");
+    expect(warnings).not.toHaveBeenCalled();
   });
 
   it("never logs unexpected principal claims when the role is missing", () => {
@@ -56,11 +56,11 @@ describe("RolesGuard denial log redaction", () => {
     expect(() => guard.canActivate(context(principal))).toThrow(
       ForbiddenException,
     );
-    expect(warnings).toHaveBeenCalledWith("RBAC_DENIED_MISSING_ROLE");
-    expect(JSON.stringify(warnings.mock.calls)).not.toMatch(
+    expect(errors).toHaveBeenCalledWith("RBAC_DENIED_MISSING_ROLE");
+    expect(JSON.stringify(errors.mock.calls)).not.toMatch(
       /sensitive|privateField|synthetic-token-value/,
     );
-    expect(errors).not.toHaveBeenCalled();
+    expect(warnings).not.toHaveBeenCalled();
   });
 
   it("denies a wrong role without logging an email or claim injection", () => {

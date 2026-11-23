@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, CheckCircle2, QrCode, ScanLine, Smartphone } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  QrCode,
+  ScanLine,
+  Smartphone,
+} from "lucide-react";
 import styles from "./passenger-qr-story.module.css";
 
 const examples = {
@@ -56,20 +62,27 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
   const [selected, setSelected] = useState<Example>("restaurante");
   const example = examples[selected];
   // The brand preview remains browser-local; it is never sent to analytics or the API.
-  const displayBrand = brandName.trim().replace(/\s+/g, " ").slice(0, 24) || example.business;
+  const displayBrand =
+    brandName.trim().replace(/\s+/g, " ").slice(0, 24) || example.business;
 
   return (
-    <section className={styles.section} id="interaccion-qr" aria-labelledby="qr-story-title">
+    <section
+      className={styles.section}
+      id="interaccion-qr"
+      aria-labelledby="qr-story-title"
+    >
       <div className={styles.intro}>
         <div>
-          <p className={styles.eyebrow}>DEL TAXI AL CELULAR · EXPERIENCIA INTERACTIVA</p>
+          <p className={styles.eyebrow}>
+            DEL TAXI AL CELULAR · EXPERIENCIA INTERACTIVA
+          </p>
           <h2 id="qr-story-title">
             Un anuncio que se ve. <span>Una oferta que se explora.</span>
           </h2>
           <p className={styles.lead}>
-            Tu publicidad puede ir más allá de la pantalla. Un código QR vinculado
-            a la campaña permite que los pasajeros interesados descubran una
-            promoción directamente desde sus celulares.
+            Tu publicidad puede ir más allá de la pantalla. Un código QR
+            vinculado a la campaña permite que los pasajeros interesados
+            descubran una promoción directamente desde sus celulares.
           </p>
         </div>
         <figure className={styles.editorial}>
@@ -81,7 +94,9 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
             decoding="async"
             alt="Ilustración del interior de un taxi: un pasajero apunta su celular a la promoción TAD mostrada detrás del reposacabezas del copiloto."
           />
-          <figcaption>Así puede comenzar una interacción con tu marca. Imagen conceptual.</figcaption>
+          <figcaption>
+            Así puede comenzar una interacción con tu marca. Imagen conceptual.
+          </figcaption>
         </figure>
       </div>
 
@@ -90,23 +105,35 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
           <p className={styles.eyebrow}>PRUEBA LA EXPERIENCIA</p>
           <h3>Elige una promoción de ejemplo</h3>
         </div>
-        <div className={styles.choices} role="group" aria-label="Tipo de promoción ilustrativa">
-          {(Object.entries(examples) as [Example, (typeof examples)[Example]][]).map(
-            ([key, value]) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={selected === key}
-                onClick={() => setSelected(key)}
-              >
-                {value.label}
-              </button>
-            ),
-          )}
+        <div
+          className={styles.choices}
+          role="group"
+          aria-label="Tipo de promoción ilustrativa"
+        >
+          {(
+            Object.entries(examples) as [
+              Example,
+              (typeof examples)[Example],
+            ][]
+          ).map(([key, value]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={selected === key}
+              onClick={() => setSelected(key)}
+            >
+              {value.label}
+            </button>
+          ))}
         </div>
       </div>
-      <p className={styles.activeCaption} aria-live="polite" aria-atomic="true">
-        Ejemplo seleccionado: {example.label}. Vista ilustrativa, sin enlace activo.
+      <p
+        className={styles.activeCaption}
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        Ejemplo seleccionado: {example.label}. Vista ilustrativa, sin enlace
+        activo.
       </p>
 
       <div className={styles.visual} data-promotion={selected}>
@@ -120,7 +147,11 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
               <strong>{example.tablet}</strong>
               <div className={styles.offerRow}>
                 <span>{example.action}</span>
-                <span className={styles.qrMark} role="img" aria-label="Símbolo QR decorativo, no escaneable">
+                <span
+                  className={styles.qrMark}
+                  role="img"
+                  aria-label="Símbolo QR decorativo, no escaneable"
+                >
                   <QrCode size={38} strokeWidth={1.8} aria-hidden="true" />
                 </span>
               </div>
@@ -129,7 +160,8 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
           <p>Tu creatividad frente al pasajero.</p>
         </div>
         <div className={styles.connector} aria-hidden="true">
-          <ScanLine size={27} /><ArrowRight size={27} />
+          <ScanLine size={27} />
+          <ArrowRight size={27} />
         </div>
         <div className={styles.scene}>
           <div className={styles.sceneLabel}>02 / ESCANEO VOLUNTARIO</div>
@@ -145,18 +177,26 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
           </div>
           <p>Escanea solo si le interesa.</p>
         </div>
-        <div className={styles.connector} aria-hidden="true"><ArrowRight size={27} /></div>
+        <div className={styles.connector} aria-hidden="true">
+          <ArrowRight size={27} />
+        </div>
         <div className={styles.scene}>
           <div className={styles.sceneLabel}>03 / DESTINO MÓVIL</div>
           <div className={styles.phone}>
             <div className={styles.speaker} aria-hidden="true" />
             <div className={styles.destination}>
               <small>{displayBrand} · DEMO</small>
-              <span className={styles.offerIcon}><Smartphone size={26} aria-hidden="true" /></span>
+              <span className={styles.offerIcon}>
+                <Smartphone size={26} aria-hidden="true" />
+              </span>
               <strong>{example.mobile}</strong>
               <p>{example.mobileCopy}</p>
-              <span className={styles.fakeButton} aria-label="Ejemplo visual de un botón, no interactivo">
-                {example.action} <ArrowRight size={13} aria-hidden="true" />
+              <span
+                className={styles.fakeButton}
+                aria-label="Ejemplo visual de un botón, no interactivo"
+              >
+                {example.action}
+                <ArrowRight size={13} aria-hidden="true" />
               </span>
             </div>
           </div>
@@ -168,7 +208,10 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
         {steps.map((step) => (
           <li key={step.number}>
             <span className={styles.number}>{step.number}</span>
-            <div><h3>{step.heading}</h3><p>{step.copy}</p></div>
+            <div>
+              <h3>{step.heading}</h3>
+              <p>{step.copy}</p>
+            </div>
             <CheckCircle2 size={19} aria-hidden="true" />
           </li>
         ))}
@@ -176,8 +219,8 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
       <p className={styles.disclaimer}>
         Simulación, no una campaña activa: los símbolos QR no son escaneables,
         los botones del celular no navegan y no hay seguimiento de pasajeros.
-        Un escaneo no equivale a una venta. La disponibilidad de destinos QR
-        y sus métricas depende de la configuración y validación de la campaña.
+        Un escaneo no equivale a una venta. La disponibilidad de destinos QR y
+        sus métricas depende de la configuración y validación de la campaña.
       </p>
       <a href="#experiencia" className={styles.cta}>
         Simula tu campaña <ArrowRight size={18} aria-hidden="true" />

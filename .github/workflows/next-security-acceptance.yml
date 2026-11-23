@@ -36,7 +36,7 @@ jobs:
           for app in admin advertiser driver; do
             (
               cd "apps/$app"
-              node -e "const ver=require('next/package.json').version; if (ver !== '15.5.28') {console.error('Unexpected Next version:', ver); process.exit(1)}"
+              node -e "const ver=require('next/package.json').version; if (ver !== '15.5.29') {console.error('Unexpected Next version:', ver); process.exit(1)}"
             )
           done
       - name: Verify critical vulnerabilities are no longer reported

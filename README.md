@@ -86,13 +86,19 @@ TAD DOOH Platform/
 │   ├── advertiser/            # Portal de Anunciantes (Next.js 15)
 │   ├── driver/                # Portal de Conductores (Next.js 15)
 │   ├── api/                   # Backend API (NestJS 10)
-│   ├── tad-remotion/          # Microservicio de Video (Remotion)
-│   ├── tad-simulator/         # Simulation Engine & Control Center
-│   └── tablet-player/         # PWA para Tablets (HTML/JS)
-├── packages/
-│   ├── ui/                    # Componentes compartidos (Tailwind 4)
-│   ├── database/              # Prisma Client & Schema
-│   └── config/                # Shared config
+│   ├── agents-orchestrator/   # Orquestador de agents
+│   ├── driver-android/        # Driver nativo (Android)
+│   ├── driver-flutter/        # Driver nativo (Flutter)
+│   ├── player/                # Tablet Player (PWA, offline-first)
+│   └── tad-simulator/         # Engine de simulación y control
+└── packages/
+    ├── ui/                    # Componentes compartidos (Tailwind 4)
+    ├── services/              # API client, auth, realtime, circuit-breaker, cookies
+    ├── store/                 # Stores de estado (payment, tablet)
+    ├── types/                 # Tipos y contratos de negocio TypeScript
+    ├── impact-calculator/     # Calculadora de impacto publicitario
+    ├── permissions/           # Permisos y roles de usuario
+    └── logging/               # Logs y observabilidad
 └── docs/                      # Documentación Técnica
 ```
 
@@ -128,7 +134,7 @@ npm run dev
 **⚠️ Problema Común en EasyPanel:** 
 Si ves `ERROR: failed to read dockerfile`, revisa [DOCKERFILE_ERROR_SOLUTION.md](DOCKERFILE_ERROR_SOLUTION.md).
 
-**Documentación Maestra:** [TAD_MASTER_DOCUMENTATION.md](TAD_MASTER_DOCUMENTATION.md)
+**Documentación Maestra:** [PLAN_MAESTRO_ESTRATEGICO_TAD_2026.md](docs/PLAN_MAESTRO_ESTRATEGICO_TAD_2026.md)
 
 ---
 

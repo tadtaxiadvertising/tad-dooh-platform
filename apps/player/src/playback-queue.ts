@@ -6,6 +6,7 @@
 import type { PlaybackEvent } from "./types";
 import env from "./config";
 import { buildPlaybackApiPayload } from "./playback-event-type";
+import { attachNetworkListener } from "./network-listeners";
 import {
   persistPlaybackEvent,
   removeAcknowledgedPlaybackEvents,
@@ -21,18 +22,21 @@ export class PlaybackQueue {
   private flushInFlight: Promise<{ sent: number; failed: number }> | null =
     null;
   private deviceId: string = "";
+  private disposeOnlineListener: (() => void) | null = null;
 
   constructor() {
     this.dbReady = this.openDB();
   }
 
   init(deviceId: string): void {
+    // A renewed init must not leave a previous timer or reconnect callback.
+    this.destroy();
     this.deviceId = deviceId;
     this.startFlushLoop();
     // Flush immediato al recuperar conectividad (item M4/R2): en 3G la red
     // cae/revive con frecuencia y no debemos esperar el timer largo antes
     // de entregar los Proofs of Play pendientes.
-    window.addEventListener("online", () => {
+    this.disposeOnlineListener = attachNetworkListener(window, "online", () => {
       this.flushQueue().catch((err) => {
         console.error("[PlaybackQueue] Flush on reconnect error:", err);
       });
@@ -40,6 +44,8 @@ export class PlaybackQueue {
   }
 
   destroy(): void {
+    this.disposeOnlineListener?.();
+    this.disposeOnlineListener = null;
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
       this.flushTimer = null;

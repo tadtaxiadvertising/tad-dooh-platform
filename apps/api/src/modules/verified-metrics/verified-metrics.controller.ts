@@ -1,4 +1,7 @@
+import type { AuthenticatedRequest } from "../auth/auth.types";
 import {
+  ForbiddenException,
+  Req,
   Controller,
   Get,
   Post,
@@ -7,11 +10,13 @@ import {
   Query,
   BadRequestException,
   UseInterceptors,
+  UseGuards,
   Logger,
 } from "@nestjs/common";
 import { VerifiedMetricsService } from "./verified-metrics.service";
 import { IdempotencyInterceptor } from "../../common/interceptors/idempotency.interceptor";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
+import { TenantGuard } from "../auth/guards/tenant.guard";
 
 @Controller("verified-metrics")
 export class VerifiedMetricsController {
@@ -29,6 +34,7 @@ export class VerifiedMetricsController {
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
   async getCampaignVerifiedStats(
     @Param("campaignId") campaignId: string,
+    @Req() req: AuthenticatedRequest,
     @Query("dateFrom") dateFrom?: string,
     @Query("dateTo") dateTo?: string,
   ) {
@@ -43,10 +49,28 @@ export class VerifiedMetricsController {
       );
     }
 
+    let access:
+      | { role: UserRole.ADMIN }
+      | { role: UserRole.ADVERTISER; advertiserId: string };
+    if (req.user?.role === UserRole.ADMIN) {
+      access = { role: UserRole.ADMIN };
+    } else if (
+      req.user?.role === UserRole.ADVERTISER &&
+      req.user.entityId?.trim()
+    ) {
+      access = {
+        role: UserRole.ADVERTISER,
+        advertiserId: req.user.entityId.trim(),
+      };
+    } else {
+      throw new ForbiddenException("CAMPAIGN_METRICS_ACCESS_DENIED");
+    }
+
     const report = await this.verifiedMetricsService.getCampaignVerifiedStats(
       campaignId,
       from,
       to,
+      access,
     );
     return { success: true, report };
   }
@@ -57,6 +81,7 @@ export class VerifiedMetricsController {
    */
   @Get("driver/:driverId")
   @Roles(UserRole.ADMIN, UserRole.DRIVER)
+  @UseGuards(TenantGuard)
   async getDriverVerifiedStats(
     @Param("driverId") driverId: string,
     @Query("dateFrom") dateFrom?: string,

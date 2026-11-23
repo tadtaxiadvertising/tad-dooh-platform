@@ -6,6 +6,7 @@ import type {
   Driver,
   Device,
 } from "@prisma/client";
+import { UserRole } from "../../auth/decorators/roles.decorator";
 type CampaignFixture = Partial<Campaign> & {
   mediaAssets?: { id: string; filename: string; weight: number }[];
   devices?: {
@@ -19,7 +20,9 @@ type CampaignFixture = Partial<Campaign> & {
     };
   }[];
 };
-type DriverFixture = Partial<Driver> & { devices?: { id: string }[] };
+type DriverFixture = Partial<Driver> & {
+  devices?: { id: string; deviceId: string }[];
+};
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { VerifiedMetricsService } from "../verified-metrics.service";
@@ -157,6 +160,7 @@ describe("VerifiedMetricsService", () => {
         "campaign-1",
         from,
         to,
+        { role: UserRole.ADMIN },
       );
 
       expect(result).toBeDefined();
@@ -174,6 +178,7 @@ describe("VerifiedMetricsService", () => {
           "campaign-not-found",
           new Date(),
           new Date(),
+          { role: UserRole.ADMIN },
         ),
       ).rejects.toThrow("Campaign campaign-not-found not found");
     });
@@ -185,13 +190,13 @@ describe("VerifiedMetricsService", () => {
         id: "driver-1",
         fullName: "Driver 1",
         taxiNumber: "T-001",
-        devices: [{ id: "device-1" }],
+        devices: [{ id: "db-device-uuid-1", deviceId: "TAD-HW-1" }],
       };
 
       mockPrisma.driver.findUnique.mockResolvedValue(mockDriver);
       mockPrisma.playbackEvent.findMany.mockResolvedValue([
-        { deviceId: "device-1", videoId: "media-1", timestamp: new Date() },
-        { deviceId: "device-1", videoId: "media-2", timestamp: new Date() },
+        { deviceId: "TAD-HW-1", videoId: "media-1", timestamp: new Date() },
+        { deviceId: "TAD-HW-1", videoId: "media-2", timestamp: new Date() },
       ]);
       mockPrisma.mediaAsset.findMany.mockResolvedValue([
         { campaignId: "campaign-1" },
@@ -207,6 +212,22 @@ describe("VerifiedMetricsService", () => {
       expect(result.driverId).toBe("driver-1");
       expect(result.totalVerifiedPlays).toBe(2);
       expect(result.campaignsPlayed).toBe(2);
+      expect(mockPrisma.driver.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({
+            devices: { select: { deviceId: true } },
+          }),
+        }),
+      );
+      expect(mockPrisma.playbackEvent.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deviceId: { in: ["TAD-HW-1"] },
+            eventType: "play_confirm",
+            verified: true,
+          }),
+        }),
+      );
     });
   });
 

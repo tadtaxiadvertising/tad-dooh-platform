@@ -249,6 +249,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
+      - name: Reject tracked credentials before dependency installation
+        run: |
+          set -euo pipefail
+          node --test --test-name-pattern='^(sensitive tracked paths|tracked repository no longer|runtime source does not|security job runs tracked)' scripts/tracked-postgres-secrets-guard.test.cjs
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

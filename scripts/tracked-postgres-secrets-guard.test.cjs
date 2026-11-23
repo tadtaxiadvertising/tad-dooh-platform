@@ -440,3 +440,15 @@ test("weekly idle-transaction count warns on real signals and refuses malformed 
   assert.notEqual(queryFailure.status, 0, "SQL failure must stop the audit");
   assert.doesNotMatch(queryFailure.stdout + queryFailure.stderr, /check skipped/i);
 });
+
+test("security job runs tracked-credential preflight before installing dependencies", () => {
+  const workflow = readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
+  const start = workflow.indexOf("\n  security:\n");
+  const end = workflow.indexOf("\n  build:\n", start);
+  assert.ok(start >= 0 && end > start, "Expected security and build jobs");
+  const securityJob = workflow.slice(start, end);
+  const preflight = securityJob.indexOf("scripts/tracked-postgres-secrets-guard.test.cjs");
+  const install = securityJob.indexOf("pnpm install --frozen-lockfile");
+  assert.ok(preflight >= 0 && install > preflight, "Tracked credential gate must run before dependency install");
+  assert.match(securityJob, /node --test --test-name-pattern=/);
+});

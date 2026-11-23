@@ -115,6 +115,43 @@ test("MCP SDK resolves patched Hono Node transport without changing SDK major", 
   assert.match(entry, /^      '@hono\/node-server': 2\.1\.6(?:\(|$)/m);
 });
 
+test("NestJS common resolves patched file-type for the magic-number validator", () => {
+  assert.equal(overrides["@nestjs/common>file-type"], "21.3.4");
+  assert.match(lock, /\n  file-type@21\.3\.4:\n/);
+  assert.doesNotMatch(lock, /\n  file-type@20\.4\.1:\n/);
+  const snapshots = lock.split("\nsnapshots:\n")[1];
+  assert.ok(snapshots, "Expected frozen lock snapshots");
+  const nest = /^  '@nestjs\/common@10\.4\.22[^\n]*:\n/m.exec(snapshots);
+  assert.ok(nest, "Expected NestJS common 10.4.22 runtime snapshot");
+  const rest = snapshots.slice(nest.index + nest[0].length);
+  const end = rest.search(/^  \S/m);
+  const entry = end === -1 ? rest : rest.slice(0, end);
+  assert.match(entry, /^      file-type: 21\.3\.4$/m);
+});
+
+test("NestJS FileTypeValidator accepts real PNG magic bytes and rejects MIME spoofing", {
+  timeout: 10000,
+}, async () => {
+  const apiRequire = createRequire(path.join(root, "apps/api/package.json"));
+  const { FileTypeValidator } = apiRequire("@nestjs/common");
+  assert.equal(typeof FileTypeValidator, "function");
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2Y5Y8AAAAASUVORK5CYII=",
+    "base64",
+  );
+  const validator = new FileTypeValidator({ fileType: /^image\/png$/ });
+  assert.equal(await validator.isValid({
+    buffer: png,
+    mimetype: "application/octet-stream",
+    originalname: "valid.png",
+  }), true, "MIME detection should use actual PNG magic bytes");
+  assert.equal(await validator.isValid({
+    buffer: Buffer.from("not an image"),
+    mimetype: "image/png",
+    originalname: "spoofed.png",
+  }), false, "Untrusted file extension or client MIME must not bypass validation");
+});
+
 test("security lock preparation workflow does not reach main", () => {
   const exists = fs.existsSync(path.join(root,
     ".github/workflows/security-compatible-lockfile-generator.yml"));

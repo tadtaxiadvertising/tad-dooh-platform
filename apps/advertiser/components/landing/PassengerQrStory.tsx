@@ -120,7 +120,7 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
               <strong>{example.tablet}</strong>
               <div className={styles.offerRow}>
                 <span>{example.action}</span>
-                <span className={styles.qrMark} aria-label="Símbolo QR decorativo, no escaneable">
+                <span className={styles.qrMark} role="img" aria-label="Símbolo QR decorativo, no escaneable">
                   <QrCode size={38} strokeWidth={1.8} aria-hidden="true" />
                 </span>
               </div>

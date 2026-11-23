@@ -76,6 +76,6 @@ test("deployment source defaults and Player config agree on Nest global prefix",
     assert.ok(read(file).includes(`VITE_API_URL=${productionBase}`), file);
   }
   const config = read("apps/player/src/config.ts");
-  assert.match(config, /resolvePlayerApiUrl\(import\.meta\.env\.VITE_API_URL/);
+  assert.match(config, /resolvePlayerApiUrl\(\s*import\.meta\.env\.VITE_API_URL/);
   assert.doesNotMatch(config, /api\.tad\.dooh\.cloud/);
 });

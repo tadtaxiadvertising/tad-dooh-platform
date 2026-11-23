@@ -7,6 +7,8 @@ import {
   Headers,
   Logger,
   BadRequestException,
+  ForbiddenException,
+  Req,
 } from "@nestjs/common";
 import {
   TelemetryService,
@@ -15,6 +17,8 @@ import {
 } from "./telemetry.service";
 
 import { PrismaService } from "../prisma/prisma.service";
+import type { AuthUser } from "../auth/auth.types";
+import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
 @Controller("telemetry")
 export class TelemetryController {
@@ -33,11 +37,12 @@ export class TelemetryController {
    *
    * Bounded, homogeneous batches are committed atomically and acknowledged
    * only after PostgreSQL confirms the transaction. The first driver must
-   * exist, but this path does NOT yet verify the authenticated user's
-   * ownership of that driver. See security incident #385 before exposing this
-   * route to regular DRIVER clients or legacy gateways.
+   * exist. ADMIN may upload for an existing driver; DRIVER may upload only
+   * their own GPS points using the verified session entityId. Neither user
+   * roles nor the driver identity are trusted from the request body.
    */
   @Post("sync")
+  @Roles(UserRole.ADMIN, UserRole.DRIVER)
   @HttpCode(HttpStatus.CREATED)
   async sync(
     @Body()
@@ -48,6 +53,7 @@ export class TelemetryController {
       speed: number;
       timestamp?: string;
     }[],
+    @Req() req: { user?: AuthUser },
   ) {
     if (!Array.isArray(payload) || payload.length === 0) {
       throw new BadRequestException("EMPTY_PAYLOAD");
@@ -67,6 +73,16 @@ export class TelemetryController {
     // must not smuggle another driver's GPS points behind the first ID.
     if (payload.some((point) => !point || point.driverId !== headDriverId)) {
       throw new BadRequestException("DRIVER_MISMATCH");
+    }
+
+    const actor = req?.user;
+    if (
+      !actor ||
+      (actor.role !== UserRole.ADMIN && actor.role !== UserRole.DRIVER) ||
+      (actor.role === UserRole.DRIVER &&
+        (!actor.entityId || actor.entityId !== headDriverId))
+    ) {
+      throw new ForbiddenException("TELEMETRY_DRIVER_FORBIDDEN");
     }
 
     const driver = await this.prisma.driver.findUnique({

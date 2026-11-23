@@ -1,3 +1,5 @@
+import { ForbiddenException } from "@nestjs/common";
+import { ROLES_KEY, UserRole } from "../auth/decorators/roles.decorator";
 import { TelemetryController } from "./telemetry.controller";
 import {
   TelemetryService,
@@ -21,6 +23,22 @@ describe("Telemetry GPS synchronization — bounded, atomic, acknowledged", () =
     speed: 20,
   };
 
+  const driverRequest = (entityId?: string) => ({
+    user: {
+      id: "verified-driver-session",
+      email: "driver@example.invalid",
+      role: UserRole.DRIVER,
+      entityId,
+    },
+  });
+  const adminRequest = {
+    user: {
+      id: "verified-admin-session",
+      email: "admin@example.invalid",
+      role: UserRole.ADMIN,
+    },
+  };
+
   beforeEach(() => {
     jest.resetAllMocks();
     driverFindUnique.mockResolvedValue({ id: point.driverId });
@@ -34,9 +52,9 @@ describe("Telemetry GPS synchronization — bounded, atomic, acknowledged", () =
       () => point,
     );
 
-    await expect(controller.sync(huge)).rejects.toThrow(
-      "TELEMETRY_BATCH_TOO_LARGE",
-    );
+    await expect(
+      controller.sync(huge, driverRequest(point.driverId)),
+    ).rejects.toThrow("TELEMETRY_BATCH_TOO_LARGE");
     expect(driverFindUnique).not.toHaveBeenCalled();
     expect(sync).not.toHaveBeenCalled();
   });
@@ -45,9 +63,69 @@ describe("Telemetry GPS synchronization — bounded, atomic, acknowledged", () =
     const controller = makeController();
     const mixed = [point, { ...point, driverId: "foreign-driver" }];
 
-    await expect(controller.sync(mixed)).rejects.toThrow("DRIVER_MISMATCH");
+    await expect(
+      controller.sync(mixed, driverRequest(point.driverId)),
+    ).rejects.toThrow("DRIVER_MISMATCH");
     expect(driverFindUnique).not.toHaveBeenCalled();
     expect(sync).not.toHaveBeenCalled();
+  });
+
+  it("requires DRIVER or ADMIN role metadata on the GPS route", () => {
+    expect(
+      Reflect.getMetadata(ROLES_KEY, TelemetryController.prototype.sync),
+    ).toEqual([UserRole.ADMIN, UserRole.DRIVER]);
+  });
+
+  it.each([undefined, "", "unrelated-driver"])(
+    "denies a DRIVER with a missing or foreign session entityId: %p",
+    async (entityId) => {
+      await expect(
+        makeController().sync([point], driverRequest(entityId)),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(driverFindUnique).not.toHaveBeenCalled();
+      expect(sync).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects an unrelated JWT role before the database lookup", async () => {
+    const advertiser = {
+      user: {
+        id: "advertiser-session",
+        email: "advertiser@example.invalid",
+        role: UserRole.ADVERTISER,
+        entityId: point.driverId,
+      },
+    };
+    await expect(
+      makeController().sync([point], advertiser),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(driverFindUnique).not.toHaveBeenCalled();
+    expect(sync).not.toHaveBeenCalled();
+  });
+
+  it("denies a missing request principal", async () => {
+    await expect(makeController().sync([point], {})).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(sync).not.toHaveBeenCalled();
+  });
+
+  it("permits a verified ADMIN to upload for an existing driver", async () => {
+    await expect(makeController().sync([point], adminRequest)).resolves.toEqual(
+      { success: true },
+    );
+    expect(driverFindUnique).toHaveBeenCalledWith({
+      where: { id: point.driverId },
+      select: { id: true },
+    });
+    expect(sync).toHaveBeenCalledWith([point]);
+  });
+
+  it("permits an owning DRIVER to upload an atomic offline batch", async () => {
+    await expect(
+      makeController().sync([point], driverRequest(point.driverId)),
+    ).resolves.toEqual({ success: true });
+    expect(sync).toHaveBeenCalledWith([point]);
   });
 
   it("does not acknowledge GPS upload before the transaction resolves", async () => {
@@ -58,7 +136,7 @@ describe("Telemetry GPS synchronization — bounded, atomic, acknowledged", () =
     sync.mockReturnValueOnce(inFlight);
     let completed = false;
     const response = makeController()
-      .sync([point])
+      .sync([point], driverRequest(point.driverId))
       .then((value) => {
         completed = true;
         return value;
@@ -74,17 +152,17 @@ describe("Telemetry GPS synchronization — bounded, atomic, acknowledged", () =
 
   it("propagates persistence errors instead of returning a false positive ACK", async () => {
     sync.mockRejectedValueOnce(new Error("synthetic SQL write failure"));
-    await expect(makeController().sync([point])).rejects.toThrow(
-      "synthetic SQL write failure",
-    );
+    await expect(
+      makeController().sync([point], driverRequest(point.driverId)),
+    ).rejects.toThrow("synthetic SQL write failure");
     expect(sync).toHaveBeenCalledWith([point]);
   });
 
   it("refuses an unknown driver rather than inserting anonymous coordinates", async () => {
     driverFindUnique.mockResolvedValueOnce(null);
-    await expect(makeController().sync([point])).rejects.toThrow(
-      "DRIVER_NOT_FOUND",
-    );
+    await expect(
+      makeController().sync([point], driverRequest(point.driverId)),
+    ).rejects.toThrow("DRIVER_NOT_FOUND");
     expect(sync).not.toHaveBeenCalled();
   });
 });

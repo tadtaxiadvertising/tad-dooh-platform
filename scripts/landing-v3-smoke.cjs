@@ -299,7 +299,7 @@ async function main() {
       const illustration = story.locator('img[src="/qr-passenger-journey.svg"]');
       assert.equal(await illustration.count(), 1, 'The storyboard must use a local illustrated asset.');
       assert.ok((await illustration.getAttribute('alt')).includes('copiloto'));
-      const illustrationResponse = await page.request.get(new URL('/qr-passenger-journey.svg', base));
+      const illustrationResponse = await page.request.get(new URL('/qr-passenger-journey.svg', base).href);
       assert.equal(illustrationResponse.status(), 200);
 
       const brand = page.locator('#hero-brand-name');

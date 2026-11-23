@@ -84,11 +84,11 @@ test("ESLint failures and missing binaries cannot be silently treated as success
   for (const app of apps) {
     const bin = path.join(dir, "apps", app, "node_modules", ".bin", "eslint");
     fs.mkdirSync(path.dirname(bin), { recursive: true });
-    fs.writeFileSync(bin, "#!/bin/sh\\nexit 0\\n");
+    fs.writeFileSync(bin, "#!/bin/sh\nexit 0\n");
     fs.chmodSync(bin, 0o755);
   }
-  const start = source.indexOf("LINT_TOTAL_FAILS=0\\nfor DIR in apps/admin");
-  const end = source.indexOf("\\n# ---------- 7. TESTS", start);
+  const start = source.indexOf("LINT_TOTAL_FAILS=0\nfor DIR in apps/admin");
+  const end = source.indexOf("\n# ---------- 7. TESTS", start);
   assert.ok(start > 0 && end > start);
 
   function lintFailures() {
@@ -99,7 +99,7 @@ test("ESLint failures and missing binaries cannot be silently treated as success
       source.slice(start, end),
       'printf "%s" "$LINT_TOTAL_FAILS"',
     ];
-    return execFileSync("bash", ["-c", run.join("\\n")], {
+    return execFileSync("bash", ["-c", run.join("\n")], {
       cwd: dir,
       encoding: "utf8",
       env: { ...process.env, ROOT: dir },
@@ -108,7 +108,7 @@ test("ESLint failures and missing binaries cannot be silently treated as success
 
   assert.equal(lintFailures(), "0");
   const bad = path.join(dir, "apps", "driver", "node_modules", ".bin", "eslint");
-  fs.writeFileSync(bad, "#!/bin/sh\\nexit 9\\n");
+  fs.writeFileSync(bad, "#!/bin/sh\nexit 9\n");
   assert.equal(lintFailures(), "1");
   fs.rmSync(bad);
   assert.equal(lintFailures(), "1");

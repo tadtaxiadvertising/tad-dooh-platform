@@ -1,0 +1,21 @@
+name: Analytics ACK format diff (temporary)
+on:
+  push:
+    branches:
+      - fix/analytics-ingest-fail-closed-invalid-ack-20261123
+permissions:
+  contents: read
+jobs:
+  format-diff:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10.34.9
+      - name: Preview pinned Prettier layout for synthetic analytics tests
+        run: |
+          set -euo pipefail
+          pnpm dlx prettier@3.9.10 --write apps/api/src/modules/analytics/analytics-ingest-ack.spec.ts
+          git diff -- apps/api/src/modules/analytics/analytics-ingest-ack.spec.ts

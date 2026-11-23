@@ -53,14 +53,6 @@ jobs:
           fi
           pnpm dlx prettier@3.9.10 --check "apps/**/*.{ts,tsx}"
 
-      # Temporary diagnostic: reports formatter's exact proposed changes
-      # to a synthetic security regression file only; no commit or push.
-      - name: Diagnose GPS test formatting (temporary)
-        if: failure()
-        run: |
-          pnpm dlx prettier@3.9.10 --write apps/api/src/modules/telemetry/telemetry-gps-sync-ack.spec.ts >/dev/null
-          git diff --no-ext-diff -- apps/api/src/modules/telemetry/telemetry-gps-sync-ack.spec.ts
-
       - name: Lint (ESLint)
         run: |
           set -euo pipefail

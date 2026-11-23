@@ -452,3 +452,72 @@ test("security job runs tracked-credential preflight before installing dependenc
   assert.ok(preflight >= 0 && install > preflight, "Tracked credential gate must run before dependency install");
   assert.match(securityJob, /node --test --test-name-pattern=/);
 });
+
+
+test("manual Supabase audit keeps tokens and passwords off process argv and avoids raw SQL output", {
+  skip: process.platform === "win32",
+}, () => {
+  const src = readFileSync(path.join(root, "scripts/security-audit.sh"), "utf8");
+  assert.match(src, /PROJECT_REF="\$\{SUPABASE_PROJECT_REF:-\}"/);
+  assert.match(src, /curl -fsS --config -/);
+  assert.match(src, /export PGPASSWORD="\$DB_PASSWORD"/);
+  assert.match(src, /psql -X -v ON_ERROR_STOP=1/);
+  assert.doesNotMatch(src, /postgres(?:ql)?:\/\/postgres:\$DB_PASSWORD@/);
+  assert.doesNotMatch(src, /(?:-H|--header)\s+["']Authorization: Bearer \$SUPABASE_ACCESS_TOKEN/);
+  assert.doesNotMatch(src, /SELECT pid,[^\n]*query\b/);
+  assert.doesNotMatch(src, /Storage usage: \$STORAGE_USAGE/);
+  assert.doesNotMatch(src, /\\\(.detail\)/);
+  const syntax = spawnSync("bash", ["-n"], {
+    input: src, encoding: "utf8", timeout: 4000,
+  });
+  assert.equal(syntax.status, 0, "Manual audit must be valid bash without printing secret values");
+  const preflight = spawnSync("bash", ["-c", src], {
+    env: { PATH: process.env.PATH || "" },
+    encoding: "utf8", timeout: 4000,
+  });
+  assert.equal(preflight.status, 1, "Missing configuration must fail before any API/DB access");
+  assert.doesNotMatch(preflight.stdout + preflight.stderr, /postgresql:\/\//);
+});
+
+test("manual Supabase audit rejects malformed advisories and only excepts the exact PostGIS table", {
+  skip: process.platform === "win32",
+}, () => {
+  const src = readFileSync(path.join(root, "scripts/security-audit.sh"), "utf8");
+  const shape = src.match(/if ! jq -e '([^']+)' <<<"\$ADVISORIES"/);
+  assert.ok(shape, "Manual audit must verify security-lint JSON shape before counting");
+  for (const [sample, expected] of [
+    [[], 0],
+    [[{ level: "WARN", name: "function_search_path_mutable" }], 0],
+    [{}, 1],
+    [{ message: "synthetic", status: 200 }, 1],
+    [null, 1],
+    [[{ name: "unknown_level", level: "NOT_A_LEVEL" }], 1],
+    [[{ level: "WARN", name: "" }], 1],
+  ]) {
+    const run = spawnSync("jq", ["-e", shape[1]], {
+      input: JSON.stringify(sample), encoding: "utf8", timeout: 4000,
+    });
+    assert.equal(run.status, expected, "Unexpected verdict for synthetic security-lint payload");
+  }
+
+  const knownMatch = src.match(/KNOWN_BLOCKED_ERRORS='([^']+)'/);
+  assert.ok(knownMatch, "Expected one exact exception object");
+  const known = JSON.parse(knownMatch[1]);
+  assert.deepEqual(known, {
+    name: "rls_disabled_in_public", schema: "public", table: "spatial_ref_sys",
+  });
+  const jqCount = src.match(/NEW_ERRORS=\$\(echo "\$ADVISORIES" \| jq --argjson known "\$KNOWN_BLOCKED_ERRORS" \\\n\s+'([^']+)'/);
+  assert.ok(jqCount, "Expected exact-object RLS error filtering");
+  const lints = [
+    { level: "ERROR", name: "rls_disabled_in_public", metadata: { schema: "public", name: "spatial_ref_sys" } },
+    { level: "ERROR", name: "rls_disabled_in_public", metadata: { schema: "public", name: "new_table" } },
+    { level: "ERROR", name: "rls_disabled_in_public", metadata: { schema: "private", name: "spatial_ref_sys" } },
+    { level: "ERROR", name: "rls_disabled_in_public" },
+    { level: "INFO", name: "rls_enabled_no_policy" },
+  ];
+  const count = spawnSync("jq", ["--argjson", "known", JSON.stringify(known), jqCount[1]], {
+    input: JSON.stringify(lints), encoding: "utf8", timeout: 4000,
+  });
+  assert.equal(count.status, 0, "jq filter did not execute");
+  assert.equal(count.stdout.trim(), "3", "RLS errors for all other objects must remain blocking");
+});

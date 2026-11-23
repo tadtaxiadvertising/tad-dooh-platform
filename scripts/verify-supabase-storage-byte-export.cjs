@@ -52,7 +52,8 @@ async function fileDigestSafely(file, expectedSize) {
   const handle = await fs.promises.open(file, flags);
   try {
     const stat = await handle.stat();
-    if (!stat.isFile() || stat.size !== expectedSize ||
+    if (!stat.isFile() || stat.nlink !== 1 ||
+        stat.size !== expectedSize ||
         stat.ino !== before.ino || stat.dev !== before.dev) return null;
     const hash = crypto.createHash("sha256");
     for await (const chunk of handle.createReadStream({ autoClose: false })) {
@@ -61,12 +62,57 @@ async function fileDigestSafely(file, expectedSize) {
     const after = await handle.stat();
     const named = await fs.promises.lstat(file);
     if (!named.isFile() || named.isSymbolicLink() ||
-        named.ino !== stat.ino || named.dev !== stat.dev ||
+        named.nlink !== 1 || named.ino !== stat.ino ||
+        named.dev !== stat.dev || after.nlink !== 1 ||
         after.size !== stat.size || after.mtimeMs !== stat.mtimeMs ||
         after.ctimeMs !== stat.ctimeMs ||
         named.size !== after.size || named.mtimeMs !== after.mtimeMs ||
         named.ctimeMs !== after.ctimeMs) return null;
     return hash.digest();
+  } finally {
+    await handle.close();
+  }
+}
+
+// Bind the untrusted Storage manifest to one opened file descriptor. A
+// pathname check followed by readFile(path) can be swapped between operations.
+// Also cap the *actual* stream bytes, not only the initial lstat size.
+async function readStorageManifestSafely(file) {
+  const before = await fs.promises.lstat(file);
+  if (!before.isFile() || before.isSymbolicLink() ||
+      before.nlink !== 1 || before.size > MANIFEST_LIMIT) return null;
+
+  const flags = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0);
+  const handle = await fs.promises.open(file, flags);
+  try {
+    const opened = await handle.stat();
+    if (!opened.isFile() || opened.nlink !== 1 ||
+        opened.ino !== before.ino || opened.dev !== before.dev ||
+        opened.size !== before.size ||
+        opened.mtimeMs !== before.mtimeMs ||
+        opened.ctimeMs !== before.ctimeMs) return null;
+
+    const chunks = [];
+    let length = 0;
+    for await (const chunk of handle.createReadStream({ autoClose: false })) {
+      length += chunk.length;
+      if (length > MANIFEST_LIMIT) return null;
+      chunks.push(chunk);
+    }
+
+    const after = await handle.stat();
+    const named = await fs.promises.lstat(file);
+    if (!named.isFile() || named.isSymbolicLink() ||
+        named.nlink !== 1 || named.ino !== opened.ino ||
+        named.dev !== opened.dev || after.nlink !== 1 ||
+        after.size !== opened.size ||
+        after.mtimeMs !== opened.mtimeMs ||
+        after.ctimeMs !== opened.ctimeMs ||
+        named.size !== after.size ||
+        named.mtimeMs !== after.mtimeMs ||
+        named.ctimeMs !== after.ctimeMs) return null;
+
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
   } finally {
     await handle.close();
   }
@@ -93,10 +139,8 @@ async function checkStorageExport(directory, expectedRef, expectedSourceCount,
         !within(realDir, await fs.promises.realpath(objectsDir))) return "UNSAFE_OBJECTS_DIRECTORY";
 
     const file = path.join(realDir, "storage-manifest.json");
-    const manifestStat = await fs.promises.lstat(file);
-    if (!manifestStat.isFile() || manifestStat.isSymbolicLink() ||
-        manifestStat.size > MANIFEST_LIMIT) return "INVALID_MANIFEST";
-    const manifest = JSON.parse(await fs.promises.readFile(file, "utf8"));
+    const manifest = await readStorageManifestSafely(file);
+    if (!manifest) return "INVALID_MANIFEST";
     if (!ownKeys(manifest, ["project_ref", "exported_at_utc", "restore_verified",
       "source_object_count", "files"]) ||
         manifest.project_ref !== expectedRef || manifest.restore_verified !== false ||

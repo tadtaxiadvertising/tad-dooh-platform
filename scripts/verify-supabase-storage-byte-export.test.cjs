@@ -167,3 +167,64 @@ test("CLI prints only static verdict, never paths, object keys, or private conte
       }
     }
   }));
+
+test("rejects hardlinked Storage manifests (outside aliases included)", {
+  skip: process.platform === "win32",
+}, () => withFixture(async f => {
+  const manifestFile = path.join(f.directory, "storage-manifest.json");
+  await fs.promises.link(manifestFile, path.join(f.directory, "manifest-alias.json"));
+  assert.equal(await checkStorageExport(f.directory, REF, SOURCE_COUNT),
+    "INVALID_MANIFEST");
+}));
+
+test("refuses a symlink swap between Storage manifest lstat and open", {
+  skip: process.platform === "win32",
+}, () => withFixture(async f => {
+  const manifestFile = path.join(f.directory, "storage-manifest.json");
+  const copy = path.join(f.directory, "alternate-manifest.json");
+  await fs.promises.copyFile(manifestFile, copy);
+
+  const originalOpen = fs.promises.open;
+  let swapped = false;
+  fs.promises.open = async (name, ...args) => {
+    if (!swapped && name === manifestFile) {
+      swapped = true;
+      await fs.promises.rename(manifestFile, manifestFile + ".original");
+      await fs.promises.symlink(copy, manifestFile);
+    }
+    return originalOpen(name, ...args);
+  };
+  try {
+    assert.equal(await checkStorageExport(f.directory, REF, SOURCE_COUNT),
+      "READ_OR_PARSE_FAILED");
+    assert.equal(swapped, true);
+  } finally {
+    fs.promises.open = originalOpen;
+  }
+}));
+
+test("refuses a regular-file substitution between manifest lstat and open", {
+  skip: process.platform === "win32",
+}, () => withFixture(async f => {
+  const manifestFile = path.join(f.directory, "storage-manifest.json");
+  const copy = path.join(f.directory, "alternate-manifest.json");
+  await fs.promises.copyFile(manifestFile, copy);
+
+  const originalOpen = fs.promises.open;
+  let swapped = false;
+  fs.promises.open = async (name, ...args) => {
+    if (!swapped && name === manifestFile) {
+      swapped = true;
+      await fs.promises.rename(manifestFile, manifestFile + ".original");
+      await fs.promises.rename(copy, manifestFile);
+    }
+    return originalOpen(name, ...args);
+  };
+  try {
+    assert.equal(await checkStorageExport(f.directory, REF, SOURCE_COUNT),
+      "INVALID_MANIFEST");
+    assert.equal(swapped, true);
+  } finally {
+    fs.promises.open = originalOpen;
+  }
+}));

@@ -345,7 +345,7 @@ export default function LandingPage() {
           </div>
         </div>
         <TaxiScrollStory city={city} brandName={brandName} />
-        <PassengerQrStory />
+        <PassengerQrStory brandName={brandName} />
         <div className="landing-wrap">
           <CreativePreview />
         </div>

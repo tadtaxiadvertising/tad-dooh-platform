@@ -48,3 +48,14 @@ test("each installed Next 15.5.29 snapshot resolves patched PostCSS 8.5.33", () 
   assert.doesNotMatch(lock, /^  postcss@8\.4\.31:/m);
   assert.doesNotMatch(lock, /^  next@15\.5\.28(?=[:(])/m);
 });
+
+test("admin focused workflow uses root packageManager pnpm without conflicting major pin", () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+  const workflow = fs.readFileSync(
+    path.join(root, ".github/workflows/admin-typescript-checks.yml"), "utf8",
+  );
+  assert.equal(pkg.packageManager, "pnpm@10.34.9");
+  assert.match(workflow, /uses: pnpm\/action-setup@v4/);
+  assert.doesNotMatch(workflow, /uses: pnpm\/action-setup@v4\s*\n\s+with:\s*\n\s+version:/);
+  assert.match(workflow, /pnpm install --frozen-lockfile/);
+});

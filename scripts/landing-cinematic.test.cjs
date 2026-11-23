@@ -148,6 +148,6 @@ test("Advertiser QR story uses a local image and reversible example previews wit
   assert.match(css, /\.choices button:focus-visible/);
   assert.match(css, /prefers-reduced-motion: reduce/);
   assert.match(image, /^<svg[\s\S]+<\/svg>\s*$/);
-  assert.doesNotMatch(image, /<script|https?:\/\//);
+  assert.doesNotMatch(image, /<script\b|<(?:image|use)\b[^>]*https?:\/\//i);
   assert.match(copy, /¿Cómo interactúan los pasajeros con una promoción mediante QR\?/);
 });

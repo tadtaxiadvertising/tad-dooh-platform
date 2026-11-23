@@ -100,10 +100,10 @@ export class AnalyticsController {
       throw new BadRequestException("Invalid analytics event");
     }
     const event = value as Record<string, unknown>;
-    const kind =
-      allowLegacyType && typeof event.type === "string" && event.type.trim()
-        ? event.type
-        : event.eventType;
+    // Match the service's existing type || eventType precedence exactly.
+    const kind = allowLegacyType
+      ? event.type || event.eventType
+      : event.eventType;
     if (
       typeof event.deviceId !== "string" ||
       !event.deviceId.trim() ||

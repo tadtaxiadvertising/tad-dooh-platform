@@ -5,6 +5,37 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { createUmamiClient } from "../../utils/umami";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 
+// Passenger QR destinations come from campaign data. Redirect only to
+// ordinary web URLs; never pass arbitrary schemes or credentials to Express.
+// This does not authorize the campaign or verify ownership of the domain.
+const QR_FALLBACK_URL = "https://tad.do";
+
+export function safeQrDestinationUrl(value: string | null | undefined): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value.length > 2048 ||
+    /[\u0000-\u001f\u007f]/.test(value)
+  ) {
+    return QR_FALLBACK_URL;
+  }
+
+  try {
+    const target = new URL(value);
+    if (
+      (target.protocol !== "http:" && target.protocol !== "https:") ||
+      !target.hostname ||
+      target.username ||
+      target.password
+    ) {
+      return QR_FALLBACK_URL;
+    }
+    return target.toString();
+  } catch {
+    return QR_FALLBACK_URL;
+  }
+}
+
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
@@ -488,9 +519,7 @@ export class AnalyticsService {
   // QR SCAN TRACKING
   // ============================================
   async registerQrScan(campaignId: string, deviceId: string): Promise<string> {
-    const DEFAULT_URL = "https://tad.do";
-
-    if (!campaignId || !deviceId) return DEFAULT_URL;
+    if (!campaignId || !deviceId) return QR_FALLBACK_URL;
 
     try {
       // Buscamos la campaña para obtener su URL de destino
@@ -514,10 +543,10 @@ export class AnalyticsService {
         `📱 QR Scan registrado — Campaign: ${campaignId}, Device: ${deviceId}`,
       );
 
-      return campaign?.targetUrl || DEFAULT_URL;
+      return safeQrDestinationUrl(campaign?.targetUrl);
     } catch (error) {
       this.logger.error(`Error registrando QR scan: ${error.message}`);
-      return DEFAULT_URL;
+      return QR_FALLBACK_URL;
     }
   }
 

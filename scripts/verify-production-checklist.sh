@@ -137,26 +137,17 @@ LINT_TOTAL_FAILS=0
 for DIR in apps/admin apps/advertiser apps/driver apps/player; do
   BIN="$ROOT/$DIR/node_modules/.bin/eslint"
   if [ -x "$BIN" ] || [ -f "$BIN" ]; then
-    # Usar formato json si está disponible, si no, compact/unix; sin --fix para no mutar
-    FMT="json"
-    if ! "$BIN" --help 2>/dev/null | grep -qE 'json'; then
-      FMT="unix"
-    fi
-    LINT_OUT=$(timeout 90 bash -lc "(cd '$ROOT/$DIR' && '$BIN' . --format '$FMT' 2>&1 || true)")
-    if echo "$LINT_OUT" | grep -qE 'couldn\'t find|No files|error' | head -1; then
-      WARN "$DIR: eslint no pudo ejecutarse (revisar config/bin)"
+    LINT_RC=0
+    LINT_OUT=$(timeout 90 bash -lc "cd '$ROOT/$DIR' && '$BIN' . --format json" 2>&1) || LINT_RC=$?
+    if [ "$LINT_RC" -eq 0 ]; then
+      OK "$DIR: eslint completado (exit 0)"
     else
-      ERRORS=$(echo "$LINT_OUT" | grep -cE '"[0-9]+:[0-9]+\s+error"' || true)
-      WARNINGS=$(echo "$LINT_OUT" | grep -cE '"[0-9]+:[0-9]+\s+(warning|off)"' || true)
-      if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
-        OK "$DIR: sin problemas reportados (formato $FMT)"
-      else
-        FAIL "$DIR: $ERRORS error(es), $WARNINGS warning(s)"
-        echo "$LINT_OUT" | grep -E '("[0-9]+:[0-9]+\s+error"' | head -8 | sed 's/^/    /'
-      fi
+      FAIL "$DIR: eslint falló (exit $LINT_RC); revisar logs locales protegidos"
+      LINT_TOTAL_FAILS=$((LINT_TOTAL_FAILS+1))
     fi
   else
-    WARN "$DIR: eslint bin no local (no evaluado aquí)"
+    FAIL "$DIR: eslint no disponible; validación pendiente"
+    LINT_TOTAL_FAILS=$((LINT_TOTAL_FAILS+1))
   fi
 done
 
@@ -181,6 +172,11 @@ fi
 echo -e "\n${CYAN}── Checklist lista para producción ──${RESET}"
 CHECK_PASS=0
 CHECK_FAIL=0
+
+if [ "$LINT_TOTAL_FAILS" -gt 0 ]; then
+  FAIL "Lint no verificado: $LINT_TOTAL_FAILS portal(es)"
+  CHECK_FAIL=$((CHECK_FAIL+1))
+fi
 
 if git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null && [ -z "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
   OK "Working tree limpio para commit"

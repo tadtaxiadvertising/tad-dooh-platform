@@ -1,0 +1,31 @@
+name: Temporary MCP Hono lockfile regeneration
+
+on:
+  pull_request:
+    paths:
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/mcp-hono-lockfile-evidence.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate-read-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Regenerate lockfile with root pnpm pin; report exact diff
+        run: |
+          set -euo pipefail
+          pnpm install --lockfile-only --no-frozen-lockfile --ignore-scripts
+          echo TAD_BEGIN_MCP_HONO_PNPM_DIFF
+          git diff --no-ext-diff --unified=3 -- pnpm-lock.yaml
+          echo TAD_END_MCP_HONO_PNPM_DIFF
+          test -n "$(git diff -- pnpm-lock.yaml)"

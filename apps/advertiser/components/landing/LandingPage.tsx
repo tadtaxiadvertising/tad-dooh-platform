@@ -166,7 +166,12 @@ export default function LandingPage() {
             >
               Cómo funciona
             </a>
-            <a href="#interaccion-qr" onClick={(e) => e.currentTarget.closest("details")?.removeAttribute("open")}>
+            <a
+              href="#interaccion-qr"
+              onClick={(e) =>
+                e.currentTarget.closest("details")?.removeAttribute("open")
+              }
+            >
               Promociones con QR
             </a>
             <a

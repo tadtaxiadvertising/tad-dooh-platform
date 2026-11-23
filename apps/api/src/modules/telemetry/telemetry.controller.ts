@@ -11,6 +11,7 @@ import {
 import {
   TelemetryService,
   TELEMETRY_GPS_BATCH_LIMIT,
+  PLAYBACK_MAX_BATCH_SIZE,
 } from "./telemetry.service";
 
 import { PrismaService } from "../prisma/prisma.service";
@@ -230,6 +231,11 @@ export class TelemetryController {
   ) {
     if (!Array.isArray(payload) || payload.length === 0) {
       return { success: false, reason: "EMPTY_PAYLOAD" };
+    }
+
+    // Never let a direct caller trigger partial batch persistence.
+    if (payload.length > PLAYBACK_MAX_BATCH_SIZE) {
+      throw new BadRequestException("PLAYBACK_BATCH_TOO_LARGE");
     }
 
     // X-Tablet-Key is REQUIRED for playback-batch events

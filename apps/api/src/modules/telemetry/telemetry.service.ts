@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
 /**
@@ -18,7 +18,7 @@ import { PrismaService } from "../prisma/prisma.service";
  */
 export const TELEMETRY_GPS_BATCH_LIMIT = 500;
 const CHUNK_SIZE = 100;
-const PLAYBACK_MAX_BATCH_SIZE = 200;
+export const PLAYBACK_MAX_BATCH_SIZE = 200;
 const PLAYBACK_RATE_LIMIT = 60; // events per minute per device
 
 @Injectable()
@@ -273,23 +273,21 @@ export class TelemetryService {
   async recordPlaybackBatch(
     events: Array<Parameters<TelemetryService["recordPlayback"]>[0]>,
   ): Promise<{ processed: number; rejected: number }> {
-    const safeEvents =
-      events.length > PLAYBACK_MAX_BATCH_SIZE
-        ? events.slice(0, PLAYBACK_MAX_BATCH_SIZE)
-        : events;
-
-    if (safeEvents.length < events.length) {
-      this.logger.warn(
-        `⚠️ Playback batch truncated: ${events.length} → ${safeEvents.length} (max: ${PLAYBACK_MAX_BATCH_SIZE})`,
-      );
+    // A partially persisted batch must never receive a success-shaped ACK.
+    // Reject before any database call; callers can split and retry safely.
+    if (!Array.isArray(events) || events.length === 0) {
+      throw new BadRequestException("EMPTY_PAYLOAD");
+    }
+    if (events.length > PLAYBACK_MAX_BATCH_SIZE) {
+      throw new BadRequestException("PLAYBACK_BATCH_TOO_LARGE");
     }
 
     let processed = 0;
     let rejected = 0;
 
     // Process in chunks
-    for (let offset = 0; offset < safeEvents.length; offset += CHUNK_SIZE) {
-      const chunk = safeEvents.slice(offset, offset + CHUNK_SIZE);
+    for (let offset = 0; offset < events.length; offset += CHUNK_SIZE) {
+      const chunk = events.slice(offset, offset + CHUNK_SIZE);
 
       // PostgreSQL cannot update the same unique key twice within one
       // INSERT ... ON CONFLICT statement. Collapse START + END in the same

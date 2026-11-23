@@ -158,7 +158,7 @@ NEXT_PUBLIC_SENTRY_DSN=
 # Dominio: https://tad.player.ibusiness.com.do
 
 # API Gateway (build-time para Vite)
-VITE_API_URL=https://tad.api.ibusiness.com.do/api
+VITE_API_URL=https://tad.api.ibusiness.com.do/api/v1
 
 # Supabase (build-time para Vite)
 VITE_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co

@@ -183,6 +183,8 @@ export class DriversService {
     const playedRows = await this.prisma.playbackEvent
       .findMany({
         where: {
+          // Only a verified END is a billable Proof of Play; START/ERROR are not.
+          eventType: "play_confirm",
           verified: true,
           timestamp: { gte: monthStart, lte: monthEnd },
           device: { driverId },

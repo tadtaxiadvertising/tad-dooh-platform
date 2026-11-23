@@ -1,4 +1,5 @@
-import { ExecutionContext, ForbiddenException, Logger } from "@nestjs/common";
+import { ForbiddenException, Logger } from "@nestjs/common";
+import type { ExecutionContext } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { ROLES_KEY, UserRole } from "../decorators/roles.decorator";

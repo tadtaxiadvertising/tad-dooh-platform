@@ -31,3 +31,20 @@ test("advertiser Docker build uses a fixed pnpm v10 and a frozen lockfile", () =
   assert.match(docker, /^RUN pnpm install --frozen-lockfile$/m);
   assert.doesNotMatch(docker, /^RUN pnpm install --no-frozen-lockfile$/m);
 });
+
+test("each installed Next 15.5.29 snapshot resolves patched PostCSS 8.5.33", () => {
+  const lock = fs.readFileSync(path.join(root, "pnpm-lock.yaml"), "utf8")
+    .replace(/\r\n?/g, "\n");
+  const snapshots = lock.split("\nsnapshots:\n")[1];
+  assert.ok(snapshots, "Frozen lock must include snapshot resolutions");
+  const matches = [...snapshots.matchAll(/^  next@15\.5\.29[^\n]*:\n/gm)];
+  assert.ok(matches.length >= 3, "Expected all Next runtime snapshots");
+  for (const match of matches) {
+    const tail = snapshots.slice(match.index + match[0].length);
+    const nextPackage = tail.search(/^  \S/gm);
+    const block = nextPackage === -1 ? tail : tail.slice(0, nextPackage);
+    assert.match(block, /^      postcss: 8\.5\.33$/m, match[0].trim());
+  }
+  assert.doesNotMatch(lock, /^  postcss@8\.4\.31:/m);
+  assert.doesNotMatch(lock, /^  next@15\.5\.28(?=[:(])/m);
+});

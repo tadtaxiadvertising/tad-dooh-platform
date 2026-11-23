@@ -31,7 +31,7 @@ UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d
 printf "  branch: %s\n" "$BRANCH"
 printf "  upstream: %s  ahead: %s  behind: %s\n" "$UPSTREAM" "$AHEAD" "$BEHIND"
 printf "  staged: %s  unstaged: %s  untracked: %s\n" "$STAGED" "$UNCHANGED" "$UNTRACKED"
-if [ "$STAGED" -gt 0 ] || [ "$UNCHANGED" -gt 0 ]; then
+if [ "$STAGED" -gt 0 ] || [ "$UNCHANGED" -gt 0 ] || [ "$UNTRACKED" -gt 0 ]; then
   FAIL "Hay cambios pendientes de commitear" >&2
 else
   OK "Working tree limpio"
@@ -87,9 +87,9 @@ fi
 echo -e "\n${CYAN}── Backend typecheck / build ──"
 TSC_BIN="node_modules/typescript/bin/tsc"
 if [ -x "$TSC_BIN" ] || [ -f "$TSC_BIN" ]; then
-  TSC_OUT=$(timeout 120 "$TSC_BIN" --noEmit -p apps/api/tsconfig.json 2>&1 || true)
-  TSC_RC=$?
-  if [ -z "$TSC_OUT" ]; then
+  TSC_RC=0
+  TSC_OUT=$(timeout 120 "$TSC_BIN" --noEmit -p apps/api/tsconfig.json 2>&1) || TSC_RC=$?
+  if [ "$TSC_RC" -eq 0 ]; then
     OK "tsc --noEmit: sin errores reportados"
   else
     FAIL "tsc --noEmit reporta errores (ver debajo)"
@@ -105,15 +105,12 @@ fi
 if [ -f apps/api/package.json ]; then
   API_BUILD_CMD="cd apps/api && npm run build 2>&1"
   echo -e "\n  ── API build (nest build) ──"
-  BUILD_OUT=$(timeout 120 bash -lc "cd '$ROOT/apps/api' && npm run build 2>&1" || true)
-  if echo "$BUILD_OUT" | grep -qE 'Found [0-9]+ error'; then
-    FAIL "nest build falla (ver debajo)"
-    echo "$BUILD_OUT" | grep -E '^src/|Found[[:space:]]' | head -20 | sed 's/^/    /'
-  elif echo "$BUILD_OUT" | grep -qE 'built|Done|success'; then
-    OK "nest build completado"
+  BUILD_RC=0
+  BUILD_OUT=$(timeout 120 bash -lc "cd '$ROOT/apps/api' && npm run build 2>&1") || BUILD_RC=$?
+  if [ "$BUILD_RC" -eq 0 ]; then
+    OK "nest build completado (exit 0)"
   else
-    WARN "nest build salida inesperada (revisar)"
-    echo "$BUILD_OUT" | tail -15 | sed 's/^/    /'
+    FAIL "nest build falló (exit $BUILD_RC); revisar logs locales protegidos"
   fi
 fi
 
@@ -140,26 +137,17 @@ LINT_TOTAL_FAILS=0
 for DIR in apps/admin apps/advertiser apps/driver apps/player; do
   BIN="$ROOT/$DIR/node_modules/.bin/eslint"
   if [ -x "$BIN" ] || [ -f "$BIN" ]; then
-    # Usar formato json si está disponible, si no, compact/unix; sin --fix para no mutar
-    FMT="json"
-    if ! "$BIN" --help 2>/dev/null | grep -qE 'json'; then
-      FMT="unix"
-    fi
-    LINT_OUT=$(timeout 90 bash -lc "(cd '$ROOT/$DIR' && '$BIN' . --format '$FMT' 2>&1 || true)")
-    if echo "$LINT_OUT" | grep -qE 'couldn\'t find|No files|error' | head -1; then
-      WARN "$DIR: eslint no pudo ejecutarse (revisar config/bin)"
+    LINT_RC=0
+    LINT_OUT=$(timeout 90 bash -lc "cd '$ROOT/$DIR' && '$BIN' . --format json" 2>&1) || LINT_RC=$?
+    if [ "$LINT_RC" -eq 0 ]; then
+      OK "$DIR: eslint completado (exit 0)"
     else
-      ERRORS=$(echo "$LINT_OUT" | grep -cE '"[0-9]+:[0-9]+\s+error"' || true)
-      WARNINGS=$(echo "$LINT_OUT" | grep -cE '"[0-9]+:[0-9]+\s+(warning|off)"' || true)
-      if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
-        OK "$DIR: sin problemas reportados (formato $FMT)"
-      else
-        FAIL "$DIR: $ERRORS error(es), $WARNINGS warning(s)"
-        echo "$LINT_OUT" | grep -E '("[0-9]+:[0-9]+\s+error"' | head -8 | sed 's/^/    /'
-      fi
+      FAIL "$DIR: eslint falló (exit $LINT_RC); revisar logs locales protegidos"
+      LINT_TOTAL_FAILS=$((LINT_TOTAL_FAILS+1))
     fi
   else
-    WARN "$DIR: eslint bin no local (no evaluado aquí)"
+    FAIL "$DIR: eslint no disponible; validación pendiente"
+    LINT_TOTAL_FAILS=$((LINT_TOTAL_FAILS+1))
   fi
 done
 
@@ -185,7 +173,12 @@ echo -e "\n${CYAN}── Checklist lista para producción ──${RESET}"
 CHECK_PASS=0
 CHECK_FAIL=0
 
-if git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null; then
+if [ "$LINT_TOTAL_FAILS" -gt 0 ]; then
+  FAIL "Lint no verificado: $LINT_TOTAL_FAILS portal(es)"
+  CHECK_FAIL=$((CHECK_FAIL+1))
+fi
+
+if git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null && [ -z "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
   OK "Working tree limpio para commit"
   CHECK_PASS=$((CHECK_PASS+1))
 else
@@ -201,18 +194,20 @@ else
   CHECK_FAIL=$((CHECK_FAIL+1))
 fi
 
-if git diff --quiet origin/main 2>/dev/null || true; then
-  OK "Sincronizado con origin/main (sin diferencias)"
-  CHECK_PASS=$((CHECK_PASS+1))
+# Comparar commits, no solo el contenido del árbol. Un commit vacío también
+# significa que HEAD no coincide con la referencia local de main.
+# Esta comprobación NO sustituye un fetch ni la verificación del remoto real.
+MAIN_SHA=$(git rev-parse --verify refs/remotes/origin/main 2>/dev/null || true)
+HEAD_SHA=$(git rev-parse --verify HEAD 2>/dev/null || true)
+if [ -z "$MAIN_SHA" ] || [ -z "$HEAD_SHA" ]; then
+  FAIL "No se pudo verificar HEAD contra origin/main local (fetch requerido)"
+  CHECK_FAIL=$((CHECK_FAIL+1))
+elif [ "$HEAD_SHA" != "$MAIN_SHA" ]; then
+  FAIL "HEAD difiere de origin/main local; comparar y actualizar antes de publicar"
+  CHECK_FAIL=$((CHECK_FAIL+1))
 else
-  BEHIND_N=$(git rev-list --count "origin/main..HEAD" 2>/dev/null || echo 0)
-  if [ "$BEHIND_N" -gt 0 ]; then
-    FAIL "Patches locales sin empujar a origin/main ($BEHIND_N commit(s))"
-    CHECK_FAIL=$((CHECK_FAIL+1))
-  else
-    WARN "Diferencias con origin/main (revisar si es intencional)"
-    CHECK_FAIL=$((CHECK_FAIL+1))
-  fi
+  OK "HEAD coincide con origin/main local (remoto en vivo no verificado)"
+  CHECK_PASS=$((CHECK_PASS+1))
 fi
 
 if [ -f apps/api/dist/main.js ]; then
@@ -224,14 +219,23 @@ else
 fi
 
 if [ -x "$TSC_BIN" ] || [ -f "$TSC_BIN" ]; then
-  TSC_FINAL=$(timeout 120 "$TSC_BIN" --noEmit -p apps/api/tsconfig.json 2>&1 || true)
-  if [ -z "$TSC_FINAL" ]; then
+  TSC_FINAL_RC=0
+  TSC_FINAL=$(timeout 120 "$TSC_BIN" --noEmit -p apps/api/tsconfig.json 2>&1) || TSC_FINAL_RC=$?
+  if [ "$TSC_FINAL_RC" -eq 0 ]; then
     OK "TypeScript sin errores (apps/api)"
     CHECK_PASS=$((CHECK_PASS+1))
   else
-    FAIL "TypeScript con errores (apps/api)"
+    FAIL "TypeScript falló (exit $TSC_FINAL_RC)"
     CHECK_FAIL=$((CHECK_FAIL+1))
   fi
+else
+  FAIL "TypeScript no disponible: no se pudo verificar"
+  CHECK_FAIL=$((CHECK_FAIL+1))
+fi
+
+if [ "${BUILD_RC:-1}" -ne 0 ]; then
+  FAIL "Build de API no verificado"
+  CHECK_FAIL=$((CHECK_FAIL+1))
 fi
 
 if [ -d apps/api/node_modules/.bin ] && [ -f apps/api/node_modules/.bin/jest ]; then
@@ -244,3 +248,7 @@ echo
 echo "═══════════════════════════════════════════"
 echo -e "  Resultado rápido: ${GREEN}${CHECK_PASS} verificación(es) OK${RESET}, ${RED}${CHECK_FAIL} falla(s)${RESET}"
 echo "═══════════════════════════════════════════"
+
+if [ "$CHECK_FAIL" -gt 0 ]; then
+  exit 1
+fi

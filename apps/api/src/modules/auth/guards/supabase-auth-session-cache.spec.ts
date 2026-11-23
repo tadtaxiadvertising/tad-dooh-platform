@@ -29,10 +29,9 @@ describe("SupabaseAuthGuard bounded hashed session cache", () => {
     string,
     { user: AuthUser; expiry: number }
   >;
-  const cachedIdentity = Reflect.get(
-    SupabaseAuthGuard,
-    "getCachedSession",
-  ) as (token: string) => AuthUser | undefined;
+  const cachedIdentity = Reflect.get(SupabaseAuthGuard, "getCachedSession") as (
+    token: string,
+  ) => AuthUser | undefined;
   const keyFor = Reflect.get(SupabaseAuthGuard, "cacheKey") as (
     token: string,
   ) => string;

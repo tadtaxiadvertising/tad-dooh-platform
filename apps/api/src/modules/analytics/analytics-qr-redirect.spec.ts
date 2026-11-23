@@ -51,9 +51,9 @@ describe("Passenger QR redirect safety", () => {
       {} as never,
     );
 
-    await expect(service.registerQrScan("campaign-1", "device-1")).resolves.toBe(
-      fallback,
-    );
+    await expect(
+      service.registerQrScan("campaign-1", "device-1"),
+    ).resolves.toBe(fallback);
     expect(findUnique).toHaveBeenCalledWith({
       where: { id: "campaign-1" },
       select: { targetUrl: true },

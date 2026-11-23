@@ -100,6 +100,14 @@ test("pnpm generated lock no longer contains the targeted unsafe resolutions", (
   }
 });
 
+test("MCP SDK resolves patched Hono Node transport without changing SDK major", () => {
+  const selector = "@modelcontextprotocol/sdk>@hono/node-server";
+  assert.equal(overrides[selector], "2.1.6");
+  assert.match(lock, /\n  '@hono\/node-server@2\.1\.6':\n/);
+  assert.doesNotMatch(lock, /\n  '@hono\/node-server@2\.1\.5':\n/);
+  assert.match(lock, /'@modelcontextprotocol\/sdk@1\.32\.1[^\n]*:\n(?:[^\n]*\n)*?      '@hono\/node-server': 2\.1\.6/);
+});
+
 test("security lock preparation workflow does not reach main", () => {
   const exists = fs.existsSync(path.join(root,
     ".github/workflows/security-compatible-lockfile-generator.yml"));

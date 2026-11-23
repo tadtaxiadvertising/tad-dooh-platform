@@ -122,11 +122,7 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
           ))}
         </div>
       </div>
-      <p
-        className={styles.activeCaption}
-        aria-live="polite"
-        aria-atomic="true"
-      >
+      <p className={styles.activeCaption} aria-live="polite" aria-atomic="true">
         Ejemplo seleccionado: {example.label}. Vista ilustrativa, sin enlace
         activo.
       </p>

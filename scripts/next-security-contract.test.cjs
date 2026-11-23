@@ -27,22 +27,22 @@ function importer(name) {
 test("all three web apps pin a patched Next.js maintenance release", () => {
   for (const name of ["admin", "advertiser", "driver"]) {
     const pkg = JSON.parse(read("apps/" + name + "/package.json"));
-    assert.equal(pkg.dependencies.next, "15.5.28", name);
+    assert.equal(pkg.dependencies.next, "15.5.29", name);
     if (name !== "advertiser") {
       assert.equal(pkg.devDependencies["eslint-config-next"], "15.5.28", name);
     }
     const entry = importer("apps/" + name);
-    assert.match(entry, /next:\s*\n\s+specifier: 15\.5\.28\s*\n\s+version: 15\.5\.28/);
+    assert.match(entry, /next:\s*\n\s+specifier: 15\.5\.29\s*\n\s+version: 15\.5\.29/);
   }
 });
 
 test("shared UI does not pull an obsolete Next peer back into the lockfile", () => {
   const pkg = JSON.parse(read("packages/ui/package.json"));
-  assert.equal(pkg.peerDependencies.next, ">=15.5.28 <16");
+  assert.equal(pkg.peerDependencies.next, ">=15.5.29 <16");
   const entry = importer("packages/ui");
-  assert.match(entry, /next:\s*\n\s+specifier: ['"]?>=15\.5\.28 <16/);
-  assert.match(entry, /version: 15\.5\.28/);
-  assert.doesNotMatch(lock, /\bnext@15\.5\.24\b/);
+  assert.match(entry, /next:\s*\n\s+specifier: ['"]?>=15\.5\.29 <16/);
+  assert.match(entry, /version: 15\.5\.29/);
+  assert.doesNotMatch(lock, /^  next@15\.5\.(?:[0-9]|1[0-9]|2[0-8])(?=[:(])/m, "Unpatched Next 15.5.x must not resolve in the lockfile.");
 });
 
 test("image optimization package resolution includes vendor-fixed Sharp", () => {

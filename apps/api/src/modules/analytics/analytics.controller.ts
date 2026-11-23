@@ -12,6 +12,7 @@ import {
   Inject,
   forwardRef,
   ForbiddenException,
+  BadRequestException,
   UseGuards,
 } from "@nestjs/common";
 import type { Response } from "express";
@@ -92,12 +93,34 @@ export class AnalyticsController {
     return res.redirect(HttpStatus.FOUND, targetUrl);
   }
 
+  // Public ingest has no DTO class at runtime. Reject structurally invalid
+  // payloads before any DB write: a successful ACK can clear an offline queue.
+  private assertIngestEventShape(value: unknown, allowLegacyType: boolean) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      throw new BadRequestException("Invalid analytics event");
+    }
+    const event = value as Record<string, unknown>;
+    const kind =
+      allowLegacyType && typeof event.type === "string" && event.type.trim()
+        ? event.type
+        : event.eventType;
+    if (
+      typeof event.deviceId !== "string" ||
+      !event.deviceId.trim() ||
+      typeof kind !== "string" ||
+      !kind.trim()
+    ) {
+      throw new BadRequestException("Invalid analytics event");
+    }
+  }
+
   @Public() // Tablets send events without JWT
   @Post("event")
   @HttpCode(HttpStatus.OK)
   async ingestEvent(
     @Body() dto: Parameters<AnalyticsService["ingestEvent"]>[0],
   ) {
+    this.assertIngestEventShape(dto, false);
     await this.analyticsService.ingestEvent(dto);
     return { success: true };
   }
@@ -111,7 +134,15 @@ export class AnalyticsController {
       | Parameters<AnalyticsService["ingestBatchEvents"]>[0]
       | { events?: Parameters<AnalyticsService["ingestBatchEvents"]>[0] },
   ) {
-    const events = Array.isArray(body) ? body : body.events || [];
+    // Preserve raw-array and { events: [...] } forms. Never interpret a
+    // missing/malformed events field as an empty, successfully synced batch.
+    const events = Array.isArray(body) ? body : body?.events;
+    if (!Array.isArray(events)) {
+      throw new BadRequestException("Analytics batch must be an array");
+    }
+    for (const event of events) {
+      this.assertIngestEventShape(event, true);
+    }
     await this.analyticsService.ingestBatchEvents(events);
     return { success: true };
   }

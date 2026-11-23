@@ -42,17 +42,17 @@ describe("Public analytics ingest ACK integrity", () => {
       [{ deviceId: "device-1", eventType: "" }],
       [{ deviceId: "device-1", type: "   " }],
       [{ deviceId: "device-1", type: 42, eventType: "play" }],
-      [
-        { deviceId: "device-1", eventType: "play" },
-        { deviceId: "device-2" },
-      ],
+      [{ deviceId: "device-1", eventType: "play" }, { deviceId: "device-2" }],
     ].map((events) => [events]),
-  )("rejects an entire invalid batch before writing any events (%p)", async (payload) => {
-    await expect(
-      controller.ingestBatchEvents(payload as never),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(ingestBatchEvents).not.toHaveBeenCalled();
-  });
+  )(
+    "rejects an entire invalid batch before writing any events (%p)",
+    async (payload) => {
+      await expect(
+        controller.ingestBatchEvents(payload as never),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(ingestBatchEvents).not.toHaveBeenCalled();
+    },
+  );
 
   it("accepts valid raw-array offline batches without changing payloads", async () => {
     const events = [{ deviceId: "device-1", eventType: "play" }];
@@ -75,9 +75,11 @@ describe("Public analytics ingest ACK integrity", () => {
     await expect(controller.ingestBatchEvents([])).resolves.toEqual({
       success: true,
     });
-    await expect(controller.ingestBatchEvents({ events: [] })).resolves.toEqual({
-      success: true,
-    });
+    await expect(controller.ingestBatchEvents({ events: [] })).resolves.toEqual(
+      {
+        success: true,
+      },
+    );
     expect(ingestBatchEvents).toHaveBeenCalledTimes(2);
     expect(ingestBatchEvents).toHaveBeenNthCalledWith(1, []);
     expect(ingestBatchEvents).toHaveBeenNthCalledWith(2, []);
@@ -86,9 +88,9 @@ describe("Public analytics ingest ACK integrity", () => {
   it.each([null, undefined, {}, { deviceId: "device-1" }])(
     "rejects a malformed single event before DB access (%p)",
     async (payload) => {
-      await expect(controller.ingestEvent(payload as never)).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        controller.ingestEvent(payload as never),
+      ).rejects.toBeInstanceOf(BadRequestException);
       expect(ingestEvent).not.toHaveBeenCalled();
     },
   );

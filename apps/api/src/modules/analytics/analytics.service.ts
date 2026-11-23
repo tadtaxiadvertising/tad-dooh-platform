@@ -57,7 +57,12 @@ export class AnalyticsService {
       { data: TopTaxi[]; expiry: number } | undefined;
   } = {};
 
+  // Public device identifiers are untrusted. Bound both entry count and
+  // cached identifier length so a long-lived API process cannot accumulate
+  // unlimited distinct IDs in memory. Eviction only restores a DB lookup.
   private deviceExistsCache = new Set<string>();
+  private readonly MAX_CACHED_DEVICE_IDS = 10_000;
+  private readonly MAX_CACHED_DEVICE_ID_LENGTH = 128;
   private readonly CACHE_TTL = 30000; // 30 seconds
 
   constructor(
@@ -72,6 +77,19 @@ export class AnalyticsService {
     this.logger.log("🧹 Limpiando caché de analíticas...");
     this.cache = {};
     this.deviceExistsCache.clear();
+  }
+
+  private rememberKnownDevice(deviceId: string) {
+    if (deviceId.length > this.MAX_CACHED_DEVICE_ID_LENGTH) return;
+
+    // Set insertion order forms a small LRU: refresh active devices and
+    // evict only stale *cache entries*, never database/device records.
+    this.deviceExistsCache.delete(deviceId);
+    this.deviceExistsCache.add(deviceId);
+    if (this.deviceExistsCache.size > this.MAX_CACHED_DEVICE_IDS) {
+      const oldest = this.deviceExistsCache.values().next().value;
+      if (oldest !== undefined) this.deviceExistsCache.delete(oldest);
+    }
   }
 
   async ingestEvent(dto: IngestEventDto) {
@@ -92,7 +110,10 @@ export class AnalyticsService {
           },
         });
       }
-      this.deviceExistsCache.add(dto.deviceId);
+      this.rememberKnownDevice(dto.deviceId);
+    } else {
+      // Keep frequently reporting tablets in cache at fleet scale.
+      this.rememberKnownDevice(dto.deviceId);
     }
 
     // Alertas Críticas (Conexión Alertas -> Notificaciones)

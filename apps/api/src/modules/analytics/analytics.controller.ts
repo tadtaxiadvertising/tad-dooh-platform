@@ -70,8 +70,13 @@ export class AnalyticsController {
       deviceId,
     );
 
-    // 2. Redirigir al destino final de la marca
-    return res.redirect(HttpStatus.MOVED_PERMANENTLY, targetUrl);
+    // A permanent 301 can be cached and bypass future scan measurement.
+    // The QR URL is a tracking hop, not a permanently relocated resource.
+    res.set({
+      "Cache-Control": "no-store, max-age=0",
+      "Referrer-Policy": "no-referrer",
+    });
+    return res.redirect(HttpStatus.FOUND, targetUrl);
   }
 
   @Public() // Tablets send events without JWT

@@ -32,20 +32,22 @@ describe("Public analytics ingest ACK integrity", () => {
     expect(ingestBatchEvents).not.toHaveBeenCalled();
   });
 
-  it.each([
-    [null],
-    [42],
-    [{}],
-    [{ deviceId: "device-1" }],
-    [{ deviceId: " ", eventType: "play" }],
-    [{ deviceId: "device-1", eventType: "" }],
-    [{ deviceId: "device-1", type: "   " }],
-    [{ deviceId: "device-1", type: 42, eventType: "play" }],
+  it.each(
     [
-      { deviceId: "device-1", eventType: "play" },
-      { deviceId: "device-2" },
-    ],
-  ])("rejects an entire invalid batch before writing any events (%p)", async (payload) => {
+      [null],
+      [42],
+      [{}],
+      [{ deviceId: "device-1" }],
+      [{ deviceId: " ", eventType: "play" }],
+      [{ deviceId: "device-1", eventType: "" }],
+      [{ deviceId: "device-1", type: "   " }],
+      [{ deviceId: "device-1", type: 42, eventType: "play" }],
+      [
+        { deviceId: "device-1", eventType: "play" },
+        { deviceId: "device-2" },
+      ],
+    ].map((events) => [events]),
+  )("rejects an entire invalid batch before writing any events (%p)", async (payload) => {
     await expect(
       controller.ingestBatchEvents(payload as never),
     ).rejects.toBeInstanceOf(BadRequestException);

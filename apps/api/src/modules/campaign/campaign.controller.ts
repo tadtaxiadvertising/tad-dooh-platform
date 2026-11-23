@@ -161,13 +161,14 @@ export class CampaignController {
     // Public QR overrides must belong to this advertiser by immutable ID.
     // Name-based matching can select an unrelated brand with the same name.
     // Campaign.active defaults to true, so require published status as well.
+    const now = new Date();
     const activeCampaign = await this.prisma.campaign.findFirst({
       where: {
         advertiserId: advertiser.id,
         status: "ACTIVE",
         active: true,
-        startDate: { lte: new Date() },
-        endDate: { gte: new Date() },
+        startDate: { lte: now },
+        endDate: { gte: now },
       },
       select: {
         whatsapp: true,

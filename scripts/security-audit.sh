@@ -119,8 +119,11 @@ echo ""
 
 # 6. Realtime
 echo "--- 6. Realtime (Free: 200 concurrent) ---"
-REALTIME=$(api_get "/realtime/usage" 2>/dev/null || echo '{}')
-echo "Realtime usage: $REALTIME"
+if api_get "/realtime/usage" >/dev/null 2>&1; then
+    echo "Realtime usage retrieved (raw metadata withheld)."
+else
+    echo "Realtime usage endpoint unavailable (optional)."
+fi
 echo ""
 
 # 7. RLS Deny-by-Default
@@ -194,7 +197,7 @@ psql -X -v ON_ERROR_STOP=1 \
     FROM pg_stat_activity
     WHERE (now() - pg_stat_activity.query_start) > interval '30 seconds'
       AND state = 'active';
-    " 2>/dev/null || echo "Query check skipped (permissions)"
+    "
 echo ""
 
 # 11. Idle in transaction
@@ -205,7 +208,7 @@ psql -X -v ON_ERROR_STOP=1 \
     FROM pg_stat_activity
     WHERE state = 'idle in transaction' 
       AND state_change < now() - interval '5 minutes';
-    " 2>/dev/null || echo "Check skipped"
+    "
 echo ""
 
 echo "=== Audit Complete ==="
@@ -219,7 +222,7 @@ NEW_ERRORS=$(echo "$ADVISORIES" | jq --argjson known "$KNOWN_BLOCKED_ERRORS" \
     '[.[] | select(.level=="ERROR" and ((.name == $known.name and .metadata.schema == $known.schema and .metadata.name == $known.table) | not))] | length')
 
 NEW_WARNS=$(echo "$ADVISORIES" | jq --argjson known "$KNOWN_WARNS" \
-    '[.[] | select(.level=="WARN" and (.name | IN($known[])) | not)] | length')
+    '[.[] | select(.level=="WARN" and ((.name | IN($known[])) | not))] | length')
 
 EXIT_CODE=0
 

@@ -94,7 +94,7 @@ BEGIN
       )
       AND (
         p.prosecdef
-        OR NOT ('search_path=pg_catalog, pg_temp' = ANY(p.proconfig))
+        OR array_position(p.proconfig, 'search_path=pg_catalog, pg_temp') IS NULL
       )
   ) THEN
     RAISE EXCEPTION 'TAD_SEARCHPATH_POSTFLIGHT_INVALID_CONFIG';

@@ -111,9 +111,9 @@ describe("Telemetry GPS synchronization — bounded, atomic, acknowledged", () =
   });
 
   it("permits a verified ADMIN to upload for an existing driver", async () => {
-    await expect(
-      makeController().sync([point], adminRequest),
-    ).resolves.toEqual({ success: true });
+    await expect(makeController().sync([point], adminRequest)).resolves.toEqual(
+      { success: true },
+    );
     expect(driverFindUnique).toHaveBeenCalledWith({
       where: { id: point.driverId },
       select: { id: true },

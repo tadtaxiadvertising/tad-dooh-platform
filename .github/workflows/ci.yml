@@ -148,6 +148,11 @@ jobs:
           set -euo pipefail
           pnpm --filter tad-player run test:pop
           pnpm --filter tad-player run test:pop-storage
+          node --experimental-strip-types --test \
+            apps/player/tests/unit/network-listeners.test.mjs \
+            apps/player/tests/unit/deferred-subscription.test.mjs \
+            apps/player/tests/unit/wake-up-targeting.test.mjs \
+            apps/player/tests/unit/api-url.test.mjs
 
       - name: Player offline media cache and worker regressions (Node 22)
         run: |
@@ -161,6 +166,7 @@ jobs:
       - name: Run safe cross-portal integration contracts
         run: |
           set -euo pipefail
+          node --test scripts/api-device-token-cors.contract.test.cjs
           node --test scripts/advertiser-impact-alias-contract.test.cjs
           node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
           node --test scripts/simulator-key-security.test.cjs scripts/next-security-contract.test.cjs

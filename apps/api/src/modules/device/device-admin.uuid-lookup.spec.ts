@@ -118,9 +118,9 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     await expect(
       controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"),
     ).resolves.toEqual({
-        success: true,
-        message: "Campaña removida del dispositivo exitosamente",
-      });
+      success: true,
+      message: "Campaña removida del dispositivo exitosamente",
+    });
     expect(prisma.deviceCampaign.deleteMany).toHaveBeenCalledWith({
       where: {
         device_id: { in: [uuid, "TAD-0001"] },

@@ -45,6 +45,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # TEMPORARY format diagnosis for PR #524, intentionally fail closed; remove before final CI.
+      - name: Preview exact Prettier changes for UUID alias tests (temporary)
+        run: |
+          set -euo pipefail
+          pnpm dlx prettier@3.9.10 --write \
+            apps/api/src/modules/analytics/analytics-unknown-device-enrollment.spec.ts \
+            apps/api/src/modules/device/device-admin.uuid-lookup.spec.ts \
+            apps/api/src/modules/device/device-identity-collision.guard.spec.ts \
+            apps/api/src/modules/device/device-registration-ownership.spec.ts \
+            apps/api/src/modules/fleet/fleet-registration-uuid-alias.spec.ts >/dev/null
+          git --no-pager diff -- \
+            apps/api/src/modules/analytics/analytics-unknown-device-enrollment.spec.ts \
+            apps/api/src/modules/device/device-admin.uuid-lookup.spec.ts \
+            apps/api/src/modules/device/device-identity-collision.guard.spec.ts \
+            apps/api/src/modules/device/device-registration-ownership.spec.ts \
+            apps/api/src/modules/fleet/fleet-registration-uuid-alias.spec.ts
+          exit 1
+
       - name: Format check (prettier)
         run: |
           set -euo pipefail

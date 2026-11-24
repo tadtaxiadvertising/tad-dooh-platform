@@ -522,4 +522,27 @@ test("real generated Prisma Client IDs agree with the source model identities", 
     idTypes: contract.idTypes,
   });
   assert.equal(report.idTypeMismatchCount, 0);
+
+  // Do not turn the five remaining model/physical UUID discrepancies green.
+  const remainingModels = new Set([
+    "Advertiser", "Campaign", "Device", "Invoice", "Media",
+  ]);
+  const remaining = models.filter((model) => remainingModels.has(model.name));
+  assert.equal(remaining.length, remainingModels.size);
+  const unresolved = auditPrismaSchema({
+    models: remaining,
+    tables: remaining.map((model) => ({
+      table_name: model.dbName || model.name,
+    })),
+    columns: remaining.map((model) => ({
+      table_name: model.dbName || model.name,
+      column_name: "id",
+      udt_name: "uuid",
+    })),
+    idTypes: contract.idTypes,
+  });
+  assert.deepEqual(
+    unresolved.idTypeMismatches.map((item) => item.table).sort(),
+    ["advertisers", "campaigns", "devices", "invoices", "media"],
+  );
 });

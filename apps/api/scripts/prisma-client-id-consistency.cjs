@@ -48,6 +48,8 @@ function inspectSchemaStringIds({ schemaSource, models }) {
   }
 
   for (const key of nativeUuidFields) {
+    // Primary keys have a separate, more precise GENERATED_ID_MISSING check.
+    if (idTypes.has(key)) continue;
     const [modelName, fieldName] = key.split(".");
     const field = clientModels.get(modelName)?.fields?.find(
       (candidate) => candidate.name === fieldName,

@@ -44,7 +44,7 @@ function expectedPostgresScalarType(field) {
   return defaults[field.type] || null;
 }
 
-function auditPrismaSchema({ models, tables, columns }) {
+function auditPrismaSchema({ models, tables, columns, idTypes }) {
   const actualTables = new Set(tables.map(({ table_name }) => table_name));
   const columnTypes = new Map(
     columns.map(({ table_name, column_name, udt_name }) => [
@@ -82,7 +82,11 @@ function auditPrismaSchema({ models, tables, columns }) {
       }
       if (field.isId && field.type === "String") {
         // Prisma String maps to PostgreSQL TEXT unless @db.Uuid is present.
-        const expected = field.nativeType?.[0] === "Uuid" ? "uuid" : "text";
+        // Runtime Prisma.dmmf may omit nativeType. Prefer the id contract
+        // parsed from schema.prisma bundled with this exact image.
+        const expected =
+          idTypes?.get(model.name + "." + field.name) ||
+          (field.nativeType?.[0] === "Uuid" ? "uuid" : "text");
         if (actual !== expected) {
           idTypeMismatches.push({ table, column, expected, actual });
         }

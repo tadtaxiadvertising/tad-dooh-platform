@@ -70,7 +70,9 @@ if (!connectionUrl) {
     const report = {
       prismaSchemaSha256,
       ...auditPrismaSchema({
-        models, tables, columns, idTypes: sourceContract.idTypes,
+        models, tables, columns,
+        idTypes: sourceContract.idTypes,
+        nativeUuidFields: sourceContract.nativeUuidFields,
       }),
       ...auditGpsSqlContract({ models, tables, columns, extensions }),
     };

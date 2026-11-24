@@ -103,4 +103,101 @@ describe("MediaScheduler: fail-closed orphan cleanup", () => {
     await scheduler.handleOrphanCleanup();
     expect(remove).not.toHaveBeenCalled();
   });
+  it("refuses to delete root files when the bucket listing contains a folder", async () => {
+    process.env.TAD_STORAGE_GC_OPERATOR_APPROVAL =
+      "AUTHORIZED_AFTER_VERIFIED_RESTORE";
+    list.mockResolvedValue({
+      data: [
+        oldObject,
+        { name: "advertiser-uploads", id: null, metadata: null },
+      ],
+      error: null,
+    });
+    mediaFindMany.mockResolvedValue([{ storageKey: "different.mp4" }]);
+    await scheduler.handleOrphanCleanup();
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(remove).not.toHaveBeenCalled();
+    expect(mediaFindMany).not.toHaveBeenCalled();
+  });
+
+  it("refuses to delete from a listing at its 1000-object page limit", async () => {
+    process.env.TAD_STORAGE_GC_OPERATOR_APPROVAL =
+      "AUTHORIZED_AFTER_VERIFIED_RESTORE";
+    list.mockResolvedValue({
+      data: Array.from({ length: 1000 }, (_, i) => ({
+        ...oldObject,
+        name: `synthetic-${i}.mp4`,
+      })),
+      error: null,
+    });
+    mediaFindMany.mockResolvedValue([{ storageKey: "different.mp4" }]);
+    await scheduler.handleOrphanCleanup();
+    expect(remove).not.toHaveBeenCalled();
+    expect(mediaFindMany).not.toHaveBeenCalled();
+  });
+
+  it("refuses to delete when a stored media key has path traversal", async () => {
+    process.env.TAD_STORAGE_GC_OPERATOR_APPROVAL =
+      "AUTHORIZED_AFTER_VERIFIED_RESTORE";
+    mediaFindMany.mockResolvedValue([{ storageKey: "../untrusted.mp4" }]);
+    await scheduler.handleOrphanCleanup();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it("preserves an asset with URL-encoded filename, query and fragment", async () => {
+    process.env.TAD_STORAGE_GC_OPERATOR_APPROVAL =
+      "AUTHORIZED_AFTER_VERIFIED_RESTORE";
+    list
+      .mockResolvedValueOnce({
+        data: [{ ...oldObject, name: "creative final.mp4" }],
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: [], error: null });
+    mediaFindMany.mockResolvedValue([{ storageKey: "different.mp4" }]);
+    assetFindMany.mockResolvedValue([
+      {
+        url: "https://cdn.example.invalid/storage/v1/object/public/campaign-videos/creative%20final.mp4?v=1#live",
+      },
+    ]);
+    await scheduler.handleOrphanCleanup();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it("refuses to delete when a reference points to an unrecognized URL", async () => {
+    process.env.TAD_STORAGE_GC_OPERATOR_APPROVAL =
+      "AUTHORIZED_AFTER_VERIFIED_RESTORE";
+    mediaFindMany.mockResolvedValue([{ storageKey: "different.mp4" }]);
+    assetFindMany.mockResolvedValue([
+      { url: "https://cdn.example.invalid/custom-path/creative.mp4" },
+    ]);
+    await scheduler.handleOrphanCleanup();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it("refuses to delete when a storage URL decodes to traversal", async () => {
+    process.env.TAD_STORAGE_GC_OPERATOR_APPROVAL =
+      "AUTHORIZED_AFTER_VERIFIED_RESTORE";
+    mediaFindMany.mockResolvedValue([{ storageKey: "different.mp4" }]);
+    assetFindMany.mockResolvedValue([
+      {
+        url: "https://cdn.example.invalid/storage/v1/object/public/campaign-videos/%2e%2e%2Fescape.mp4",
+      },
+    ]);
+    await scheduler.handleOrphanCleanup();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it("does not incorrectly protect a different bucket using a foreign URL", async () => {
+    process.env.TAD_STORAGE_GC_OPERATOR_APPROVAL =
+      "AUTHORIZED_AFTER_VERIFIED_RESTORE";
+    mediaFindMany.mockResolvedValue([{ storageKey: "different.mp4" }]);
+    assetFindMany.mockResolvedValue([
+      {
+        url: "https://cdn.example.invalid/storage/v1/object/public/ads-videos/synthetic-orphan.mp4",
+      },
+    ]);
+    await scheduler.handleOrphanCleanup();
+    expect(remove).toHaveBeenCalledTimes(1);
+    expect(remove).toHaveBeenCalledWith(["synthetic-orphan.mp4"]);
+  });
 });

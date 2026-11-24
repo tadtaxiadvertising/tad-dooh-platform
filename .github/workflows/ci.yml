@@ -2,7 +2,7 @@ name: CI Quality Gates
 
 on:
   push:
-    branches: [main, develop, validation/mobile-gateway-ci-20261122, security/p0-538-media-gc-failclosed-20261124]
+    branches: [main, develop, validation/mobile-gateway-ci-20261122, security/p0-538-media-gc-failclosed-20261124, security/p0-538-media-gc-inventory-guard-20261124]
   pull_request:
     branches: [main, validation/mobile-gateway-pr-target-20261122]
 

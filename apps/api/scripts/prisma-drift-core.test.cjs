@@ -620,3 +620,39 @@ test("native UUID source check is wired into the runtime drift comparator", () =
   const core = fs.readFileSync(path.join(__dirname, "prisma-drift-core.cjs"), "utf8");
   assert.match(core, /nativeUuidFields\?\.has/);
 });
+
+
+test("real CampaignExpiration.campaignId native UUID is checked without DMMF nativeType", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { Prisma } = require("@prisma/client");
+  const schemaSource = fs.readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
+  const models = Prisma.dmmf.datamodel.models;
+  const contract = inspectSchemaStringIds({ schemaSource, models });
+  assert.equal(contract.issueCount, 0);
+  assert.equal(contract.nativeUuidFields.has("CampaignExpiration.campaignId"), true);
+  const model = models.find((m) => m.name === "CampaignExpiration");
+  assert.ok(model?.fields.find((f) => f.name === "campaignId" && f.type === "String"));
+  const input = {
+    models: [model],
+    tables: [{ table_name: "campaign_expirations" }],
+    columns: [
+      { table_name: "campaign_expirations", column_name: "id", udt_name: "uuid" },
+      { table_name: "campaign_expirations", column_name: "campaign_id", udt_name: "uuid" },
+    ],
+    idTypes: contract.idTypes,
+    nativeUuidFields: contract.nativeUuidFields,
+  };
+  const report = auditPrismaSchema(input);
+  assert.equal(report.scalarTypeMismatchCount, 0);
+  const wrong = auditPrismaSchema({
+    ...input,
+    columns: input.columns.map((col) =>
+      col.column_name === "campaign_id" ? { ...col, udt_name: "text" } : col),
+  });
+  assert.deepEqual(
+    wrong.scalarTypeMismatches.map(({ table, column, expected, actual }) =>
+      [table, column, expected, actual]),
+    [["campaign_expirations", "campaign_id", "uuid", "text"]],
+  );
+});

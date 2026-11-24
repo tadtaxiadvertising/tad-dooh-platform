@@ -7,7 +7,7 @@ import type { Prisma } from "@prisma/client";
  * Never pass an arbitrary hardware string to a UUID comparison: PostgreSQL
  * raises invalid input syntax for type uuid before the OR branch can match.
  */
-function isCanonicalUuid(value: string): boolean {
+export function isCanonicalUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     value,
   );

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { assertNoDeviceHardwareUuidAlias } from "../device/device-identity-collision.guard";
 import { Prisma } from "@prisma/client";
 import { NotificationsService } from "../notifications/notifications.service";
 import { createUmamiClient } from "../../utils/umami";
@@ -100,6 +101,7 @@ export class AnalyticsService {
       });
 
       if (!device) {
+        await assertNoDeviceHardwareUuidAlias(this.prisma, dto.deviceId);
         try {
           device = await this.prisma.device.create({
             data: {

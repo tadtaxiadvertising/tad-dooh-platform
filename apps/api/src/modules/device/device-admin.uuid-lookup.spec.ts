@@ -1,7 +1,7 @@
 import type { PrismaService } from "../prisma/prisma.service";
 import type { DeviceService } from "./device.service";
 import { DeviceAdminController } from "./device-admin.controller";
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, ConflictException } from "@nestjs/common";
 
 describe("DeviceAdminController hardware/UUID lookup", () => {
   const uuid = "e8e7cf0a-3cc0-4c78-a7bd-d899d54ad11d";
@@ -24,6 +24,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        create: jest.fn(),
         update: jest.fn(),
       },
       deviceCampaign: {
@@ -42,6 +43,22 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     );
     return { controller, prisma, tx };
   };
+
+  it("refuses admin creation when UUID hardware is another device PK", async () => {
+    const { controller, prisma } = setup();
+    prisma.device.findUnique.mockResolvedValue({
+      id: uuid,
+      deviceId: "TAD-OTHER",
+    });
+    await expect(controller.createDevice({ deviceId: uuid })).rejects.toThrow(
+      ConflictException,
+    );
+    expect(prisma.device.findUnique).toHaveBeenCalledWith({
+      where: { id: uuid },
+      select: { id: true, deviceId: true },
+    });
+    expect(prisma.device.create).not.toHaveBeenCalled();
+  });
 
   it("queries campaigns by hardware ID without a UUID cast", async () => {
     const { controller, prisma } = setup();

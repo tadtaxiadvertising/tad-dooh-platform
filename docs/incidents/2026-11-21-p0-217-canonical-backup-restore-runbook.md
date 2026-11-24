@@ -74,6 +74,51 @@ provides off-site backup evidence, verified managed Auth/Storage coverage,
 byte-level comparisons, and a real isolated application restore test. Do not
 treat this result as approval for production DDL, migration or deployment.
 
+## Optional single-command G0 component preflight (non-release, offline)
+
+The repository's individual source-export, Storage-byte and source/clone
+aggregate verifiers can be run through a single **offline** command. This is
+useful after an owner has independently produced the restricted private files
+described below. It does **not** download them, validate that two snapshots
+actually came from separate databases, establish recovery ownership, prove
+managed Auth restoration or certify an encrypted off-site backup.
+
+The infrastructure owner sets **only non-secret paths, an independent project
+ref and an independently captured object count** in a private PowerShell
+session. None of these files or values should be added to Git, GitHub issues
+or CI artifacts. Use paths outside every Git checkout.
+
+~~~powershell
+$env:TAD_EXPECTED_SUPABASE_PROJECT_REF = "ltdcdhqixvbpdcitthqf"
+$env:TAD_EXPECTED_STORAGE_OBJECT_COUNT = "<source count checked at export time>"
+$env:TAD_RECOVERY_SQL_EXPORT_DIR = "<private encrypted path to SQL manifest and dumps>"
+$env:TAD_RECOVERY_STORAGE_EXPORT_DIR = "<private encrypted path to Storage byte manifest and files>"
+$env:TAD_RECOVERY_SOURCE_AGGREGATES_FILE = "<private source aggregate JSON>"
+$env:TAD_RECOVERY_CLONE_AGGREGATES_FILE = "<private isolated clone aggregate JSON>"
+try {
+    node scripts/api-recovery-evidence-preflight.cjs
+    if ($LASTEXITCODE -ne 2) { throw "RECOVERY_EVIDENCE_REFUSED: inspect private logs" }
+    Write-Host "LOCAL_COMPONENT_CHECKS_MATCH; RESTORE_AND_PRODUCTION_RELEASE_UNVERIFIED"
+} finally {
+    @(
+      "TAD_EXPECTED_SUPABASE_PROJECT_REF", "TAD_EXPECTED_STORAGE_OBJECT_COUNT",
+      "TAD_RECOVERY_SQL_EXPORT_DIR", "TAD_RECOVERY_STORAGE_EXPORT_DIR",
+      "TAD_RECOVERY_SOURCE_AGGREGATES_FILE",
+      "TAD_RECOVERY_CLONE_AGGREGATES_FILE"
+    ) | ForEach-Object { Remove-Item "Env:\$_" -ErrorAction SilentlyContinue }
+}
+~~~
+
+The tool rejects missing/noncanonical inputs and individual checker errors
+without printing sensitive paths, SQL, object names or connection URLs. It
+deliberately exits **2 even when every local component matches**; exit 0 is
+never issued, to prevent accidental use as a CI/deployment authorization.
+The verdict is `RECOVERY_COMPONENTS_MATCH_RESTORE_UNVERIFIED`.
+Actual source consistency, independent off-site archive readback, complete
+managed Auth/Storage state and object bytes, isolated restoration, application
+smoke tests, human review and migration/rollout approval remain mandatory
+**G0 hard stops**. This tool must never replace them.
+
 ## Step 1: owner-operated logical export on Windows (no production writes)
 
 Supabase's current CLI documentation describes three complementary logical exports: roles, schema and data. The CLI version matters (v3 uses --remote=<ref|branch|url> and targets local by default). Review the **installed** supabase db dump --help before these commands. Docker Desktop is required by the CLI workflow. Run in a private PowerShell session with an authenticated Supabase CLI session, not with a password embedded into command arguments.

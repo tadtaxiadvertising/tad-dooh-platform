@@ -200,5 +200,4 @@ describe("MediaScheduler: fail-closed orphan cleanup", () => {
     expect(remove).toHaveBeenCalledTimes(1);
     expect(remove).toHaveBeenCalledWith(["synthetic-orphan.mp4"]);
   });
-
 });

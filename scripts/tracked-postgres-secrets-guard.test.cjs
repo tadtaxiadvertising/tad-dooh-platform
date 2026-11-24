@@ -479,6 +479,56 @@ test("manual Supabase audit keeps tokens and passwords off process argv and avoi
   assert.doesNotMatch(preflight.stdout + preflight.stderr, /postgresql:\/\//);
 });
 
+test("scheduled security audit refuses a valid but wrong production project", {
+  skip: process.platform === "win32",
+}, () => {
+  const src = readFileSync(
+    path.join(root, ".github/workflows/security-audit-weekly.yml"),
+    "utf8",
+  );
+  // Execute the preflight alone; no Supabase or GitHub endpoint is contacted.
+  const start = src.indexOf("          # Refuse missing credentials");
+  const end = src.indexOf("          # Libpq reads the password", start);
+  assert.ok(start >= 0 && end > start, "Expected credential and project preflight");
+  const script = src
+    .slice(start, end)
+    .split("\n")
+    .map((line) => line.startsWith("          ") ? line.slice(10) : line)
+    .join("\n");
+  assert.match(script, /AUDIT_EXPECTED_PROJECT_REF="ltdcdhqixvbpdcitthqf"/);
+  assert.match(script, /SUPABASE_PROJECT_REF.*AUDIT_EXPECTED_PROJECT_REF/);
+
+  function run(projectRef, token = "synthetic-token", password = "synthetic-password") {
+    return spawnSync("bash", ["-c", "set -euo pipefail\n" + script], {
+      env: {
+        PATH: process.env.PATH || "",
+        SUPABASE_PROJECT_REF: projectRef,
+        SUPABASE_ACCESS_TOKEN: token,
+        DB_PASSWORD: password,
+      },
+      encoding: "utf8",
+      timeout: 4000,
+    });
+  }
+
+  const valid = run("ltdcdhqixvbpdcitthqf");
+  assert.equal(valid.status, 0, "Owner-confirmed project must be accepted");
+  for (const invalid of [
+    run("aaaaaaaaaaaaaaaaaaaa"),
+    run("REPLACE_WITH_SECRET"),
+    run(""),
+    run("ltdcdhqixvbpdcitthqf", ""),
+    run("ltdcdhqixvbpdcitthqf", "synthetic-token", ""),
+  ]) {
+    assert.notEqual(invalid.status, 0, "Invalid audit target/configuration must stop");
+    assert.doesNotMatch(
+      invalid.stdout + invalid.stderr,
+      /synthetic-token|synthetic-password/,
+      "Preflight may never print credentials",
+    );
+  }
+});
+
 test("weekly Supabase audit fails closed on malformed Management API advisories", {
   skip: process.platform === "win32",
 }, () => {

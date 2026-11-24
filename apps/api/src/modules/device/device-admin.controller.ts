@@ -300,7 +300,7 @@ export class DeviceAdminController {
             },
           },
         },
-      });
+      }) : null;
 
       if (!device) {
         this.logger.warn(

@@ -42,6 +42,15 @@ jobs:
             echo "::error::Supabase security audit configuration missing or invalid."
             exit 1
           fi
+          # Fail closed on a valid but WRONG Supabase project. The identifier
+          # below is the independently confirmed EasyPanel API project (#217);
+          # changing production requires a reviewed update to this contract.
+          # A project ref is not a credential; no secret values are logged.
+          AUDIT_EXPECTED_PROJECT_REF="ltdcdhqixvbpdcitthqf"
+          if [[ "$SUPABASE_PROJECT_REF" != "$AUDIT_EXPECTED_PROJECT_REF" ]]; then
+            echo "::error::Supabase audit target does not match approved production project."
+            exit 1
+          fi
           # Libpq reads the password from process environment, not argv/URI.
           export PGHOST="db.$SUPABASE_PROJECT_REF.supabase.co"
           export PGUSER="postgres" PGDATABASE="postgres" PGPORT="5432"

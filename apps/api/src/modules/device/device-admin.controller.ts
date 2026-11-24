@@ -13,6 +13,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { DeviceService } from "./device.service";
+import { assertNoDeviceHardwareUuidAlias } from "./device-identity-collision.guard";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import {
   deviceIdentityWhere,
@@ -186,6 +187,8 @@ export class DeviceAdminController {
         "ID de dispositivo (hardware) es obligatorio",
       );
 
+    // Ensure a UUID-shaped hardware ID cannot alias another tablet's PK.
+    await assertNoDeviceHardwareUuidAlias(this.prisma, data.deviceId);
     // Check if hardware ID already exists
     const existing = await this.prisma.device.findUnique({
       where: { deviceId: data.deviceId },

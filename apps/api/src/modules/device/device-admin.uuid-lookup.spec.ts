@@ -20,7 +20,12 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
       device: { delete: jest.fn() },
     };
     const prisma = {
-      device: { findFirst: jest.fn(), findMany: jest.fn() },
+      device: {
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
       deviceCampaign: {
         findMany: jest.fn().mockResolvedValue([]),
         deleteMany: jest.fn(),
@@ -176,18 +181,77 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  it("rejects a hardware ID that collides with another device UUID even when queried by canonical ID", async () => {
+    const { controller, prisma } = setup();
+    const alias = "cad16f79-9e62-40fd-bd78-09b822916ce1";
+    prisma.device.findMany
+      .mockResolvedValueOnce([{ id: uuid, deviceId: alias }])
+      .mockResolvedValueOnce([
+        { id: uuid },
+        { id: alias },
+      ]);
+    await expect(controller.getDeviceCampaigns(uuid)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(prisma.deviceCampaign.findMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects a kiosk command with ambiguous UUID/hardware identity", async () => {
+    const { controller, prisma } = setup();
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "OTHER" },
+      { id: "cad16f79-9e62-40fd-bd78-09b822916ce1", deviceId: uuid },
+    ]);
+    await expect(controller.sendDeviceCommand(uuid, {
+      commandType: "REBOOT",
+    })).rejects.toThrow(BadRequestException);
+    expect(prisma.deviceCommand.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects ambiguous profile updates before mutating finance-related flags", async () => {
+    const { controller, prisma } = setup();
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "OTHER" },
+      { id: "cad16f79-9e62-40fd-bd78-09b822916ce1", deviceId: uuid },
+    ]);
+    await expect(controller.updateDeviceProfile(uuid, {
+      subscription_paid: true,
+    })).rejects.toThrow(BadRequestException);
+    expect(prisma.device.findUnique).not.toHaveBeenCalled();
+    expect(prisma.device.update).not.toHaveBeenCalled();
+  });
+
+  it("returns a clear ambiguous-ID error for profile reads, without exposing another driver", async () => {
+    const { controller, prisma } = setup();
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "OTHER" },
+      { id: "cad16f79-9e62-40fd-bd78-09b822916ce1", deviceId: uuid },
+    ]);
+    await expect(controller.getDeviceProfile(uuid)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(prisma.device.findUnique).not.toHaveBeenCalled();
+  });
+
   it("queues an admin command by real DB UUID after resolving a hardware ID", async () => {
     const { controller, prisma } = setup();
-    prisma.device.findFirst.mockResolvedValue({
+    prisma.device.findMany.mockResolvedValue([{
       id: uuid,
       deviceId: "TAD-0001",
-    });
+    }]);
     prisma.deviceCommand.create.mockResolvedValue({ id: "command-1" });
     await controller.sendDeviceCommand("TAD-0001", {
       commandType: "FORCE_SYNC",
     });
-    expect(prisma.device.findFirst).toHaveBeenCalledWith({
+    expect(prisma.device.findMany).toHaveBeenNthCalledWith(1, {
       where: { deviceId: "TAD-0001" },
+      select: { id: true, deviceId: true },
+      take: 2,
+    });
+    expect(prisma.device.findMany).toHaveBeenNthCalledWith(2, {
+      where: { deviceId: "TAD-0001" },
+      select: { id: true },
+      take: 2,
     });
     expect(prisma.deviceCommand.create).toHaveBeenCalledWith({
       data: expect.objectContaining({

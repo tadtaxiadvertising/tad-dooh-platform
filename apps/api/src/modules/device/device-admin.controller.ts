@@ -17,6 +17,13 @@ import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { deviceIdentityWhere } from "../campaign/device-identity-lookup";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
+// Only missing legacy assignment tables may be ignored for compatibility.
+// Never report a successful removal after an authorization, schema or DB error.
+function isMissingLegacyTable(error: unknown): boolean {
+  return typeof error === "object" && error !== null &&
+    "code" in error && error.code === "P2021";
+}
+
 const KIOSK_COMMAND_TYPES = [
   "FORCE_SYNC",
   "SCREEN_ON",
@@ -125,8 +132,9 @@ export class DeviceAdminController {
           campaign_id: campaignId,
         },
       });
-    } catch {
+    } catch (error: unknown) {
       // A deployment may only have the legacy assignment table; try it below.
+      if (!isMissingLegacyTable(error)) throw error;
     }
 
     // 2. Intentamos borrar en la tabla v1 (legacy)
@@ -137,8 +145,9 @@ export class DeviceAdminController {
           deviceId: device.deviceId,
         },
       });
-    } catch {
+    } catch (error: unknown) {
       // Removing an assignment remains idempotent when the legacy table is absent.
+      if (!isMissingLegacyTable(error)) throw error;
     }
 
     return {

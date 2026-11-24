@@ -120,6 +120,10 @@ jobs:
           echo ""
           echo "--- 3. Storage Usage ---"
           STORAGE=$(api_get "/storage/buckets")
+          if ! jq -e 'type == "array" and all(.[]; type == "object" and (.id | type == "string" and length > 0) and (.name | type == "string" and length > 0) and (.public | type == "boolean"))' <<<"$STORAGE" >/dev/null; then
+            echo "::error::Invalid required Supabase Storage bucket response."
+            exit 1
+          fi
           echo "$STORAGE" | jq -r '.[] | "\(.name): \(.public // false | if . then "public" else "private" end) - \(.file_size_limit // "no limit")"'
           
           # Total storage via Management API (if available)
@@ -130,6 +134,10 @@ jobs:
           echo ""
           echo "--- 4. Auth Users & Config ---"
           AUTH_CONFIG=$(api_get "/config/auth")
+          if ! jq -e 'type == "object" and (.disable_signup | type == "boolean") and (.external_email_enabled | type == "boolean")' <<<"$AUTH_CONFIG" >/dev/null; then
+            echo "::error::Invalid required Supabase Auth configuration response."
+            exit 1
+          fi
           echo "$AUTH_CONFIG" | jq '{leaked_password_protection_enabled, password_min_length, enable_signup, mfa_enabled, jwt_expiry, session_timebox, enable_email_confirmations}'
           
           # Get user count (approximate via list with limit)
@@ -140,6 +148,10 @@ jobs:
           echo ""
           echo "--- 5. Edge Functions ---"
           FUNCTIONS=$(api_get "/functions")
+          if ! jq -e 'type == "array" and all(.[]; type == "object" and (.slug | type == "string" and length > 0) and (.name | type == "string" and length > 0))' <<<"$FUNCTIONS" >/dev/null; then
+            echo "::error::Invalid required Supabase Edge Functions response."
+            exit 1
+          fi
           FUNC_COUNT=$(echo "$FUNCTIONS" | jq 'length')
           echo "Deployed functions: $FUNC_COUNT"
           echo "$FUNCTIONS" | jq -r '.[] | "\(.name): v\(.version // "latest") - \(.status // "unknown")"'

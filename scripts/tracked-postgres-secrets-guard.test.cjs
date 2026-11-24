@@ -568,6 +568,71 @@ test("weekly Supabase audit fails closed on malformed Management API advisories"
   }
 });
 
+test("weekly audit validates required Storage Auth and Functions payloads", {
+  skip: process.platform === "win32",
+}, () => {
+  const src = readFileSync(
+    path.join(root, ".github/workflows/security-audit-weekly.yml"),
+    "utf8",
+  );
+  const contracts = [
+    {
+      variable: "STORAGE",
+      after: 'echo "$STORAGE" | jq -r',
+      samples: [
+        [[], true],
+        [[{ id: "bucket-1", name: "media", public: false }], true],
+        [{ message: "unauthorized", status: 401 }, false],
+        [{ data: [] }, false],
+        [null, false],
+        [[{ id: "bucket-1", name: "media" }], false],
+      ],
+    },
+    {
+      variable: "AUTH_CONFIG",
+      after: 'echo "$AUTH_CONFIG" | jq',
+      samples: [
+        [{ disable_signup: false, external_email_enabled: true }, true],
+        [{ disable_signup: true, external_email_enabled: false }, true],
+        [{}, false],
+        [{ message: "forbidden", status: 403 }, false],
+        [{ disable_signup: null, external_email_enabled: true }, false],
+        [[], false],
+      ],
+    },
+    {
+      variable: "FUNCTIONS",
+      after: 'FUNC_COUNT=$(echo "$FUNCTIONS"',
+      samples: [
+        [[], true],
+        [[{ slug: "reconcile", name: "Reconcile" }], true],
+        [{ message: "not found" }, false],
+        [{ data: [] }, false],
+        [[{ slug: "reconcile" }], false],
+        [null, false],
+      ],
+    },
+  ];
+  for (const contract of contracts) {
+    const prefix = "if ! jq -e '";
+    const suffix = "' <<<\"$" + contract.variable + "\"";
+    const end = src.indexOf(suffix);
+    const start = src.lastIndexOf(prefix, end);
+    assert.ok(start >= 0 && end > start, contract.variable + " requires a jq predicate");
+    const filter = src.slice(start + prefix.length, end);
+    const useAt = src.indexOf(contract.after, end);
+    assert.ok(useAt > end, contract.variable + " must be validated before use");
+    for (const [payload, accepted] of contract.samples) {
+      const result = spawnSync("jq", ["-e", filter], {
+        input: JSON.stringify(payload),
+        encoding: "utf8",
+        timeout: 4000,
+      });
+      assert.equal(result.status === 0, accepted, contract.variable + " shape verdict");
+    }
+  }
+});
+
 test("manual Supabase audit rejects malformed advisories and only excepts the exact PostGIS table", {
   skip: process.platform === "win32",
 }, () => {

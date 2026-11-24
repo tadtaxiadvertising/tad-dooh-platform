@@ -45,6 +45,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # TEMPORARY diagnostic in PR #522: remove before final validation/merge.
+      - name: Show device-admin Prettier diff (temporary fail-closed)
+        run: |
+          set -euo pipefail
+          pnpm dlx prettier@3.9.10 --write \
+            apps/api/src/modules/device/device-admin.uuid-lookup.spec.ts \
+            apps/api/src/modules/device/__tests__/device-admin.controller.spec.ts >/dev/null
+          git --no-pager diff -- \
+            apps/api/src/modules/device/device-admin.uuid-lookup.spec.ts \
+            apps/api/src/modules/device/__tests__/device-admin.controller.spec.ts
+          exit 1
+
       - name: Format check (prettier)
         run: |
           set -euo pipefail

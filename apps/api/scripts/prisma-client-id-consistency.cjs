@@ -6,6 +6,7 @@
 // This function never reads the database or any credential.
 function inspectSchemaStringIds({ schemaSource, models }) {
   const idTypes = new Map();
+  const nativeUuidFields = new Set();
   const sourceModels = new Set();
   const issues = [];
 
@@ -15,6 +16,8 @@ function inspectSchemaStringIds({ schemaSource, models }) {
     sourceModels.add(modelName);
     for (const rawLine of modelBody.split(/\r?\n/)) {
       const line = rawLine.split("//")[0].trim();
+      const uuidScalar = line.match(/^([A-Za-z]\w*)\s+String\??\s+.*@db\.Uuid\b/);
+      if (uuidScalar) nativeUuidFields.add(modelName + "." + uuidScalar[1]);
       const id = line.match(/^([A-Za-z]\w*)\s+String\s+.*@id\b/);
       if (!id) continue;
 
@@ -44,6 +47,17 @@ function inspectSchemaStringIds({ schemaSource, models }) {
     }
   }
 
+  for (const key of nativeUuidFields) {
+    const [modelName, fieldName] = key.split(".");
+    const field = clientModels.get(modelName)?.fields?.find(
+      (candidate) => candidate.name === fieldName,
+    );
+    if (!field || field.kind !== "scalar" || field.type !== "String" ||
+        field.isList) {
+      issues.push({ model: modelName, field: fieldName, code: "GENERATED_UUID_FIELD_MISMATCH" });
+    }
+  }
+
   for (const key of idTypes.keys()) {
     const [modelName, fieldName] = key.split(".");
     const field = clientModels.get(modelName)?.fields?.find(
@@ -59,7 +73,7 @@ function inspectSchemaStringIds({ schemaSource, models }) {
       b.model + "." + b.field + "." + b.code,
     ),
   );
-  return { idTypes, issueCount: issues.length, issues };
+  return { idTypes, nativeUuidFields, issueCount: issues.length, issues };
 }
 
 module.exports = { inspectSchemaStringIds };

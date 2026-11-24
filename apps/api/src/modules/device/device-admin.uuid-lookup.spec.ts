@@ -32,8 +32,9 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
       },
       playlistItem: { deleteMany: jest.fn() },
       deviceCommand: { create: jest.fn() },
-      $transaction: jest.fn(async (fn: (client: typeof tx) => Promise<unknown>) =>
-        fn(tx)),
+      $transaction: jest.fn(
+        async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx),
+      ),
     };
     const controller = new DeviceAdminController(
       prisma as unknown as PrismaService,
@@ -42,12 +43,11 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     return { controller, prisma, tx };
   };
 
-  it("fetches campaigns by hardware ID without binding it to a UUID column", async () => {
+  it("queries campaigns by hardware ID without a UUID cast", async () => {
     const { controller, prisma } = setup();
-    prisma.device.findMany.mockResolvedValue([{
-      id: uuid,
-      deviceId: "TAD-0001",
-    }]);
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "TAD-0001" },
+    ]);
     await controller.getDeviceCampaigns("TAD-0001");
     expect(prisma.device.findMany).toHaveBeenCalledWith({
       where: { deviceId: "TAD-0001" },
@@ -71,24 +71,34 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     });
   });
 
-
-
-  it("deduplicates the same campaign assigned via UUID and legacy hardware ID", async () => {
+  it("deduplicates dual-ID campaign assignments", async () => {
     const { controller, prisma } = setup();
-    prisma.device.findMany.mockResolvedValue([{ id: uuid, deviceId: "TAD-0001" }]);
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "TAD-0001" },
+    ]);
     const campaign = { id: "CAMP-1", name: "Example" };
     const earlier = new Date("2026-01-01T00:00:00Z");
     const later = new Date("2026-01-02T00:00:00Z");
     prisma.deviceCampaign.findMany.mockResolvedValue([
-      { device_id: uuid, campaign_id: campaign.id, campaign, assigned_at: earlier },
-      { device_id: "TAD-0001", campaign_id: campaign.id, campaign, assigned_at: later },
+      {
+        device_id: uuid,
+        campaign_id: campaign.id,
+        campaign,
+        assigned_at: earlier,
+      },
+      {
+        device_id: "TAD-0001",
+        campaign_id: campaign.id,
+        campaign,
+        assigned_at: later,
+      },
     ]);
     await expect(controller.getDeviceCampaigns("TAD-0001")).resolves.toEqual([
       { ...campaign, assigned_at: earlier },
     ]);
   });
 
-  it("rejects ambiguous UUID-like hardware identities before reading assignments", async () => {
+  it("rejects ambiguous identifiers before listing campaigns", async () => {
     const { controller, prisma } = setup();
     prisma.device.findMany.mockResolvedValue([
       { id: uuid, deviceId: "OTHER" },
@@ -100,16 +110,22 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.deviceCampaign.findMany).not.toHaveBeenCalled();
   });
 
-  it("removes both dual-ID v2 assignments and the hardware v1 playlist entry", async () => {
+  it("removes UUID/hardware assignments and the legacy playlist", async () => {
     const { controller, prisma } = setup();
-    prisma.device.findMany.mockResolvedValue([{ id: uuid, deviceId: "TAD-0001" }]);
-    await expect(controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"))
-      .resolves.toEqual({
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "TAD-0001" },
+    ]);
+    await expect(
+      controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"),
+    ).resolves.toEqual({
         success: true,
         message: "Campaña removida del dispositivo exitosamente",
       });
     expect(prisma.deviceCampaign.deleteMany).toHaveBeenCalledWith({
-      where: { device_id: { in: [uuid, "TAD-0001"] }, campaign_id: "CAMP-1" },
+      where: {
+        device_id: { in: [uuid, "TAD-0001"] },
+        campaign_id: "CAMP-1",
+      },
     });
     expect(prisma.playlistItem.deleteMany).toHaveBeenCalledWith({
       where: { campaignId: "CAMP-1", deviceId: "TAD-0001" },
@@ -122,45 +138,62 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
       { id: uuid, deviceId: "OTHER" },
       { id: "a7df15b8-96df-41ee-a2f2-faf6d7724b26", deviceId: uuid },
     ]);
-    await expect(controller.removeCampaignFromDevice(uuid, "CAMP-1"))
-      .rejects.toThrow(BadRequestException);
+    await expect(
+      controller.removeCampaignFromDevice(uuid, "CAMP-1"),
+    ).rejects.toThrow(BadRequestException);
     expect(prisma.deviceCampaign.deleteMany).not.toHaveBeenCalled();
     expect(prisma.playlistItem.deleteMany).not.toHaveBeenCalled();
   });
 
-  it("fails closed when removing v2 assignments hits a non-missing-table error", async () => {
+  it("surfaces unexpected v2 assignment deletion failures", async () => {
     const { controller, prisma } = setup();
-    prisma.device.findMany.mockResolvedValue([{ id: uuid, deviceId: "TAD-0001" }]);
-    prisma.deviceCampaign.deleteMany.mockRejectedValue(new Error("synthetic DB unavailable"));
-    await expect(controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"))
-      .rejects.toThrow("synthetic DB unavailable");
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "TAD-0001" },
+    ]);
+    prisma.deviceCampaign.deleteMany.mockRejectedValue(
+      new Error("synthetic DB unavailable"),
+    );
+    await expect(
+      controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"),
+    ).rejects.toThrow("synthetic DB unavailable");
     expect(prisma.playlistItem.deleteMany).not.toHaveBeenCalled();
   });
 
-  it("allows an absent legacy v2 table only for the Prisma P2021 error code", async () => {
+  it("allows missing legacy v2 table only for P2021", async () => {
     const { controller, prisma } = setup();
-    prisma.device.findMany.mockResolvedValue([{ id: uuid, deviceId: "TAD-0001" }]);
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "TAD-0001" },
+    ]);
     prisma.deviceCampaign.deleteMany.mockRejectedValue(
       Object.assign(new Error("synthetic table missing"), { code: "P2021" }),
     );
-    await expect(controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"))
-      .resolves.toMatchObject({ success: true });
+    await expect(
+      controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"),
+    ).resolves.toMatchObject({ success: true });
     expect(prisma.playlistItem.deleteMany).toHaveBeenCalledTimes(1);
   });
 
-  it("fails closed when legacy v1 removal encounters an unexpected DB error", async () => {
+  it("surfaces unexpected v1 assignment deletion failures", async () => {
     const { controller, prisma } = setup();
-    prisma.device.findMany.mockResolvedValue([{ id: uuid, deviceId: "TAD-0001" }]);
-    prisma.playlistItem.deleteMany.mockRejectedValue(new Error("synthetic DB unavailable"));
-    await expect(controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"))
-      .rejects.toThrow("synthetic DB unavailable");
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "TAD-0001" },
+    ]);
+    prisma.playlistItem.deleteMany.mockRejectedValue(
+      new Error("synthetic DB unavailable"),
+    );
+    await expect(
+      controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"),
+    ).rejects.toThrow("synthetic DB unavailable");
   });
 
-  it("transactionally deletes both dual-ID assignment forms before deleting device", async () => {
+  it("deletes dual-ID assignments within device transaction", async () => {
     const { controller, prisma, tx } = setup();
-    prisma.device.findMany.mockResolvedValue([{ id: uuid, deviceId: "TAD-0001" }]);
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "TAD-0001" },
+    ]);
     await expect(controller.deleteDevice("TAD-0001")).resolves.toEqual({
-      success: true, message: "Dispositivo TAD-0001 eliminado correctamente",
+      success: true,
+      message: "Dispositivo TAD-0001 eliminado correctamente",
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(tx.deviceCampaign.deleteMany).toHaveBeenCalledWith({
@@ -169,7 +202,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(tx.device.delete).toHaveBeenCalledWith({ where: { id: uuid } });
   });
 
-  it("refuses ambiguous device deletion without entering transaction", async () => {
+  it("rejects ambiguous device deletion before transaction", async () => {
     const { controller, prisma } = setup();
     prisma.device.findMany.mockResolvedValue([
       { id: uuid, deviceId: "OTHER" },
@@ -181,47 +214,44 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("rejects a hardware ID that collides with another device UUID even when queried by canonical ID", async () => {
+  it("rejects canonical lookup if hardware aliases another UUID", async () => {
     const { controller, prisma } = setup();
     const alias = "cad16f79-9e62-40fd-bd78-09b822916ce1";
     prisma.device.findMany
       .mockResolvedValueOnce([{ id: uuid, deviceId: alias }])
-      .mockResolvedValueOnce([
-        { id: uuid },
-        { id: alias },
-      ]);
+      .mockResolvedValueOnce([{ id: uuid }, { id: alias }]);
     await expect(controller.getDeviceCampaigns(uuid)).rejects.toThrow(
       BadRequestException,
     );
     expect(prisma.deviceCampaign.findMany).not.toHaveBeenCalled();
   });
 
-  it("rejects a kiosk command with ambiguous UUID/hardware identity", async () => {
+  it("blocks kiosk commands for ambiguous identities", async () => {
     const { controller, prisma } = setup();
     prisma.device.findMany.mockResolvedValue([
       { id: uuid, deviceId: "OTHER" },
       { id: "cad16f79-9e62-40fd-bd78-09b822916ce1", deviceId: uuid },
     ]);
-    await expect(controller.sendDeviceCommand(uuid, {
-      commandType: "REBOOT",
-    })).rejects.toThrow(BadRequestException);
+    await expect(
+      controller.sendDeviceCommand(uuid, { commandType: "REBOOT" }),
+    ).rejects.toThrow(BadRequestException);
     expect(prisma.deviceCommand.create).not.toHaveBeenCalled();
   });
 
-  it("rejects ambiguous profile updates before mutating finance-related flags", async () => {
+  it("blocks profile mutation for ambiguous identities", async () => {
     const { controller, prisma } = setup();
     prisma.device.findMany.mockResolvedValue([
       { id: uuid, deviceId: "OTHER" },
       { id: "cad16f79-9e62-40fd-bd78-09b822916ce1", deviceId: uuid },
     ]);
-    await expect(controller.updateDeviceProfile(uuid, {
-      subscription_paid: true,
-    })).rejects.toThrow(BadRequestException);
+    await expect(
+      controller.updateDeviceProfile(uuid, { subscription_paid: true }),
+    ).rejects.toThrow(BadRequestException);
     expect(prisma.device.findUnique).not.toHaveBeenCalled();
     expect(prisma.device.update).not.toHaveBeenCalled();
   });
 
-  it("returns a clear ambiguous-ID error for profile reads, without exposing another driver", async () => {
+  it("blocks profile reads for ambiguous identities", async () => {
     const { controller, prisma } = setup();
     prisma.device.findMany.mockResolvedValue([
       { id: uuid, deviceId: "OTHER" },
@@ -233,12 +263,11 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.device.findUnique).not.toHaveBeenCalled();
   });
 
-  it("queues an admin command by real DB UUID after resolving a hardware ID", async () => {
+  it("queues kiosk commands by canonical UUID", async () => {
     const { controller, prisma } = setup();
-    prisma.device.findMany.mockResolvedValue([{
-      id: uuid,
-      deviceId: "TAD-0001",
-    }]);
+    prisma.device.findMany.mockResolvedValue([
+      { id: uuid, deviceId: "TAD-0001" },
+    ]);
     prisma.deviceCommand.create.mockResolvedValue({ id: "command-1" });
     await controller.sendDeviceCommand("TAD-0001", {
       commandType: "FORCE_SYNC",

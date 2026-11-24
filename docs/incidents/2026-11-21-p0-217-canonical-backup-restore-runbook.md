@@ -46,6 +46,34 @@ Before approving the **full backup/restore gate**, the infrastructure owner and 
 
 Until all four are verified, report **`MANAGED_SCHEMA_COVERAGE_UNVERIFIED`** and **`RESTORE_NOT_VERIFIED`**; maintain incident #217 as P0 and the migration/deployment freeze. Do **not** improvise a live `pg_dump`/admin export targeting privileged managed tables or enable broad `anon`/`authenticated` grants just to complete this checklist; design and rehearse that separate export with the owner first. The official [Supabase backup/restore guide](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore) also calls out special handling for custom `auth`/`storage` changes.
 
+## Optional automated aggregate comparison (still NOT restore proof)
+
+After the infrastructure owner has created an independently authorized, consistent
+source backup and a side-effect-disabled isolated clone, run the existing
+[read-only source/clone SQL baseline](sql/2026-11-21-restore-readonly-proof.sql)
+once against each database. Privately save **only the one-row aggregate JSON
+objects** (keys corresponding exactly to the SQL output aliases) into two
+separate regular files outside Git; no SQL records, access tokens, object names,
+credentials, connection URLs or email addresses are required.
+
+Run the offline comparison from a trusted checkout. Use local paths to these
+private aggregate-only JSON files (do not paste the paths or contents into CI):
+
+```sh
+node scripts/compare-supabase-restore-snapshots.cjs /secure/source-aggregate.json /secure/clone-aggregate.json
+```
+
+The only acceptable diagnostic verdict is
+`AGGREGATES_MATCH_RESTORE_UNVERIFIED`. Different counts, flags, bad
+types, unexpected fields, symlinks or the exact same file fail closed. Even a
+passing comparison **does not prove** the files came from different databases,
+the snapshot was point-in-time consistent, Storage object bytes were preserved,
+Auth identities can sign in, the off-site copy is encrypted or the application
+can run. The **G0 hard stop remains active** until an independent operator
+provides off-site backup evidence, verified managed Auth/Storage coverage,
+byte-level comparisons, and a real isolated application restore test. Do not
+treat this result as approval for production DDL, migration or deployment.
+
 ## Step 1: owner-operated logical export on Windows (no production writes)
 
 Supabase's current CLI documentation describes three complementary logical exports: roles, schema and data. The CLI version matters (v3 uses --remote=<ref|branch|url> and targets local by default). Review the **installed** supabase db dump --help before these commands. Docker Desktop is required by the CLI workflow. Run in a private PowerShell session with an authenticated Supabase CLI session, not with a password embedded into command arguments.

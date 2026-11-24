@@ -31,12 +31,40 @@ test("GHCR publisher refuses unprotected main before registry login or image bui
   const dockerSetup = workflow.indexOf("- name: Set up Docker Buildx");
   assert.ok(headCheck >= 0 && protectionCheck > headCheck);
   assert.ok(dockerSetup > protectionCheck, "Release protection must precede Docker steps");
-  assert.match(workflow, /enforcedChecks\?\.enforcement_level !== 'on'/);
+  assert.match(workflow, /enforcedChecks\?\.enforcement_level !== 'everyone'/);
   assert.match(workflow, /!Array\.isArray\(enforcedChecks\.checks\)/);
   assert.match(workflow, /check\.context === 'Summary'/);
   assert.match(workflow, /check\.app_id === 15368/);
   assert.match(workflow, /REFUSED: main branch protection is not active/);
   assert.match(workflow, /REFUSED: app-pinned Summary is not enforced/);
+});
+
+test("GHCR branch gate accepts enforced-for-everyone and refuses partial or absent enforcement", () => {
+  // Execute the exact GitHub-script preflight body with synthetic branch
+  // metadata; a regex-only contract would miss an impossible API enum.
+  const start = workflow.indexOf("if (current.data.protected !== true)");
+  const end = workflow.indexOf("const requiredWorkflows =", start);
+  assert.ok(start >= 0 && end > start);
+  const gate = new Function("current", workflow.slice(start, end) + "\nreturn true;");
+  const requiredCheck = { context: "Summary", app_id: 15368 };
+  const branch = (level, checks = [requiredCheck], protectedMain = true) => ({
+    data: {
+      protected: protectedMain,
+      protection: {
+        required_status_checks: { enforcement_level: level, checks },
+      },
+    },
+  });
+
+  assert.equal(gate(branch("everyone")), true);
+  for (const level of ["off", "non_admins", "on", "unknown", undefined]) {
+    assert.throws(() => gate(branch(level)), /REFUSED:/,
+      "Unsafe or undocumented enforcement level must fail closed: " + String(level));
+  }
+  assert.throws(() => gate(branch("everyone", [requiredCheck], false)), /REFUSED:/);
+  assert.throws(() => gate(branch("everyone", [])), /REFUSED:/);
+  assert.throws(() => gate(branch("everyone", [{ context: "Summary", app_id: 77 }])), /REFUSED:/);
+  assert.throws(() => gate(branch("everyone", undefined, false)), /REFUSED:/);
 });
 
 test("publication requires executed and successful exact-SHA CI, not a green-looking label", () => {

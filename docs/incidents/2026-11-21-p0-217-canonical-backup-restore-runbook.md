@@ -5,6 +5,8 @@
 
 This document supplements issue https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/217. It does not replace the historical incident evidence or assert that production is recovered.
 
+**Updated forensic evidence (2026-11-24 UTC):** [Prisma model ↔ migration coverage matrix](2026-11-24-p0-217-migration-coverage-matrix.md) separates the 23 missing tables into **10 without direct creation in currently versioned migrations** and **13 with creation SQL in migrations recorded as finished**. These are different recovery cases; neither is permission to rerun historical SQL or to change production.
+
 ## Known current constraints (read-only)
 
 - Supabase MCP returned ACTIVE_HEALTHY for ltdcdhqixvbpdcitthqf; organization plan Free; no development branches.

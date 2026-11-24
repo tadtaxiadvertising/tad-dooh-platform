@@ -226,6 +226,17 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.deviceCampaign.findMany).not.toHaveBeenCalled();
   });
 
+  it("fails closed if the device identity changes between resolution checks", async () => {
+    const { controller, prisma } = setup();
+    prisma.device.findMany
+      .mockResolvedValueOnce([{ id: uuid, deviceId: "TAD-0001" }])
+      .mockResolvedValueOnce([]);
+    await expect(
+      controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.deviceCampaign.deleteMany).not.toHaveBeenCalled();
+  });
+
   it("blocks kiosk commands for ambiguous identities", async () => {
     const { controller, prisma } = setup();
     prisma.device.findMany.mockResolvedValue([

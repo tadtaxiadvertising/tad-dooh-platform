@@ -32,15 +32,28 @@ test("API runtime section requires independent Supabase target pin", () => {
   assert.match(apiBlock, /postgres\.<project_ref>/);
 });
 
-test("pinned preflight accepts real provider-style independent URLs and rejects bare pooler username", () => {
+// Construct fixture URLs at runtime. Source files must never contain strings
+// that look like password-bearing production connection URLs (#244).
+function testDatabaseUrl(username, hostname, port) {
+  const url = new URL("postgresql://example.invalid");
+  url.username = username;
+  url.password = "synthetic-fixture-only-not-a-secret";
+  url.hostname = hostname;
+  url.port = String(port);
+  url.pathname = "/postgres";
+  return url.toString();
+}
+
+test("pinned preflight accepts project-scoped URLs and rejects bare pooler username", () => {
   const ref = "abcdefghijklmnopqrst";
+  const pooler = "aws-0-us-west-2.pooler.supabase.com";
   const fixture = {
     TAD_EXPECTED_SUPABASE_PROJECT_REF: ref,
     SUPABASE_URL: "https://" + ref + ".supabase.co",
-    DATABASE_URL: "postgresql://postgres." + ref + ":private@aws-0-us-west-2.pooler.supabase.com:6543/postgres",
-    DIRECT_URL: "postgresql://postgres:private@db." + ref + ".supabase.co:5432/postgres",
+    DATABASE_URL: testDatabaseUrl("postgres." + ref, pooler, 6543),
+    DIRECT_URL: testDatabaseUrl("postgres", "db." + ref + ".supabase.co", 5432),
   };
-  assert.deepEqual(inspectPinnedSupabaseTarget(fixture), { ok:true, code:"TARGET_MATCH" });
-  const invalid = {...fixture,DATABASE_URL:"postgresql://postgres:private@aws-0-us-west-2.pooler.supabase.com:6543/postgres"};
-  assert.deepEqual(inspectPinnedSupabaseTarget(invalid),{ok:false,code:"UNVERIFIABLE_TARGET"});
+  assert.deepEqual(inspectPinnedSupabaseTarget(fixture), { ok: true, code: "TARGET_MATCH" });
+  const invalid = { ...fixture, DATABASE_URL: testDatabaseUrl("postgres", pooler, 6543) };
+  assert.deepEqual(inspectPinnedSupabaseTarget(invalid), { ok: false, code: "UNVERIFIABLE_TARGET" });
 });

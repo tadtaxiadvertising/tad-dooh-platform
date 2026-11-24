@@ -31,8 +31,9 @@ describe("AnalyticsService public event device enrollment", () => {
 
   it("rejects unknown hardware matching another device UUID", async () => {
     const alias = "e8e7cf0a-3cc0-4c78-a7bd-d899d54ad11d";
-    deviceRead.mockImplementation(async ({ where }: { where: Record<string, string> }) =>
-      "id" in where ? { id: alias, deviceId: "TAD-OTHER" } : null,
+    deviceRead.mockImplementation(
+      async ({ where }: { where: Record<string, string> }) =>
+        "id" in where ? { id: alias, deviceId: "TAD-OTHER" } : null,
     );
 
     await expect(

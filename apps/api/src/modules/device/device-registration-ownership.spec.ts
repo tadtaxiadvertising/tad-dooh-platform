@@ -1,4 +1,5 @@
 import { DeviceService } from "./device.service";
+import { ConflictException } from "@nestjs/common";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 
 // The constructor requires JWT_SECRET even though registration neither signs
@@ -79,6 +80,44 @@ describe("DeviceService public registration ownership isolation", () => {
     });
     expect(result.driverId).toBeNull();
     expect(update.mock.calls[0][0].data).not.toHaveProperty("driverId");
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("rejects public UUID-form hardware that aliases another device PK", async () => {
+    const hardwareId = "e8e7cf0a-3cc0-4c78-a7bd-d899d54ad11d";
+    findUnique.mockResolvedValue({
+      id: hardwareId,
+      deviceId: "TAD-OTHER",
+    });
+
+    await expect(service.registerDevice({ device_id: hardwareId }))
+      .rejects.toThrow(ConflictException);
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: hardwareId },
+      select: { id: true, deviceId: true },
+    });
+    expect(create).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("rejects approval of an already-pending hardware UUID alias", async () => {
+    const hardwareId = "e8e7cf0a-3cc0-4c78-a7bd-d899d54ad11d";
+    findUnique.mockResolvedValue({
+      id: hardwareId,
+      deviceId: "TAD-OTHER",
+    });
+    await expect(service.approveDevice(hardwareId))
+      .rejects.toThrow(ConflictException);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("does not auto-enroll a conflicting alias via unknown heartbeat", async () => {
+    const hardwareId = "e8e7cf0a-3cc0-4c78-a7bd-d899d54ad11d";
+    findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: hardwareId, deviceId: "TAD-OTHER" });
+    await expect(service.deviceHeartbeat({ device_id: hardwareId }))
+      .rejects.toThrow(ConflictException);
     expect(create).not.toHaveBeenCalled();
   });
 

@@ -74,7 +74,7 @@ test("CLI writes only safe field names and verdict, not private paths or payload
   assert.equal(failed.status,1);
   assert.match(failed.stderr,/AGGREGATES_DIFFER.*auth_user_rows/);
   assert.ok(!failed.stderr.includes(root));
-});
+}));
 test("snapshot comparator fields track the repository's read-only recovery SQL",()=>{
   const sql = fs.readFileSync(path.resolve(__dirname,"../docs/incidents/sql/2026-11-21-restore-readonly-proof.sql"),"utf8");
   const aliases = [...sql.matchAll(/\bAS\s+([a-z_]+)(?=,|;|\s)/g)].map(m=>m[1]);

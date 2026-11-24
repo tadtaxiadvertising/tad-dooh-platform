@@ -79,6 +79,14 @@ test("streams all bytes to opaque local files and hashes without release approva
   // Never overwrite an existing backup directory.
   assert.equal(await exportStorage(env,{fetchImpl:mockFetch,checkStorageExportImpl:expectedVerifier}),"EXPORT_PRECHECK_FAILED");
 }));
+test("real offline Storage verifier accepts exported fixture bytes and manifest", () =>
+  fixture(async ({env}) => {
+    // Unlike the other tests, exercise the actual independently tested
+    // byte-hash verifier rather than substituting its synthetic spy.
+    const result = await exportStorage(env, { fetchImpl: mockFetch });
+    assert.equal(result, SUCCESS);
+  }));
+
 test("refuses wrong object byte count before manifest or success",()=>fixture(async ({env,out})=>{
   const verdict=await exportStorage(env,{fetchImpl:async()=>new Response("wrong-size",{status:200}),checkStorageExportImpl:expectedVerifier});
   assert.equal(verdict,"REMOTE_BYTES_SIZE_MISMATCH");

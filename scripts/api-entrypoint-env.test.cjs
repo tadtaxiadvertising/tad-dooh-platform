@@ -35,10 +35,10 @@ const migrationBoundary = `node() {
   case "\${1-}" in
     "../../scripts/verify-supabase-runtime-target.cjs")
       if [ "\${TAD_TEST_PINNED_FAIL:-}" = "1" ]; then
-        printf '%s\n' '[test] independent Supabase target rejected'
+        printf '%s\\n' '[test] independent Supabase target rejected'
         return 23
       fi
-      printf '%s\n' '[test] independent Supabase target verified'
+      printf '%s\\n' '[test] independent Supabase target verified'
       ;;
     "./scripts/check-supabase-target.cjs")
       if [ "\${TAD_TEST_PREFLIGHT_FAIL:-}" = "1" ]; then

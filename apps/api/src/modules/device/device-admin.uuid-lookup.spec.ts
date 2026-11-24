@@ -47,10 +47,12 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
   it("refuses admin creation when UUID hardware is another device PK", async () => {
     const { controller, prisma } = setup();
     prisma.device.findUnique.mockResolvedValue({
-      id: uuid, deviceId: "TAD-OTHER",
+      id: uuid,
+      deviceId: "TAD-OTHER",
     });
-    await expect(controller.createDevice({ deviceId: uuid }))
-      .rejects.toThrow(ConflictException);
+    await expect(controller.createDevice({ deviceId: uuid })).rejects.toThrow(
+      ConflictException,
+    );
     expect(prisma.device.findUnique).toHaveBeenCalledWith({
       where: { id: uuid },
       select: { id: true, deviceId: true },

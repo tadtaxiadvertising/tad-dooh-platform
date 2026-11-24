@@ -18,6 +18,15 @@ export class MediaScheduler {
    */
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async handleOrphanCleanup() {
+    // Fail closed until an independently restored media catalog and
+    // Storage object-byte backup have been verified by the operator.
+    if (
+      process.env.TAD_STORAGE_GC_OPERATOR_APPROVAL !==
+      "AUTHORIZED_AFTER_VERIFIED_RESTORE"
+    ) {
+      this.logger.warn("STORAGE_GC_DISABLED_PENDING_RECOVERY");
+      return;
+    }
     this.logger.log(
       "🧹 Iniciando limpieza de archivos huérfanos en Storage...",
     );
@@ -52,6 +61,13 @@ export class MediaScheduler {
         const assetUrls = await this.prisma.mediaAsset.findMany({
           select: { url: true },
         });
+
+        // Empty catalogs cannot prove an object is unreferenced; the
+        // current production catalog contains zero media/media_assets rows.
+        if (mediaKeys.length === 0 && assetUrls.length === 0) {
+          this.logger.warn("STORAGE_GC_SKIPPED_EMPTY_REFERENCE_CATALOG");
+          continue;
+        }
 
         const activeKeys = new Set([
           ...mediaKeys.map((m) => m.storageKey),

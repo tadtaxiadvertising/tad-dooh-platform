@@ -288,10 +288,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     );
     expect(prisma.device.findMany).toHaveBeenNthCalledWith(2, {
       where: {
-        OR: [
-          { id: { in: [uuid] } },
-          { deviceId: { in: [uuid, "TAD-0001"] } },
-        ],
+        OR: [{ id: { in: [uuid] } }, { deviceId: { in: [uuid, "TAD-0001"] } }],
       },
       select: { id: true },
       take: 2,
@@ -311,10 +308,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     ).rejects.toThrow(BadRequestException);
     expect(prisma.device.findMany).toHaveBeenNthCalledWith(2, {
       where: {
-        OR: [
-          { id: { in: [uuid] } },
-          { deviceId: { in: [uuid, "TAD-0001"] } },
-        ],
+        OR: [{ id: { in: [uuid] } }, { deviceId: { in: [uuid, "TAD-0001"] } }],
       },
       select: { id: true },
       take: 2,
@@ -338,10 +332,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     });
     expect(prisma.device.findMany).toHaveBeenNthCalledWith(2, {
       where: {
-        OR: [
-          { id: { in: [uuid] } },
-          { deviceId: { in: [uuid, "TAD-0001"] } },
-        ],
+        OR: [{ id: { in: [uuid] } }, { deviceId: { in: [uuid, "TAD-0001"] } }],
       },
       select: { id: true },
       take: 2,

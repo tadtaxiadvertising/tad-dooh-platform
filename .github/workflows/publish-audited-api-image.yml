@@ -41,13 +41,15 @@ jobs:
 
             // Green post-merge CI is not proof that branch rules were enforced.
             // Refuse image publication while the public branch endpoint reports
-            // no effective required Summary check (#313). This is NOT proof of
-            // mandatory reviews or a complete production release authorization.
+            // no effective required Summary check (#313). Only `everyone` is
+            // acceptable here: `on` is not a GitHub enum, and `non_admins`
+            // leaves administrative bypass possible. This public endpoint
+            // still cannot verify required reviews or an isolated restore.
             if (current.data.protected !== true) {
               throw new Error('REFUSED: main branch protection is not active (#313).');
             }
             const enforcedChecks = current.data.protection?.required_status_checks;
-            if (enforcedChecks?.enforcement_level !== 'on' ||
+            if (enforcedChecks?.enforcement_level !== 'everyone' ||
                 !Array.isArray(enforcedChecks.checks) ||
                 !enforcedChecks.checks.some(check => check.context === 'Summary' &&
                   check.app_id === 15368)) {

@@ -19,8 +19,9 @@ describe("hardware UUID alias registration guard", () => {
 
   it("checks UUID-form hardware against the UUID primary-key column", async () => {
     findUnique.mockResolvedValue(null);
-    await expect(assertNoDeviceHardwareUuidAlias(prisma, uuid))
-      .resolves.toBeUndefined();
+    await expect(
+      assertNoDeviceHardwareUuidAlias(prisma, uuid),
+    ).resolves.toBeUndefined();
     expect(findUnique).toHaveBeenCalledWith({
       where: { id: uuid },
       select: { id: true, deviceId: true },
@@ -29,21 +30,24 @@ describe("hardware UUID alias registration guard", () => {
 
   it("rejects a hardware ID aliasing the physical UUID of another device", async () => {
     findUnique.mockResolvedValue({ id: uuid, deviceId: "TAD-ORIGINAL" });
-    await expect(assertNoDeviceHardwareUuidAlias(prisma, uuid))
-      .rejects.toThrow(ConflictException);
+    await expect(assertNoDeviceHardwareUuidAlias(prisma, uuid)).rejects.toThrow(
+      ConflictException,
+    );
     expect(findUnique).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the same device identifier valid if the UUID and hardware ID match", async () => {
     findUnique.mockResolvedValue({ id: uuid, deviceId: uuid });
-    await expect(assertNoDeviceHardwareUuidAlias(prisma, uuid))
-      .resolves.toBeUndefined();
+    await expect(
+      assertNoDeviceHardwareUuidAlias(prisma, uuid),
+    ).resolves.toBeUndefined();
   });
 
   it("propagates DB errors rather than allowing enrollment on lookup failure", async () => {
     const unavailable = new Error("synthetic DB unavailable");
     findUnique.mockRejectedValue(unavailable);
-    await expect(assertNoDeviceHardwareUuidAlias(prisma, uuid))
-      .rejects.toBe(unavailable);
+    await expect(assertNoDeviceHardwareUuidAlias(prisma, uuid)).rejects.toBe(
+      unavailable,
+    );
   });
 });

@@ -39,6 +39,21 @@ jobs:
               throw new Error('REFUSED: main changed; rerun for the new SHA.');
             }
 
+            // Green post-merge CI is not proof that branch rules were enforced.
+            // Refuse image publication while the public branch endpoint reports
+            // no effective required Summary check (#313). This is NOT proof of
+            // mandatory reviews or a complete production release authorization.
+            if (current.data.protected !== true) {
+              throw new Error('REFUSED: main branch protection is not active (#313).');
+            }
+            const enforcedChecks = current.data.protection?.required_status_checks;
+            if (enforcedChecks?.enforcement_level !== 'on' ||
+                !Array.isArray(enforcedChecks.checks) ||
+                !enforcedChecks.checks.some(check => check.context === 'Summary' &&
+                  check.app_id === 15368)) {
+              throw new Error('REFUSED: app-pinned Summary is not enforced on main.');
+            }
+
             const requiredWorkflows = {
               'CI Quality Gates': {
                 'Format & Lint': ['Format check (prettier)', 'Lint (ESLint)'],

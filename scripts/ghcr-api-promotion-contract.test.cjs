@@ -25,6 +25,20 @@ test("image promotion is manual-only, main-only and tied to current head SHA", (
   assert.match(workflow, /head\.data\.commit\.sha !== sha|current\.data\.commit\.sha !== sha/);
 });
 
+test("GHCR publisher refuses unprotected main before registry login or image build", () => {
+  const headCheck = workflow.indexOf("current.data.commit.sha !== sha");
+  const protectionCheck = workflow.indexOf("current.data.protected !== true");
+  const dockerSetup = workflow.indexOf("- name: Set up Docker Buildx");
+  assert.ok(headCheck >= 0 && protectionCheck > headCheck);
+  assert.ok(dockerSetup > protectionCheck, "Release protection must precede Docker steps");
+  assert.match(workflow, /enforcedChecks\?\.enforcement_level !== 'on'/);
+  assert.match(workflow, /!Array\.isArray\(enforcedChecks\.checks\)/);
+  assert.match(workflow, /check\.context === 'Summary'/);
+  assert.match(workflow, /check\.app_id === 15368/);
+  assert.match(workflow, /REFUSED: main branch protection is not active/);
+  assert.match(workflow, /REFUSED: app-pinned Summary is not enforced/);
+});
+
 test("publication requires executed and successful exact-SHA CI, not a green-looking label", () => {
   assert.match(workflow, /head_sha: sha, event: 'push'/);
   assert.match(workflow, /run\.head_sha === sha/);

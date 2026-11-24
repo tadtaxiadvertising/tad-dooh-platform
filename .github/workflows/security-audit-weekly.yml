@@ -63,7 +63,14 @@ jobs:
           # 1. Security Advisories
           echo "--- 1. Security Advisories ---"
           ADVISORIES=$(api_get "/database/lints")
-          
+
+          # Management API errors or unexpected JSON must never count as zero
+          # advisories. Keep only aggregate counts in public artifacts.
+          if ! jq -e 'type == "array" and all(.[]; type == "object" and (.name | type == "string" and length > 0) and (.level | IN("ERROR", "WARN", "INFO")))' <<<"$ADVISORIES" >/dev/null; then
+            echo "::error::Invalid Supabase security advisory response."
+            exit 1
+          fi
+
           ERROR_COUNT=$(echo "$ADVISORIES" | jq '[.[] | select(.level=="ERROR")] | length')
           WARN_COUNT=$(echo "$ADVISORIES" | jq '[.[] | select(.level=="WARN")] | length')
           INFO_COUNT=$(echo "$ADVISORIES" | jq '[.[] | select(.level=="INFO")] | length')

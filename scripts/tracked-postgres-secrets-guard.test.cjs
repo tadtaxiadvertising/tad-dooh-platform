@@ -614,68 +614,21 @@ test("weekly audit validates required Storage Auth and Functions payloads", {
     },
   ];
   for (const contract of contracts) {
-    const matcher = new RegExp(
-      'if ! jq -e \\'([^\\']+)\\' <<<"\\
-  skip: process.platform === "win32",
-}, () => {
-  const src = readFileSync(path.join(root, "scripts/security-audit.sh"), "utf8");
-  const shape = src.match(/if ! jq -e '([^']+)' <<<"\$ADVISORIES"/);
-  assert.ok(shape, "Manual audit must verify security-lint JSON shape before counting");
-  for (const [sample, expected] of [
-    [[], 0],
-    [[{ level: "WARN", name: "function_search_path_mutable" }], 0],
-    [{}, 1],
-    [{ message: "synthetic", status: 200 }, 1],
-    [null, 1],
-    [[{ name: "unknown_level", level: "NOT_A_LEVEL" }], 1],
-    [[{ level: "WARN", name: "" }], 1],
-  ]) {
-    const run = spawnSync("jq", ["-e", shape[1]], {
-      input: JSON.stringify(sample), encoding: "utf8", timeout: 4000,
-    });
-    assert.equal(run.status, expected, "Unexpected verdict for synthetic security-lint payload");
-  }
-
-  const knownMatch = src.match(/KNOWN_BLOCKED_ERRORS='([^']+)'/);
-  assert.ok(knownMatch, "Expected one exact exception object");
-  const known = JSON.parse(knownMatch[1]);
-  assert.deepEqual(known, {
-    name: "rls_disabled_in_public", schema: "public", table: "spatial_ref_sys",
-  });
-  const jqCount = src.match(/NEW_ERRORS=\$\(echo "\$ADVISORIES" \| jq --argjson known "\$KNOWN_BLOCKED_ERRORS" \\\n\s+'([^']+)'/);
-  assert.ok(jqCount, "Expected exact-object RLS error filtering");
-  const lints = [
-    { level: "ERROR", name: "rls_disabled_in_public", metadata: { schema: "public", name: "spatial_ref_sys" } },
-    { level: "ERROR", name: "rls_disabled_in_public", metadata: { schema: "public", name: "new_table" } },
-    { level: "ERROR", name: "rls_disabled_in_public", metadata: { schema: "private", name: "spatial_ref_sys" } },
-    { level: "ERROR", name: "rls_disabled_in_public" },
-    { level: "INFO", name: "rls_enabled_no_policy" },
-  ];
-  const count = spawnSync("jq", ["--argjson", "known", JSON.stringify(known), jqCount[1]], {
-    input: JSON.stringify(lints), encoding: "utf8", timeout: 4000,
-  });
-  assert.equal(count.status, 0, "jq filter did not execute");
-  assert.equal(count.stdout.trim(), "3", "RLS errors for all other objects must remain blocking");
-});
- + contract.variable + '"',
-    );
-    const match = src.match(matcher);
-    assert.ok(match, contract.variable + " must have a jq validation");
-    const validationAt = src.indexOf(match[0]);
-    const useAt = src.indexOf(contract.after, validationAt);
-    assert.ok(useAt > validationAt, contract.variable + " must be validated before use");
-
+    const prefix = "if ! jq -e '";
+    const suffix = "' <<<\"$" + contract.variable + "\"";
+    const end = src.indexOf(suffix);
+    const start = src.lastIndexOf(prefix, end);
+    assert.ok(start >= 0 && end > start, contract.variable + " requires a jq predicate");
+    const filter = src.slice(start + prefix.length, end);
+    const useAt = src.indexOf(contract.after, end);
+    assert.ok(useAt > end, contract.variable + " must be validated before use");
     for (const [payload, accepted] of contract.samples) {
-      const result = spawnSync("jq", ["-e", match[1]], {
+      const result = spawnSync("jq", ["-e", filter], {
         input: JSON.stringify(payload),
         encoding: "utf8",
         timeout: 4000,
       });
-      assert.equal(
-        result.status === 0,
-        accepted,
-        "Unexpected " + contract.variable + " validation verdict",
-      );
+      assert.equal(result.status === 0, accepted, contract.variable + " shape verdict");
     }
   }
 });

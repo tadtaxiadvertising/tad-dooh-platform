@@ -7,6 +7,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { RegisterDeviceDto } from "./dto/register-device.dto";
+import { assertNoDeviceHardwareUuidAlias } from "./device-identity-collision.guard";
 import { HeartbeatDto } from "./dto/heartbeat.dto";
 import { PlaybackConfirmationDto } from "./dto/playback-confirmation.dto";
 import { SyncDeviceDto } from "./dto/sync-device.dto";
@@ -67,6 +68,7 @@ export class DeviceService {
   }
 
   async registerDevice(dto: RegisterDeviceDto) {
+    await assertNoDeviceHardwareUuidAlias(this.prisma, dto.device_id);
     const existingDevice = await this.prisma.device.findUnique({
       where: { deviceId: dto.device_id },
     });
@@ -112,6 +114,7 @@ export class DeviceService {
 
   /** Admin approves a device — sets it ACTIVE so it can join the fleet. */
   async approveDevice(deviceId: string) {
+    await assertNoDeviceHardwareUuidAlias(this.prisma, deviceId);
     this.logger.log(`✅ Admin approved device: ${deviceId}`);
     return this.prisma.device.update({
       where: { deviceId },
@@ -215,6 +218,8 @@ export class DeviceService {
     });
 
     if (!device) {
+      // Reject a new hardware alias before creating a pending device.
+      await assertNoDeviceHardwareUuidAlias(this.prisma, dto.device_id);
       // 🔒 Unknown device: register as PENDING (not ACTIVE) and block content
       this.logger.warn(
         `Heartbeat from unknown device: ${dto.device_id}. Registering as PENDING — awaiting admin approval.`,

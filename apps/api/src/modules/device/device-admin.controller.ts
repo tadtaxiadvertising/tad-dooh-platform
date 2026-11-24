@@ -14,7 +14,10 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { DeviceService } from "./device.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
-import { deviceIdentityWhere } from "../campaign/device-identity-lookup";
+import {
+  deviceIdentityWhere,
+  deviceIdentityWhereMany,
+} from "../campaign/device-identity-lookup";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
 // Only missing legacy assignment tables may be ignored for compatibility.
@@ -69,8 +72,11 @@ export class DeviceAdminController {
     const device = matches[0];
     if (!device) return null;
 
+    // Both TEXT assignment forms must belong exclusively to this tablet.
+    // Searching only by hardware ID misses another device whose hardware ID
+    // collides with this tablet's internal UUID.
     const aliases = await this.prisma.device.findMany({
-      where: deviceIdentityWhere(device.deviceId),
+      where: deviceIdentityWhereMany([device.id, device.deviceId]),
       select: { id: true },
       take: 2,
     });

@@ -274,6 +274,48 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.device.findUnique).not.toHaveBeenCalled();
   });
 
+  it("blocks reverse UUID alias on hardware campaign lookup", async () => {
+    const { controller, prisma } = setup();
+    const other = "cad16f79-9e62-40fd-bd78-09b822916ce1";
+    // A's UUID is also B's hardware ID, but the request addresses A by
+    // hardware TAD-0001. The old second lookup missed this collision.
+    prisma.device.findMany
+      .mockResolvedValueOnce([{ id: uuid, deviceId: "TAD-0001" }])
+      .mockResolvedValueOnce([{ id: uuid }, { id: other }]);
+
+    await expect(controller.getDeviceCampaigns("TAD-0001")).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(prisma.device.findMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        OR: [{ id: { in: [uuid] } }, { deviceId: { in: [uuid, "TAD-0001"] } }],
+      },
+      select: { id: true },
+      take: 2,
+    });
+    expect(prisma.deviceCampaign.findMany).not.toHaveBeenCalled();
+  });
+
+  it("blocks kiosk commands on reverse UUID aliases", async () => {
+    const { controller, prisma } = setup();
+    const other = "cad16f79-9e62-40fd-bd78-09b822916ce1";
+    prisma.device.findMany
+      .mockResolvedValueOnce([{ id: uuid, deviceId: "TAD-0001" }])
+      .mockResolvedValueOnce([{ id: uuid }, { id: other }]);
+
+    await expect(
+      controller.sendDeviceCommand("TAD-0001", { commandType: "REBOOT" }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.device.findMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        OR: [{ id: { in: [uuid] } }, { deviceId: { in: [uuid, "TAD-0001"] } }],
+      },
+      select: { id: true },
+      take: 2,
+    });
+    expect(prisma.deviceCommand.create).not.toHaveBeenCalled();
+  });
+
   it("queues kiosk commands by canonical UUID", async () => {
     const { controller, prisma } = setup();
     prisma.device.findMany.mockResolvedValue([
@@ -289,7 +331,9 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
       take: 2,
     });
     expect(prisma.device.findMany).toHaveBeenNthCalledWith(2, {
-      where: { deviceId: "TAD-0001" },
+      where: {
+        OR: [{ id: { in: [uuid] } }, { deviceId: { in: [uuid, "TAD-0001"] } }],
+      },
       select: { id: true },
       take: 2,
     });

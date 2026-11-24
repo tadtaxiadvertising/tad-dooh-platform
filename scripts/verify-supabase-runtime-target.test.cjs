@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { inspectPinnedSupabaseTarget } = require("./verify-supabase-runtime-target.cjs");
+const { inspectSupabaseTarget } = require("../apps/api/scripts/check-supabase-target.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const SCRIPT = path.join(__dirname, "verify-supabase-runtime-target.cjs");
@@ -26,6 +27,23 @@ test("accepts only independently pinned matching URLs", () => {
   assert.deepEqual(inspectPinnedSupabaseTarget(fixture()), {
     ok: true,
     code: "TARGET_MATCH",
+  });
+});
+
+test("rejects three mutually consistent URLs when they target the wrong project", () => {
+  const env = {
+    ...fixture(refB),
+    TAD_EXPECTED_SUPABASE_PROJECT_REF: refA,
+  };
+  // The compatibility check only tests URL-to-URL agreement and is not a
+  // release-target authorization check. This is the regression scenario.
+  assert.deepEqual(inspectSupabaseTarget(env), {
+    ok: true,
+    code: "TARGET_MATCH",
+  });
+  assert.deepEqual(inspectPinnedSupabaseTarget(env), {
+    ok: false,
+    code: "TARGET_MISMATCH",
   });
 });
 

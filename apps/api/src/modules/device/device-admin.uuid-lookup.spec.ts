@@ -123,6 +123,34 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.playlistItem.deleteMany).not.toHaveBeenCalled();
   });
 
+  it("fails closed when removing v2 assignments hits a non-missing-table error", async () => {
+    const { controller, prisma } = setup();
+    prisma.device.findMany.mockResolvedValue([{ id: uuid, deviceId: "TAD-0001" }]);
+    prisma.deviceCampaign.deleteMany.mockRejectedValue(new Error("synthetic DB unavailable"));
+    await expect(controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"))
+      .rejects.toThrow("synthetic DB unavailable");
+    expect(prisma.playlistItem.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("allows an absent legacy v2 table only for the Prisma P2021 error code", async () => {
+    const { controller, prisma } = setup();
+    prisma.device.findMany.mockResolvedValue([{ id: uuid, deviceId: "TAD-0001" }]);
+    prisma.deviceCampaign.deleteMany.mockRejectedValue(
+      Object.assign(new Error("synthetic table missing"), { code: "P2021" }),
+    );
+    await expect(controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"))
+      .resolves.toMatchObject({ success: true });
+    expect(prisma.playlistItem.deleteMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails closed when legacy v1 removal encounters an unexpected DB error", async () => {
+    const { controller, prisma } = setup();
+    prisma.device.findMany.mockResolvedValue([{ id: uuid, deviceId: "TAD-0001" }]);
+    prisma.playlistItem.deleteMany.mockRejectedValue(new Error("synthetic DB unavailable"));
+    await expect(controller.removeCampaignFromDevice("TAD-0001", "CAMP-1"))
+      .rejects.toThrow("synthetic DB unavailable");
+  });
+
   it("transactionally deletes both dual-ID assignment forms before deleting device", async () => {
     const { controller, prisma, tx } = setup();
     prisma.device.findMany.mockResolvedValue([{ id: uuid, deviceId: "TAD-0001" }]);

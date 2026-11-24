@@ -12,7 +12,7 @@ const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { auditPrismaSchema } = require("./prisma-drift-core.cjs");
 const { auditGpsSqlContract } = require("./prisma-gps-contract.cjs");
-const { auditGeneratedClientIdTypes } = require("./prisma-client-id-consistency.cjs");
+const { inspectSchemaStringIds } = require("./prisma-client-id-consistency.cjs");
 
 const models = Prisma.dmmf.datamodel.models;
 const connectionUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
@@ -29,14 +29,16 @@ try {
   process.exit(2);
 }
 const prismaSchemaSha256 = createHash("sha256").update(schemaSource).digest("hex");
-const clientContract = auditGeneratedClientIdTypes({ schemaSource, models });
-if (clientContract.mismatchCount > 0) {
+// Client DMMF may omit nativeType. Check model/ID identity here, and derive
+// native ID mappings from the included Prisma schema, not missing DMMF fields.
+const sourceContract = inspectSchemaStringIds({ schemaSource, models });
+if (sourceContract.issueCount > 0) {
   console.error(JSON.stringify({
-    code: "PRISMA_GENERATED_CLIENT_ID_MISMATCH",
+    code: "PRISMA_SOURCE_CLIENT_ID_CONTRACT_INVALID",
     prismaSchemaSha256,
-    ...clientContract,
+    issueCount: sourceContract.issueCount,
+    issues: sourceContract.issues,
   }, null, 2));
-  // Do not mislabel an inconsistent generated client as production DB drift.
   process.exit(2);
 }
 
@@ -67,7 +69,9 @@ if (!connectionUrl) {
     `;
     const report = {
       prismaSchemaSha256,
-      ...auditPrismaSchema({ models, tables, columns }),
+      ...auditPrismaSchema({
+        models, tables, columns, idTypes: sourceContract.idTypes,
+      }),
       ...auditGpsSqlContract({ models, tables, columns, extensions }),
     };
     console.log(JSON.stringify(report, null, 2));

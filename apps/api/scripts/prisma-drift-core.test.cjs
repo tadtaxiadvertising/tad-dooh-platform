@@ -389,7 +389,6 @@ test("five unreferenced UUID primary keys mirror the canonical PostgreSQL catalo
   assert.equal(report.idTypeMismatchCount, 0);
 });
 
-
 test("Prisma generated ID contract accepts matching native UUID and text declarations", () => {
   const source = [
     "model Wallet {",
@@ -469,4 +468,24 @@ test("runtime Prisma drift checker verifies bundled schema and exposes a safe SH
   assert.match(source, /prismaSchemaSha256/);
   assert.match(source, /process\.exit\(2\)/);
   assert.match(source, /check-prisma-drift.cjs|Prisma schema/i);
+});
+
+
+test("installed Prisma Client DMMF agrees with the checked-in primary-key native types", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { Prisma } = require("@prisma/client");
+  const schemaSource = fs.readFileSync(
+    path.join(__dirname, "../prisma/schema.prisma"),
+    "utf8",
+  );
+  const report = auditGeneratedClientIdTypes({
+    schemaSource,
+    models: Prisma.dmmf.datamodel.models,
+  });
+  assert.deepEqual(
+    report.mismatches,
+    [],
+    "Generated Prisma Client ID metadata differs from its source schema",
+  );
 });

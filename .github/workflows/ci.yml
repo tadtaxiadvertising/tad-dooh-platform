@@ -187,6 +187,7 @@ jobs:
           node --test scripts/legacy-db-mutators-disabled.test.cjs
           node --test scripts/postgis-rls-agent-safety.test.cjs
           node --test scripts/verify-supabase-backup-export.test.cjs
+          node --test scripts/compare-supabase-restore-snapshots.test.cjs
           node --test scripts/verify-supabase-storage-byte-export.test.cjs
           node --test scripts/supabase-function-searchpath-plan.test.cjs
           node --test apps/api/scripts/prisma-drift-core.test.cjs

@@ -182,6 +182,7 @@ jobs:
           node --test scripts/api-entrypoint-env.test.cjs
           node --test scripts/api-docker-ownership.test.cjs
           node --test scripts/easypanel-host-triage.test.cjs
+          node --test scripts/easypanel-api-runtime-template.contract.test.cjs
           node --test scripts/api-safe-migrate.test.cjs
           node --test scripts/legacy-migration-runner-disabled.test.cjs scripts/legacy-v12-migration-runner-disabled.test.cjs scripts/verify-supabase-runtime-target.test.cjs
           node --test scripts/legacy-db-mutators-disabled.test.cjs

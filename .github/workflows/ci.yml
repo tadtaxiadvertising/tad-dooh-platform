@@ -45,6 +45,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # TEMPORARY PR #523 diagnostic; fail closed; remove before final CI.
+      - name: Preview exact device alias test formatting (temporary)
+        run: |
+          set -euo pipefail
+          pnpm dlx prettier@3.9.10 --write apps/api/src/modules/device/device-admin.uuid-lookup.spec.ts >/dev/null
+          git --no-pager diff -- apps/api/src/modules/device/device-admin.uuid-lookup.spec.ts
+          exit 1
+
       - name: Format check (prettier)
         run: |
           set -euo pipefail

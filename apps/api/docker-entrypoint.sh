@@ -38,6 +38,21 @@ fi
 # Runtime startup must never write schema or advance migration history.
 # Reviewed migrations are a separate, explicitly approved operation via
 # scripts/migrate-safe.sh, after backup and staging verification.
+#
+# Comparing DATABASE_URL/DIRECT_URL/SUPABASE_URL only proves that those
+# three settings agree with EACH OTHER. It cannot establish authorization to
+# connect to the owner-confirmed deployment project. Require an independently
+# provisioned project ref before any DB query, just as manual migrations do.
+if [ -z "${TAD_EXPECTED_SUPABASE_PROJECT_REF:-}" ]; then
+  fail_with_cooldown 1 "TAD_EXPECTED_SUPABASE_PROJECT_REF is required for independent target verification."
+fi
+if node ../../scripts/verify-supabase-runtime-target.cjs; then
+  echo "[entrypoint] Supabase target independently pinned; no DB connection attempted."
+else
+  status="$?"
+  fail_with_cooldown "$status" "Independent Supabase target verification failed ($status)."
+fi
+
 echo "[entrypoint] Checking Supabase target and schema (read-only; no migrations)."
 if node ./scripts/check-supabase-target.cjs; then
   :

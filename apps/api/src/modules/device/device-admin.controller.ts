@@ -50,6 +50,32 @@ export class DeviceAdminController {
     private deviceService: DeviceService,
   ) {}
 
+  // Resolve admin device IDs without confusing a UUID with another tablet's
+  // UUID-shaped hardware identifier. This also protects dual-ID assignment
+  // cleanup from deleting campaigns that belong to a different tablet.
+  private async resolveUnambiguousDevice(value: string) {
+    const matches = await this.prisma.device.findMany({
+      where: deviceIdentityWhere(value),
+      select: { id: true, deviceId: true },
+      take: 2,
+    });
+    if (matches.length > 1) {
+      throw new BadRequestException("Identificador de dispositivo ambiguo");
+    }
+    const device = matches[0];
+    if (!device) return null;
+
+    const aliases = await this.prisma.device.findMany({
+      where: deviceIdentityWhere(device.deviceId),
+      select: { id: true },
+      take: 2,
+    });
+    if (aliases.some((other) => other.id !== device.id)) {
+      throw new BadRequestException("Identificador de dispositivo ambiguo");
+    }
+    return device;
+  }
+
   // ─── PENDING DEVICE APPROVAL QUEUE ──────────────────────────────────────────
 
   /** List all devices awaiting admin approval */
@@ -73,15 +99,7 @@ export class DeviceAdminController {
   // Ver los anuncios asignados a un taxi específico
   @Get(":deviceId/campaigns")
   async getDeviceCampaigns(@Param("deviceId") paramId: string) {
-    const devices = await this.prisma.device.findMany({
-      where: deviceIdentityWhere(paramId),
-      select: { id: true, deviceId: true },
-      take: 2,
-    });
-    if (devices.length > 1) {
-      throw new BadRequestException("Identificador de dispositivo ambiguo");
-    }
-    const device = devices[0];
+    const device = await this.resolveUnambiguousDevice(paramId);
     if (!device) return [];
 
     // device_campaigns.device_id is TEXT and may contain the canonical UUID
@@ -111,15 +129,7 @@ export class DeviceAdminController {
     @Param("campaignId") campaignId: string,
   ) {
     // Find device by either UUID or Hardware ID
-    const devices = await this.prisma.device.findMany({
-      where: deviceIdentityWhere(paramDeviceId),
-      select: { id: true, deviceId: true },
-      take: 2,
-    });
-    if (devices.length > 1) {
-      throw new BadRequestException("Identificador de dispositivo ambiguo");
-    }
-    const device = devices[0];
+    const device = await this.resolveUnambiguousDevice(paramDeviceId);
     if (!device) {
       return { success: false, message: "Dispositivo no encontrado" };
     }
@@ -213,14 +223,7 @@ export class DeviceAdminController {
   @Delete(":deviceId")
   async deleteDevice(@Param("deviceId") deviceId: string) {
     // Find device by deviceId (hardware ID) or by UUID
-    const devices = await this.prisma.device.findMany({
-      where: deviceIdentityWhere(deviceId),
-      take: 2,
-    });
-    if (devices.length > 1) {
-      throw new BadRequestException("Identificador de dispositivo ambiguo");
-    }
-    const device = devices[0];
+    const device = await this.resolveUnambiguousDevice(deviceId);
     if (!device)
       return { success: false, message: "Dispositivo no encontrado" };
 
@@ -279,8 +282,9 @@ export class DeviceAdminController {
   @Get(":deviceId/profile")
   async getDeviceProfile(@Param("deviceId") deviceId: string) {
     try {
-      const device = await this.prisma.device.findFirst({
-        where: deviceIdentityWhere(deviceId),
+      const resolved = await this.resolveUnambiguousDevice(deviceId);
+      const device = resolved ? await this.prisma.device.findUnique({
+        where: { id: resolved.id },
         include: {
           driver: true,
           campaigns: {
@@ -339,6 +343,7 @@ export class DeviceAdminController {
           })),
       };
     } catch (error: unknown) {
+      if (error instanceof BadRequestException) throw error;
       this.logger.error(
         `❌ Error fatal cargando perfil de ${deviceId}: ${errorMessage(error)}`,
       );
@@ -361,10 +366,11 @@ export class DeviceAdminController {
       subscription_paid?: boolean;
     },
   ) {
-    const device = await this.prisma.device.findFirst({
-      where: deviceIdentityWhere(deviceId),
+    const resolved = await this.resolveUnambiguousDevice(deviceId);
+    const device = resolved ? await this.prisma.device.findUnique({
+      where: { id: resolved.id },
       include: { driver: true },
-    });
+    }) : null;
 
     if (!device) throw new BadRequestException("Dispositivo no encontrado");
 
@@ -438,9 +444,7 @@ export class DeviceAdminController {
       );
     }
 
-    const device = await this.prisma.device.findFirst({
-      where: deviceIdentityWhere(deviceId),
-    });
+    const device = await this.resolveUnambiguousDevice(deviceId);
     if (!device) throw new BadRequestException("Dispositivo no encontrado");
 
     const command = await this.prisma.deviceCommand.create({

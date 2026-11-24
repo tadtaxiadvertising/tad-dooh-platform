@@ -205,6 +205,70 @@ CLI version rationale: [Supabase CLI v3 changed remote targeting](https://supaba
 
 After the exports, use an organization-approved encryption tool/key to create an encrypted off-site copy, check its read-back/hash and retention, then restrict or remove intermediary plaintext from the encrypted staging area according to the data-handling policy. Do not send the backup itself to this conversation or the repository. The manifest remains **private**.
 
+## Optional supervised read-only Storage byte export (not a completed backup)
+
+After credential-incident #244 is contained and the **service-role credential
+has been rotated**, an authorized infrastructure owner can use
+`scripts/export-supabase-storage-bytes.cjs` to transfer
+*original* Storage object bytes from the independently pinned Supabase project
+to an **existing encrypted, access-restricted, off-repository volume**. The
+exporter uses HTTPS `GET` only and never writes to Supabase or logs
+credentials, source object names or private paths. It creates new opaque file
+names, streams hashes and uses the existing offline byte verifier as a
+postcondition. The tool cannot attest encryption, rotated credentials,
+source snapshot consistency, or isolated restore; these need separate proofs.
+
+**Private inventory prerequisite:** during an owner-approved consistent
+snapshot/write-quiescence window, privately obtain a JSON object with exactly
+`project_ref`, `captured_at_utc` (`YYYYMMDDTHHMMSSZ`) and `objects`.
+Each item in `objects` has exactly `bucket_id`, `object_name` and `bytes`
+(nonnegative numeric byte size). The source is `storage.objects` and
+`metadata->>'size'` after checking that every entry has a
+valid size; capture an independent `COUNT(*)` and compare to the JSON
+length. Never publish the inventory; object names can disclose customers.
+Storage object versions and uncommitted transfers need separate investigation.
+
+With the inventory securely saved as a local JSON file, set the nonsecret
+values shown below **only on the trusted host**. Source the rotated
+`SUPABASE_SERVICE_ROLE_KEY` directly from an approved secret store
+into the process environment; **do not put the key in a script, CLI argument,
+Docker Buildx args, chat, issue, CI log or template**. This helper is not for
+running inside a Git/Dockerfile EasyPanel build. The three `YES`
+flags are operator assertions, **not cryptographic proof** of approval,
+rotation or encryption.
+
+~~~powershell
+$env:TAD_EXPECTED_SUPABASE_PROJECT_REF = "ltdcdhqixvbpdcitthqf"
+$env:SUPABASE_URL = "https://ltdcdhqixvbpdcitthqf.supabase.co"
+$env:TAD_EXPECTED_STORAGE_OBJECT_COUNT = "<count from private source snapshot>"
+$env:TAD_PRIVATE_STORAGE_INVENTORY_FILE = "<absolute private inventory JSON path>"
+$env:TAD_PRIVATE_STORAGE_EXPORT_DIR = "<absolute new directory on encrypted volume>"
+$env:TAD_APPROVE_STORAGE_READONLY_EXPORT = "YES"
+$env:TAD_ROTATED_SUPABASE_KEY_CONFIRMED = "YES"
+$env:TAD_ENCRYPTED_BACKUP_VOLUME_CONFIRMED = "YES"
+# SUPABASE_SERVICE_ROLE_KEY must already be supplied by approved secret manager.
+node scripts/export-supabase-storage-bytes.cjs
+if ($LASTEXITCODE -ne 2) { throw "STORAGE_EXPORT_REFUSED; keep partial files private" }
+~~~
+
+The destination must **not exist** beforehand. It must be below a real (not
+symlinked) directory outside every Git checkout. On failure, partial bytes
+remain in the restricted destination for operator investigation; the tool
+never retries blindly or overwrites prior backups. It refuses unexpected
+HTTP status, changed size, malformed inventory, unapproved project, and
+failed post-hash verification. Successful output is deliberately exit
+code **2**, with verdict
+`STORAGE_EXPORT_HASHED_SOURCE_COVERAGE_AND_RESTORE_UNVERIFIED`.
+This means only that listed objects were downloaded and hashed locally.
+The existing `verify-supabase-storage-byte-export.cjs`
+must also be used when validating the **encrypted off-site** copy.
+
+**G0 remains a hard stop:** all managed Auth records and config, full Storage
+metadata/bytes, snapshot consistency, independent off-site readback, isolated
+restore (including object byte hashes), application smoke, reviewer sign-off
+and credentials/release controls #244/#489/#313 must still be verified before
+production migrations or API promotion.
+
 ## Separate offline Storage object-byte checkpoint (NOT full backup or restore proof)
 
 **Why:** Supabase stores Storage object metadata separately from actual files. Its [database backup guidance](https://supabase.com/docs/guides/platform/backups) says backups do not include Storage files. Its [download guide](https://supabase.com/docs/guides/storage/management/download-objects) documents authorized file downloads. The current three-SQL verifier cannot recover media bytes.

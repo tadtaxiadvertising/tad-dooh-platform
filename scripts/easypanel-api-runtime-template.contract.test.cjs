@@ -32,6 +32,11 @@ test("API runtime section requires independent Supabase target pin", () => {
   assert.match(apiBlock, /postgres\.<project_ref>/);
 });
 
+test("regression: no password-bearing Postgres URL literals in this test file", () => {
+  const source = fs.readFileSync(__filename, "utf8");
+  assert.doesNotMatch(source, /postgres(?:ql)?:\/\/[^\s"'@]+:[^\s"'@]+@/i);
+});
+
 // Construct fixture URLs at runtime. Source files must never contain strings
 // that look like password-bearing production connection URLs (#244).
 function testDatabaseUrl(username, hostname, port) {

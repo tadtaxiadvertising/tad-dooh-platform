@@ -1,14 +1,16 @@
 # =============================================================================
 # TAD DOOH Platform — EasyPanel Environment Variables Template
 # =============================================================================
-# Instrucciones:
-# 1. Copia este archivo y renómbralo a .env.easypanel.local
-# 2. Rellena los valores marcados con <TU_VALOR>
-# 3. En EasyPanel → Cada Servicio → Environment Variables → Importar desde este archivo
-# 4. REDEPLOY cada servicio después de guardar
-#
-# IMPORTANTE: Cada servicio tiene su PROPIO conjunto de variables en EasyPanel.
-# NO uses las mismas variables para todos los servicios.
+# ATENCION P0 #244/#217: PLANTILLA HISTORICA; NO IMPORTAR NI DESPLEGAR DIRECTAMENTE.
+# En EasyPanel, una App Git/Dockerfile puede reenviar Environment Variables
+# a Docker Buildx como build-args. Eso expone credenciales en logs o metadatos.
+# Las claves/URLs privilegiadas deben configurarse SOLO en el runtime de una
+# imagen auditada precompilada (digest GHCR), tras la rotacion de secretos #244/#489.
+# No pegues credenciales en Git, build args, tickets, logs, CI o este archivo.
+# Cada servicio tiene su propio conjunto; nunca importar el bloque completo.
+# No ejecutar redeploys ni migraciones con el esquema sin restauracion validada #217.
+# El project ref esperado debe confirmarlo el propietario de EasyPanel mediante
+# inventario independiente: NO deducirlo del SUPABASE_URL de una plantilla.
 # =============================================================================
 
 # =============================================================================
@@ -18,12 +20,18 @@
 # Dockerfile: Dockerfile.api
 # Dominio: https://tad.api.ibusiness.com.do
 
-# Base de datos (Supabase Pooler - puerto 6543)
-DATABASE_URL=postgresql://postgres:<TU_PASSWORD>@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?connection_limit=5
-DIRECT_URL=postgresql://postgres:<TU_PASSWORD>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
+# El propietario debe copiar las URLs exactas desde Supabase Connect y
+# confirmar PRIVADAMENTE que SUPABASE_URL, DATABASE_URL y DIRECT_URL contienen
+# el mismo project ref independiente. No reutilizar hosts de otra region.
+# Pooler: usuario postgres.<project_ref> (NO usuario postgres sin sufijo).
+# Direct: db.<project_ref>.supabase.co; verificar conectividad IPv6/IPv4.
+# No copiar valores marcados con <...> a EasyPanel sin completarlos.
+DATABASE_URL=<URI_DEL_POOLER_SUPABASE_CON_REF_VERIFICADO>
+DIRECT_URL=<URI_DIRECTA_O_POOLER_SESION_CON_REF_VERIFICADO>
 
-# Supabase
-SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
+# Supabase (la referencia independiente no se deduce de estas URLs)
+SUPABASE_URL=<URL_OFICIAL_DEL_PROYECTO_SUPABASE>
+TAD_EXPECTED_SUPABASE_PROJECT_REF=<REF_20_CARACTERES_CONFIRMADA_POR_PROPIETARIO>
 SUPABASE_SERVICE_ROLE_KEY=<TU_SERVICE_ROLE_KEY>
 SUPABASE_ANON_KEY=<TU_ANON_KEY>
 SUPABASE_PUBLISHABLE_KEY=<TU_PUBLISHABLE_KEY>

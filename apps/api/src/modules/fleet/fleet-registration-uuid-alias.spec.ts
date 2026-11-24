@@ -20,14 +20,11 @@ describe("FleetService admin hardware identity admission", () => {
       },
       driver: { findFirst: driverRead, update: driverUpdate },
     };
-    const service = new FleetService(
-      prisma as never,
-      {} as never,
-      {} as never,
-    );
+    const service = new FleetService(prisma as never, {} as never, {} as never);
 
-    await expect(service.registerDeviceByAdmin("PLATE-1", "Driver", alias))
-      .rejects.toThrow(ConflictException);
+    await expect(
+      service.registerDeviceByAdmin("PLATE-1", "Driver", alias),
+    ).rejects.toThrow(ConflictException);
     expect(deviceRead).toHaveBeenCalledWith({
       where: { id: alias },
       select: { id: true, deviceId: true },

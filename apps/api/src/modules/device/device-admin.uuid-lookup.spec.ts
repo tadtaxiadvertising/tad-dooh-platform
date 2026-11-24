@@ -274,7 +274,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.device.findUnique).not.toHaveBeenCalled();
   });
 
-  it("rejects a reverse UUID alias when the admin supplies the target hardware ID", async () => {
+  it("blocks reverse UUID alias on hardware campaign lookup", async () => {
     const { controller, prisma } = setup();
     const other = "cad16f79-9e62-40fd-bd78-09b822916ce1";
     // A's UUID is also B's hardware ID, but the request addresses A by
@@ -299,7 +299,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.deviceCampaign.findMany).not.toHaveBeenCalled();
   });
 
-  it("does not queue a kiosk command when a reverse hardware alias exists", async () => {
+  it("blocks kiosk commands on reverse UUID aliases", async () => {
     const { controller, prisma } = setup();
     const other = "cad16f79-9e62-40fd-bd78-09b822916ce1";
     prisma.device.findMany

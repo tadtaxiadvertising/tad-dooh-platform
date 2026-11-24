@@ -479,6 +479,45 @@ test("manual Supabase audit keeps tokens and passwords off process argv and avoi
   assert.doesNotMatch(preflight.stdout + preflight.stderr, /postgresql:\/\//);
 });
 
+test("weekly Supabase audit fails closed on malformed Management API advisories", {
+  skip: process.platform === "win32",
+}, () => {
+  const src = readFileSync(
+    path.join(root, ".github/workflows/security-audit-weekly.yml"),
+    "utf8",
+  );
+  const validation = src.match(/if ! jq -e '([^']+)' <<<"\$ADVISORIES"/);
+  assert.ok(validation, "Weekly audit must validate the lints response");
+  const validateAt = src.indexOf("if ! jq -e '");
+  const countAt = src.indexOf('ERROR_COUNT=$(echo "$ADVISORIES"');
+  assert.ok(
+    validateAt >= 0 && countAt > validateAt,
+    "Validation must precede security-advisory counts",
+  );
+  const examples = [
+    [[], true],
+    [[{ name: "function_search_path_mutable", level: "WARN" }], true],
+    [{}, false],
+    [{ message: "unauthorized", status: 401 }, false],
+    [null, false],
+    [[{ name: "incomplete" }], false],
+    [[{ name: "", level: "ERROR" }], false],
+    [[{ name: "unknown", level: "UNEXPECTED" }], false],
+  ];
+  for (const [payload, accepted] of examples) {
+    const result = spawnSync("jq", ["-e", validation[1]], {
+      input: JSON.stringify(payload),
+      encoding: "utf8",
+      timeout: 4000,
+    });
+    assert.equal(
+      result.status,
+      accepted ? 0 : 1,
+      "Unexpected validation verdict for synthetic Management API lints",
+    );
+  }
+});
+
 test("manual Supabase audit rejects malformed advisories and only excepts the exact PostGIS table", {
   skip: process.platform === "win32",
 }, () => {

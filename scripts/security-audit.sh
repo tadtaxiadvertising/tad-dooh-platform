@@ -126,16 +126,28 @@ else
 fi
 echo ""
 
-# 7. RLS Deny-by-Default
+# 7. Effective public DML privileges (including inherited PUBLIC grants)
 echo "--- 7. RLS Deny-by-Default Check ---"
 GRANT_COUNT=$(psql -X -v ON_ERROR_STOP=1 \
-    -c "SELECT count(*) FROM information_schema.table_privileges WHERE grantee IN ('anon','authenticated') AND table_schema='public';" \
+    -c "SELECT count(*)::integer
+            FROM pg_catalog.pg_class c
+            JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'public'
+              AND c.relkind IN ('r','p','v','m','f')
+              AND EXISTS (
+                SELECT 1
+                FROM (VALUES ('anon'), ('authenticated')) AS roles(role_name)
+                CROSS JOIN (VALUES ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) AS perms(privilege)
+                WHERE pg_catalog.has_table_privilege(roles.role_name, c.oid, perms.privilege)
+                   OR (perms.privilege IN ('SELECT','INSERT','UPDATE')
+                       AND pg_catalog.has_any_column_privilege(roles.role_name, c.oid, perms.privilege))
+              );" \
     -t -A | head -1)
 if ! [[ "$GRANT_COUNT" =~ ^[0-9]+$ ]]; then
     echo "ERROR: invalid PostgreSQL privilege count." >&2
     exit 1
 fi
-echo "Grants to anon/authenticated on public tables: $GRANT_COUNT"
+echo "Public relations with effective anon/authenticated DML access: $GRANT_COUNT"
 
 if [ "$GRANT_COUNT" -gt 0 ]; then
     echo "❌ FAIL: Found grants (should be 0)"

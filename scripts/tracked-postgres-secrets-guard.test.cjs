@@ -116,6 +116,71 @@ test("weekly public audit artifacts contain counts only, never raw queries or li
   assert.match(src, /active_queries_over_30_seconds/);
 });
 
+test("weekly and manual audits check effective client DML, including PUBLIC grants", () => {
+  const sources = [
+    ".github/workflows/security-audit-weekly.yml",
+    "scripts/security-audit.sh",
+  ];
+  for (const source of sources) {
+    const src = readFileSync(path.join(root, source), "utf8");
+    const grantStart = src.indexOf("GRANT_COUNT=$(psql");
+    assert.ok(grantStart >= 0, source + " must audit client grants");
+    const grantEnd = src.indexOf(
+      "Public relations with effective anon/authenticated DML access:",
+      grantStart,
+    );
+    assert.ok(grantEnd > grantStart, source + " must report the real result");
+    const query = src.slice(grantStart, grantEnd);
+    assert.match(query, /pg_catalog\.pg_class/);
+    assert.match(query, /pg_catalog\.pg_namespace/);
+    assert.match(query, /c\.relkind IN \('r','p','v','m','f'\)/);
+    assert.match(query, /pg_catalog\.has_table_privilege\(/);
+    assert.match(query, /pg_catalog\.has_any_column_privilege\(/);
+    assert.match(query, /perms\.privilege IN \('SELECT','INSERT','UPDATE'\)/);
+    assert.match(query, /'anon'/);
+    assert.match(query, /'authenticated'/);
+    for (const privilege of ["SELECT", "INSERT", "UPDATE", "DELETE"]) {
+      assert.ok(query.includes("'" + privilege + "'"), "Missing " + privilege);
+    }
+    assert.doesNotMatch(
+      query,
+      /information_schema\.table_privileges/,
+      "Explicit grantee rows can omit grants inherited through PUBLIC",
+    );
+  }
+});
+
+test("weekly audit rejects invalid effective client-grant counts", {
+  skip: process.platform === "win32",
+}, () => {
+  const src = readFileSync(
+    path.join(root, ".github/workflows/security-audit-weekly.yml"),
+    "utf8",
+  );
+  const start = src.indexOf('if ! [[ "$GRANT_COUNT" =~ ^[0-9]+$ ]]; then');
+  const end = src.indexOf("\n          fi", start);
+  assert.ok(start >= 0 && end > start, "Expected fail-closed count validation");
+  const shellCode = src.slice(start, end + "\n          fi".length)
+    .split("\n")
+    .map((line) => line.startsWith("          ") ? line.slice(10) : line)
+    .join("\n");
+  for (const [value, accepted] of [
+    ["0", true],
+    ["12", true],
+    ["", false],
+    ["not-an-integer", false],
+    ["-1", false],
+    ["1.5", false],
+  ]) {
+    const result = spawnSync("bash", ["-c", "set -euo pipefail\n" + shellCode], {
+      env: { PATH: process.env.PATH || "", GRANT_COUNT: value },
+      encoding: "utf8",
+      timeout: 4000,
+    });
+    assert.equal(result.status === 0, accepted, "Unexpected grant-count verdict");
+  }
+});
+
 test("weekly Supabase audit shell block parses with its heredoc after YAML indentation", {
   skip: process.platform === "win32",
 }, () => {

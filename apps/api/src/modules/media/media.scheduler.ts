@@ -57,11 +57,12 @@ export class MediaScheduler {
         // prove any absence. Never delete from an incomplete inventory.
         if (
           files.length >= 1000 ||
-          files.some((file) =>
-            !file.id ||
-            !file.metadata ||
-            !file.name ||
-            file.name.includes("/")
+          files.some(
+            (file) =>
+              !file.id ||
+              !file.metadata ||
+              !file.name ||
+              file.name.includes("/"),
           )
         ) {
           this.logger.warn("STORAGE_GC_SKIPPED_INCOMPLETE_BUCKET_INVENTORY");

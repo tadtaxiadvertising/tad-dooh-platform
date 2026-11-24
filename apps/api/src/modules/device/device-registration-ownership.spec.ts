@@ -90,8 +90,9 @@ describe("DeviceService public registration ownership isolation", () => {
       deviceId: "TAD-OTHER",
     });
 
-    await expect(service.registerDevice({ device_id: hardwareId }))
-      .rejects.toThrow(ConflictException);
+    await expect(
+      service.registerDevice({ device_id: hardwareId }),
+    ).rejects.toThrow(ConflictException);
     expect(findUnique).toHaveBeenCalledWith({
       where: { id: hardwareId },
       select: { id: true, deviceId: true },
@@ -106,8 +107,9 @@ describe("DeviceService public registration ownership isolation", () => {
       id: hardwareId,
       deviceId: "TAD-OTHER",
     });
-    await expect(service.approveDevice(hardwareId))
-      .rejects.toThrow(ConflictException);
+    await expect(service.approveDevice(hardwareId)).rejects.toThrow(
+      ConflictException,
+    );
     expect(update).not.toHaveBeenCalled();
   });
 
@@ -116,8 +118,9 @@ describe("DeviceService public registration ownership isolation", () => {
     findUnique
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: hardwareId, deviceId: "TAD-OTHER" });
-    await expect(service.deviceHeartbeat({ device_id: hardwareId }))
-      .rejects.toThrow(ConflictException);
+    await expect(
+      service.deviceHeartbeat({ device_id: hardwareId }),
+    ).rejects.toThrow(ConflictException);
     expect(create).not.toHaveBeenCalled();
   });
 

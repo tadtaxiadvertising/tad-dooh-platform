@@ -2,7 +2,7 @@
 
 **Workflow:** `.github/workflows/security-audit-weekly.yml`  
 **Schedule:** Monday at 06:00 UTC, plus explicit `workflow_dispatch`.  
-**Production database:** use the project reference already established in the protected deployment configuration; verify identity privately before any access. This runbook authorizes **read-only diagnosis**, not DDL, migrations, payments, credential rotation, or production releases.
+**Production database:** use the project reference already established in the protected deployment configuration; verify identity privately before any access. The scheduled workflow presently pins the independently confirmed EasyPanel API project reference `ltdcdhqixvbpdcitthqf` (#217); it refuses any other value, even if syntactically valid. This reference is not a credential. Changing production projects requires an independently verified infrastructure change and a reviewed workflow update. This runbook authorizes **read-only diagnosis**, not DDL, migrations, payments, credential rotation, or production releases.
 
 ## Current status and evidence (2026-11-23)
 

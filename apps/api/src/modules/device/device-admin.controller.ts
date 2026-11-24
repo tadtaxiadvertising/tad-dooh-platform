@@ -74,7 +74,7 @@ export class DeviceAdminController {
       select: { id: true },
       take: 2,
     });
-    if (aliases.some((other) => other.id !== device.id)) {
+    if (aliases.length !== 1 || aliases[0].id !== device.id) {
       throw new BadRequestException("Identificador de dispositivo ambiguo");
     }
     return device;

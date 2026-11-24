@@ -7,11 +7,40 @@
 "use strict";
 
 const { Prisma, PrismaClient } = require("@prisma/client");
+const { readFileSync } = require("node:fs");
+const path = require("node:path");
+const { createHash } = require("node:crypto");
 const { auditPrismaSchema } = require("./prisma-drift-core.cjs");
 const { auditGpsSqlContract } = require("./prisma-gps-contract.cjs");
+const { inspectSchemaStringIds } = require("./prisma-client-id-consistency.cjs");
 
 const models = Prisma.dmmf.datamodel.models;
 const connectionUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+
+// A previous API log can report a different ID contract from the current
+// repository revision. Verify the schema bundled in this image against its
+// generated client before comparing either against the physical database.
+// Log a digest, never the schema contents or connection credentials.
+let schemaSource;
+try {
+  schemaSource = readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
+} catch {
+  console.error("Prisma source schema unavailable; refusing schema parity check.");
+  process.exit(2);
+}
+const prismaSchemaSha256 = createHash("sha256").update(schemaSource).digest("hex");
+// Client DMMF may omit nativeType. Check model/ID identity here, and derive
+// native ID mappings from the included Prisma schema, not missing DMMF fields.
+const sourceContract = inspectSchemaStringIds({ schemaSource, models });
+if (sourceContract.issueCount > 0) {
+  console.error(JSON.stringify({
+    code: "PRISMA_SOURCE_CLIENT_ID_CONTRACT_INVALID",
+    prismaSchemaSha256,
+    issueCount: sourceContract.issueCount,
+    issues: sourceContract.issues,
+  }, null, 2));
+  process.exit(2);
+}
 
 if (!connectionUrl) {
   console.error("Missing DIRECT_URL or DATABASE_URL for schema inspection.");
@@ -39,7 +68,12 @@ if (!connectionUrl) {
       SELECT extname FROM pg_extension WHERE extname = 'postgis'
     `;
     const report = {
-      ...auditPrismaSchema({ models, tables, columns }),
+      prismaSchemaSha256,
+      ...auditPrismaSchema({
+        models, tables, columns,
+        idTypes: sourceContract.idTypes,
+        nativeUuidFields: sourceContract.nativeUuidFields,
+      }),
       ...auditGpsSqlContract({ models, tables, columns, extensions }),
     };
     console.log(JSON.stringify(report, null, 2));

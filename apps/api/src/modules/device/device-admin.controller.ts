@@ -20,8 +20,12 @@ import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 // Only missing legacy assignment tables may be ignored for compatibility.
 // Never report a successful removal after an authorization, schema or DB error.
 function isMissingLegacyTable(error: unknown): boolean {
-  return typeof error === "object" && error !== null &&
-    "code" in error && error.code === "P2021";
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2021"
+  );
 }
 
 const KIOSK_COMMAND_TYPES = [
@@ -283,24 +287,26 @@ export class DeviceAdminController {
   async getDeviceProfile(@Param("deviceId") deviceId: string) {
     try {
       const resolved = await this.resolveUnambiguousDevice(deviceId);
-      const device = resolved ? await this.prisma.device.findUnique({
-        where: { id: resolved.id },
-        include: {
-          driver: true,
-          campaigns: {
+      const device = resolved
+        ? await this.prisma.device.findUnique({
+            where: { id: resolved.id },
             include: {
-              campaign: {
-                select: {
-                  id: true,
-                  name: true,
-                  advertiser: true,
-                  active: true,
+              driver: true,
+              campaigns: {
+                include: {
+                  campaign: {
+                    select: {
+                      id: true,
+                      name: true,
+                      advertiser: true,
+                      active: true,
+                    },
+                  },
                 },
               },
             },
-          },
-        },
-      }) : null;
+          })
+        : null;
 
       if (!device) {
         this.logger.warn(
@@ -367,10 +373,12 @@ export class DeviceAdminController {
     },
   ) {
     const resolved = await this.resolveUnambiguousDevice(deviceId);
-    const device = resolved ? await this.prisma.device.findUnique({
-      where: { id: resolved.id },
-      include: { driver: true },
-    }) : null;
+    const device = resolved
+      ? await this.prisma.device.findUnique({
+          where: { id: resolved.id },
+          include: { driver: true },
+        })
+      : null;
 
     if (!device) throw new BadRequestException("Dispositivo no encontrado");
 

@@ -139,6 +139,8 @@ GRANT_COUNT=$(psql -X -v ON_ERROR_STOP=1 \
                 FROM (VALUES ('anon'), ('authenticated')) AS roles(role_name)
                 CROSS JOIN (VALUES ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) AS perms(privilege)
                 WHERE pg_catalog.has_table_privilege(roles.role_name, c.oid, perms.privilege)
+                   OR (perms.privilege IN ('SELECT','INSERT','UPDATE')
+                       AND pg_catalog.has_any_column_privilege(roles.role_name, c.oid, perms.privilege))
               );" \
     -t -A | head -1)
 if ! [[ "$GRANT_COUNT" =~ ^[0-9]+$ ]]; then

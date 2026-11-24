@@ -5,6 +5,7 @@ import { SupabaseService } from "../supabase/supabase.service";
 import { TrackBatchDto, GPS_TRACK_BATCH_LIMIT } from "./dto/track-batch.dto";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { deviceIdentityWhere } from "../campaign/device-identity-lookup";
+import { assertNoDeviceHardwareUuidAlias } from "../device/device-identity-collision.guard";
 
 @Injectable()
 export class FleetService {
@@ -384,6 +385,8 @@ export class FleetService {
     if (!deviceId) {
       deviceId = "TAD-" + crypto.randomUUID().split("-")[0].toUpperCase();
     }
+
+    await assertNoDeviceHardwareUuidAlias(this.prisma, deviceId);
 
     // 1. Verificar simultáneamente Dispositivo y Driver (por ID o por Teléfono generado)
     const phone = "PH-" + deviceId;

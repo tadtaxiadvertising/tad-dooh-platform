@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { auditPrismaSchema } = require("./prisma-drift-core.cjs");
 const { auditGpsSqlContract } = require("./prisma-gps-contract.cjs");
-const { auditGeneratedClientIdTypes } = require("./prisma-client-id-consistency.cjs");
+const { inspectSchemaStringIds } = require("./prisma-client-id-consistency.cjs");
 
 const stringId = { name: "id", type: "String", kind: "scalar", isId: true };
 const models = [
@@ -389,8 +389,8 @@ test("five unreferenced UUID primary keys mirror the canonical PostgreSQL catalo
   assert.equal(report.idTypeMismatchCount, 0);
 });
 
-test("Prisma generated ID contract accepts matching native UUID and text declarations", () => {
-  const source = [
+test("source schema supplies native UUID IDs omitted from the generated DMMF", () => {
+  const schemaSource = [
     "model Wallet {",
     "  id String @id @default(uuid()) @db.Uuid",
     "}",
@@ -398,94 +398,128 @@ test("Prisma generated ID contract accepts matching native UUID and text declara
     "  id String @id @default(uuid())",
     "}",
   ].join("\n");
-  const report = auditGeneratedClientIdTypes({
-    schemaSource: source,
-    models: [
-      { name: "Wallet", fields: [{ name: "id", nativeType: ["Uuid", []] }] },
-      { name: "Driver", fields: [{ name: "id" }] },
+  const models = [
+    { name: "Wallet", dbName: "wallets", fields: [
+      { name: "id", type: "String", kind: "scalar", isId: true },
+    ] },
+    { name: "Driver", dbName: "drivers", fields: [
+      { name: "id", type: "String", kind: "scalar", isId: true },
+    ] },
+  ];
+  const contract = inspectSchemaStringIds({ schemaSource, models });
+  assert.equal(contract.issueCount, 0);
+  assert.equal(contract.idTypes.get("Wallet.id"), "uuid");
+  assert.equal(contract.idTypes.get("Driver.id"), "text");
+
+  const report = auditPrismaSchema({
+    models,
+    tables: [{ table_name: "wallets" }, { table_name: "drivers" }],
+    columns: [
+      { table_name: "wallets", column_name: "id", udt_name: "uuid" },
+      { table_name: "drivers", column_name: "id", udt_name: "text" },
     ],
+    idTypes: contract.idTypes,
   });
-  assert.deepEqual(report, { mismatchCount: 0, mismatches: [] });
+  assert.equal(report.idTypeMismatchCount, 0);
 });
 
-test("Prisma generated ID contract diagnoses a stale client rather than DB drift", () => {
-  const source = [
-    "model Wallet {",
-    "  id String @id @default(uuid()) @db.Uuid",
-    "}",
-    "model Device {",
-    "  id String @id @default(uuid())",
-    "}",
-  ].join("\n");
-  const report = auditGeneratedClientIdTypes({
-    schemaSource: source,
-    models: [
-      { name: "Wallet", fields: [{ name: "id" }] },
-      { name: "Device", fields: [{ name: "id", nativeType: ["Uuid", []] }] },
-    ],
-  });
-  assert.equal(report.mismatchCount, 2);
-  assert.deepEqual(report.mismatches, [
-    { model: "Device", field: "id", schema: "non-uuid", client: "uuid" },
-    { model: "Wallet", field: "id", schema: "uuid", client: "non-uuid" },
-  ]);
-});
-
-test("Prisma generated ID contract fails closed when the generated model omits a key", () => {
-  const source = "model Wallet {\r\n  id String @id @db.Uuid\r\n}\r\n";
-  const report = auditGeneratedClientIdTypes({
-    schemaSource: source,
+test("source/client contract rejects a generated model missing its String ID", () => {
+  const contract = inspectSchemaStringIds({
+    schemaSource: "model Wallet {\r\n  id String @id @db.Uuid\r\n}\r\n",
     models: [{ name: "Wallet", fields: [] }],
   });
-  assert.deepEqual(report.mismatches, [
-    { model: "Wallet", field: "id", schema: "uuid", client: "missing" },
+  assert.deepEqual(contract.issues, [
+    { model: "Wallet", field: "id", code: "GENERATED_ID_MISSING" },
   ]);
 });
 
-test("Prisma ID consistency check ignores non-primary fields and commented annotations", () => {
-  const source = [
-    "model Device {",
-    "  id String @id // @db.Uuid is not part of this ID",
-    "  reference String @db.Uuid",
-    "}",
-  ].join("\n");
-  const report = auditGeneratedClientIdTypes({
-    schemaSource: source,
-    models: [{ name: "Device", fields: [{ name: "id" }] }],
+test("source/client contract rejects an ID in the client absent from the source", () => {
+  const contract = inspectSchemaStringIds({
+    schemaSource: "model Device {\n  serial String @unique\n}\n",
+    models: [{
+      name: "Device",
+      fields: [{ name: "id", type: "String", isId: true }],
+    }],
   });
-  assert.equal(report.mismatchCount, 0);
+  assert.deepEqual(contract.issues, [
+    { model: "Device", field: "id", code: "SOURCE_ID_MISSING" },
+  ]);
 });
 
-test("runtime Prisma drift checker verifies bundled schema and exposes a safe SHA256 fingerprint", () => {
+test("source/client contract refuses unsupported native String ID types", () => {
+  const contract = inspectSchemaStringIds({
+    schemaSource: "model Device {\n  id String @id @db.VarChar(36)\n}\n",
+    models: [{
+      name: "Device",
+      fields: [{ name: "id", type: "String", isId: true }],
+    }],
+  });
+  assert.ok(contract.issues.some((issue) => issue.code === "UNSUPPORTED_ID_NATIVE_TYPE"));
+  assert.ok(contract.issueCount > 0);
+});
+
+test("Prisma ID source parser ignores comments and unrelated scalar fields", () => {
+  const contract = inspectSchemaStringIds({
+    schemaSource: [
+      "model Device {",
+      "  id String @id // @db.Uuid is only a comment",
+      "  reference String @db.Uuid",
+      "}",
+    ].join("\n"),
+    models: [{
+      name: "Device",
+      fields: [{ name: "id", type: "String", isId: true }],
+    }],
+  });
+  assert.equal(contract.issueCount, 0);
+  assert.equal(contract.idTypes.get("Device.id"), "text");
+});
+
+test("runtime drift checker uses source-native ID types and emits a schema SHA-256", () => {
   const fs = require("node:fs");
   const path = require("node:path");
   const source = fs.readFileSync(
     path.join(__dirname, "check-prisma-drift.cjs"), "utf8",
   );
-  assert.match(source, /auditGeneratedClientIdTypes\(\{ schemaSource, models \}\)/);
-  assert.match(source, /PRISMA_GENERATED_CLIENT_ID_MISMATCH/);
+  assert.match(source, /inspectSchemaStringIds\(\{ schemaSource, models \}\)/);
+  assert.match(source, /PRISMA_SOURCE_CLIENT_ID_CONTRACT_INVALID/);
+  assert.match(source, /idTypes: sourceContract\.idTypes/);
   assert.match(source, /createHash\("sha256"\)/);
   assert.match(source, /prismaSchemaSha256/);
-  assert.match(source, /process\.exit\(2\)/);
-  assert.match(source, /check-prisma-drift.cjs|Prisma schema/i);
 });
 
-
-test("installed Prisma Client DMMF agrees with the checked-in primary-key native types", () => {
+test("real generated Prisma Client IDs agree with the source model identities", () => {
   const fs = require("node:fs");
   const path = require("node:path");
   const { Prisma } = require("@prisma/client");
   const schemaSource = fs.readFileSync(
-    path.join(__dirname, "../prisma/schema.prisma"),
-    "utf8",
+    path.join(__dirname, "../prisma/schema.prisma"), "utf8",
   );
-  const report = auditGeneratedClientIdTypes({
-    schemaSource,
-    models: Prisma.dmmf.datamodel.models,
+  const models = Prisma.dmmf.datamodel.models;
+  const contract = inspectSchemaStringIds({ schemaSource, models });
+  assert.deepEqual(contract.issues, []);
+
+  // These nine tables were reported as TEXT/UUID errors by the earlier DMMF
+  // checker despite @db.Uuid existing in the source. Do not mask real drift
+  // for the other keys or touch physical PostgreSQL columns.
+  const nativeUuidModels = new Set([
+    "CampaignExpiration", "CampaignIntent", "DriverLocation",
+    "FinancialTransaction", "MediaAsset", "PayrollPayment",
+    "PlaybackEvent", "Telemetry", "Wallet",
+  ]);
+  const selected = models.filter((model) => nativeUuidModels.has(model.name));
+  assert.equal(selected.length, nativeUuidModels.size);
+  const report = auditPrismaSchema({
+    models: selected,
+    tables: selected.map((model) => ({
+      table_name: model.dbName || model.name,
+    })),
+    columns: selected.map((model) => ({
+      table_name: model.dbName || model.name,
+      column_name: "id",
+      udt_name: "uuid",
+    })),
+    idTypes: contract.idTypes,
   });
-  assert.deepEqual(
-    report.mismatches,
-    [],
-    "Generated Prisma Client ID metadata differs from its source schema",
-  );
+  assert.equal(report.idTypeMismatchCount, 0);
 });

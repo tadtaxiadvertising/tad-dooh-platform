@@ -53,12 +53,6 @@ jobs:
           fi
           pnpm dlx prettier@3.9.10 --check "apps/**/*.{ts,tsx}"
 
-      - name: Print exact Prettier patch for failing safety files
-        if: failure()
-        run: |
-          pnpm dlx prettier@3.9.10 --write apps/api/src/modules/media/media.scheduler.ts apps/api/src/modules/media/media.scheduler.spec.ts
-          git diff -- apps/api/src/modules/media/media.scheduler.ts apps/api/src/modules/media/media.scheduler.spec.ts
-
       - name: Lint (ESLint)
         run: |
           set -euo pipefail

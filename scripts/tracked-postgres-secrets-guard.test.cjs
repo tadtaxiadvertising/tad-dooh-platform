@@ -135,6 +135,8 @@ test("weekly and manual audits check effective client DML, including PUBLIC gran
     assert.match(query, /pg_catalog\.pg_namespace/);
     assert.match(query, /c\.relkind IN \('r','p','v','m','f'\)/);
     assert.match(query, /pg_catalog\.has_table_privilege\(/);
+    assert.match(query, /pg_catalog\.has_any_column_privilege\(/);
+    assert.match(query, /perms\.privilege IN \('SELECT','INSERT','UPDATE'\)/);
     assert.match(query, /'anon'/);
     assert.match(query, /'authenticated'/);
     for (const privilege of ["SELECT", "INSERT", "UPDATE", "DELETE"]) {

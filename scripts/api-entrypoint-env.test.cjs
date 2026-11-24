@@ -22,6 +22,7 @@ const fixtures = Object.freeze({
   DATABASE_URL: "postgresql://fixture:fixture@database.invalid:5432/fixture",
   SUPABASE_URL: "https://entrypoint-fixture.supabase.invalid",
   DIRECT_URL: "postgresql://fixture:fixture@direct.invalid:5432/fixture",
+  TAD_EXPECTED_SUPABASE_PROJECT_REF: "abcdefghijklmnopqrst",
 });
 
 // Only the migration boundary is substituted. The production entrypoint and its
@@ -32,6 +33,13 @@ const migrationBoundary = `node() {
     return 92
   fi
   case "\${1-}" in
+    "../../scripts/verify-supabase-runtime-target.cjs")
+      if [ "\${TAD_TEST_PINNED_FAIL:-}" = "1" ]; then
+        printf '%s\n' '[test] independent Supabase target rejected'
+        return 23
+      fi
+      printf '%s\n' '[test] independent Supabase target verified'
+      ;;
     "./scripts/check-supabase-target.cjs")
       if [ "\${TAD_TEST_PREFLIGHT_FAIL:-}" = "1" ]; then
         printf '%s\\n' '[test] Supabase target rejected'
@@ -190,6 +198,29 @@ for (const missing of ["DATABASE_URL", "SUPABASE_URL", "DIRECT_URL"]) {
   });
 }
 
+test("startup refuses missing independent project ref before any preflight DB checks", () => {
+  const env = { ...fixtures };
+  delete env.TAD_EXPECTED_SUPABASE_PROJECT_REF;
+  const { status, output } = runEntrypoint(env);
+  assert.equal(status, 1);
+  assert.match(output, /TAD_EXPECTED_SUPABASE_PROJECT_REF is required/);
+  assert.match(output, /90-second idle cooldown/);
+  assert.doesNotMatch(output, /independent Supabase target verified|Supabase target verified|schema parity verified/);
+  assertNoNodeStart(output);
+});
+
+test("independent project mismatch fails closed before URL-parity and schema checks", () => {
+  const { status, output } = runEntrypoint({
+    ...fixtures,
+    TAD_TEST_PINNED_FAIL: "1",
+  });
+  assert.equal(status, 23);
+  assert.match(output, /independent Supabase target rejected/);
+  assert.match(output, /Independent Supabase target verification failed/);
+  assert.doesNotMatch(output, /\[test\] Supabase target verified|schema parity verified/);
+  assertNoNodeStart(output);
+});
+
 test("Supabase target mismatch blocks the API before any drift check or migration", () => {
   const { status, output } = runEntrypoint({ ...fixtures, TAD_TEST_PREFLIGHT_FAIL: "1" });
   assert.equal(status, 18);
@@ -216,6 +247,7 @@ test("clean schema starts API without migration or a restart cooldown", {
 }, () => {
   const { status, output } = runEntrypoint(fixtures);
   assert.equal(status, 0);
+  assert.match(output, /\[test\] independent Supabase target verified/);
   assert.match(output, /\[test\] Supabase target verified/);
   assert.match(output, /\[test\] schema parity verified/);
   assert.match(output, /Prisma schema parity verified; no migrations executed/);
@@ -226,5 +258,6 @@ test("clean schema starts API without migration or a restart cooldown", {
 
 test("runtime startup contains no automatic Prisma migration or db push", () => {
   assert.doesNotMatch(entrypoint, /pnpm\s+exec\s+prisma\s+migrate|prisma\s+db\s+push|migrate\s+resolve|--accept-data-loss/);
+  assert.match(entrypoint, /verify-supabase-runtime-target\.cjs/);
   assert.match(entrypoint, /check-prisma-drift\.cjs/);
 });

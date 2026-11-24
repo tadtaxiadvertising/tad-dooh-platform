@@ -468,11 +468,16 @@ test("Prisma ID source parser ignores comments and unrelated scalar fields", () 
     ].join("\n"),
     models: [{
       name: "Device",
-      fields: [{ name: "id", type: "String", isId: true }],
+      fields: [
+        { name: "id", type: "String", kind: "scalar", isId: true },
+        { name: "reference", type: "String", kind: "scalar" },
+      ],
     }],
   });
   assert.equal(contract.issueCount, 0);
   assert.equal(contract.idTypes.get("Device.id"), "text");
+  assert.equal(contract.nativeUuidFields.has("Device.id"), false);
+  assert.equal(contract.nativeUuidFields.has("Device.reference"), true);
 });
 
 test("runtime drift checker uses source-native ID types and emits a schema SHA-256", () => {

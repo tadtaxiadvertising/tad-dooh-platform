@@ -74,10 +74,10 @@ model Device {
 }
 
 model Campaign {
-  id                String   @id @default(uuid())
+  id                String   @id @default(uuid()) @db.Uuid
   name              String
   advertiser        String
-  advertiserId      String?  @map("advertiser_id")
+  advertiserId      String?  @map("advertiser_id") @db.Uuid
   description       String?
   status            String   @default("PENDING_PAYMENT")
   active            Boolean  @default(true)
@@ -134,7 +134,7 @@ model Campaign {
 
 model Playlist {
   id         String   @id @default(uuid())
-  campaignId String   @map("campaign_id")
+  campaignId String   @map("campaign_id") @db.Uuid
   name       String
   loopType   String   @default("SEQUENTIAL") // SEQUENTIAL | WEIGHTED | SHUFFLE | PRIORITY
   createdAt  DateTime @default(now()) @map("created_at")
@@ -144,7 +144,7 @@ model Playlist {
 }
 
 model PlaylistItem {
-  campaignId String   @map("campaign_id")
+  campaignId String   @map("campaign_id") @db.Uuid
   deviceId   String   @map("device_id")
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   device     Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
@@ -155,7 +155,7 @@ model PlaylistItem {
 
 model DeviceCampaign {
   device_id   String
-  campaign_id String
+  campaign_id String @db.Uuid
   assigned_at DateTime @default(now())
   campaign    Campaign @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
   device      Device   @relation(fields: [device_id], references: [id], onDelete: Cascade)
@@ -167,7 +167,7 @@ model DeviceCampaign {
 }
 
 model Media {
-  id               String    @id @default(uuid())
+  id               String    @id @default(uuid()) @db.Uuid
   name             String?
   filename         String?
   originalFilename String?   @map("original_filename")
@@ -183,7 +183,7 @@ model Media {
   hash             String?
   hashMd5          String?   @map("hash_md5")
   hashSha256       String?   @map("hash_sha256")
-  campaign_id      String?
+  campaign_id      String? @db.Uuid
   status           String    @default("READY")
   createdAt        DateTime  @default(now()) @map("created_at")
   qrUrl            String?   @map("qr_url")
@@ -219,7 +219,7 @@ model AnalyticsEvent {
 
 model CampaignMetric {
   id                BigInt   @id @default(autoincrement())
-  campaignId        String   @map("campaign_id")
+  campaignId        String   @map("campaign_id") @db.Uuid
   deviceId          String?  @map("device_id")
   date              DateTime
   city              String?
@@ -257,7 +257,7 @@ model DeviceCommand {
 
 model Video {
   id         String   @id @default(uuid())
-  campaignId String   @map("campaign_id")
+  campaignId String   @map("campaign_id") @db.Uuid
   title      String
   url        String
   duration   Int
@@ -309,7 +309,7 @@ model PlaybackEvent {
 
 model MediaAsset {
   id               String   @id @default(uuid()) @db.Uuid
-  campaignId       String   @map("campaign_id")
+  campaignId       String   @map("campaign_id") @db.Uuid
   type             String
   filename         String
   url              String
@@ -467,7 +467,7 @@ model Subscription {
 }
 
 model Advertiser {
-  id             String                   @id @default(uuid())
+  id             String                   @id @default(uuid()) @db.Uuid
   companyName    String                   @map("company_name")
   contactName    String                   @map("contact_name")
   email          String                   @unique
@@ -498,7 +498,7 @@ model Advertiser {
 
 model PortalRequest {
   id           String      @id @default(uuid())
-  advertiserId String?     @map("advertiser_id")
+  advertiserId String?     @map("advertiser_id") @db.Uuid
   driverId     String?     @map("driver_id")
   campaignId   String?     @map("campaign_id")
   type         String
@@ -667,7 +667,7 @@ model ContractAcceptance {
 
 model AdvertiserSubscription {
   id              String     @id @default(uuid())
-  advertiserId    String     @map("advertiser_id")
+  advertiserId    String     @map("advertiser_id") @db.Uuid
   numberOfScreens Int        @map("number_of_screens")
   monthlyRate     Float      @default(1500.0) @map("monthly_rate")
   taxRate         Float      @default(0.18) @map("tax_rate")
@@ -683,8 +683,8 @@ model AdvertiserSubscription {
 }
 
 model Invoice {
-  id           String     @id @default(uuid())
-  advertiserId String     @map("advertiser_id")
+  id           String     @id @default(uuid()) @db.Uuid
+  advertiserId String     @map("advertiser_id") @db.Uuid
   issueDate    DateTime   @default(now()) @map("issue_date")
   dueDate      DateTime   @map("due_date")
   subtotal     Float

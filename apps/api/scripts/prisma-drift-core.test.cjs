@@ -504,10 +504,10 @@ test("real generated Prisma Client IDs agree with the source model identities", 
   const contract = inspectSchemaStringIds({ schemaSource, models });
   assert.deepEqual(contract.issues, []);
 
-  // These nine tables were reported as TEXT/UUID errors by the earlier DMMF
-  // checker despite @db.Uuid existing in the source. Do not mask real drift
-  // for the other keys or touch physical PostgreSQL columns.
+  // The live read-only catalog on 2026-11-25 confirms these UUID primary keys.
+  // Native annotations must describe existing columns, without changing data.
   const nativeUuidModels = new Set([
+    "Advertiser", "Campaign", "Invoice", "Media",
     "CampaignExpiration", "CampaignIntent", "DriverLocation",
     "FinancialTransaction", "MediaAsset", "PayrollPayment",
     "PlaybackEvent", "Telemetry", "Wallet",
@@ -528,10 +528,9 @@ test("real generated Prisma Client IDs agree with the source model identities", 
   });
   assert.equal(report.idTypeMismatchCount, 0);
 
-  // Do not turn the five remaining model/physical UUID discrepancies green.
-  const remainingModels = new Set([
-    "Advertiser", "Campaign", "Device", "Invoice", "Media",
-  ]);
+  // Device assignments still use transitional TEXT identifiers. Keep this
+  // unresolved contract visible until that separate identity transition lands.
+  const remainingModels = new Set(["Device"]);
   const remaining = models.filter((model) => remainingModels.has(model.name));
   assert.equal(remaining.length, remainingModels.size);
   const unresolved = auditPrismaSchema({
@@ -548,10 +547,59 @@ test("real generated Prisma Client IDs agree with the source model identities", 
   });
   assert.deepEqual(
     unresolved.idTypeMismatches.map((item) => item.table).sort(),
-    ["advertisers", "campaigns", "devices", "invoices", "media"],
+    ["devices"],
   );
 });
 
+
+test("campaign and advertiser references retain their physical UUID contract", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { Prisma } = require("@prisma/client");
+  const schemaSource = fs.readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
+  const models = Prisma.dmmf.datamodel.models;
+  const contract = inspectSchemaStringIds({ schemaSource, models });
+  assert.deepEqual(contract.issues, []);
+
+  // Column types observed through a read-only catalog query, not application
+  // data. New tables must use the same parent identity when expanded later.
+  const observed = [
+    ["Campaign", "advertiserId", "campaigns", "advertiser_id"],
+    ["DeviceCampaign", "campaign_id", "device_campaigns", "campaign_id"],
+    ["Invoice", "advertiserId", "invoices", "advertiser_id"],
+    ["Media", "campaign_id", "media", "campaign_id"],
+    ["MediaAsset", "campaignId", "media_assets", "campaign_id"],
+    ["PlaylistItem", "campaignId", "playlist_items", "campaign_id"],
+    ["Video", "campaignId", "videos", "campaign_id"],
+  ];
+  for (const [model, field] of observed) {
+    assert.equal(contract.nativeUuidFields.has(model + "." + field), true,
+      model + "." + field + " must retain the catalog UUID type");
+  }
+  for (const key of ["AdvertiserSubscription.advertiserId", "CampaignMetric.campaignId",
+    "Playlist.campaignId", "PortalRequest.advertiserId"]) {
+    assert.equal(contract.nativeUuidFields.has(key), true, key);
+  }
+  const input = {
+    models: models.filter((m) => observed.some(([name]) => name === m.name)),
+    tables: [...new Set(observed.map(([, , table]) => table))].map((table_name) => ({ table_name })),
+    columns: observed.map(([, , table_name, column_name]) => ({ table_name, column_name, udt_name: "uuid" })),
+    idTypes: contract.idTypes,
+    nativeUuidFields: contract.nativeUuidFields,
+  };
+  // This fixture measures only the listed FK types; it is not a full parity
+  // fixture and must never be used to declare the production schema clean.
+  assert.equal(auditPrismaSchema(input).scalarTypeMismatchCount, 0);
+  const wrong = auditPrismaSchema({ ...input,
+    columns: input.columns.map((column) => ({ ...column, udt_name: "text" })),
+  });
+  assert.equal(wrong.scalarTypeMismatchCount, observed.length);
+
+  assert.equal(contract.idTypes.get("Driver.id"), "text");
+  assert.equal(contract.idTypes.get("Device.id"), "text");
+  assert.equal(contract.nativeUuidFields.has("Device.deviceId"), false);
+  assert.equal(contract.nativeUuidFields.has("DeviceCampaign.device_id"), false);
+});
 
 test("source native UUID on non-ID campaign FK survives DMMF nativeType omission", () => {
   const schemaSource = [

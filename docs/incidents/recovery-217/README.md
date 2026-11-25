@@ -59,3 +59,7 @@ La tarjeta [enum-preflight/README.md](enum-preflight/README.md) amplía la inspe
 ## Continuación: columnas nativas para enums
 
 La tarjeta [enum-storage/README.md](enum-storage/README.md) conserva las columnas TEXT y añade bindings nativos para SystemStatus/Currency. El SQL exige tablas de estados vacías y códigos de moneda exactos; los defaults efectivos pasan a triggers que rechazan pares contradictorios. La prueba sintética verifica Prisma real, 11 guardas, 10 escrituras inválidas y 42 denegaciones. El resultado del ensayo restaurado queda en su verification.json. No es DDL productivo ni paridad completa de la API.
+
+## Continuación: 31 columnas bajo guardas de tablas vacías
+
+La tarjeta [missing-columns/README.md](missing-columns/README.md) recupera las 31 columnas y ocho índices sin interpretar filas históricas. El ensayo cifrado conserva las 70 tablas originales y los objetos fuera del cambio: cero tablas/columnas/enums/relaciones declaradas ausentes o incompatibles; quedan dos problemas GPS/PostGIS. Prisma lee los 52 modelos (una fila como máximo por modelo) y verifica altas locales de Driver/Device/Subscription/DriverLocation revertidas en una transacción. No acredita salud productiva, todos los valores históricos, permisos funcionales ni el arranque completo de la API.

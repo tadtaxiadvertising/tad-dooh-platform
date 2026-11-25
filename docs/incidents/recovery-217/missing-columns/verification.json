@@ -1,0 +1,105 @@
+{
+  "status": "IMPLEMENTADO, PENDIENTE DE VERIFICACIÓN",
+  "card": "I — 31 missing scalar columns in empty tables",
+  "verifiedAt": "2026-11-25T21:53:31.484707+00:00",
+  "sqlSha256": "b325d4fdc7061fea1b9abc699e612dcf7f3c2f76bb39a7a7f268e32e9f8473a0",
+  "schemaLfSha256": "eaee945edceaf7d8699ba3c813427d623887706fa3512194f9526e9ce91b04c7",
+  "prismaEngineOracle": {
+    "version": "5.22.0",
+    "sourceConnections": 0,
+    "definitionCount": 31,
+    "targetTables": 5,
+    "precisionNullabilityDefaultsExact": true,
+    "fullSqlSha256": "3e0fc02ea19ebf05ac6caffd4e5624a7532b13e0da465b40c5b0605b695aa54e",
+    "scopeExcludesPendingGeography": true
+  },
+  "synthetic": {
+    "status": "PASS_SYNTHETIC_COLUMNS",
+    "started": "2026-11-25T21:47:08.430009+00:00",
+    "finished": "2026-11-25T21:49:43.639100+00:00",
+    "guards": 8,
+    "wrongOwnerLockSqlstate": "42501",
+    "otherGuardsSqlstate": "P0001",
+    "columns": 31,
+    "indexes": 8,
+    "defaultAndNullableUniqueChecks": true,
+    "duplicateRejections": 3,
+    "missingRequiredValueRejections": 2,
+    "permissionDenials": 60,
+    "originalProjectionsAndUnallowlistedCatalogExact": true,
+    "cleanupVerified": true
+  },
+  "restored": {
+    "status": "PASS_RESTORED_COLUMNS",
+    "started": "2026-11-25T21:49:59.849094+00:00",
+    "finished": "2026-11-25T21:53:31.484707+00:00",
+    "strictOriginalTables": 70,
+    "precedingAddedTables": 23,
+    "totalTables": 93,
+    "precedingIdentityAndEnumAlignmentVerified": true,
+    "allOriginalProjectedFingerprintsExact": true,
+    "allUnallowlistedCatalogAndRolesExact": true,
+    "noHistoricalBackfill": true,
+    "engineColumnCatalogExact": true,
+    "nativeModelReads": {
+      "readOnlyVerified": true,
+      "beforeModels": 52,
+      "beforePassed": 47,
+      "afterModels": 52,
+      "afterPassed": 52,
+      "maxRowsPerModel": 1,
+      "valuesEmitted": false,
+      "doesNotProveAllRowRepresentability": true
+    },
+    "nativeFutureRowsCreatedAndRolledBack": {
+      "ok": true,
+      "driverDefaults": true,
+      "clientReferralUuid": true,
+      "deviceDefaults": true,
+      "subscriptionDefaultsAndExplicitExpiry": true,
+      "locationDefaults": true,
+      "hardwareVsUuidReferences": true,
+      "identityAndEnumMirrors": true,
+      "rollback": true
+    },
+    "after": {
+      "missingTables": 0,
+      "missingColumns": 0,
+      "idTypeMismatches": 0,
+      "declaredNativeScalarTypeMismatches": 0,
+      "declaredRelationTypeMismatches": 0,
+      "enumIssues": 0,
+      "gpsIssues": 2
+    },
+    "repeatedExecutionRejectedAtomically": true,
+    "cleanupVerified": true,
+    "temporaryEncryptedKeyRemoved": true
+  },
+  "isolation": {
+    "sourceConnections": 0,
+    "networkInternal": true,
+    "publishedPorts": 0,
+    "hostBindMounts": 0,
+    "containerRootsReadOnly": true,
+    "realContainerLogsDisabled": true,
+    "frozenRecoveryHelpersUnmodified": true
+  },
+  "limits": {
+    "productionDDL": false,
+    "productionReleaseReady": false,
+    "fullApiStartupVerified": false,
+    "productionApplicationPermissionsVerified": false,
+    "deployedShaVerified": false,
+    "gpsPostgisPending": true,
+    "prismaSchemaOrBusinessRuleChanges": false,
+    "foreignKeyPolicyAndTenantAccessNotCertified": true
+  },
+  "releaseGates": [
+    "independent key custody",
+    "essential production configuration",
+    "#244 secret/session controls",
+    "#313 release/provider controls",
+    "GPS/PostGIS",
+    "full API/Auth/player/RBAC/FK and 10x load"
+  ]
+}

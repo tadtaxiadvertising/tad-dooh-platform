@@ -142,7 +142,7 @@ test("CLI validates the generated schema before metadata queries and suppresses 
           return [{ read_only: "on" }];
         }
         queries++;
-        return queries === 3
+        return queries >= 3
           ? []
           : queries === 1
             ? [{ table_name: "examples" }]
@@ -202,7 +202,7 @@ test("CLI validates the generated schema before metadata queries and suppresses 
   assert.ok(invalid.errors.length > 0);
   assert.ok(!JSON.stringify(invalid.errors).includes("synthetic-connection"));
   const valid = await run(schema().replaceAll("store", "db"));
-  assert.equal(valid.queries, 3);
+  assert.equal(valid.queries, 4);
   assert.equal(valid.exitCode, 1);
   assert.equal(JSON.parse(valid.logs[0]).idTypeMismatches[0].expected, "uuid");
 });

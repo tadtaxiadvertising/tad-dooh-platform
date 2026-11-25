@@ -51,3 +51,7 @@ La tarjeta [gps-device-identity/README.md](gps-device-identity/README.md) corrig
 ## Continuación: referencias compatibles con la vista del player
 
 La tarjeta [identity-relations/README.md](identity-relations/README.md) conserva las columnas originales y mv_active_campaigns, y añade cinco referencias canónicas con compatibilidad de escritura. El ensayo restaurado conserva los valores de las 70 tablas, roles e índices y verifica esas relaciones; quedan 31 columnas y GPS/PostGIS. Una consulta READ ONLY confirmó además el contrato SystemStatus ausente que el comparador todavía no cubre. No hay DDL productivo ni salud de runtime acreditada.
+
+## Continuación: enums fuera del comparador anterior
+
+La tarjeta [enum-preflight/README.md](enum-preflight/README.md) amplía la inspección READ ONLY y el gate CLI para detectar tipos, bindings y labels de enums. Verifica cuatro problemas reales que antes no se contabilizaban, incluidos SystemStatus y Currency. No cambia datos ni acredita reparación de esos contratos.

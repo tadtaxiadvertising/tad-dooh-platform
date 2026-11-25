@@ -703,10 +703,10 @@ test("campaign and advertiser references retain their physical UUID contract", (
   assert.equal(contract.idTypes.get("Driver.id"), "text");
   assert.equal(contract.idTypes.get("Device.id"), "uuid");
   assert.equal(contract.nativeUuidFields.has("Device.deviceId"), false);
-  assert.equal(contract.nativeUuidFields.has("DeviceCampaign.device_id"), false);
+  assert.equal(contract.nativeUuidFields.has("DeviceCampaign.device_id"), true);
 });
 
-test("device UUID storage and transitional TEXT assignments remain distinct", () => {
+test("canonical UUID assignments remain distinct from public hardware TEXT", () => {
   const fs = require("node:fs");
   const path = require("node:path");
   const { Prisma } = require("@prisma/client");
@@ -717,7 +717,8 @@ test("device UUID storage and transitional TEXT assignments remain distinct", ()
   assert.equal(contract.idTypes.get("Device.id"), "uuid");
   assert.equal(contract.nativeUuidFields.has("DeviceCommand.deviceId"), true);
   assert.equal(contract.nativeUuidFields.has("CampaignMetric.deviceId"), true);
-  for (const key of ["Device.deviceId", "DeviceCampaign.device_id", "PlaylistItem.deviceId"]) {
+  assert.equal(contract.nativeUuidFields.has("DeviceCampaign.device_id"), true);
+  for (const key of ["Device.deviceId", "PlaylistItem.deviceId"]) {
     assert.equal(contract.nativeUuidFields.has(key), false, key + " remains TEXT");
   }
   const input = {
@@ -727,7 +728,7 @@ test("device UUID storage and transitional TEXT assignments remain distinct", ()
     columns: [
       ["devices", "id", "uuid"], ["devices", "device_id", "text"],
       ["device_commands", "device_id", "uuid"],
-      ["device_campaigns", "device_id", "text"],
+      ["device_campaigns", "device_uuid_217", "uuid"],
       ["device_campaigns", "campaign_id", "uuid"], ["campaigns", "id", "uuid"],
     ].map(([table_name, column_name, udt_name]) => ({ table_name, column_name, udt_name })),
     idTypes: contract.idTypes,
@@ -736,9 +737,15 @@ test("device UUID storage and transitional TEXT assignments remain distinct", ()
   const report = auditPrismaSchema(input);
   assert.equal(report.idTypeMismatchCount, 0);
   assert.equal(report.scalarTypeMismatchCount, 0);
-  // A correct Device PK mapping does not make its incompatible relation green.
-  assert.deepEqual(report.relationTypeMismatches, [{
-    from: "device_campaigns.device_id", fromType: "text",
+  assert.deepEqual(report.relationTypeMismatches, []);
+  // The unconverted TEXT catalog must still fail both native type and relation checks.
+  const legacy = auditPrismaSchema({ ...input,
+    columns: input.columns.map((c) => c.table_name === "device_campaigns" && c.column_name === "device_uuid_217"
+      ? { ...c, udt_name: "text" } : c),
+  });
+  assert.equal(legacy.scalarTypeMismatchCount, 1);
+  assert.deepEqual(legacy.relationTypeMismatches, [{
+    from: "device_campaigns.device_uuid_217", fromType: "text",
     to: "devices.id", toType: "uuid",
   }]);
   const wrong = auditPrismaSchema({ ...input,
@@ -858,4 +865,27 @@ test("real CampaignExpiration.campaignId native UUID is checked without DMMF nat
       [table, column, expected, actual]),
     [["campaign_expirations", "campaign_id", "uuid", "text"]],
   );
+});
+
+test("assignment devices use native UUID while driver keys remain TEXT", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { Prisma } = require("@prisma/client");
+  const schemaSource = fs.readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
+  const contract = inspectSchemaStringIds({ schemaSource, models: Prisma.dmmf.datamodel.models });
+  assert.deepEqual(contract.issues, []);
+  assert.equal(contract.nativeUuidFields.has("DeviceCampaign.device_id"), true);
+  for (const field of ["Driver.id", "Device.driverId", "DriverLocation.driverId", "Telemetry.driverId", "Wallet.driverId"]) {
+    assert.equal(contract.nativeUuidFields.has(field), false);
+  }
+});
+
+test("additive canonical reference columns preserve legacy physical columns", () => {
+  const { Prisma } = require("@prisma/client");
+  const models = Prisma.dmmf.datamodel.models;
+  for (const name of ["Device", "DriverLocation", "Telemetry", "Wallet"]) {
+    const field = models.find(m => m.name === name).fields.find(f => f.name === "driverId");
+    assert.equal(field.dbName, "driver_id_text_217");
+  }
+  assert.equal(models.find(m => m.name === "DeviceCampaign").fields.find(f => f.name === "device_id").dbName, "device_uuid_217");
 });

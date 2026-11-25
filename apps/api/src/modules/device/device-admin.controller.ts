@@ -113,10 +113,9 @@ export class DeviceAdminController {
     const device = await this.resolveUnambiguousDevice(paramId);
     if (!device) return [];
 
-    // device_campaigns.device_id is TEXT and may contain the canonical UUID
-    // serialized as text or a legacy hardware ID. Never coerce it to UUID.
+    // Resolve the public hardware/UUID input before querying the UUID relation.
     const assignments = await this.prisma.deviceCampaign.findMany({
-      where: { device_id: { in: [device.id, device.deviceId] } },
+      where: { device_id: device.id },
       include: { campaign: true },
     });
 
@@ -145,11 +144,11 @@ export class DeviceAdminController {
       return { success: false, message: "Dispositivo no encontrado" };
     }
 
-    // 1. Remove both canonical UUID-as-TEXT and legacy hardware assignments.
+    // 1. Remove the canonical UUID assignment after identity resolution.
     try {
       await this.prisma.deviceCampaign.deleteMany({
         where: {
-          device_id: { in: [device.id, device.deviceId] },
+          device_id: device.id,
           campaign_id: campaignId,
         },
       });
@@ -259,7 +258,7 @@ export class DeviceAdminController {
         // 3. Operational Data (References by UUID or Hardware ID)
         await tx.deviceCommand.deleteMany({ where: { deviceId: uuid } });
         await tx.deviceCampaign.deleteMany({
-          where: { device_id: { in: [uuid, hwId] } },
+          where: { device_id: uuid },
         });
         await tx.subscription.deleteMany({ where: { deviceId: hwId } });
 

@@ -1,0 +1,58 @@
+{
+  "scope": "ISOLATED_RESTORED_CLONE_ONLY",
+  "baseCommit": "fd5a663bca7d88ab8bc9b2ca0f578d73f6a90d74",
+  "schemaLfSha256": "1de4bec631ebe66a147df07d069a7a3922393fb3411ed47ff9fe14f12ae60ff4",
+  "file": "G-identity.sql",
+  "sha256": "d0d79622947c3375f5f4a8bf3a5673dc790c5ad4d646b0807abe0424f4bc81e9",
+  "canonicalReferences": [
+    {
+      "model": "DeviceCampaign",
+      "field": "device_id",
+      "column": "device_uuid_217",
+      "type": "uuid",
+      "target": "devices.id"
+    },
+    {
+      "model": "Device",
+      "field": "driverId",
+      "column": "driver_id_text_217",
+      "type": "text",
+      "target": "drivers.id"
+    },
+    {
+      "model": "DriverLocation",
+      "field": "driverId",
+      "column": "driver_id_text_217",
+      "type": "text",
+      "target": "drivers.id"
+    },
+    {
+      "model": "Telemetry",
+      "field": "driverId",
+      "column": "driver_id_text_217",
+      "type": "text",
+      "target": "drivers.id"
+    },
+    {
+      "model": "Wallet",
+      "field": "driverId",
+      "column": "driver_id_text_217",
+      "type": "text",
+      "target": "drivers.id"
+    }
+  ],
+  "legacyColumnTypesPreserved": true,
+  "dependentViewPreserved": "mv_active_campaigns",
+  "indexesAdded": 6,
+  "invokerTriggerFunctionsAdded": 2,
+  "triggersAdded": 5,
+  "legacyNullabilityRelaxed": [
+    "driver_locations.driver_id",
+    "telemetry.driver_id",
+    "wallets.driver_id"
+  ],
+  "changesFinancialValues": false,
+  "changesParentIdentities": false,
+  "changesRlsTableAclOrForeignKeys": false,
+  "contractCleanupIncluded": false
+}

@@ -197,7 +197,10 @@ describe("TelemetryService GPS upload transaction", () => {
     expect(write).toHaveBeenCalledTimes(2);
     const first = write.mock.calls[0];
     const last = write.mock.calls[1];
-    expect(first[0]).toContain("ON CONFLICT");
+    expect(first[0]).toContain(
+      "INSERT INTO telemetry (id, driver_id_text_217,",
+    );
+    expect(first[0]).toContain("ON CONFLICT (driver_id_text_217,");
     expect(first).toHaveLength(1 + 100 * 5);
     expect(last).toHaveLength(1 + 1 * 5);
   });

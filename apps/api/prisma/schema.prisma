@@ -522,13 +522,13 @@ model PortalRequest {
 model DriverLocation {
   id          String   @id @default(uuid()) @db.Uuid
   driverId    String   @map("driver_id")
-  deviceId    String   @map("device_id")
+  deviceId    String   @db.Uuid @map("device_id")
   latitude    Float
   longitude   Float
   speed       Float    @default(0)
   timestamp   DateTime @default(now())
   isSimulated Boolean  @default(false) @map("is_simulated")
-  device      Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   driver      Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   // V12.1.3 (B3 PATCH): UNIQUE constraint requerido por SRE para evitar

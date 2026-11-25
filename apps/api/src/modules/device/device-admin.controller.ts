@@ -250,11 +250,11 @@ export class DeviceAdminController {
         await tx.analyticsEvent.deleteMany({ where: { deviceId: hwId } });
         await tx.campaignMetric.deleteMany({ where: { deviceId: uuid } });
 
-        // 2. Telemetry & Logs (References by Hardware ID)
+        // 2. Telemetry & Logs (Hardware ID; GPS uses the internal UUID)
         await tx.playbackEvent.deleteMany({ where: { deviceId: hwId } });
         await tx.deviceHeartbeat.deleteMany({ where: { deviceId: hwId } });
         await tx.playlistItem.deleteMany({ where: { deviceId: hwId } });
-        await tx.driverLocation.deleteMany({ where: { deviceId: hwId } });
+        await tx.driverLocation.deleteMany({ where: { deviceId: uuid } });
 
         // 3. Operational Data (References by UUID or Hardware ID)
         await tx.deviceCommand.deleteMany({ where: { deviceId: uuid } });

@@ -125,6 +125,36 @@ test("restored users use the UUID contract already stored by campaign creators",
   }]);
 });
 
+test("GPS device UUID references the internal key while hardware identifiers stay TEXT", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { Prisma } = require("@prisma/client");
+  const schemaSource = fs.readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
+  const allModels = Prisma.dmmf.datamodel.models;
+  const contract = inspectSchemaStringIds({ schemaSource, models: allModels });
+  assert.deepEqual(contract.issues, []);
+  assert.equal(contract.nativeUuidFields.has("DriverLocation.deviceId"), true);
+  assert.equal(contract.nativeUuidFields.has("Device.deviceId"), false);
+  const location = allModels.find((m) => m.name === "DriverLocation");
+  const relation = location.fields.find((f) => f.name === "device");
+  assert.deepEqual(relation.relationToFields, ["id"]);
+  const selected = allModels.filter((m) => ["Device", "DriverLocation"].includes(m.name))
+    .map((m) => ({ ...m, fields: m.fields.filter((f) => ["id", "deviceId", "device"].includes(f.name)) }));
+  const report = auditPrismaSchema({
+    models: selected,
+    tables: ["devices", "driver_locations"].map((table_name) => ({ table_name })),
+    columns: [
+      ["devices", "id", "uuid"], ["devices", "device_id", "text"],
+      ["driver_locations", "id", "uuid"], ["driver_locations", "device_id", "uuid"],
+    ].map(([table_name, column_name, udt_name]) => ({ table_name, column_name, udt_name })),
+    idTypes: contract.idTypes,
+    nativeUuidFields: contract.nativeUuidFields,
+  });
+  assert.equal(report.idTypeMismatchCount, 0);
+  assert.equal(report.scalarTypeMismatchCount, 0);
+  assert.equal(report.relationTypeMismatchCount, 0);
+});
+
 test("reports absent models, UUID/TEXT primary-key and relation mismatches", () => {
   const report = auditPrismaSchema({
     models,

@@ -83,7 +83,7 @@ export class MonitoringService {
       if (points.length > 0) {
         await this.prisma.driverLocation.createMany({
           data: points.map((p) => ({
-            deviceId,
+            deviceId: device.id,
             driverId: resolvedDriverId,
             latitude: p.latitude ?? p.lat,
             longitude: p.longitude ?? p.lng,

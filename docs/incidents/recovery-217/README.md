@@ -55,3 +55,7 @@ La tarjeta [identity-relations/README.md](identity-relations/README.md) conserva
 ## Continuación: enums fuera del comparador anterior
 
 La tarjeta [enum-preflight/README.md](enum-preflight/README.md) amplía la inspección READ ONLY y el gate CLI para detectar tipos, bindings y labels de enums. Verifica cuatro problemas reales que antes no se contabilizaban, incluidos SystemStatus y Currency. No cambia datos ni acredita reparación de esos contratos.
+
+## Continuación: columnas nativas para enums
+
+La tarjeta [enum-storage/README.md](enum-storage/README.md) conserva las columnas TEXT y añade bindings nativos para SystemStatus/Currency. El SQL exige tablas de estados vacías y códigos de moneda exactos; los defaults efectivos pasan a triggers que rechazan pares contradictorios. La prueba sintética verifica Prisma real, 11 guardas, 10 escrituras inválidas y 42 denegaciones. El resultado del ensayo restaurado queda en su verification.json. No es DDL productivo ni paridad completa de la API.

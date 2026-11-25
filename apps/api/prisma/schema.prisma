@@ -27,7 +27,7 @@ model Device {
   name              String?
   taxiNumber        String?           @map("taxi_number")
   city              String?
-  status            SystemStatus      @default(OPERATIVO)
+  status            SystemStatus      @default(OPERATIVO) @map("status_enum_217")
   lastSync          DateTime?         @map("last_sync")
   lastHeartbeat     DateTime?         @map("last_heartbeat")
   batteryLevel      Int?              @default(100) @map("battery_level")
@@ -348,7 +348,7 @@ model Driver {
   taxiNumber                 String?      @map("taxi_number")
   subscriptionPaid           Boolean      @default(false) @map("subscription_paid")
   subscriptionEnd            DateTime?    @map("subscription_end")
-  status                     SystemStatus @default(PENDIENTE_PAGO)
+  status                     SystemStatus @default(PENDIENTE_PAGO) @map("status_enum_217")
   onboardingStatus           String       @default("PENDING_AGREEMENT") @map("onboarding_status")
   onboardedAt                DateTime     @default(now()) @map("onboarded_at")
   blockedAt                  DateTime?    @map("blocked_at")
@@ -400,7 +400,7 @@ model FinancialTransaction {
   netAmount Float    @map("net_amount")
   taxAmount Float    @map("tax_amount")
   status    String   @default("PENDING")
-  currency  Currency @default(DOP) @map("currency")
+  currency  Currency @default(DOP) @map("currency_enum_217")
   entityId  String?  @map("entity_id")
   reference String?  @unique
   note      String?

@@ -128,7 +128,7 @@ importers:
         version: 3.7.0
       uuid:
         specifier: ^14.0.0
-        version: 14.0.0
+        version: 14.0.3
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.0.0
@@ -419,7 +419,7 @@ importers:
         version: 1.20.0
       uuid:
         specifier: ^14.0.0
-        version: 14.0.0
+        version: 14.0.3
       winston:
         specifier: ^3.19.0
         version: 3.19.0
@@ -594,7 +594,7 @@ importers:
         version: 7.8.2
       uuid:
         specifier: ^14.0.0
-        version: 14.0.0
+        version: 14.0.3
       winston:
         specifier: ^3.19.0
         version: 3.19.0
@@ -8859,8 +8859,8 @@ packages:
     resolution: {integrity: sha512-d0z310fCWv5dJwnX1Y/MncBAqGMKEzlBb1AOf7z9K8ALnd0utBX/msg/fA0+sbyN1ihbMsLhrBlnl1ak7Wa0rg==}
     hasBin: true
 
-  uuid@14.0.0:
-    resolution: {integrity: sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==}
+  uuid@14.0.3:
+    resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
     hasBin: true
 
   uuid@8.3.2:
@@ -19110,7 +19110,7 @@ snapshots:
 
   uuid@11.0.3: {}
 
-  uuid@14.0.0: {}
+  uuid@14.0.3: {}
 
   uuid@8.3.2: {}
 

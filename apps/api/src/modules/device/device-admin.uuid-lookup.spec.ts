@@ -60,7 +60,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.device.create).not.toHaveBeenCalled();
   });
 
-  it("queries campaigns by hardware ID without a UUID cast", async () => {
+  it("resolves hardware input before querying UUID campaign assignments", async () => {
     const { controller, prisma } = setup();
     prisma.device.findMany.mockResolvedValue([
       { id: uuid, deviceId: "TAD-0001" },
@@ -72,7 +72,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
       take: 2,
     });
     expect(prisma.deviceCampaign.findMany).toHaveBeenCalledWith({
-      where: { device_id: { in: [uuid, "TAD-0001"] } },
+      where: { device_id: uuid },
       include: { campaign: true },
     });
   });
@@ -127,7 +127,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     expect(prisma.deviceCampaign.findMany).not.toHaveBeenCalled();
   });
 
-  it("removes UUID/hardware assignments and the legacy playlist", async () => {
+  it("removes canonical UUID assignments and the hardware legacy playlist", async () => {
     const { controller, prisma } = setup();
     prisma.device.findMany.mockResolvedValue([
       { id: uuid, deviceId: "TAD-0001" },
@@ -140,7 +140,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     });
     expect(prisma.deviceCampaign.deleteMany).toHaveBeenCalledWith({
       where: {
-        device_id: { in: [uuid, "TAD-0001"] },
+        device_id: uuid,
         campaign_id: "CAMP-1",
       },
     });
@@ -203,7 +203,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     ).rejects.toThrow("synthetic DB unavailable");
   });
 
-  it("deletes dual-ID assignments within device transaction", async () => {
+  it("deletes canonical UUID assignments within the device transaction", async () => {
     const { controller, prisma, tx } = setup();
     prisma.device.findMany.mockResolvedValue([
       { id: uuid, deviceId: "TAD-0001" },
@@ -214,7 +214,7 @@ describe("DeviceAdminController hardware/UUID lookup", () => {
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(tx.deviceCampaign.deleteMany).toHaveBeenCalledWith({
-      where: { device_id: { in: [uuid, "TAD-0001"] } },
+      where: { device_id: uuid },
     });
     expect(tx.device.delete).toHaveBeenCalledWith({ where: { id: uuid } });
   });

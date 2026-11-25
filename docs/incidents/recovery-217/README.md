@@ -47,3 +47,7 @@ La prueba de 22 tablas descrita arriba se conserva como evidencia histórica. La
 ## Continuación: dispositivo GPS con UUID interno
 
 La tarjeta [gps-device-identity/README.md](gps-device-identity/README.md) corrige la relación de DriverLocation con Device.id y los cinco consumidores que mezclaban UUID y hardware. Una consulta Prisma real de solo lectura verifica esa unión; el catálogo del candidato conserva 23 tablas y 31 columnas ausentes, cinco relaciones incompatibles y dos problemas GPS/PostGIS. No ejecuta migraciones ni declara recuperado el runtime.
+
+## Continuación: referencias compatibles con la vista del player
+
+La tarjeta [identity-relations/README.md](identity-relations/README.md) conserva las columnas originales y mv_active_campaigns, y añade cinco referencias canónicas con compatibilidad de escritura. El ensayo restaurado conserva los valores de las 70 tablas, roles e índices y verifica esas relaciones; quedan 31 columnas y GPS/PostGIS. Una consulta READ ONLY confirmó además el contrato SystemStatus ausente que el comparador todavía no cubre. No hay DDL productivo ni salud de runtime acreditada.

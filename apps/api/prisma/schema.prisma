@@ -49,7 +49,7 @@ model Device {
   lastSyncAt        DateTime?         @map("last_sync_at")
   lastOnline        DateTime?         @map("last_online")
   lastSyncSuccess   Boolean?          @map("last_sync_success")
-  driverId          String?           @map("driver_id")
+  driverId          String?           @map("driver_id_text_217")
   events            AnalyticsEvent[]
   campaignMetrics   CampaignMetric[]
   campaigns         DeviceCampaign[]
@@ -154,7 +154,7 @@ model PlaylistItem {
 }
 
 model DeviceCampaign {
-  device_id   String
+  device_id   String @db.Uuid @map("device_uuid_217")
   campaign_id String @db.Uuid
   assigned_at DateTime @default(now())
   campaign    Campaign @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
@@ -521,7 +521,7 @@ model PortalRequest {
 
 model DriverLocation {
   id          String   @id @default(uuid()) @db.Uuid
-  driverId    String   @map("driver_id")
+  driverId    String   @map("driver_id_text_217")
   deviceId    String   @db.Uuid @map("device_id")
   latitude    Float
   longitude   Float
@@ -765,7 +765,7 @@ model SettlementBatch {
 
 model Telemetry {
   id        String                                @id @default(uuid()) @db.Uuid
-  driverId  String                                @map("driver_id")
+  driverId  String                                @map("driver_id_text_217")
   coords    Unsupported("geography(Point, 4326)")
   speed     Float
   battery   Int                                   @default(100)
@@ -773,13 +773,10 @@ model Telemetry {
   timestamp DateTime                              @default(now())
   driver    Driver                                @relation("DriverTelemetry", fields: [driverId], references: [id])
 
-  // NOTE (Prisma schema vs DB): The database applies a COMPUTED unique constraint
-  // on (driver_id, date_trunc('second', timestamp)) — see migration
-  // `20261012_telemetry_gps_burst_fix` (constraint `telemetry_driver_timestamp_sec_unique`).
-  // Prisma does not support computed expressions inside @@unique, so this client-side
-  // model keeps only the legacy composite @@unique for reference. Runtime enforcement
-  // comes from raw SQL `ON CONFLICT (driver_id, date_trunc('second', timestamp))`
-  // in telemetry.service.ts:sync(), which matches the DB constraint exactly.
+  // The #217 expansion retains the legacy driver_id index and adds the canonical
+  // computed unique index on (driver_id_text_217, date_trunc('second', timestamp)).
+  // Prisma cannot express computed @@unique keys. Raw sync targets the canonical
+  // per-second index; this model retains its exact-timestamp client selector.
   @@unique([driverId, timestamp], name: "telemetry_driver_timestamp_unique")
   @@index([driverId, timestamp(sort: Desc)], map: "idx_telemetry_driver_time")
   @@map("telemetry")
@@ -787,7 +784,7 @@ model Telemetry {
 
 model Wallet {
   id                String @id @default(uuid()) @db.Uuid
-  driverId          String @unique @map("driver_id")
+  driverId          String @unique @map("driver_id_text_217")
   availableBalance  Float  @default(0.0) @map("available_balance")
   pendingWithdrawal Float  @default(0.0) @map("pending_withdrawal")
   bankInfo          Json?  @map("bank_info")

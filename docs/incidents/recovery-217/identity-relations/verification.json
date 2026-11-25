@@ -1,0 +1,78 @@
+{
+  "status": "PASS_ISOLATED_REFERENCE_EXPANSION_RUNTIME_RECOVERY_PENDING",
+  "baseCommit": "fd5a663bca7d88ab8bc9b2ca0f578d73f6a90d74",
+  "schemaLfSha256": "1de4bec631ebe66a147df07d069a7a3922393fb3411ed47ff9fe14f12ae60ff4",
+  "sqlSha256": "d0d79622947c3375f5f4a8bf3a5673dc790c5ad4d646b0807abe0424f4bc81e9",
+  "sourceVerification": {
+    "prismaVersion": "5.22.0",
+    "validate": "PASS",
+    "isolatedGenerate": "PASS",
+    "typescript": "PASS",
+    "lint": "PASS",
+    "focusedSuites": 9,
+    "focusedTests": 66,
+    "nodeContracts": 55,
+    "redTests": {
+      "adminIdentity": 3,
+      "canonicalWalletAndTelemetry": 2,
+      "mappedSchema": 1,
+      "runtimeErrors": 0
+    }
+  },
+  "synthetic": {
+    "status": "PASS_SYNTHETIC_IDENTITY_RELATIONS",
+    "negativePreconditions": 8,
+    "identityRejections": 4,
+    "idempotencyRejections": 4,
+    "permissionDenials": 66,
+    "concurrentRowLockedBalance": "PASS",
+    "legacyAndCanonicalWriters": "PASS",
+    "dependentMaterializedView": "PRESERVED_AND_REFRESHED",
+    "originalValuesAndMetadata": "PASS",
+    "cleanupVerified": true
+  },
+  "restoredClone": {
+    "status": "PASS_RESTORED_IDENTITY_RELATIONS",
+    "startedAt": "2026-11-25T20:30:02.228312+00:00",
+    "finishedAt": "2026-11-25T20:32:13.922499+00:00",
+    "originalTables": 70,
+    "expandedTables": 23,
+    "totalTables": 93,
+    "originalProjectedFingerprints": "EXACT",
+    "originalColumnTypes": "RETAINED",
+    "originalIndexesAndRoles": "EXACT",
+    "dependentMaterializedView": "PRESERVED_AND_REFRESHED",
+    "canonicalColumns": 5,
+    "canonicalIndexes": 6,
+    "legacyNullabilityRelaxations": 3,
+    "missingTables": 0,
+    "missingColumns": 31,
+    "idTypeMismatches": 0,
+    "checkedNativeScalarTypeMismatches": 0,
+    "declaredRelationTypeMismatches": 0,
+    "gpsIssues": 2,
+    "cleanupVerified": true,
+    "temporaryEncryptedKeyRemoved": true
+  },
+  "additionalRuntimeFinding": {
+    "at": "2026-11-25T20:34:36.849Z",
+    "readOnlyVerified": true,
+    "verifiedQuery": "Device status filter with generated Prisma client",
+    "sqlstate": "42704",
+    "expectedType": "public.SystemStatus",
+    "typeMissing": true,
+    "currentDeviceAndDriverStatusStorage": "TEXT",
+    "coveredByCurrentDriftAuditor": false
+  },
+  "productionModified": false,
+  "applicationAccessVerified": false,
+  "productionReleaseReady": false,
+  "remaining": [
+    "31 columns",
+    "SystemStatus storage/client contract and enum-aware drift detection",
+    "GPS/PostGIS",
+    "FK/deletion policies and functional authorization",
+    "production essential configuration and independent key custody",
+    "provider secret/release controls"
+  ]
+}

@@ -136,7 +136,7 @@ export class WalletService {
         >`
         SELECT id, available_balance, bank_info
         FROM wallets
-        WHERE driver_id = ${driverId}
+        WHERE driver_id_text_217 = ${driverId}
         FOR UPDATE
       `;
 
@@ -187,7 +187,7 @@ export class WalletService {
         await tx.$executeRaw`
         UPDATE wallets
         SET available_balance = available_balance - ${amount}
-        WHERE driver_id = ${driverId}
+        WHERE driver_id_text_217 = ${driverId}
       `;
 
         // ── STEP 4: Safety net — verify post-deduction balance ──
@@ -195,7 +195,7 @@ export class WalletService {
         // But we check anyway as a belt-and-suspenders defense against
         // DB corruption, negative amount bypass, or application bugs.
         const [verify] = await tx.$queryRaw<[{ available_balance: number }]>`
-        SELECT available_balance FROM wallets WHERE driver_id = ${driverId}
+        SELECT available_balance FROM wallets WHERE driver_id_text_217 = ${driverId}
       `;
 
         const newBalance = Number(verify.available_balance);
@@ -206,7 +206,7 @@ export class WalletService {
           await tx.$executeRaw`
           UPDATE wallets
           SET available_balance = available_balance + ${amount}
-          WHERE driver_id = ${driverId}
+          WHERE driver_id_text_217 = ${driverId}
         `;
 
           this.logFinancialAnomaly(
@@ -372,7 +372,7 @@ export class WalletService {
       await tx.$executeRaw`
         UPDATE wallets
         SET available_balance = available_balance + ${txRow.amount}
-        WHERE driver_id = ${txRow.entityId}
+        WHERE driver_id_text_217 = ${txRow.entityId}
       `;
 
       await tx.financialTransaction.update({

@@ -171,9 +171,9 @@ export class TelemetryService {
           }
 
           await tx.$executeRawUnsafe(
-            `INSERT INTO telemetry (id, driver_id, coords, speed, timestamp)
+            `INSERT INTO telemetry (id, driver_id_text_217, coords, speed, timestamp)
              VALUES ${values.join(", ")}
-             ON CONFLICT (driver_id, date_trunc('second', timestamp)) DO NOTHING`,
+             ON CONFLICT (driver_id_text_217, date_trunc('second', timestamp)) DO NOTHING`,
             ...params,
           );
         }

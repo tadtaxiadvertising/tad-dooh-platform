@@ -31,7 +31,6 @@ const benefits = [
     icon: MonitorPlay,
     title: "Tu operación, con una nueva fuente de ingresos",
     text: "Al tener una cuenta aprobada, accede al portal de conductor para usar las herramientas habilitadas para tu perfil.",
-
   },
   {
     icon: ShieldCheck,

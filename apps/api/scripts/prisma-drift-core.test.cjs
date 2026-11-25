@@ -5,6 +5,62 @@ const assert = require("node:assert/strict");
 const { auditPrismaSchema } = require("./prisma-drift-core.cjs");
 const { auditGpsSqlContract } = require("./prisma-gps-contract.cjs");
 const { inspectSchemaStringIds } = require("./prisma-client-id-consistency.cjs");
+const { readPrismaSchemaCatalog } = require("./prisma-schema-catalog.cjs");
+
+function catalogFixture(mode = [{ read_only: "on" }], failColumns = false) {
+  const calls = [];
+  const tx = {
+    async $executeRaw(sql) { calls.push(sql.join("")); },
+    async $queryRaw(sql) {
+      const text = sql.join("");
+      calls.push(text);
+      if (text.includes("current_setting")) return mode;
+      if (text.includes("information_schema.tables")) return [{ table_name: "devices" }];
+      if (text.includes("information_schema.columns")) {
+        if (failColumns) throw Object.assign(new Error("synthetic catalog failure"), { code: "57014" });
+        return [{ table_name: "devices", column_name: "id", udt_name: "uuid" }];
+      }
+      if (text.includes("pg_extension")) return [];
+      throw new Error("Unexpected catalog query");
+    },
+  };
+  const prisma = {
+    async $transaction(read, options) {
+      assert.equal(options.isolationLevel, "RepeatableRead");
+      return read(tx);
+    },
+    async $queryRaw() { throw new Error("Metadata escaped its transaction"); },
+  };
+  return { prisma, calls };
+}
+
+test("catalog inspection verifies READ ONLY before reading a consistent metadata snapshot", async () => {
+  const { prisma, calls } = catalogFixture();
+  const catalog = await readPrismaSchemaCatalog(prisma);
+  assert.deepEqual(catalog, {
+    tables: [{ table_name: "devices" }],
+    columns: [{ table_name: "devices", column_name: "id", udt_name: "uuid" }],
+    extensions: [],
+  });
+  const verification = calls.findIndex((sql) => sql.includes("current_setting"));
+  assert.match(calls[0], /SET TRANSACTION READ ONLY/);
+  assert.ok(verification > 0);
+  assert.ok(calls.findIndex((sql) => sql.includes("information_schema")) > verification);
+});
+
+test("unenforced or unverifiable READ ONLY refuses every metadata query", async () => {
+  for (const mode of [[{ read_only: "off" }], [], [{ read_only: true }]]) {
+    const { prisma, calls } = catalogFixture(mode);
+    await assert.rejects(readPrismaSchemaCatalog(prisma), { code: "CATALOG_READ_ONLY_NOT_ENFORCED" });
+    assert.equal(calls.some((sql) => /information_schema|pg_extension/.test(sql)), false);
+  }
+});
+
+test("catalog query failures escape the transaction instead of returning partial parity", async () => {
+  const { prisma, calls } = catalogFixture(undefined, true);
+  await assert.rejects(readPrismaSchemaCatalog(prisma), { code: "57014" });
+  assert.equal(calls.some((sql) => sql.includes("pg_extension")), false);
+});
 
 const stringId = { name: "id", type: "String", kind: "scalar", isId: true };
 const models = [
@@ -504,10 +560,10 @@ test("real generated Prisma Client IDs agree with the source model identities", 
   const contract = inspectSchemaStringIds({ schemaSource, models });
   assert.deepEqual(contract.issues, []);
 
-  // These nine tables were reported as TEXT/UUID errors by the earlier DMMF
-  // checker despite @db.Uuid existing in the source. Do not mask real drift
-  // for the other keys or touch physical PostgreSQL columns.
+  // The live read-only catalog on 2026-11-25 confirms these UUID primary keys.
+  // Native annotations must describe existing columns, without changing data.
   const nativeUuidModels = new Set([
+    "Advertiser", "Campaign", "Device", "Invoice", "Media",
     "CampaignExpiration", "CampaignIntent", "DriverLocation",
     "FinancialTransaction", "MediaAsset", "PayrollPayment",
     "PlaybackEvent", "Telemetry", "Wallet",
@@ -528,30 +584,102 @@ test("real generated Prisma Client IDs agree with the source model identities", 
   });
   assert.equal(report.idTypeMismatchCount, 0);
 
-  // Do not turn the five remaining model/physical UUID discrepancies green.
-  const remainingModels = new Set([
-    "Advertiser", "Campaign", "Device", "Invoice", "Media",
-  ]);
-  const remaining = models.filter((model) => remainingModels.has(model.name));
-  assert.equal(remaining.length, remainingModels.size);
-  const unresolved = auditPrismaSchema({
-    models: remaining,
-    tables: remaining.map((model) => ({
-      table_name: model.dbName || model.name,
-    })),
-    columns: remaining.map((model) => ({
-      table_name: model.dbName || model.name,
-      column_name: "id",
-      udt_name: "uuid",
-    })),
-    idTypes: contract.idTypes,
-  });
-  assert.deepEqual(
-    unresolved.idTypeMismatches.map((item) => item.table).sort(),
-    ["advertisers", "campaigns", "devices", "invoices", "media"],
-  );
 });
 
+
+test("campaign and advertiser references retain their physical UUID contract", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { Prisma } = require("@prisma/client");
+  const schemaSource = fs.readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
+  const models = Prisma.dmmf.datamodel.models;
+  const contract = inspectSchemaStringIds({ schemaSource, models });
+  assert.deepEqual(contract.issues, []);
+
+  // Column types observed through a read-only catalog query, not application
+  // data. New tables must use the same parent identity when expanded later.
+  const observed = [
+    ["Campaign", "advertiserId", "campaigns", "advertiser_id"],
+    ["DeviceCampaign", "campaign_id", "device_campaigns", "campaign_id"],
+    ["Invoice", "advertiserId", "invoices", "advertiser_id"],
+    ["Media", "campaign_id", "media", "campaign_id"],
+    ["MediaAsset", "campaignId", "media_assets", "campaign_id"],
+    ["PlaylistItem", "campaignId", "playlist_items", "campaign_id"],
+    ["Video", "campaignId", "videos", "campaign_id"],
+  ];
+  for (const [model, field] of observed) {
+    assert.equal(contract.nativeUuidFields.has(model + "." + field), true,
+      model + "." + field + " must retain the catalog UUID type");
+  }
+  for (const key of ["AdvertiserSubscription.advertiserId", "CampaignMetric.campaignId",
+    "Playlist.campaignId", "PortalRequest.advertiserId"]) {
+    assert.equal(contract.nativeUuidFields.has(key), true, key);
+  }
+  const input = {
+    models: models.filter((m) => observed.some(([name]) => name === m.name)),
+    tables: [...new Set(observed.map(([, , table]) => table))].map((table_name) => ({ table_name })),
+    columns: observed.map(([, , table_name, column_name]) => ({ table_name, column_name, udt_name: "uuid" })),
+    idTypes: contract.idTypes,
+    nativeUuidFields: contract.nativeUuidFields,
+  };
+  // This fixture measures only the listed FK types; it is not a full parity
+  // fixture and must never be used to declare the production schema clean.
+  assert.equal(auditPrismaSchema(input).scalarTypeMismatchCount, 0);
+  const wrong = auditPrismaSchema({ ...input,
+    columns: input.columns.map((column) => ({ ...column, udt_name: "text" })),
+  });
+  assert.equal(wrong.scalarTypeMismatchCount, observed.length);
+
+  assert.equal(contract.idTypes.get("Driver.id"), "text");
+  assert.equal(contract.idTypes.get("Device.id"), "uuid");
+  assert.equal(contract.nativeUuidFields.has("Device.deviceId"), false);
+  assert.equal(contract.nativeUuidFields.has("DeviceCampaign.device_id"), false);
+});
+
+test("device UUID storage and transitional TEXT assignments remain distinct", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { Prisma } = require("@prisma/client");
+  const schemaSource = fs.readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
+  const models = Prisma.dmmf.datamodel.models;
+  const contract = inspectSchemaStringIds({ schemaSource, models });
+  assert.deepEqual(contract.issues, []);
+  assert.equal(contract.idTypes.get("Device.id"), "uuid");
+  assert.equal(contract.nativeUuidFields.has("DeviceCommand.deviceId"), true);
+  assert.equal(contract.nativeUuidFields.has("CampaignMetric.deviceId"), true);
+  for (const key of ["Device.deviceId", "DeviceCampaign.device_id", "PlaylistItem.deviceId"]) {
+    assert.equal(contract.nativeUuidFields.has(key), false, key + " remains TEXT");
+  }
+  const input = {
+    models: models.filter((m) => ["Device", "DeviceCommand", "DeviceCampaign", "Campaign"].includes(m.name)),
+    tables: ["devices", "device_commands", "device_campaigns", "campaigns"].map((table_name) => ({ table_name })),
+    // A type-only fixture of observed catalog columns, not full schema parity.
+    columns: [
+      ["devices", "id", "uuid"], ["devices", "device_id", "text"],
+      ["device_commands", "device_id", "uuid"],
+      ["device_campaigns", "device_id", "text"],
+      ["device_campaigns", "campaign_id", "uuid"], ["campaigns", "id", "uuid"],
+    ].map(([table_name, column_name, udt_name]) => ({ table_name, column_name, udt_name })),
+    idTypes: contract.idTypes,
+    nativeUuidFields: contract.nativeUuidFields,
+  };
+  const report = auditPrismaSchema(input);
+  assert.equal(report.idTypeMismatchCount, 0);
+  assert.equal(report.scalarTypeMismatchCount, 0);
+  // A correct Device PK mapping does not make its incompatible relation green.
+  assert.deepEqual(report.relationTypeMismatches, [{
+    from: "device_campaigns.device_id", fromType: "text",
+    to: "devices.id", toType: "uuid",
+  }]);
+  const wrong = auditPrismaSchema({ ...input,
+    columns: input.columns.map((c) => c.table_name === "device_commands"
+      ? { ...c, udt_name: "text" } : c),
+  });
+  assert.deepEqual(wrong.scalarTypeMismatches, [{
+    table: "device_commands", column: "device_id", prismaType: "String",
+    expected: "uuid", actual: "text",
+  }]);
+});
 
 test("source native UUID on non-ID campaign FK survives DMMF nativeType omission", () => {
   const schemaSource = [

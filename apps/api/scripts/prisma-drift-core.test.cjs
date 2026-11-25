@@ -85,6 +85,46 @@ const models = [
   },
 ];
 
+test("restored users use the UUID contract already stored by campaign creators", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { Prisma } = require("@prisma/client");
+  const schemaSource = fs.readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
+  const allModels = Prisma.dmmf.datamodel.models;
+  const contract = inspectSchemaStringIds({ schemaSource, models: allModels });
+  assert.deepEqual(contract.issues, []);
+  assert.equal(contract.idTypes.get("User.id"), "uuid");
+  assert.equal(contract.nativeUuidFields.has("Campaign.createdById"), true);
+  const input = {
+    models: allModels.filter((m) => ["User", "Campaign"].includes(m.name))
+      .map((m) => ({ ...m, fields: m.fields.filter((f) =>
+        ["id", "createdById", "createdBy"].includes(f.name)) })),
+    tables: ["users", "campaigns"].map((table_name) => ({ table_name })),
+    columns: [
+      ["users", "id", "uuid"],
+      ["campaigns", "id", "uuid"],
+      ["campaigns", "created_by", "uuid"],
+    ].map(([table_name, column_name, udt_name]) => ({ table_name, column_name, udt_name })),
+    idTypes: contract.idTypes,
+    nativeUuidFields: contract.nativeUuidFields,
+  };
+  const restored = auditPrismaSchema(input);
+  assert.equal(restored.missingTableCount, 0);
+  assert.equal(restored.idTypeMismatchCount, 0);
+  assert.equal(restored.scalarTypeMismatchCount, 0);
+  assert.equal(restored.relationTypeMismatchCount, 0);
+  // Missing endpoints cannot prove relation compatibility. Creating a TEXT
+  // users key must still expose the mismatch, not make the recovery green.
+  const absent = auditPrismaSchema({ ...input, tables: [{ table_name: "campaigns" }] });
+  assert.deepEqual(absent.missingTables, ["users"]);
+  const wrong = auditPrismaSchema({ ...input, columns: input.columns.map((c) =>
+    c.table_name === "users" ? { ...c, udt_name: "text" } : c) });
+  assert.equal(wrong.idTypeMismatchCount, 1);
+  assert.deepEqual(wrong.relationTypeMismatches, [{
+    from: "campaigns.created_by", fromType: "uuid", to: "users.id", toType: "text",
+  }]);
+});
+
 test("reports absent models, UUID/TEXT primary-key and relation mismatches", () => {
   const report = auditPrismaSchema({
     models,

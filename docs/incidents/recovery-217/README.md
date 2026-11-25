@@ -39,3 +39,7 @@ La prueba de carga 10× y la cobertura adicional de índices FK de playlists.cam
 El primer ensayo restaurado detectó una séptima relación incompatible al crear users.id como TEXT: campaigns.created_by ya es UUID. El comparador solo puede cotejar tipos cuando ambos extremos existen; la ausencia previa de users ocultaba esta arista. Por eso se excluye users de este candidato. Deben resolverse la autoridad de identidad respecto a Supabase Auth y el contrato UUID de User/Campaign antes de preparar esa tabla. No convertir campaigns.created_by ni copiar identidades para reducir el contador. El borrador original de 23 tablas no superó el ensayo real y no se publica como aceptado.
 
 Resultado final del 25-nov-2026: PASS sintético (264 rechazos de permisos; tres duplicados rechazados) y PASS sobre restauración real. Se añaden 22 tablas vacías; los fingerprints y metadatos de las 70 originales y los roles siguen iguales por familia. Tablas ausentes en el clon: 23 → 20 → 16 → 10 → 2 → 1. Se verificó la limpieza del clon y del archivo de llave cifrada temporal. No hay escrituras en producción. Véase verification.json.
+
+## Continuación: contrato UUID de users
+
+La prueba de 22 tablas descrita arriba se conserva como evidencia histórica. La continuación en [users-uuid/README.md](users-uuid/README.md) añade las anotaciones UUID del perfil y creador de campaña y ensaya la sexta familia: 23 tablas recuperadas en el clon, cero tablas de modelos ausentes, con los datos originales intactos. No equivale a un cambio de esquema en producción ni a paridad completa.

@@ -1,0 +1,149 @@
+{
+  "status": "VERIFIED_ISOLATED_CLONE_ONLY",
+  "verifiedAt": "2026-11-25T18:57:03.744283+00:00",
+  "baseCommit": "ba5d2e469880a388d83ad8029472b4244cd49842",
+  "candidateSchemaLfSha256": "248e08fe33b771a03c59ecb9faa3b18f1ce1c56ff6eb5db425898f91c8ff416b",
+  "sqlFamilies": [
+    {
+      "name": "A-identity",
+      "file": "A-identity.sql",
+      "sha256": "2d45f884931da92d7e8c0f2745446993e6816506c3103a22e8435e10852fa37c"
+    },
+    {
+      "name": "B-ingest",
+      "file": "B-ingest.sql",
+      "sha256": "bcb37eb2ededc853c568786792b5f6b466c4ca03462013396d24c2fa95d9edf5"
+    },
+    {
+      "name": "C-crm",
+      "file": "C-crm.sql",
+      "sha256": "ba2817e0b8e7cbb05c75ae6eb8c2522242ed23c65a8fd5aab4dfdb62ee48e651"
+    },
+    {
+      "name": "D-finance",
+      "file": "D-finance.sql",
+      "sha256": "61559ea6689a7136ce0cf78f3d0ce3d211c3d7ff855c76e15054113f7ed9b182"
+    },
+    {
+      "name": "E-bi",
+      "file": "E-bi.sql",
+      "sha256": "0bea18c2b79d5034e9b64b5019a4c13786c100d9d829cf9a270d98b81257e42a"
+    },
+    {
+      "name": "F-users",
+      "file": "users-uuid/F-users.sql",
+      "sha256": "87a122026b5c2661e4e576713e9de68c6375f62b059ab167c8d1235b7cb24be2"
+    }
+  ],
+  "synthetic": {
+    "permissionRejections": 276,
+    "idempotencyDuplicateRejections": 3,
+    "userUuidRoundtripAndCreatorJoin": true,
+    "malformedUserUuidRejected": true,
+    "wrongCreatorTypeRejected": true,
+    "scopeAndDefaultPrivilegeGuardsPassed": true,
+    "repeatRejectedWithoutEffect": true,
+    "cleanupVerified": true,
+    "harnessSha256": "6859f53a11d375890c0a44837d3c65b306d81cff428d1eb5478010c5cf7b912a"
+  },
+  "restoredClone": {
+    "originalTables": 70,
+    "addedEmptyTables": 23,
+    "totalTables": 93,
+    "fingerprintsOfOriginalTablesUnchanged": true,
+    "originalSchemaDumpUnchanged": true,
+    "rolesUnchanged": true,
+    "families": [
+      {
+        "family": "A-identity",
+        "missing_tables": 20,
+        "original_70_tables_unchanged": true
+      },
+      {
+        "family": "B-ingest",
+        "missing_tables": 16,
+        "original_70_tables_unchanged": true
+      },
+      {
+        "family": "C-crm",
+        "missing_tables": 10,
+        "original_70_tables_unchanged": true
+      },
+      {
+        "family": "D-finance",
+        "missing_tables": 2,
+        "original_70_tables_unchanged": true
+      },
+      {
+        "family": "E-bi",
+        "missing_tables": 1,
+        "original_70_tables_unchanged": true
+      },
+      {
+        "family": "F-users",
+        "missing_tables": 0,
+        "original_70_tables_unchanged": true
+      }
+    ],
+    "metadata": {
+      "table_count": 23,
+      "owner_rls_force_ok": true,
+      "nonowner_grants": 0,
+      "policies": 0,
+      "validated_foreign_keys": 17,
+      "invalid_indexes": 0
+    },
+    "afterDrift": {
+      "expectedModels": 52,
+      "modelsPresent": 52,
+      "missingTableCount": 0,
+      "missingColumnCount": 31,
+      "idTypeMismatchCount": 0,
+      "scalarTypeMismatchCount": 0,
+      "relationTypeMismatchCount": 6,
+      "gpsSqlContractIssueCount": 2
+    },
+    "cleanupVerified": true,
+    "temporaryEncryptedKeyRemoved": true,
+    "networkInternal": true,
+    "publishedPorts": 0,
+    "hostBindMounts": 0,
+    "containerLogsEnabled": false,
+    "harnessSha256": "6859f53a11d375890c0a44837d3c65b306d81cff428d1eb5478010c5cf7b912a"
+  },
+  "images": {
+    "postgres": "supabase/postgres@sha256:432d12926b09e10eb3317b0e2e9672c9ce8ea6bccb359857a31ff9f90683161d",
+    "auth": "supabase/gotrue@sha256:ba8c0c82c574756c835c696df2a2c698020cc408a42034013d3712e34de7964d",
+    "storage": "supabase/storage-api@sha256:b09a1904222a7bcc750b00c375c24e7409e7e514474dbc1bd9183bc57cc95bde"
+  },
+  "sourceChecks": {
+    "prismaValidate": 0,
+    "prismaGenerate": 0,
+    "apiTypeScript": 0,
+    "nodeContracts": 60,
+    "fullApiJest": {
+      "suites": 99,
+      "tests": 873,
+      "startedAt": "2026-11-25T18:50:44.421Z",
+      "finishedAt": "2026-11-25T19:00:19.038Z",
+      "exitCode": 0
+    }
+  },
+  "production": {
+    "modified": false,
+    "releaseReady": false,
+    "readOnlyCatalogVerifiedAt": "2026-11-25T18:57:46.504Z",
+    "missingTables": 23,
+    "missingColumns": 31,
+    "relationMismatches": 6,
+    "gpsIssues": 2
+  },
+  "notVerified": [
+    "identity provisioning and Auth/profile correspondence",
+    "existing campaign creator references before adding any FK",
+    "functional application policies and role/tenant flows",
+    "API startup on a complete schema and player offline replay",
+    "10x load and additional FK indexes",
+    "essential runtime configuration recovery and independent key custody"
+  ]
+}

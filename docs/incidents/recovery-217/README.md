@@ -1,0 +1,41 @@
+# #217 — expansión de tablas en clon aislado
+
+Estado: BORRADOR PARA REVISIÓN; ejecución en producción no realizada.
+
+El runtime de EasyPanel proporcionado el 25-nov-2026 rechaza el arranque por paridad de esquema. Su SHA-256 del schema LF (c519f00738b0486bff98174d35fd240f724c72e5bfe391126a4406f10ad7e49c) coincide con main 098f10e0c2015ed412d588a70bc1f835e4013287. Los PR #545/#546 no cambiaron el árbol 229ced6f2f6cd5f36874968593a81bdd5dd8ea24. Un build correcto no modifica la base de datos.
+
+La consulta de catálogo del 25-nov-2026 18:22 UTC usó una transacción READ ONLY con verificación efectiva: 33 tablas públicas, 346 columnas, 23 tablas de modelos ausentes, 31 columnas ausentes, cero diferencias de PK/tipos escalares, seis relaciones incompatibles y dos problemas GPS/PostGIS.
+
+Este borrador añade 22 de las 23 tablas ausentes, sus 64 índices declarados, 17 FKs y la secuencia de campaign_metrics. Conserva el contrato Prisma 5.22 del código aprobado. No rellena tablas, copia identidades Auth, crea usuarios, ejecuta pagos ni modifica columnas, filas, políticas o permisos existentes. Los tipos monetarios del schema se preservan; no se aprovecha la recuperación para cambiar unidades o precisión.
+
+## Orden del ensayo
+
+| Familia | Tablas | Índices declarados | FKs |
+| --- | ---: | ---: | ---: |
+| A-identity | 3 | 6 | 3 |
+| B-ingest | 4 | 9 | 5 |
+| C-crm | 6 | 24 | 2 |
+| D-finance | 8 | 24 | 7 |
+| E-bi | 1 | 1 | 0 |
+
+Cada familia usa una transacción propia, exige que todas sus tablas estén ausentes y verifica propietario, tipo y unicidad de sus padres existentes. Un intento repetido se rechaza sin efectos; no usa IF NOT EXISTS para aceptar formas parciales. El ensayo solo admite la base restored, conexión por socket Unix y el marcador de sesión tad.recovery_scope=isolated-clone-217. Estas comprobaciones limitan errores operativos; no sustituyen la autenticación ni la revisión del destino.
+
+Las tablas nuevas pertenecen a postgres, con RLS ENABLE/FORCE y cero políticas. Se revocan permisos de PUBLIC, anon, authenticated y service_role; la secuencia nueva recibe la misma restricción. Privilegios por defecto inesperados abortan la familia. Los accesos privilegiados, incluidos superusuarios y miembros de postgres, conservan sus capacidades. Los permisos de aplicación, tenant y rol requieren una etapa independiente; denegar todo no prueba que los flujos funcionales estén autorizados correctamente.
+
+Estos archivos permanecen fuera de prisma/migrations y no están conectados al entrypoint ni a un workflow. No se debe copiar este lote a producción o al historial de migraciones. No edita _prisma_migrations ni repite SQL histórico.
+
+## Verificación y límites
+
+Los resultados del ensayo se documentan en verification.json cuando concluyan. El respaldo real se restaura únicamente en tmpfs, sin puertos, bind mounts ni salida a Internet, con logs de contenedor desactivados. Los fingerprints de las 70 tablas originales, sus metadatos y roles deben seguir iguales después de cada familia. Las nuevas tablas deben quedar vacías. El ensayo de datos sintéticos verifica rechazos de permisos, claves de idempotencia y abortos atómicos.
+
+La expansión deja pendientes users, las 31 columnas, seis relaciones y GPS/PostGIS. Los valores históricos de consentimiento, suscripción, simulación e identidad no se infieren mediante defaults. La configuración esencial de recuperación y custodia independiente de la llave siguen pendientes. No acredita salud de API ni readiness de producción.
+
+Reversión del ensayo: destruir exclusivamente el clon y verificar su ausencia. No borrar tablas activas ni restaurar producción como sustituto de una transición revisada. Antes de un release hacen falta contratos de acceso, transición de identidades, pruebas de API/player offline e idempotencia y un plan de operación y reversión para el destino confirmado.
+
+La prueba de carga 10× y la cobertura adicional de índices FK de playlists.campaign_id y campaign_metrics.device_id están pendientes. El borrador reproduce los índices declarados por Prisma; su ensayo de catálogo no acredita rendimiento de producción.
+
+## Tabla de usuarios separada del lote
+
+El primer ensayo restaurado detectó una séptima relación incompatible al crear users.id como TEXT: campaigns.created_by ya es UUID. El comparador solo puede cotejar tipos cuando ambos extremos existen; la ausencia previa de users ocultaba esta arista. Por eso se excluye users de este candidato. Deben resolverse la autoridad de identidad respecto a Supabase Auth y el contrato UUID de User/Campaign antes de preparar esa tabla. No convertir campaigns.created_by ni copiar identidades para reducir el contador. El borrador original de 23 tablas no superó el ensayo real y no se publica como aceptado.
+
+Resultado final del 25-nov-2026: PASS sintético (264 rechazos de permisos; tres duplicados rechazados) y PASS sobre restauración real. Se añaden 22 tablas vacías; los fingerprints y metadatos de las 70 originales y los roles siguen iguales por familia. Tablas ausentes en el clon: 23 → 20 → 16 → 10 → 2 → 1. Se verificó la limpieza del clon y del archivo de llave cifrada temporal. No hay escrituras en producción. Véase verification.json.

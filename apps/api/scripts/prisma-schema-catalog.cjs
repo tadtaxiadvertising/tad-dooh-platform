@@ -23,7 +23,7 @@ async function readPrismaSchemaCatalog(prisma) {
         WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
       `;
       const columns = await tx.$queryRaw`
-        SELECT table_name, column_name, udt_name
+        SELECT table_name, column_name, udt_schema, udt_name
         FROM information_schema.columns
         WHERE table_schema = 'public'
       `;
@@ -31,7 +31,16 @@ async function readPrismaSchemaCatalog(prisma) {
       const extensions = await tx.$queryRaw`
         SELECT extname FROM pg_extension WHERE extname = 'postgis'
       `;
-      return { tables, columns, extensions };
+      const enumTypes = await tx.$queryRaw`
+        SELECT n.nspname AS enum_schema, t.typname AS enum_name,
+               array_agg(e.enumlabel::text ORDER BY e.enumsortorder) AS enum_values
+        FROM pg_type t
+        JOIN pg_namespace n ON n.oid = t.typnamespace
+        JOIN pg_enum e ON e.enumtypid = t.oid
+        WHERE n.nspname = 'public'
+        GROUP BY n.nspname, t.typname
+      `;
+      return { tables, columns, extensions, enumTypes };
     },
     { isolationLevel: "RepeatableRead", maxWait: 5000, timeout: 15000 },
   );

@@ -7,7 +7,7 @@ const { auditGpsSqlContract } = require("./prisma-gps-contract.cjs");
 const { inspectSchemaStringIds } = require("./prisma-client-id-consistency.cjs");
 const { readPrismaSchemaCatalog } = require("./prisma-schema-catalog.cjs");
 
-function catalogFixture(mode = [{ read_only: "on" }], failColumns = false) {
+function catalogFixture(mode = [{ read_only: "on" }], failColumns = false, failEnums = false) {
   const calls = [];
   const tx = {
     async $executeRaw(sql) { calls.push(sql.join("")); },
@@ -18,9 +18,13 @@ function catalogFixture(mode = [{ read_only: "on" }], failColumns = false) {
       if (text.includes("information_schema.tables")) return [{ table_name: "devices" }];
       if (text.includes("information_schema.columns")) {
         if (failColumns) throw Object.assign(new Error("synthetic catalog failure"), { code: "57014" });
-        return [{ table_name: "devices", column_name: "id", udt_name: "uuid" }];
+        return [{ table_name: "devices", column_name: "id", udt_schema: "pg_catalog", udt_name: "uuid" }];
       }
       if (text.includes("pg_extension")) return [];
+      if (text.includes("pg_enum")) {
+        if (failEnums) throw Object.assign(new Error("synthetic enum catalog failure"), { code: "57014" });
+        return [];
+      }
       throw new Error("Unexpected catalog query");
     },
   };
@@ -39,20 +43,22 @@ test("catalog inspection verifies READ ONLY before reading a consistent metadata
   const catalog = await readPrismaSchemaCatalog(prisma);
   assert.deepEqual(catalog, {
     tables: [{ table_name: "devices" }],
-    columns: [{ table_name: "devices", column_name: "id", udt_name: "uuid" }],
+    columns: [{ table_name: "devices", column_name: "id", udt_schema: "pg_catalog", udt_name: "uuid" }],
     extensions: [],
+    enumTypes: [],
   });
   const verification = calls.findIndex((sql) => sql.includes("current_setting"));
   assert.match(calls[0], /SET TRANSACTION READ ONLY/);
   assert.ok(verification > 0);
   assert.ok(calls.findIndex((sql) => sql.includes("information_schema")) > verification);
+  assert.ok(calls.findIndex((sql) => sql.includes("pg_enum")) > verification);
 });
 
 test("unenforced or unverifiable READ ONLY refuses every metadata query", async () => {
   for (const mode of [[{ read_only: "off" }], [], [{ read_only: true }]]) {
     const { prisma, calls } = catalogFixture(mode);
     await assert.rejects(readPrismaSchemaCatalog(prisma), { code: "CATALOG_READ_ONLY_NOT_ENFORCED" });
-    assert.equal(calls.some((sql) => /information_schema|pg_extension/.test(sql)), false);
+    assert.equal(calls.some((sql) => /information_schema|pg_extension|pg_enum/.test(sql)), false);
   }
 });
 
@@ -60,6 +66,11 @@ test("catalog query failures escape the transaction instead of returning partial
   const { prisma, calls } = catalogFixture(undefined, true);
   await assert.rejects(readPrismaSchemaCatalog(prisma), { code: "57014" });
   assert.equal(calls.some((sql) => sql.includes("pg_extension")), false);
+});
+
+test("enum catalog failures never return a partial inspection", async () => {
+  const { prisma } = catalogFixture(undefined, false, true);
+  await assert.rejects(readPrismaSchemaCatalog(prisma), { code: "57014" });
 });
 
 const stringId = { name: "id", type: "String", kind: "scalar", isId: true };

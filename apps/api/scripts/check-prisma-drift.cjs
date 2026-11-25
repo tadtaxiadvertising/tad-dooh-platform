@@ -12,6 +12,7 @@ const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { auditPrismaSchema } = require("./prisma-drift-core.cjs");
 const { auditGpsSqlContract } = require("./prisma-gps-contract.cjs");
+const { auditEnumSqlContract } = require("./prisma-enum-contract.cjs");
 const { stringIdTypes } = require("./prisma-generated-types.cjs");
 const { readPrismaSchemaCatalog } = require("./prisma-schema-catalog.cjs");
 const {
@@ -83,7 +84,7 @@ if (!connectionUrl) {
 
   async function check() {
     // One verified read-only transaction; never financial or personal records.
-    const { tables, columns, extensions } = await readPrismaSchemaCatalog(prisma);
+    const { tables, columns, extensions, enumTypes } = await readPrismaSchemaCatalog(prisma);
     const report = {
       prismaSchemaSha256,
       ...auditPrismaSchema({
@@ -95,6 +96,8 @@ if (!connectionUrl) {
         nativeUuidFields: sourceContract.nativeUuidFields,
       }),
       ...auditGpsSqlContract({ models, tables, columns, extensions }),
+      ...auditEnumSqlContract({ models, enums: Prisma.dmmf.datamodel.enums,
+        tables, columns, enumTypes }),
     };
     console.log(JSON.stringify(report, null, 2));
     if (
@@ -103,7 +106,8 @@ if (!connectionUrl) {
       report.idTypeMismatchCount ||
       report.scalarTypeMismatchCount ||
       report.relationTypeMismatchCount ||
-      report.gpsSqlContractIssueCount
+      report.gpsSqlContractIssueCount ||
+      report.enumSqlContractIssueCount
     ) {
       process.exitCode = 1;
     }

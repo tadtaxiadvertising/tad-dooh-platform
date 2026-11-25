@@ -1,0 +1,62 @@
+{
+  "status": "PASS_ENUM_PREFLIGHT_VERIFIED_RUNTIME_RECOVERY_PENDING",
+  "sourceBaseTree": "ccd6b83e072a28dd293e8514487b21c17cef4c62",
+  "schemaLfSha256": "1de4bec631ebe66a147df07d069a7a3922393fb3411ed47ff9fe14f12ae60ff4",
+  "red": {
+    "helperAssertionsFailed": 5,
+    "cliRejectedEnumOnlyDrift": false,
+    "cliMissingEnumCounter": true,
+    "networkConnections": 0
+  },
+  "green": {
+    "nodeContractsIncludingTargetChecks": 65,
+    "enumCases": 9,
+    "catalogFailurePropagation": "PASS",
+    "cliEnumOnlyDriftExit": 1,
+    "cliMatchingEnumExit": 0
+  },
+  "liveReadOnly": {
+    "at": "2026-11-25T20:50:47.497Z",
+    "targetPinned": true,
+    "transactionVerified": true,
+    "applicationRowsRead": false,
+    "writeOperations": 0,
+    "enumIssues": 4,
+    "issues": [
+      {
+        "code": "ENUM_COLUMN_TYPE_MISMATCH",
+        "table": "devices",
+        "column": "status",
+        "enum": "SystemStatus",
+        "expected": "public.SystemStatus",
+        "actual": "pg_catalog.text"
+      },
+      {
+        "code": "ENUM_COLUMN_TYPE_MISMATCH",
+        "table": "drivers",
+        "column": "status",
+        "enum": "SystemStatus",
+        "expected": "public.SystemStatus",
+        "actual": "pg_catalog.text"
+      },
+      {
+        "code": "ENUM_COLUMN_TYPE_MISMATCH",
+        "table": "financial_transactions",
+        "column": "currency",
+        "enum": "Currency",
+        "expected": "public.Currency",
+        "actual": "pg_catalog.text"
+      },
+      {
+        "code": "ENUM_TYPE_MISSING",
+        "enum": "SystemStatus",
+        "expected": "public.SystemStatus"
+      }
+    ],
+    "missingTables": 23,
+    "missingColumns": 36
+  },
+  "productionModified": false,
+  "schemaOrBusinessRulesChanged": false,
+  "productionReleaseReady": false
+}

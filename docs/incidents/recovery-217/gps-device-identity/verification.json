@@ -1,0 +1,53 @@
+{
+  "status": "SOURCE_VERIFIED_RUNTIME_RECOVERY_PENDING",
+  "verifiedAt": "2026-11-25T19:21:04.602Z",
+  "baseCommit": "2675c073f631c7193b087b9415102fbe7f1868ef",
+  "schemaLfSha256": "6faeb428fca4444f2b82f8769d6973ee84c3ab34a02b9a069e748613528d65b0",
+  "prisma": {
+    "version": "5.22.0",
+    "validate": "PASS",
+    "isolatedGenerate": "PASS",
+    "sharedClientModified": false
+  },
+  "tests": {
+    "redRegression": {
+      "failedTests": 5,
+      "runtimeErrors": 0,
+      "exitCode": 1
+    },
+    "focused": {
+      "suites": 8,
+      "tests": 65,
+      "exitCode": 0
+    },
+    "nodeContracts": {
+      "tests": 53,
+      "exitCode": 0
+    },
+    "typescript": {
+      "result": "PASS",
+      "exitCode": 0
+    }
+  },
+  "liveVerification": {
+    "targetPinned": true,
+    "transactionReadOnlyVerified": true,
+    "relationQuery": "PASS",
+    "applicationRowsReturned": 0,
+    "ddlExecuted": false,
+    "dataWritesExecuted": false,
+    "missingTables": 23,
+    "missingColumns": 31,
+    "idTypeMismatches": 0,
+    "scalarTypeMismatches": 0,
+    "relationTypeMismatches": 5,
+    "gpsSqlContractIssues": 2
+  },
+  "limits": [
+    "No production migration or backfill",
+    "Five other relations remain incompatible",
+    "Historical GPS driver identity remains unresolved",
+    "Missing speed/is_simulated columns and PostGIS remain unresolved",
+    "Full API runtime and offline player recovery are pending"
+  ]
+}

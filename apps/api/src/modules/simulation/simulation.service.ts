@@ -105,6 +105,7 @@ export class SimulationService {
     for (let i = 0; i < config.activeNodes; i++) {
       const deviceId = `SIM-DEV-${String(i).padStart(4, "0")}`;
       const driver = await this.prisma.driver.create({
+        include: { devices: { select: { id: true } } },
         data: {
           fullName: `Santiago Test Driver ${i}`,
           phone: `+1809sim${String(i).padStart(4, "0")}`,
@@ -128,7 +129,7 @@ export class SimulationService {
         config.centerLng + (Math.random() - 0.5) * (config.radiusKm / 111);
       this.fleetState.set(driver.id, {
         vehicle: new VirtualVehicle(initialLat, initialLng),
-        deviceId: deviceId,
+        deviceId: driver.devices[0].id,
       });
     }
     this.isRunning = true;

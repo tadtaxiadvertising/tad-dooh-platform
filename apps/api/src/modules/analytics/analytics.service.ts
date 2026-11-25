@@ -613,7 +613,7 @@ export class AnalyticsService {
     // 1. Get device to check if it has a driver
     const device = await this.prisma.device.findUnique({
       where: { deviceId: data.deviceId },
-      select: { driverId: true },
+      select: { id: true, driverId: true },
     });
 
     const now = new Date();
@@ -622,7 +622,7 @@ export class AnalyticsService {
     if (device?.driverId) {
       await this.prisma.driverLocation.create({
         data: {
-          deviceId: data.deviceId,
+          deviceId: device.id,
           driverId: device.driverId,
           latitude: data.lat,
           longitude: data.lng,

@@ -25,10 +25,10 @@
  * 9) IMPRESIONES_TOTALES_CAMPAÑA = IMPRESIONES_BRUTAS_MES_PANTALLA × pantallas × meses
  * 10) ALCANCE_TOTAL_CAMPAÑA = ALCANCE_ÚNICO_MES_PANTALLA × pantallas × meses
  */
-import { SOURCES, getSource, getActiveSource, isCalibrationStatus, ImpactSource } from './sources';
+import { SOURCES, getSource, getActiveSource, isCalibrationStatus, ImpactSource } from "./sources";
 export { SOURCES, getSource, getActiveSource, isCalibrationStatus };
 export type { ImpactSource };
-export type CalculationMode = 'conservative' | 'expected' | 'optimistic';
+export type CalculationMode = "conservative" | "expected" | "optimistic";
 export interface ImpactInput {
     screens: number;
     months: number;
@@ -112,13 +112,47 @@ export declare function formatCPM(r: {
 /** Helper para UI: badge de fuente principal */
 export declare function getPrimarySource(): {
     label: string;
-    tier: 'A' | 'B' | 'C' | 'D';
+    tier: "A" | "B" | "C" | "D";
     url?: string;
 };
 /** Helper para UI: status de calibración */
 export declare function getCalibrationBadge(): {
     label: string;
-    color: 'red' | 'amber' | 'green';
+    color: "red" | "amber" | "green";
     description: string;
 };
+/**
+ * TAD commercial offer for NEW advertiser onboarding requests only.
+ * The base screen rate is RD$2,500/month. A database-verified driver's
+ * referral code discounts the SCREEN price by 40% (RD$1,500/month).
+ * Optional creative production is separate and is not discounted.
+ *
+ * "verifiedDriverCode" MUST come from a trusted backend DB lookup, NEVER
+ * from a client-supplied boolean. This helper does not issue an invoice.
+ */
+export declare const DRIVER_CODE_DISCOUNT_PERCENT: 40;
+export declare const ADVERTISER_OFFER_VERSION: "TAD-2026-11-18-DRIVER40";
+export interface AdvertiserOfferInput {
+    screens: number;
+    months: number;
+    includeProduction: boolean;
+    verifiedDriverCode: boolean;
+}
+export interface AdvertiserOffer {
+    pricingVersion: typeof ADVERTISER_OFFER_VERSION;
+    currency: "DOP";
+    baseMonthlyScreenRate: number;
+    effectiveMonthlyScreenRate: number;
+    screens: number;
+    months: number;
+    baseScreensSubtotal: number;
+    verifiedDriverCode: boolean;
+    discountPercent: number;
+    discountAmount: number;
+    screensSubtotal: number;
+    productionFee: number;
+    subtotal: number;
+    taxesIncluded: false;
+}
+export declare function calculateAdvertiserOffer(input: AdvertiserOfferInput): AdvertiserOffer;
 //# sourceMappingURL=index.d.ts.map

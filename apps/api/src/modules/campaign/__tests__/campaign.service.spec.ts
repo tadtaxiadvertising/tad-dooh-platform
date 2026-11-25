@@ -16,7 +16,12 @@ interface CampaignPrismaMock {
     [(tx: TransactionMock) => Promise<unknown>]
   >;
   device: { findMany: jest.Mock };
-  campaign: { count: jest.Mock; create: jest.Mock };
+  campaign: {
+    count: jest.Mock;
+    create: jest.Mock;
+    findMany: jest.Mock;
+    findUnique: jest.Mock;
+  };
 }
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
@@ -54,6 +59,8 @@ describe("CampaignService — 15-Slot Limit & Advisory Locking", () => {
       campaign: {
         count: jest.fn(),
         create: jest.fn(),
+        findMany: jest.fn(),
+        findUnique: jest.fn(),
       },
     };
 
@@ -177,6 +184,39 @@ describe("CampaignService — 15-Slot Limit & Advisory Locking", () => {
       expect(txMock.$executeRaw).not.toHaveBeenCalled();
       expect(txMock.deviceCampaign.count).not.toHaveBeenCalled();
       expect(txMock.deviceCampaign.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("MIME response compatibility (#217)", () => {
+    it("keeps aliases on campaign lists without mutating database results", async () => {
+      const campaign = Object.freeze({
+        id: "campaign-synthetic",
+        media: [
+          Object.freeze({ id: "media-synthetic", mimeType: "video/mp4" }),
+        ],
+      });
+      prismaService.campaign.findMany.mockResolvedValue([campaign]);
+      const result = await service.getAllCampaigns();
+      expect(result[0].media[0]).toMatchObject({
+        mimeType: "video/mp4",
+        mime_type: "video/mp4",
+      });
+      expect(campaign.media[0]).not.toHaveProperty("mime_type");
+    });
+    it("keeps aliases on a campaign detail and preserves not-found responses", async () => {
+      prismaService.campaign.findUnique
+        .mockResolvedValueOnce({
+          id: "campaign-synthetic",
+          media: [{ id: "media-synthetic", mimeType: null }],
+        })
+        .mockResolvedValueOnce(null);
+      expect(
+        (await service.getCampaignById("campaign-synthetic"))?.media[0],
+      ).toMatchObject({
+        mimeType: null,
+        mime_type: null,
+      });
+      expect(await service.getCampaignById("missing")).toBeNull();
     });
   });
 });

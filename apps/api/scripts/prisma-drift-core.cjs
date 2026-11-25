@@ -44,7 +44,20 @@ function expectedPostgresScalarType(field) {
   return defaults[field.type] || null;
 }
 
-function auditPrismaSchema({ models, tables, columns, idTypes, nativeUuidFields }) {
+const { stringIdTypes } = require("./prisma-generated-types.cjs");
+
+function auditPrismaSchema({
+  models,
+  tables,
+  columns,
+  idTypes,
+  nativeUuidFields,
+  generatedSchema,
+}) {
+  const generatedTypes =
+    generatedSchema === undefined
+      ? null
+      : stringIdTypes(models, generatedSchema);
   const actualTables = new Set(tables.map(({ table_name }) => table_name));
   const columnTypes = new Map(
     columns.map(({ table_name, column_name, udt_name }) => [
@@ -85,6 +98,7 @@ function auditPrismaSchema({ models, tables, columns, idTypes, nativeUuidFields 
         // Runtime Prisma.dmmf may omit nativeType. Prefer the id contract
         // parsed from schema.prisma bundled with this exact image.
         const expected =
+          generatedTypes?.get(key) ||
           idTypes?.get(model.name + "." + field.name) ||
           (field.nativeType?.[0] === "Uuid" ? "uuid" : "text");
         if (actual !== expected) {

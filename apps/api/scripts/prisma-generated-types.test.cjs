@@ -133,7 +133,14 @@ test("CLI validates the generated schema before metadata queries and suppresses 
       throw stop;
     };
     class Client {
-      async $queryRaw() {
+      async $transaction(read) {
+        return read(this);
+      }
+      async $executeRaw() {}
+      async $queryRaw(sql) {
+        if (sql.join("").includes("current_setting")) {
+          return [{ read_only: "on" }];
+        }
         queries++;
         return queries === 3
           ? []

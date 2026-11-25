@@ -13,6 +13,7 @@ const { createHash } = require("node:crypto");
 const { auditPrismaSchema } = require("./prisma-drift-core.cjs");
 const { auditGpsSqlContract } = require("./prisma-gps-contract.cjs");
 const { stringIdTypes } = require("./prisma-generated-types.cjs");
+const { readPrismaSchemaCatalog } = require("./prisma-schema-catalog.cjs");
 const {
   inspectSchemaStringIds,
 } = require("./prisma-client-id-consistency.cjs");
@@ -81,22 +82,8 @@ if (!connectionUrl) {
   });
 
   async function check() {
-    // PostgreSQL metadata only; never read financial or personal records.
-    const tables = await prisma.$queryRaw`
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-    `;
-    const columns = await prisma.$queryRaw`
-      SELECT table_name, column_name, udt_name
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-    `;
-    // DMMF can omit Unsupported("geography(...)") fields required by the
-    // GPS raw SQL path. Inspect PostGIS extension metadata separately.
-    const extensions = await prisma.$queryRaw`
-      SELECT extname FROM pg_extension WHERE extname = 'postgis'
-    `;
+    // One verified read-only transaction; never financial or personal records.
+    const { tables, columns, extensions } = await readPrismaSchemaCatalog(prisma);
     const report = {
       prismaSchemaSha256,
       ...auditPrismaSchema({

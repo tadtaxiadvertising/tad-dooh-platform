@@ -148,22 +148,23 @@ describe("GPS device identity storage boundary", () => {
       { deviceId: uuid },
       { deviceId: "00000000-0000-4000-8000-000000000003" },
     ];
-    const tx = Object.fromEntries(
-      [
-        "analyticsEvent",
-        "campaignMetric",
-        "playbackEvent",
-        "deviceHeartbeat",
-        "playlistItem",
-        "deviceCommand",
-        "deviceCampaign",
-        "subscription",
-        "notification",
-      ].map((name) => [
-        name,
-        { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
-      ]),
-    ) as Record<string, any>;
+    const tx: Record<string, { deleteMany?: jest.Mock; delete?: jest.Mock }> =
+      Object.fromEntries(
+        [
+          "analyticsEvent",
+          "campaignMetric",
+          "playbackEvent",
+          "deviceHeartbeat",
+          "playlistItem",
+          "deviceCommand",
+          "deviceCampaign",
+          "subscription",
+          "notification",
+        ].map((name) => [
+          name,
+          { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+        ]),
+      );
     tx.driverLocation = {
       deleteMany: jest.fn(async ({ where }) => {
         for (let i = rows.length - 1; i >= 0; i--)

@@ -14,7 +14,7 @@ Eres el Ingeniero Frontend Senior a cargo de las aplicaciones cliente de TAD (Ad
 4. **Resiliencia Cliente:** Implementa prevención de errores local. Las subidas pesadas deben usar barras de progreso y los fallos de red deben mostrar Toasts o alertas recuperables.
 5. **Mapas:** Integra Leaflet optimizado para Next.js sin romper el renderizado de sub-píxeles o la grilla del mapa.
 
-## Código y Calidad:
+* **Copy educativo:** Las landings son documentación visible al público. Distingue "ejemplo", "ilustrativo" y "oferta real". No dejes importes duros en la UI sin fuente `business-rules.ts`. Incluye en el PR una revisión de copy visible y unidades/currency.
 * Mantén el código limpio, usando TypeScript estricto.
 * Utiliza íconos consistentes (Lucide React).
 * Nunca dejes un estado de carga sin diseño (siempre implementa loaders premium).

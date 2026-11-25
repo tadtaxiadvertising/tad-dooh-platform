@@ -22,7 +22,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:drift:check": "node scripts/check-prisma-drift.cjs",
-    "prisma:drift:test": "node --test scripts/prisma-drift-core.test.cjs",
+    "prisma:drift:test": "node --test scripts/prisma-drift-core.test.cjs scripts/prisma-generated-types.test.cjs scripts/prisma-drift-generated.test.cjs scripts/media-mapping-contract.test.cjs",
     "db:target:test": "node --test scripts/check-supabase-target.test.cjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "node scripts/assert-local-prisma-migration.cjs && prisma migrate dev",

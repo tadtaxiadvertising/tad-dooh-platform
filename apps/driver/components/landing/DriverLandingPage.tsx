@@ -29,8 +29,8 @@ const benefits = [
   },
   {
     icon: MonitorPlay,
-    title: "Oportunidades que se adaptan a tu ruta",
-    text: "Conoce las opciones de compensación por pantalla, ventas aprobadas y referidos activados antes de decidir cómo quieres participar.",
+    title: "Tu operación, con una nueva fuente de ingresos",
+    text: "Al tener una cuenta aprobada, accede al portal de conductor para usar las herramientas habilitadas para tu perfil.",
   },
   {
     icon: ShieldCheck,

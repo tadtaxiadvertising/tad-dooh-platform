@@ -217,13 +217,6 @@ export default function DriverEarningsLab({
                 </dd>
               </div>
               <div>
-                <dt>Reproducciones verificadas</dt>
-                <dd>
-                  La referencia operativa de RD$1.25 por play validado es un
-                  concepto distinto; no se suma automáticamente al ejemplo.
-                </dd>
-              </div>
-              <div>
                 <dt>Ventas y referidos</dt>
                 <dd>
                   RD$500 por venta aprobada y RD$500 por conductor referido

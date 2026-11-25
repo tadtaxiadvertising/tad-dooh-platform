@@ -12,7 +12,10 @@ const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { auditPrismaSchema } = require("./prisma-drift-core.cjs");
 const { auditGpsSqlContract } = require("./prisma-gps-contract.cjs");
-const { inspectSchemaStringIds } = require("./prisma-client-id-consistency.cjs");
+const { stringIdTypes } = require("./prisma-generated-types.cjs");
+const {
+  inspectSchemaStringIds,
+} = require("./prisma-client-id-consistency.cjs");
 
 const models = Prisma.dmmf.datamodel.models;
 const connectionUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
@@ -23,22 +26,49 @@ const connectionUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
 // Log a digest, never the schema contents or connection credentials.
 let schemaSource;
 try {
-  schemaSource = readFileSync(path.join(__dirname, "../prisma/schema.prisma"), "utf8");
+  schemaSource = readFileSync(
+    path.join(__dirname, "../prisma/schema.prisma"),
+    "utf8",
+  );
 } catch {
-  console.error("Prisma source schema unavailable; refusing schema parity check.");
+  console.error(
+    "Prisma source schema unavailable; refusing schema parity check.",
+  );
   process.exit(2);
 }
-const prismaSchemaSha256 = createHash("sha256").update(schemaSource).digest("hex");
+const prismaSchemaSha256 = createHash("sha256")
+  .update(schemaSource)
+  .digest("hex");
 // Client DMMF may omit nativeType. Check model/ID identity here, and derive
 // native ID mappings from the included Prisma schema, not missing DMMF fields.
 const sourceContract = inspectSchemaStringIds({ schemaSource, models });
 if (sourceContract.issueCount > 0) {
-  console.error(JSON.stringify({
-    code: "PRISMA_SOURCE_CLIENT_ID_CONTRACT_INVALID",
-    prismaSchemaSha256,
-    issueCount: sourceContract.issueCount,
-    issues: sourceContract.issues,
-  }, null, 2));
+  console.error(
+    JSON.stringify(
+      {
+        code: "PRISMA_SOURCE_CLIENT_ID_CONTRACT_INVALID",
+        prismaSchemaSha256,
+        issueCount: sourceContract.issueCount,
+        issues: sourceContract.issues,
+      },
+      null,
+      2,
+    ),
+  );
+  process.exit(2);
+}
+
+let generatedSchema;
+try {
+  const generatedPath = require.resolve(".prisma/client/schema.prisma", {
+    paths: [path.dirname(require.resolve("@prisma/client"))],
+  });
+  generatedSchema = readFileSync(generatedPath, "utf8");
+  stringIdTypes(models, generatedSchema);
+} catch {
+  console.error(
+    "Generated Prisma schema incompatible; refusing schema parity check.",
+  );
   process.exit(2);
 }
 
@@ -70,7 +100,10 @@ if (!connectionUrl) {
     const report = {
       prismaSchemaSha256,
       ...auditPrismaSchema({
-        models, tables, columns,
+        models,
+        tables,
+        columns,
+        generatedSchema,
         idTypes: sourceContract.idTypes,
         nativeUuidFields: sourceContract.nativeUuidFields,
       }),
@@ -92,7 +125,9 @@ if (!connectionUrl) {
   check()
     .catch((error) => {
       // Exception messages can contain connection data. Never print them.
-      console.error(`Schema inspection failed (${error?.code || "QUERY_ERROR"}).`);
+      console.error(
+        `Schema inspection failed (${error?.code || "QUERY_ERROR"}).`,
+      );
       process.exitCode = 2;
     })
     .finally(async () => {

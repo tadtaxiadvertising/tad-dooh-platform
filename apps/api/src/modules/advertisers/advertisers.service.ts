@@ -1,3 +1,4 @@
+import { withMediaMimeAliases } from "../media/media-response";
 import {
   Injectable,
   UnauthorizedException,
@@ -171,7 +172,7 @@ export class AdvertisersService {
   }
 
   async findOne(id: string) {
-    return this.prisma.advertiser.findUnique({
+    const advertiser = await this.prisma.advertiser.findUnique({
       where: { id },
       include: {
         campaigns: {
@@ -183,6 +184,15 @@ export class AdvertisersService {
         },
       },
     });
+    return advertiser
+      ? {
+          ...advertiser,
+          campaigns: advertiser.campaigns.map((campaign) => ({
+            ...campaign,
+            media: campaign.media.map(withMediaMimeAliases),
+          })),
+        }
+      : null;
   }
 
   async create(data: {

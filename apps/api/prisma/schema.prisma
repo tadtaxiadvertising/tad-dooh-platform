@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(uuid())
+  id        String     @id @default(uuid()) @db.Uuid
   email     String     @unique
   password  String
   name      String
@@ -95,7 +95,7 @@ model Campaign {
   campaignMonths    Int?     @default(1) @map("campaign_months")
   includeProduction Boolean? @default(false) @map("include_production")
   targetUrl         String?  @map("target_url")
-  createdById       String?  @map("created_by")
+  createdById       String?  @db.Uuid @map("created_by")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
   facebook          String?

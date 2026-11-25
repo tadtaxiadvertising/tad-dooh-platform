@@ -1,0 +1,140 @@
+{
+  "status": "DRAFT_ISOLATED_CLONE_ONLY",
+  "sourceCommit": "098f10e0c2015ed412d588a70bc1f835e4013287",
+  "sourceTree": "229ced6f2f6cd5f36874968593a81bdd5dd8ea24",
+  "schemaLfSha256": "c519f00738b0486bff98174d35fd240f724c72e5bfe391126a4406f10ad7e49c",
+  "prismaVersion": "5.22.0",
+  "productionExecuted": false,
+  "applicationAccessVerified": false,
+  "families": [
+    {
+      "name": "A-identity",
+      "file": "A-identity.sql",
+      "tables": [
+        "fleets",
+        "portal_requests",
+        "contract_acceptances"
+      ],
+      "indexes": 6,
+      "foreignKeys": 3,
+      "parents": [
+        {
+          "table": "advertisers",
+          "column": "id",
+          "native": "uuid"
+        },
+        {
+          "table": "drivers",
+          "column": "id",
+          "native": "text"
+        }
+      ],
+      "sha256": "2d45f884931da92d7e8c0f2745446993e6816506c3103a22e8435e10852fa37c"
+    },
+    {
+      "name": "B-ingest",
+      "file": "B-ingest.sql",
+      "tables": [
+        "playlists",
+        "active_ads",
+        "analytics_events",
+        "campaign_metrics"
+      ],
+      "indexes": 9,
+      "foreignKeys": 5,
+      "parents": [
+        {
+          "table": "campaigns",
+          "column": "id",
+          "native": "uuid"
+        },
+        {
+          "table": "devices",
+          "column": "device_id",
+          "native": "text"
+        },
+        {
+          "table": "devices",
+          "column": "id",
+          "native": "uuid"
+        },
+        {
+          "table": "drivers",
+          "column": "id",
+          "native": "text"
+        }
+      ],
+      "sha256": "bcb37eb2ededc853c568786792b5f6b466c4ca03462013396d24c2fa95d9edf5",
+      "sequences": [
+        "campaign_metrics_id_seq"
+      ]
+    },
+    {
+      "name": "C-crm",
+      "file": "C-crm.sql",
+      "tables": [
+        "leads",
+        "qr_scans",
+        "conversations",
+        "conversation_messages",
+        "referral_attributions",
+        "conversion_events"
+      ],
+      "indexes": 24,
+      "foreignKeys": 2,
+      "parents": [],
+      "sha256": "ba2817e0b8e7cbb05c75ae6eb8c2522242ed23c65a8fd5aab4dfdb62ee48e651"
+    },
+    {
+      "name": "D-finance",
+      "file": "D-finance.sql",
+      "tables": [
+        "advertiser_subscriptions",
+        "settlement_batches",
+        "commissions",
+        "commission_ledger",
+        "payment_intents",
+        "payment_evidence",
+        "payment_verifications",
+        "reconciliation_reports"
+      ],
+      "indexes": 24,
+      "foreignKeys": 7,
+      "parents": [
+        {
+          "table": "drivers",
+          "column": "id",
+          "native": "text"
+        },
+        {
+          "table": "advertisers",
+          "column": "id",
+          "native": "uuid"
+        },
+        {
+          "table": "leads",
+          "column": "id",
+          "native": "text"
+        }
+      ],
+      "sha256": "61559ea6689a7136ce0cf78f3d0ce3d211c3d7ff855c76e15054113f7ed9b182"
+    },
+    {
+      "name": "E-bi",
+      "file": "E-bi.sql",
+      "tables": [
+        "bi_dashboard_snapshots"
+      ],
+      "indexes": 1,
+      "foreignKeys": 0,
+      "parents": [],
+      "sha256": "0bea18c2b79d5034e9b64b5019a4c13786c100d9d829cf9a270d98b81257e42a"
+    }
+  ],
+  "blockedTables": [
+    {
+      "table": "users",
+      "reason": "campaigns.created_by is physically UUID; the proposed TEXT users.id exposes an additional incompatible relation. Resolve identity/Auth authority before creating this table."
+    }
+  ]
+}

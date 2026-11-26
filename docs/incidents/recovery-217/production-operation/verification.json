@@ -1,0 +1,148 @@
+{
+  "incident": 217,
+  "status": "PASS_PREPARED_TARGET_BOUND_ATOMIC_CANDIDATE",
+  "sourceMain": "a2b53d3281f9253d847eb8ac01f0841402d65fbd",
+  "productionExecuted": false,
+  "productionReleaseReady": false,
+  "compilerCliFinish": "ROLLBACK",
+  "sourceSqlDefinitionsUnchanged": true,
+  "manifestPlan": {
+    "format": "target-bound-atomic-217-v1",
+    "targetRef": "ltdcdhqixvbpdcitthqf",
+    "database": "postgres",
+    "catalogSha256": "6cd921c5f633079b8821cd7fcda868d54257016a0ce61c0a8b8595e3aedca102",
+    "backupEvidenceSha256": "c82605384092a6cfff7735b14275c9835b692f68539f82c1349e1cb2d4448945",
+    "sourceMain": "a2b53d3281f9253d847eb8ac01f0841402d65fbd",
+    "connectionKind": "session-pooler"
+  },
+  "operationSha256": "5f802805034beac1f4203195996e410b341a4ee3a4471e145ef99cfe04d851d7",
+  "rollbackSqlLfSha256": "286af7395211f941aaa426a940fccc664b34df525733b756b3aeaf049e38a2eb",
+  "liveReadOnly": {
+    "at": "2026-11-26T03:43:25.494Z",
+    "targetPin": "TARGET_MATCH",
+    "strictCertificateValidationRequired": true,
+    "catalogSha256": "6cd921c5f633079b8821cd7fcda868d54257016a0ce61c0a8b8595e3aedca102",
+    "readOnlyTransactionVerified": true,
+    "connectionKind": "session-pooler",
+    "backendTlsObserved": false,
+    "applicationRowsReturned": false,
+    "writeOperations": 0,
+    "preflightLibrarySha256": "3c3ffa99e509e201d21198f9c57dba9e307420480e03fbffd939c2ab200cfd34",
+    "emptyRequiredTargets": {
+      "devices": true,
+      "drivers": true,
+      "telemetry": true,
+      "subscriptions": true,
+      "driver_locations": true,
+      "campaign_expirations": true
+    },
+    "currencyCompatible": true,
+    "prismaMigrations": {
+      "finished": 23,
+      "rolledBack": 0,
+      "unresolved": 0
+    },
+    "missingTables": 23,
+    "missingColumns": 39,
+    "enumIssues": 1,
+    "gpsIssues": 2,
+    "caCertificate": {
+      "source": "https://github.com/supabase/supabase/blob/master/apps/studio/hooks/custom-content/custom-content.json",
+      "download": "https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt",
+      "sha256": "700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7",
+      "fingerprint256": "80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA"
+    },
+    "backendTlsFalseDoesNotMeanClientPlaintext": true,
+    "upstreamTlsCertified": false,
+    "directEndpointProbe": "P1001"
+  },
+  "offlineTests": {
+    "managedCompiler": 6,
+    "atomicCompiler": 6,
+    "readOnlyPreflight": 8,
+    "status": "PASS"
+  },
+  "restoredClone": {
+    "status": "PASS_ATOMIC_ROLLBACK_COMMIT_AND_API_ON_RESTORED_CLONE",
+    "startedAt": "2026-11-26T03:43:27.414780+00:00",
+    "finishedAt": "2026-11-26T03:45:41.559186+00:00",
+    "testedSqlConnectionKind": "direct",
+    "actualTcpTls": true,
+    "cloneCertificateSelfSigned": true,
+    "scopeRejections": [
+      "missing_both_markers",
+      "missing_target",
+      "wrong_target",
+      "missing_operation",
+      "wrong_operation",
+      "missing_client_tls_attestation",
+      "wrong_database",
+      "wrong_caller",
+      "plaintext_tcp",
+      "stale_catalog",
+      "failure_after_G_rolls_back_A_to_G"
+    ],
+    "fullRollbackCatalogStrictInventoryAndRolesExact": true,
+    "originalTables": 70,
+    "newTables": 23,
+    "totalTables": 93,
+    "originalProjectedValuesAndRolesExactAfterCommit": true,
+    "allDeclaredDriftCountersZero": true,
+    "newTablesEmptyOwnerPostgresForcedRlsNoPolicies": true,
+    "nativeModels": 52,
+    "nativeModelsPassed": 52,
+    "postgisRoutinesMatchingStock": 744,
+    "repeatedCommitRejectedBeforeFamilyA": true,
+    "httpProbes": {
+      "/health": {
+        "status": 200,
+        "statusUp": true,
+        "databaseConnected": false,
+        "masterSyncViewReady": false
+      },
+      "/health/ready": {
+        "status": 200,
+        "statusUp": true,
+        "databaseConnected": false,
+        "masterSyncViewReady": false
+      },
+      "/health/full": {
+        "status": 200,
+        "statusUp": true,
+        "databaseConnected": true,
+        "masterSyncViewReady": true
+      },
+      "/api/v1/drivers": {
+        "status": 401,
+        "statusUp": false,
+        "databaseConnected": false,
+        "masterSyncViewReady": false
+      },
+      "/api/v1/system-settings": {
+        "status": 401,
+        "statusUp": false,
+        "databaseConnected": false,
+        "masterSyncViewReady": false
+      },
+      "/api/v1/bi/kpis": {
+        "status": 401,
+        "statusUp": false,
+        "databaseConnected": false,
+        "masterSyncViewReady": false
+      }
+    },
+    "apiReadOnly": true,
+    "rolesCatalogAndOriginalProjectionsExactAfterApiShutdown": true,
+    "cleanupVerified": true,
+    "temporaryEncryptedKeyRemoved": true
+  },
+  "remainingBeforeProduction": [
+    "fresh encrypted backup with strict restore verification bound to final operation",
+    "independent recovery-master custody",
+    "complete service configuration recovery and active image digest",
+    "credential containment and coordinated rotation #244",
+    "promotion/provider verification #313",
+    "session-pooler production operation remains unapplied; live proof is READ ONLY"
+  ],
+  "releaseAndAllBusinessWorkflowsCertified": false
+}

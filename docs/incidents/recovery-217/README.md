@@ -79,3 +79,7 @@ Después de superar el gate de esquema, el primer ensayo de la imagen detectó q
 ## Continuación: secuencia completa con llamador administrado
 
 La tarjeta [managed-transition/README.md](managed-transition/README.md) compila las diez familias mediante hashes fijos para un clon con login postgres sin SUPERUSER ni SET ROLE supabase_admin. Conserva las definiciones y guardas por familia, incorpora seis contratos offline a CI y verifica la ruta supautils. El resultado de los ensayos sintéticos, del respaldo restaurado y del arranque HTTP se documenta en su verification.json. No contiene un modo de ejecución productivo ni sustituye los requisitos operativos de la transición.
+
+## Target-bound atomic operation
+
+See [production-operation](production-operation/README.md) for the baseline-bound A–J transaction, default rollback, strict-TLS read-only preflight and encrypted-restored rollback/commit/API evidence. This remains an unapplied production candidate.

@@ -146,6 +146,23 @@ export class TelemetryService {
       throw new Error("TELEMETRY_BATCH_TOO_LARGE");
     }
 
+    // geography can normalize out-of-range coordinates. Reject the complete
+    // upload before any write instead of storing a different taxi location.
+    if (
+      data.some(
+        (point) =>
+          !point ||
+          !Number.isFinite(point.lat) ||
+          !Number.isFinite(point.lng) ||
+          point.lat < -90 ||
+          point.lat > 90 ||
+          point.lng < -180 ||
+          point.lng > 180,
+      )
+    ) {
+      throw new BadRequestException("TELEMETRY_COORDINATES_INVALID");
+    }
+
     try {
       // A later chunk can fail after earlier inserts. Keep the entire upload
       // atomic so the client can safely retry without a partial success.
@@ -159,7 +176,7 @@ export class TelemetryService {
             const item = chunk[i];
             const base = i * 5;
             values.push(
-              `(gen_random_uuid(), $${base + 1}, ST_SetSRID(ST_MakePoint($${base + 2}, $${base + 3}), 4326), $${base + 4}, $${base + 5})`,
+              `(pg_catalog.gen_random_uuid(), $${base + 1}, extensions.ST_SetSRID(extensions.ST_MakePoint($${base + 2}, $${base + 3}), 4326)::extensions.geography, $${base + 4}, $${base + 5})`,
             );
             params.push(
               item.driverId,
@@ -171,7 +188,7 @@ export class TelemetryService {
           }
 
           await tx.$executeRawUnsafe(
-            `INSERT INTO telemetry (id, driver_id_text_217, coords, speed, timestamp)
+            `INSERT INTO public.telemetry (id, driver_id_text_217, coords, speed, timestamp)
              VALUES ${values.join(", ")}
              ON CONFLICT (driver_id_text_217, date_trunc('second', timestamp)) DO NOTHING`,
             ...params,

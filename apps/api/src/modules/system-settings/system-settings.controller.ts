@@ -1,11 +1,10 @@
-import { Controller, Get, Body, Put, UseGuards } from "@nestjs/common";
+import { Controller, Get, Body, Put } from "@nestjs/common";
 import { SystemSettingsService } from "./system-settings.service";
-import { SupabaseAuthGuard } from "../auth/guards/supabase-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
 @Controller("system-settings")
-@UseGuards(SupabaseAuthGuard, RolesGuard)
+// Authentication and RBAC run through AppModule's global guards. A local
+// duplicate would require auth-domain providers in this settings module.
 export class SystemSettingsController {
   constructor(private readonly settingsService: SystemSettingsService) {}
 

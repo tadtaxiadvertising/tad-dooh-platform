@@ -29,9 +29,30 @@ function auditGpsSqlContract({ models, tables, columns, extensions }) {
         expected: "geography",
         actual: coords.udt_name,
       });
+    } else {
+      if (coords.udt_schema !== "extensions") {
+        issues.push({ code: "GPS_COORDS_SCHEMA_MISMATCH", table: "telemetry",
+          column: "coords", expected: "extensions", actual: coords.udt_schema });
+      }
+      if (coords.is_nullable !== "NO") {
+        issues.push({ code: "GPS_COORDS_NULLABILITY_MISMATCH", table: "telemetry",
+          column: "coords", expected: "NO", actual: coords.is_nullable });
+      }
+      // format_type includes the namespace only when absent from search_path.
+      // The independent udt_schema comparison above pins the type namespace.
+      const type = typeof coords.formatted_type === "string"
+        ? coords.formatted_type.replace(/\s+/g, "") : "";
+      if (!["geography(Point,4326)", "extensions.geography(Point,4326)"].includes(type)) {
+        issues.push({ code: "GPS_COORDS_TYPMOD_MISMATCH", table: "telemetry",
+          column: "coords", expected: "geography(Point,4326)", actual: coords.formatted_type });
+      }
     }
-    if (!extensions.some(({ extname }) => extname === "postgis")) {
+    const postgis = extensions.find(({ extname }) => extname === "postgis");
+    if (!postgis) {
       issues.push({ code: "POSTGIS_EXTENSION_MISSING" });
+    } else if (postgis.extension_schema !== "extensions") {
+      issues.push({ code: "POSTGIS_SCHEMA_MISMATCH", expected: "extensions",
+        actual: postgis.extension_schema });
     }
   }
 

@@ -332,8 +332,9 @@ test("existing String primary-key validator remains distinct from scalar drift",
 
 const gpsModel = [{ name: "Telemetry", dbName: "telemetry", fields: [] }];
 const gpsTable = [{ table_name: "telemetry" }];
-const geographyColumn = [{ table_name: "telemetry", column_name: "coords", udt_name: "geography" }];
-const postgisExtension = [{ extname: "postgis" }];
+const geographyColumn = [{ table_name: "telemetry", column_name: "coords", udt_schema: "extensions",
+  udt_name: "geography", is_nullable: "NO", formatted_type: "extensions.geography(Point,4326)" }];
+const postgisExtension = [{ extname: "postgis", extension_schema: "extensions" }];
 
 test("GPS SQL contract detects missing geography column and PostGIS", () => {
   const report = auditGpsSqlContract({

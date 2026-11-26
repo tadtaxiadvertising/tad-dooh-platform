@@ -1,0 +1,161 @@
+{
+  "status": "IMPLEMENTADO, PENDIENTE DE VERIFICACIÓN",
+  "card": "J — exact GPS/PostGIS storage and coordinate validation",
+  "verifiedAt": "2026-11-26T01:26:20.718985+00:00",
+  "sqlSha256": "0b77bc86691479589114143c2221c88c4cfe45aa5cdcd5bc29d6032b83896c10",
+  "compiledSourceSha256": "c181942f7188ac56cbf72a3d70e7631d2e7be43d7748c5ad72a89b550bed1f73",
+  "local": {
+    "nodeContracts": 75,
+    "focusedServiceControllerTests": 28,
+    "privateClientTypecheck": true,
+    "lint": true,
+    "realAppModuleStartupAndRoleRegression": {
+      "passed": true,
+      "testCount": 1,
+      "noSessionSettingsAndBi": 401,
+      "driverSettingsGetAndPut": 403,
+      "adminSettingsGetAndPut": 200,
+      "realJwtAndGuards": true,
+      "authInvocationsPerSettingsRequest": 1,
+      "ioProvidersMocked": [
+        "Prisma",
+        "Supabase",
+        "Sheets",
+        "Email"
+      ],
+      "finalVerificationFinishedAt": "2026-11-26T01:45:44.047Z"
+    },
+    "gpsCandidateProductionDockerfileBuild": true,
+    "finalApiImageAndStartupProof": "Recorded in the continuation PR validation after the native full-image rehearsal."
+  },
+  "synthetic": {
+    "status": "PASS_SYNTHETIC_GPS",
+    "started": "2026-11-26T01:19:24.164846+00:00",
+    "finished": "2026-11-26T01:21:12.271176+00:00",
+    "atomicPreconditionRejections": 7,
+    "typedOrNullRejections": 4,
+    "permissionDenials": 12,
+    "restoredSearchPathDifferenceReproduced": true,
+    "nativeRangeCoercionDemonstrated": true,
+    "actualSource": {
+      "ok": true,
+      "catalogReadOnlyVerified": true,
+      "gpsContractIssues": 0,
+      "compiledServiceSha256": "c181942f7188ac56cbf72a3d70e7631d2e7be43d7748c5ad72a89b550bed1f73",
+      "sourceMethodExecuted": "TelemetryService.sync",
+      "decoratorLoggerOnlyStubbed": true,
+      "nativeSourceSqlExecuted": true,
+      "validRowsAdded": 101,
+      "duplicateSecondIgnored": true,
+      "laterChunkFailureRolledBack": true,
+      "parameterOrderSridDimensionsExact": true,
+      "invalidCoordinateBatchRejections": 6,
+      "invalidWritesAbsent": true,
+      "realPrismaTransactionCommitAndRollback": true
+    },
+    "cleanupVerified": true
+  },
+  "restored": {
+    "status": "PASS_RESTORED_GPS",
+    "started": "2026-11-26T01:21:23.683373+00:00",
+    "finished": "2026-11-26T01:26:20.718985+00:00",
+    "strictOriginalTables": 70,
+    "precedingAddedTables": 23,
+    "totalTables": 93,
+    "allPrecedingStagesVerified": true,
+    "originalProjectedFingerprintsExact": true,
+    "oldColumnMetadataAndUnallowlistedCatalogExact": true,
+    "rolesWithoutPasswordsExact": true,
+    "unrelatedSchemaDumpExact": true,
+    "extensionContract": {
+      "schema": "extensions",
+      "type": "geography",
+      "required": true,
+      "shape": "Point",
+      "srid": 4326,
+      "dimensions": 2,
+      "extension": "3.3.7",
+      "extension_schema": "extensions",
+      "reference_table_owner": "supabase_admin"
+    },
+    "newExtensionRoutineAudit": {
+      "functions": 744,
+      "all_verified_extension_members": true,
+      "all_definitions_and_aggregate_bindings_match_pristine_pinned_oracle": true,
+      "stock_security_definer_signatures": [
+        "st_estimatedextent(text, text)",
+        "st_estimatedextent(text, text, text)",
+        "st_estimatedextent(text, text, text, boolean)"
+      ],
+      "all_acl_equal_existing_creation_defaults": true,
+      "existing_extension_functions_exact": true
+    },
+    "actualSource": {
+      "ok": true,
+      "catalogReadOnlyVerified": true,
+      "gpsContractIssues": 0,
+      "compiledServiceSha256": "c181942f7188ac56cbf72a3d70e7631d2e7be43d7748c5ad72a89b550bed1f73",
+      "sourceMethodExecuted": "TelemetryService.sync",
+      "decoratorLoggerOnlyStubbed": true,
+      "nativeSourceSqlExecuted": true,
+      "validRowsAdded": 101,
+      "duplicateSecondIgnored": true,
+      "laterChunkFailureRolledBack": true,
+      "parameterOrderSridDimensionsExact": true,
+      "invalidCoordinateBatchRejections": 6,
+      "invalidWritesAbsent": true,
+      "restoredSourceCallbacksUseRealPgSavepoints": true,
+      "allFutureRowsRolledBack": true
+    },
+    "nativeModels": {
+      "models": 52,
+      "passed": 52,
+      "readOnlyVerified": true,
+      "maxRowsPerModel": 1,
+      "valuesEmitted": false,
+      "doesNotProveAllRowsRepresentable": true
+    },
+    "after": {
+      "expectedModels": 52,
+      "modelsPresent": 52,
+      "missingTableCount": 0,
+      "missingColumnCount": 0,
+      "idTypeMismatchCount": 0,
+      "scalarTypeMismatchCount": 0,
+      "relationTypeMismatchCount": 0,
+      "gpsSqlContractIssueCount": 0,
+      "enumSqlContractIssueCount": 0
+    },
+    "repeatedExecutionRejectedAtomically": true,
+    "noHistoricalLocationInference": true,
+    "cleanupVerified": true,
+    "temporaryEncryptedKeyRemoved": true
+  },
+  "isolation": {
+    "sourceConnections": 0,
+    "internalNetwork": true,
+    "publishedPorts": 0,
+    "hostBindMounts": 0,
+    "containerRootsReadOnly": true,
+    "sensitiveContainerLogsDisabled": true,
+    "frozenRecoveryHelpersUnmodified": true,
+    "managedSpatialOwnershipOrRlsModified": false
+  },
+  "limits": {
+    "productionDDL": false,
+    "productionReleaseReady": false,
+    "deployedShaVerified": false,
+    "fullBusinessWorkflowsCertified": false,
+    "productionFunctionExposureAndApplicationPermissionsVerified": false,
+    "restoredGpsProbeUsesOuterRollbackAndSavepoints": true,
+    "auxiliaryNativeSdkProbeIsNotFullApi": true
+  },
+  "releaseGates": [
+    "independent key custody",
+    "essential production configuration",
+    "#244 secret/session controls",
+    "#313 release/provider controls",
+    "full API/Auth/player/RBAC/FK and 10x load"
+  ],
+  "schemaLfSha256": "eaee945edceaf7d8699ba3c813427d623887706fa3512194f9526e9ce91b04c7"
+}

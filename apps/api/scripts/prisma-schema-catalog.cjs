@@ -23,13 +23,19 @@ async function readPrismaSchemaCatalog(prisma) {
         WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
       `;
       const columns = await tx.$queryRaw`
-        SELECT table_name, column_name, udt_schema, udt_name
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
+        SELECT c.table_name, c.column_name, c.udt_schema, c.udt_name, c.is_nullable,
+               pg_catalog.format_type(a.atttypid, a.atttypmod) AS formatted_type
+        FROM information_schema.columns c
+        JOIN pg_namespace n ON n.nspname = c.table_schema
+        JOIN pg_class t ON t.relnamespace = n.oid AND t.relname = c.table_name
+        JOIN pg_attribute a ON a.attrelid = t.oid AND a.attname = c.column_name
+        WHERE c.table_schema = 'public' AND a.attnum > 0 AND NOT a.attisdropped
       `;
       // Unsupported geography fields can be absent from Prisma's DMMF.
       const extensions = await tx.$queryRaw`
-        SELECT extname FROM pg_extension WHERE extname = 'postgis'
+        SELECT e.extname, n.nspname AS extension_schema
+        FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+        WHERE e.extname = 'postgis'
       `;
       const enumTypes = await tx.$queryRaw`
         SELECT n.nspname AS enum_schema, t.typname AS enum_name,

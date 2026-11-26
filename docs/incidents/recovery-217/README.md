@@ -75,3 +75,7 @@ La tarjeta [production-transition/README.md](production-transition/README.md) pu
 ## Continuación: inicialización del módulo de configuración
 
 Después de superar el gate de esquema, el primer ensayo de la imagen detectó que el guard local de SystemSettingsController no podía resolver AdvertisersService en ese módulo. El controlador ahora utiliza la autenticación y RBAC globales ya registrados en AppModule; mantiene ADMIN en GET y PUT. La regresión carga el AppModule real y usa JWT y guards reales: sin sesión se rechaza configuración y BI con 401; DRIVER recibe 403 y ADMIN obtiene 200 en GET/PUT de configuración, con una sola ejecución de autenticación por petición. Solo se sustituyen los límites de I/O de Prisma, Supabase, Sheets y correo. La validación posterior del entrypoint y HTTP sobre el respaldo restaurado se documenta en el PR de esta continuación; los proveedores externos y las operaciones financieras siguen fuera de esa prueba de arranque.
+
+## Continuación: secuencia completa con llamador administrado
+
+La tarjeta [managed-transition/README.md](managed-transition/README.md) compila las diez familias mediante hashes fijos para un clon con login postgres sin SUPERUSER ni SET ROLE supabase_admin. Conserva las definiciones y guardas por familia, incorpora seis contratos offline a CI y verifica la ruta supautils. El resultado de los ensayos sintéticos, del respaldo restaurado y del arranque HTTP se documenta en su verification.json. No contiene un modo de ejecución productivo ni sustituye los requisitos operativos de la transición.

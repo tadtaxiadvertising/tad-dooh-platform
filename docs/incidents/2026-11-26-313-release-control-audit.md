@@ -1,6 +1,6 @@
 # #313 — auditoría de controles de publicación, 26 de noviembre de 2026
 
-Base: `cd0e8a04657d816a27cfa34b71796c7b82e2ce84`. Rama: `codex/release-control-audit-20261126`.
+Base inicial: `cd0e8a04657d816a27cfa34b71796c7b82e2ce84`. La rama se actualizó con `a367fe4682fe21156de512f16bb7c681056a503b`, fusión de #558 observada durante la auditoría. Rama: `codex/release-control-audit-20261126`.
 Alcance: verificar protecciones existentes mediante lecturas y mejorar el diagnóstico local. No modifica GitHub, Railway, EasyPanel, credenciales ni datos de aplicación.
 
 ## GOAL / PLAN / LOOP / STOP
@@ -47,6 +47,7 @@ Entorno local: Windows, Node 22.20.0. Ejecución real; no se instalaron dependen
 | --- | ---: | --- |
 | `node --test scripts/protect-main-branch.test.cjs`, antes de implementar | 1 | Cuatro casos nuevos fallan por `UNKNOWN_MODE`; nueve existentes pasan |
 | Mismo comando después de implementar y completar fixtures CLI | 0 | 14/14 PASS, incluidos tres escenarios CLI aislados |
+| `node --test scripts/protect-main-branch.test.cjs scripts/check-api-readiness.test.cjs scripts/api-health-route-contract.test.cjs`, después de incorporar #558 | 0 | 27/27 PASS |
 | `node scripts/protect-main-branch.cjs --verify`, contra configuración real | 1 | FAIL esperado: `REQUIRED_PR_REVIEWS`, `STALE_REVIEW_DISMISSAL`, `LAST_PUSH_APPROVAL` |
 | `git diff --check` y `node --check` | 0 | PASS |
 | CI del nuevo candidato | — | Pendiente hasta publicar/verificar el SHA exacto del PR |

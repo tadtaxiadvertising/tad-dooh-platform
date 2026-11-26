@@ -10,13 +10,13 @@ Este borrador añade 22 de las 23 tablas ausentes, sus 64 índices declarados, 1
 
 ## Orden del ensayo
 
-| Familia | Tablas | Índices declarados | FKs |
-| --- | ---: | ---: | ---: |
-| A-identity | 3 | 6 | 3 |
-| B-ingest | 4 | 9 | 5 |
-| C-crm | 6 | 24 | 2 |
-| D-finance | 8 | 24 | 7 |
-| E-bi | 1 | 1 | 0 |
+| Familia    | Tablas | Índices declarados | FKs |
+| ---------- | -----: | -----------------: | --: |
+| A-identity |      3 |                  6 |   3 |
+| B-ingest   |      4 |                  9 |   5 |
+| C-crm      |      6 |                 24 |   2 |
+| D-finance  |      8 |                 24 |   7 |
+| E-bi       |      1 |                  1 |   0 |
 
 Cada familia usa una transacción propia, exige que todas sus tablas estén ausentes y verifica propietario, tipo y unicidad de sus padres existentes. Un intento repetido se rechaza sin efectos; no usa IF NOT EXISTS para aceptar formas parciales. El ensayo solo admite la base restored, conexión por socket Unix y el marcador de sesión tad.recovery_scope=isolated-clone-217. Estas comprobaciones limitan errores operativos; no sustituyen la autenticación ni la revisión del destino.
 
@@ -67,6 +67,10 @@ La tarjeta [missing-columns/README.md](missing-columns/README.md) recupera las 3
 ## Continuación: GPS/PostGIS y coordenadas válidas
 
 La tarjeta [gps-postgis/README.md](gps-postgis/README.md) califica el SQL GPS y exige geography(Point,4326) de dos dimensiones, NOT NULL, en extensions. Rechaza lotes con coordenadas inválidas antes de escribir. El ensayo cifrado concluido el 26-nov-2026 01:26 UTC conserva los datos originales, verifica los 52 modelos mediante Prisma nativo y alcanza cero diferencias de catálogo, incluidos enums y GPS. Las 744 rutinas/agregados nuevos se comparan con una instalación limpia de PostGIS 3.3.7 y sus ACL con los privilegios por defecto existentes; no se modifican funciones o permisos originales ni objetos espaciales administrados. Es evidencia de un clon aislado, con rollback de las filas futuras y limpieza verificada; producción y los controles de release siguen pendientes.
+
+## Continuación: transición al destino productivo
+
+La tarjeta [production-transition/README.md](production-transition/README.md) publica el preflight READ ONLY ejecutado el 26-nov-2026 02:15 UTC: producción conserva 23 tablas y 39 columnas ausentes, SystemStatus y GPS pendientes, aunque las 23 migraciones del ledger estén terminadas. Distingue el rol administrado del bootstrap del clon y documenta los requisitos y la reversión por capa. No ejecuta DDL productivo ni conecta el SQL del clon al arranque.
 
 ## Continuación: inicialización del módulo de configuración
 

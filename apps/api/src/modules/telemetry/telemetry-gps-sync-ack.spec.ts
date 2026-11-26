@@ -198,8 +198,13 @@ describe("TelemetryService GPS upload transaction", () => {
     const first = write.mock.calls[0];
     const last = write.mock.calls[1];
     expect(first[0]).toContain(
-      "INSERT INTO telemetry (id, driver_id_text_217,",
+      "INSERT INTO public.telemetry (id, driver_id_text_217,",
     );
+    expect(first[0]).toContain("pg_catalog.gen_random_uuid()");
+    expect(first[0]).toContain(
+      "extensions.ST_SetSRID(extensions.ST_MakePoint($2, $3), 4326)::extensions.geography",
+    );
+    expect(first.slice(1, 4)).toEqual(["driver-authorized", -70.7, 19.45]);
     expect(first[0]).toContain("ON CONFLICT (driver_id_text_217,");
     expect(first).toHaveLength(1 + 100 * 5);
     expect(last).toHaveLength(1 + 1 * 5);
@@ -222,5 +227,56 @@ describe("TelemetryService GPS upload transaction", () => {
     ).rejects.toThrow("TELEMETRY_BATCH_TOO_LARGE");
     expect(transaction).not.toHaveBeenCalled();
     expect(write).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { lat: 90.001, lng: 0 },
+    { lat: -90.001, lng: 0 },
+    { lat: 0, lng: 180.001 },
+    { lat: 0, lng: -180.001 },
+    { lat: Number.NaN, lng: 0 },
+    { lat: 0, lng: Number.POSITIVE_INFINITY },
+    { lat: "19.45", lng: -70.7 },
+    { lat: null, lng: 0 },
+    { lat: 0, lng: undefined },
+  ])(
+    "rejects invalid runtime coordinates before opening a transaction: %p",
+    async (coords) => {
+      await expect(
+        service.sync([{ ...makePoints(1)[0], ...coords } as never]),
+      ).rejects.toThrow("TELEMETRY_COORDINATES_INVALID");
+      expect(transaction).not.toHaveBeenCalled();
+      expect(write).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects a bad point beyond the first chunk before persisting any point", async () => {
+    const points = makePoints(101);
+    points[100].lat = 91;
+    await expect(service.sync(points)).rejects.toThrow(
+      "TELEMETRY_COORDINATES_INVALID",
+    );
+    expect(transaction).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it("rejects a missing runtime point before opening a transaction", async () => {
+    await expect(service.sync([null] as never)).rejects.toThrow(
+      "TELEMETRY_COORDINATES_INVALID",
+    );
+    expect(transaction).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it("accepts zero coordinates and inclusive geographic boundaries", async () => {
+    await expect(
+      service.sync([
+        { ...makePoints(1)[0], lat: 0, lng: 0 },
+        { ...makePoints(1)[0], lat: 90, lng: 180 },
+        { ...makePoints(1)[0], lat: -90, lng: -180 },
+      ]),
+    ).resolves.toBeUndefined();
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(write).toHaveBeenCalledTimes(1);
   });
 });

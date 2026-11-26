@@ -236,6 +236,13 @@ jobs:
           set -euo pipefail
           pnpm exec prisma generate --schema="$PRISMA_SCHEMA"
 
+      - name: Managed recovery compiler contracts (offline)
+        run: |
+          set -euo pipefail
+          python3 -B -m unittest discover \
+            -s docs/incidents/recovery-217/managed-transition \
+            -p test_compile.py -v
+
   # ── 5. SECURITY AUDIT ───────────────────────────────────────────────────────
   security:
     name: Security Audit

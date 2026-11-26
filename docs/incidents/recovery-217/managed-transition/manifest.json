@@ -1,0 +1,90 @@
+{
+  "mode": "owned-managed-clone-only",
+  "sourceMain": "e3e041ebc20cd9d98bc2877e788c98f52acc6b61",
+  "productionExecuted": false,
+  "productionTargetGuardImplemented": false,
+  "families": [
+    {
+      "name": "A",
+      "source": "A-identity.sql",
+      "sourceLfSha256": "2d45f884931da92d7e8c0f2745446993e6816506c3103a22e8435e10852fa37c",
+      "removedRoleStatements": [
+        "postgres"
+      ]
+    },
+    {
+      "name": "B",
+      "source": "B-ingest.sql",
+      "sourceLfSha256": "bcb37eb2ededc853c568786792b5f6b466c4ca03462013396d24c2fa95d9edf5",
+      "removedRoleStatements": [
+        "postgres"
+      ]
+    },
+    {
+      "name": "C",
+      "source": "C-crm.sql",
+      "sourceLfSha256": "ba2817e0b8e7cbb05c75ae6eb8c2522242ed23c65a8fd5aab4dfdb62ee48e651",
+      "removedRoleStatements": [
+        "postgres"
+      ]
+    },
+    {
+      "name": "D",
+      "source": "D-finance.sql",
+      "sourceLfSha256": "61559ea6689a7136ce0cf78f3d0ce3d211c3d7ff855c76e15054113f7ed9b182",
+      "removedRoleStatements": [
+        "postgres"
+      ]
+    },
+    {
+      "name": "E",
+      "source": "E-bi.sql",
+      "sourceLfSha256": "0bea18c2b79d5034e9b64b5019a4c13786c100d9d829cf9a270d98b81257e42a",
+      "removedRoleStatements": [
+        "postgres"
+      ]
+    },
+    {
+      "name": "F",
+      "source": "users-uuid/F-users.sql",
+      "sourceLfSha256": "87a122026b5c2661e4e576713e9de68c6375f62b059ab167c8d1235b7cb24be2",
+      "removedRoleStatements": [
+        "postgres"
+      ]
+    },
+    {
+      "name": "G",
+      "source": "identity-relations/G-identity.sql",
+      "sourceLfSha256": "d0d79622947c3375f5f4a8bf3a5673dc790c5ad4d646b0807abe0424f4bc81e9",
+      "removedRoleStatements": [
+        "postgres"
+      ]
+    },
+    {
+      "name": "H",
+      "source": "enum-storage/H-enums.sql",
+      "sourceLfSha256": "450e7e8362f1bbc06a449c1c1149d91887958e827a1708dc74bbcb5275c5b334",
+      "removedRoleStatements": [
+        "postgres"
+      ]
+    },
+    {
+      "name": "I",
+      "source": "missing-columns/I-columns.sql",
+      "sourceLfSha256": "b325d4fdc7061fea1b9abc699e612dcf7f3c2f76bb39a7a7f268e32e9f8473a0",
+      "removedRoleStatements": [
+        "postgres"
+      ]
+    },
+    {
+      "name": "J",
+      "source": "gps-postgis/J-gps.sql",
+      "sourceLfSha256": "0b77bc86691479589114143c2221c88c4cfe45aa5cdcd5bc29d6032b83896c10",
+      "removedRoleStatements": [
+        "postgres",
+        "supabase_admin",
+        "postgres"
+      ]
+    }
+  ]
+}

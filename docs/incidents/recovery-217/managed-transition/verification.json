@@ -1,0 +1,137 @@
+{
+  "status": "PASS_RESTORED_MANAGED_SEQUENCE_AND_API",
+  "sourceMain": "e3e041ebc20cd9d98bc2877e788c98f52acc6b61",
+  "productionExecuted": false,
+  "productionTargetGuardImplemented": false,
+  "productionReleaseReady": false,
+  "compilerOfflineTestsPassed": 6,
+  "synthetic": {
+    "status": "PASS_SYNTHETIC_MANAGED_SEQUENCE",
+    "startedAt": "2026-11-26T02:54:20.416176+00:00",
+    "finishedAt": "2026-11-26T03:08:09.946837+00:00",
+    "scopeRejections": 15,
+    "permissionRejectionsAtoF": 276,
+    "subproofs": ["G", "H", "I", "J"],
+    "allSubproofsCleanupVerified": true,
+    "cleanupVerified": true
+  },
+  "restored": {
+    "startedAt": "2026-11-26T03:08:18.992879+00:00",
+    "finishedAt": "2026-11-26T03:11:34.257119+00:00",
+    "strictRestoreVerified": true,
+    "originalTables": 70,
+    "addedTables": 23,
+    "totalTablesAfter": 93,
+    "committedFamilies": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+    "allFamilyExecutionsCallerPostgres": true,
+    "managedCaller": {
+      "role": "postgres",
+      "session": "postgres",
+      "superuser": false,
+      "maySetAdmin": false,
+      "readsSettings": true,
+      "loadsSupautils": true,
+      "inheritsPrivileged": true
+    },
+    "scopeRejections": 3,
+    "originalProjectedFingerprintsExact": true,
+    "rolesExact": true,
+    "unrelatedSchemaExact": true,
+    "materializedViewPreservedAndRefreshed": true,
+    "nativeModels": 52,
+    "nativeModelsPassed": 52,
+    "nativeModelsReadOnly": true,
+    "futureRowsRolledBack": true,
+    "declaredDriftCounts": {
+      "missingTableCount": 0,
+      "missingColumnCount": 0,
+      "idTypeMismatchCount": 0,
+      "scalarTypeMismatchCount": 0,
+      "relationTypeMismatchCount": 0,
+      "gpsSqlContractIssueCount": 0,
+      "enumSqlContractIssueCount": 0
+    },
+    "postgisContract": {
+      "schema": "extensions",
+      "type": "geography",
+      "required": true,
+      "shape": "Point",
+      "srid": 4326,
+      "dimensions": 2,
+      "extension": "3.3.7",
+      "extension_schema": "extensions",
+      "reference_table_owner": "supabase_admin"
+    },
+    "postgisRoutinesAudit": {
+      "functions": 744,
+      "all_verified_extension_members": true,
+      "all_definitions_and_aggregate_bindings_match_pristine_pinned_oracle": true,
+      "stock_security_definer_signatures": [
+        "st_estimatedextent(text, text)",
+        "st_estimatedextent(text, text, text)",
+        "st_estimatedextent(text, text, text, boolean)"
+      ],
+      "all_acl_equal_existing_creation_defaults": true,
+      "existing_extension_functions_exact": true
+    },
+    "sourceConnections": 0,
+    "containerNetworkInternal": true,
+    "containersRootReadOnly": true,
+    "publishedPorts": 0,
+    "hostBindMounts": 0,
+    "containerLogsDisabled": true,
+    "cleanupVerified": true,
+    "temporaryEncryptedKeyRemoved": true
+  },
+  "api": {
+    "imageId": "sha256:74e6cdd29415f64d62629e8b08517d50ee2b790d8e2b38a69f28a07bb0109423",
+    "imageNonroot": true,
+    "databaseLoginReadOnlyVerified": true,
+    "independentSyntheticTargetIdentityVerified": true,
+    "httpStatuses": {
+      "/health": 200,
+      "/health/ready": 200,
+      "/health/full": 200,
+      "/api/v1/drivers": 401,
+      "/api/v1/system-settings": 401,
+      "/api/v1/bi/kpis": 401
+    },
+    "fullDatabaseConnected": true,
+    "fullMasterSyncViewReady": true,
+    "startupDiagnostics": {
+      "targetPinned": true,
+      "schemaParityVerified": true,
+      "nodeMainStarted": true,
+      "nestListening": true,
+      "readOnlyWriteRejected": true,
+      "nodeOptionsRejected": false,
+      "invalidConfiguration": false,
+      "missingModule": false,
+      "prismaConnectionFailure": false,
+      "seedFailure": false,
+      "settingsInitializerDegraded": false,
+      "mockProviderMentioned": false
+    },
+    "rolesCatalogAndOriginalProjectionsExactAfterShutdown": true,
+    "fullBusinessWorkflowsCertified": false,
+    "optionalExternalProvidersCertified": false
+  },
+  "hashes": {
+    "compilerSha256": "af5d608e043edf2f19b1b8b6b824409d8c0346fc68c5aead5f12eb1d9c072fa4",
+    "manifestSha256": "9b96e21342e787cb1c7f2a17f61a3cb037e59b4f3998c5d06732d246f8526b0b",
+    "sequenceHarnessSha256": "b41d4d6f2d560af0931ca0a900fc747df86b098d9cf7703207bfa23de60f7df0",
+    "fullApiHarnessSha256": "c106227b63aef3480832a2519b3e90ad6e05f4ab1bb68df3fa7cc1de6d9f85c6",
+    "frozenApiHarnessSha256": "9fa3830dd7772d2b9dbb7c519686b10e12c2c980f08284ed105c9890c9aeb8cf"
+  },
+  "productionReadOnlyRefresh": {
+    "at": "2026-11-26T03:03:46.223Z",
+    "targetIndependentlyPinned": true,
+    "transactionReadOnlyVerified": true,
+    "applicationRowsRead": false,
+    "missingTables": 23,
+    "missingColumns": 39,
+    "enumIssues": 1,
+    "connectorPermissionDenied": true,
+    "existingConfiguredPrismaFallbackVerified": true
+  }
+}

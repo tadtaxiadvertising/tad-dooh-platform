@@ -27,7 +27,7 @@ The repo Dockerfile does not declare privileged build arguments, but the deploym
     node --test scripts/check-api-readiness.test.cjs
     node scripts/check-api-readiness.cjs https://tad.api.ibusiness.com.do
 
-   The script checks GET /health and GET /health/full, HTTP success, status up, DB connectivity, and the master-sync view flag. It avoids outputting response bodies, credentials and origin URLs.
+   The script checks GET /health, GET /health/ready and GET /health/full in order. Each route must return HTTP success and status up; the full response must also confirm DB connectivity and the master-sync view flag. A failing orchestrator route rejects the check even if the full route is healthy. It avoids outputting response bodies, credentials and origin URLs.
 8. **Run E2E smoke:** verify authentication, campaigns, device status, one tablet offline → local queue → reconnect → idempotent sync, and email delivery. Check migrations without schema resets, db push or destructive changes.
 9. **Close P0 only with evidence:** old keys revoked, secure image source in use, no secret values in build commands/logs, and operational checks passed; summarize without sharing credentials.
 
@@ -36,6 +36,7 @@ The repo Dockerfile does not declare privileged build arguments, but the deploym
 - MISSING_ORIGIN / INVALID_ORIGIN: supply a plain HTTPS origin, no paths, credentials or query strings.
 - NETWORK_OR_RESPONSE_FAILURE: diagnose DNS, TLS, proxy reachability or invalid JSON. A sandbox-only network failure does not prove public outage.
 - LIVENESS_FAILURE: process or routing failure.
+- ORCHESTRATOR_READINESS_FAILURE: `/health/ready` returned a degraded or malformed payload despite HTTP success.
 - READINESS_FAILURE: API, DB connection, or master-sync readiness degraded. Never auto-drop/recreate the materialized view.
 - HTTP_FAILURE: non-2xx API response.
 

@@ -28,6 +28,8 @@ async function checkApiReadiness(origin, fetcher = globalThis.fetch) {
   };
   const live = await read('/health');
   if (live?.status !== 'up') throw new Error('LIVENESS_FAILURE');
+  const orchestrator = await read('/health/ready');
+  if (orchestrator?.status !== 'up') throw new Error('ORCHESTRATOR_READINESS_FAILURE');
   const ready = await read('/health/full');
   if (ready?.status !== 'up' || ready?.db?.connected !== true || ready?.db?.masterSyncViewReady !== true) {
     throw new Error('READINESS_FAILURE');
@@ -37,9 +39,9 @@ async function checkApiReadiness(origin, fetcher = globalThis.fetch) {
 
 if (require.main === module) {
   checkApiReadiness(process.argv[2]).then(() => {
-    console.log('TAD API readiness OK: process, database, master sync view');
+    console.log('TAD API readiness OK: process, orchestrator, database, master sync view');
   }).catch((error) => {
-    const safeCodes = new Set(['MISSING_ORIGIN','INVALID_ORIGIN','NO_FETCH','HTTP_FAILURE','LIVENESS_FAILURE','READINESS_FAILURE']);
+    const safeCodes = new Set(['MISSING_ORIGIN','INVALID_ORIGIN','NO_FETCH','HTTP_FAILURE','LIVENESS_FAILURE','ORCHESTRATOR_READINESS_FAILURE','READINESS_FAILURE']);
     const code = safeCodes.has(error?.message) ? error.message : 'NETWORK_OR_RESPONSE_FAILURE';
     console.error('TAD API readiness FAILED: ' + code);
     process.exitCode = 1;

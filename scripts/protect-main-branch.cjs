@@ -5,6 +5,7 @@
 // --apply and TAD_APPROVE_MAIN_PROTECTION=YES are both supplied.
 // Requires an authenticated GitHub CLI account with repository admin rights.
 // This is not an API/database migration, deployment or merge automation.
+// --verify audits existing settings through GET requests only.
 
 const { spawnSync } = require("node:child_process");
 
@@ -55,11 +56,16 @@ function ghApi(method, route, payload) {
   }
 }
 
-function assertUnprotected(branch, rules) {
+function branchSha(branch) {
   if (branch?.name !== "main" ||
       !/^[a-f0-9]{40}$/.test(branch?.commit?.sha || "")) {
     throw new Error("UNEXPECTED_MAIN_BRANCH_IDENTITY");
   }
+  return branch.commit.sha;
+}
+
+function assertUnprotected(branch, rules) {
+  const sha = branchSha(branch);
   if (branch.protected !== false) {
     throw new Error("BRANCH_ALREADY_PROTECTED_REVIEW_EXISTING_RULES");
   }
@@ -67,7 +73,7 @@ function assertUnprotected(branch, rules) {
   if (!Array.isArray(rules) || rules.length !== 0) {
     throw new Error("EXISTING_RULESETS_REQUIRE_ADMIN_REVIEW");
   }
-  return branch.commit.sha;
+  return sha;
 }
 
 function assertExecutedSummary(checks) {
@@ -84,31 +90,53 @@ function assertExecutedSummary(checks) {
   }
 }
 
-function assertInstalled(config) {
+function installedProtectionIssues(config) {
   const checks = config?.required_status_checks;
   const approvals = config?.required_pull_request_reviews;
-  if (checks?.strict !== true ||
-      !Array.isArray(checks.checks) ||
-      !checks.checks.some(c => c.context === CHECK_NAME && c.app_id === GITHUB_ACTIONS_APP_ID) ||
-      config?.enforce_admins?.enabled !== true ||
-      !Number.isInteger(approvals?.required_approving_review_count) ||
-      approvals.required_approving_review_count < 1 ||
-      approvals?.dismiss_stale_reviews !== true ||
-      approvals?.require_last_push_approval !== true ||
-      config?.required_conversation_resolution?.enabled !== true ||
-      config?.allow_force_pushes?.enabled !== false ||
-      config?.allow_deletions?.enabled !== false) {
+  const rules = [
+    [checks?.strict === true, "STRICT_STATUS_CHECKS"],
+    [Array.isArray(checks?.checks) && checks.checks.some(c =>
+      c?.context === CHECK_NAME && c?.app_id === GITHUB_ACTIONS_APP_ID), "APP_PINNED_SUMMARY"],
+    [config?.enforce_admins?.enabled === true, "ADMIN_ENFORCEMENT"],
+    [Number.isInteger(approvals?.required_approving_review_count) &&
+      approvals.required_approving_review_count >= 1, "REQUIRED_PR_REVIEWS"],
+    [approvals?.dismiss_stale_reviews === true, "STALE_REVIEW_DISMISSAL"],
+    [approvals?.require_last_push_approval === true, "LAST_PUSH_APPROVAL"],
+    [config?.required_conversation_resolution?.enabled === true, "CONVERSATION_RESOLUTION"],
+    [config?.allow_force_pushes?.enabled === false, "FORCE_PUSHES_DISABLED"],
+    [config?.allow_deletions?.enabled === false, "DELETIONS_DISABLED"],
+  ];
+  return rules.filter(([passed]) => !passed).map(([, name]) => name);
+}
+
+function assertInstalled(config) {
+  if (installedProtectionIssues(config).length > 0) {
     throw new Error("POST_WRITE_PROTECTION_INCOMPLETE_MANUAL_REVIEW_REQUIRED");
   }
 }
 
 function run({ mode = "--plan", env = process.env, api = ghApi, log = console.log } = {}) {
-  if (!["--plan", "--apply"].includes(mode)) throw new Error("UNKNOWN_MODE");
+  if (!["--plan", "--apply", "--verify"].includes(mode)) throw new Error("UNKNOWN_MODE");
   if (mode === "--apply" && env.TAD_APPROVE_MAIN_PROTECTION !== "YES") {
     throw new Error("EXPLICIT_ADMIN_APPROVAL_REQUIRED");
   }
 
   const branch = api("GET", BASE + "/branches/main");
+  if (mode === "--verify") {
+    const sha = branchSha(branch);
+    if (branch.protected !== true) throw new Error("MAIN_NOT_PROTECTED");
+    const issues = installedProtectionIssues(api("GET", BASE + "/branches/main/protection"));
+    if (issues.length > 0) {
+      throw new Error("EXISTING_PROTECTION_INCOMPLETE:" + issues.join(","));
+    }
+    assertExecutedSummary(api("GET", BASE + "/commits/" + sha + "/check-runs?per_page=100"));
+    const fresh = api("GET", BASE + "/branches/main");
+    if (branchSha(fresh) !== sha || fresh.protected !== true) {
+      throw new Error("MAIN_MOVED_DURING_VERIFICATION");
+    }
+    log("TAD_MAIN_PROTECTION_READ_ONLY_VERIFIED: required settings and same-SHA Summary green; no settings changed");
+    return { verified: true, sha };
+  }
   const rules = api("GET", BASE + "/rulesets");
   const sha = assertUnprotected(branch, rules);
   assertExecutedSummary(api("GET", BASE + "/commits/" + sha + "/check-runs?per_page=100"));

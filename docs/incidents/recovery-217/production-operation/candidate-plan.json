@@ -1,0 +1,9 @@
+{
+  "format": "target-bound-atomic-217-v1",
+  "targetRef": "ltdcdhqixvbpdcitthqf",
+  "database": "postgres",
+  "catalogSha256": "6cd921c5f633079b8821cd7fcda868d54257016a0ce61c0a8b8595e3aedca102",
+  "backupEvidenceSha256": "c82605384092a6cfff7735b14275c9835b692f68539f82c1349e1cb2d4448945",
+  "sourceMain": "a2b53d3281f9253d847eb8ac01f0841402d65fbd",
+  "connectionKind": "session-pooler"
+}

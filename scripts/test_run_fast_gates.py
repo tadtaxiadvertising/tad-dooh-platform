@@ -33,7 +33,14 @@ class FastGateTests(unittest.TestCase):
         for tool in self.tools:
             tool.parent.mkdir(parents=True, exist_ok=True)
             tool.write_text("fixture only", encoding="utf-8")
-        (self.root / "apps/driver").mkdir(parents=True)
+        (self.root / "apps/api/src").mkdir(parents=True)
+        for directory in ("components", "contexts", "hooks", "lib", "pages", "store",
+                          "styles", "tests", "types", "utils", "public", "docs"):
+            (self.root / "apps/driver" / directory).mkdir(parents=True)
+        for workspace in ("api", "driver"):
+            (self.root / f"apps/{workspace}/eslint.config.mjs").write_text(
+                "export default [];", encoding="utf-8",
+            )
 
     def load_gate(self):
         spec = importlib.util.spec_from_file_location("fast_gate_fixture", self.script)
@@ -64,10 +71,16 @@ class FastGateTests(unittest.TestCase):
 
         def succeed(command, **options):
             calls.append((command, options))
+            if command[1].endswith("eslint.js"):
+                cwd = Path(options["cwd"])
+                for target in command[2:command.index("--config")]:
+                    if not (cwd / target).exists():
+                        return subprocess.CompletedProcess(command, 2, "", f"Missing lint target: {target}")
+                self.assertTrue((cwd / "eslint.config.mjs").is_file())
             return subprocess.CompletedProcess(command, 0, "fixture check passed", "")
 
         code, output = self.run_main(gate, succeed)
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 0, output)
         self.assertIn("ALL FAST GATES PASS", output)
         self.assertEqual(len(calls), 3)
         self.assertEqual([Path(options["cwd"]) for _, options in calls], [
@@ -121,12 +134,17 @@ class FastGateTests(unittest.TestCase):
         # runner is replaced before loading the script, so Node cannot execute.
         wrapper = """
 import runpy, subprocess, sys
+from pathlib import Path
 mode = sys.argv[2]
 def fixture(command, **options):
     if mode == 'missing':
         raise FileNotFoundError('fixture node unavailable')
     if mode == 'timeout':
         raise subprocess.TimeoutExpired(command, options['timeout'])
+    if command[1].endswith('eslint.js'):
+        for target in command[2:command.index('--config')]:
+            if not (Path(options['cwd']) / target).exists():
+                return subprocess.CompletedProcess(command, 2, '', 'Missing lint target: ' + target)
     return subprocess.CompletedProcess(command, 7 if mode == 'failure' else 0, '', '')
 subprocess.run = fixture
 runpy.run_path(sys.argv[1], run_name='__main__')

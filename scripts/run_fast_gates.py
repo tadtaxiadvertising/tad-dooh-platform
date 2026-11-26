@@ -76,7 +76,7 @@ def main():
          ["node", str(api_eslint), "src", *lint_args],
          BASE / "apps/api", 180, lint_env),
         ("eslint_driver", "eslint-driver.txt", driver_eslint,
-         ["node", str(driver_eslint), "src", "pages", "components", *lint_args],
+         ["node", str(driver_eslint), ".", *lint_args],
          BASE / "apps/driver", 180, lint_env),
     ]
     results = {}

@@ -142,6 +142,9 @@ jobs:
           set -euo pipefail
           pnpm --filter api test --runInBand
 
+      - name: Fast verification runner regressions (offline fixtures)
+        run: python3 -B -m unittest discover -s scripts -p test_run_fast_gates.py -v
+
       - name: Driver offline queue retry safety (Node 22)
         run: |
           set -euo pipefail

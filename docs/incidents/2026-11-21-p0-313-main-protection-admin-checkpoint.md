@@ -1,5 +1,7 @@
 # P0 #313 — Main protection: authorized admin checkpoint
 
+**Actualización 26-nov-2026:** `main` ya está protegido y exige Summary estricto también a administradores, pero la configuración completa devuelve `required_pull_request_reviews=null`. Véase la [auditoría actual y modo de verificación de solo lectura](2026-11-26-313-release-control-audit.md). Las instrucciones siguientes describen la instalación histórica sobre una rama sin protección; no se deben usar para sobrescribir la protección actual.
+
 **Status: procedure prepared, not applied.** The connected GitHub integration cannot write branch protection; its read endpoint returned 403. An authorized GitHub administrator must run the following with GitHub CLI. Never paste tokens in chats or issues.
 
 ## Verified evidence (2026-11-21)

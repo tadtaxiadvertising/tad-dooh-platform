@@ -1,6 +1,8 @@
 import type { LedgerRecord } from "@/types/admin-api";
 import { getErrorMessage } from "@/lib/error-message";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { parseFinancialSummary, formatFinancialMetric } from "@/lib/finance-summary";
+import type { FinancialSummary } from "@/lib/finance-summary";
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
 import {
@@ -76,13 +78,11 @@ export default function FinancePage() {
     }[]
   >([]);
   const [ledger, setLedger] = useState<LedgerRecord[]>([]);
-  const [summary, setSummary] = useState<{
-    mrr?: number;
-    activeSubscribers?: number;
-    campaignRevenue?: number;
-    burnRate?: number;
-    netProjection?: number;
-  } | null>(null);
+  const [summary, setSummary] = useState<FinancialSummary | null>(null);
+  const [summaryStatus, setSummaryStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const summaryRequest = useRef(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,6 +107,9 @@ export default function FinancePage() {
   });
 
   const loadData = useCallback(async () => {
+    const request = ++summaryRequest.current;
+    setSummary(null);
+    setSummaryStatus("loading");
     setLoading(true);
     setError(null);
     try {
@@ -121,10 +124,13 @@ export default function FinancePage() {
       ]);
 
       // Procesar resumen (Crítico para cards)
-      if (results[0].status === "fulfilled") {
-        setSummary(results[0].value);
-      } else {
-        console.warn("Resumen financiero no disponible:", results[0].reason);
+      if (request === summaryRequest.current) {
+        const parsed =
+          results[0].status === "fulfilled"
+            ? parseFinancialSummary(results[0].value)
+            : null;
+        setSummary(parsed);
+        setSummaryStatus(parsed ? "ready" : "error");
       }
 
       // Procesar datos de pestaña
@@ -142,6 +148,10 @@ export default function FinancePage() {
       }
     } catch (err) {
       console.error("Finance load fatal error:", err);
+      if (request === summaryRequest.current) {
+        setSummary(null);
+        setSummaryStatus("error");
+      }
       setError("COLAPSO TOTAL DE ENLACE FISCAL.");
     } finally {
       setLoading(false);
@@ -178,6 +188,11 @@ export default function FinancePage() {
   useEffect(() => {
     loadData();
   }, [activeTab, loadData]);
+
+  const metric = (value: number | undefined, currency = true) =>
+    summaryStatus === "loading"
+      ? "Cargando…"
+      : formatFinancialMetric(value, currency);
 
   return (
     <div className="min-h-screen pb-20 animate-in fade-in duration-1000 relative selection:bg-tad-yellow selection:text-black font-sans">
@@ -275,34 +290,44 @@ export default function FinancePage() {
       )}
 
       {/* Global Summary Cards */}
+      {summaryStatus !== "ready" && (
+        <p
+          role={summaryStatus === "error" ? "alert" : "status"}
+          className="mb-4 text-sm text-gray-300"
+        >
+          {summaryStatus === "loading"
+            ? "Cargando resumen financiero…"
+            : "Resumen financiero no disponible. Los importes no se pueden verificar."}
+        </p>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         <SummaryCard
           icon={<DollarSign className="w-6 h-6" />}
           label="MRR Proyectado"
-          value={`RD$ ${summary?.mrr?.toLocaleString() || "0"}`}
-          sub={`${summary?.activeSubscribers || 0} Suscriptores`}
+          value={metric(summary?.mrr)}
+          sub={`${metric(summary?.activeSubscribers, false)} · Suscriptores`}
           color="yellow"
           large
         />
         <SummaryCard
           icon={<TrendingUp className="w-6 h-6" />}
           label="Ingresos (Impactos)"
-          value={`RD$ ${summary?.campaignRevenue?.toLocaleString() || "0"}`}
+          value={metric(summary?.campaignRevenue)}
           sub="Facturación Publicitaria"
           color="emerald"
         />
         <SummaryCard
           icon={<Activity className="w-6 h-6" />}
           label="Burn Rate"
-          value={`RD$ ${summary?.burnRate?.toLocaleString() || "0"}`}
+          value={metric(summary?.burnRate)}
           sub="Egresos Mensuales"
           color="white"
         />
         <SummaryCard
           icon={<Target className="w-6 h-6" />}
           label="Neto Estimado"
-          value={`RD$ ${summary?.netProjection?.toLocaleString() || "0"}`}
-          sub="EBITDA Proyectado"
+          value={metric(summary?.netProjection)}
+          sub="Proyección de ingresos menos egresos"
           color="white"
         />
       </div>
@@ -902,29 +927,14 @@ export default function FinancePage() {
                 Análisis de Liquidez
               </h4>
             </div>
-            <div className="space-y-4">
-              <div className="h-2 w-full bg-gray-900 rounded-full overflow-hidden border border-gray-700/50">
-                <div
-                  ref={(el) => {
-                    if (el) {
-                      const pct = Math.min(
-                        100,
-                        summary?.netProjection > 0 ? 85 : 15,
-                      );
-                      el.style.width = `${pct}%`;
-                    }
-                  }}
-                  className="h-full bg-emerald-500 transition-all duration-1000"
-                />
-              </div>
-              <div className="flex justify-between items-center">
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                  Ratio Operativo
-                </p>
-                <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
-                  SALUDABLE
-                </p>
-              </div>
+            <div className="space-y-2">
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                Ratio Operativo
+              </p>
+              <p className="text-sm text-gray-300">
+                No disponible: el resumen no incluye un ratio ni un diagnóstico
+                de liquidez verificado.
+              </p>
             </div>
           </div>
         </div>

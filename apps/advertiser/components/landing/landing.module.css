@@ -795,3 +795,7 @@
 .landing :global(.landing-budget-next .landing-button) { justify-content: center; width: 100%; min-height: 52px; font-size: 14px; text-align: center; }
 .landing :global(.landing-budget-next .landing-button:focus-visible) { outline: 3px solid #171717; outline-offset: 3px; }
 .landing :global(.landing-budget-next p) { margin: 0; color: #4b4b45; font-size: 13px; line-height: 1.5; }
+
+/* Keep the referral announcement mounted for assistive technology. */
+.landing :global(.landing-referral-status) { margin: 0; color: #4b4b45; font-size: 13px; line-height: 1.5; }
+.landing :global(.landing-referral-status:not(:empty)) { margin-top: 16px; padding: 12px 14px; border: 1px solid #c9b765; border-radius: 8px; background: #fff7d6; }

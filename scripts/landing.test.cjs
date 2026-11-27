@@ -653,6 +653,29 @@ test('landing invalidates stale referral only on an explicitly malformed link', 
   }
 });
 
+test('referral receipt explains pending server validation without changing the budget or exposing the code', () => {
+  for (const signupEnabled of [false, true]) {
+    for (const [search, received] of [['', false], ['?ref=DRIVER_FIXTURE', true], ['?ref=one&ref=two', false]]) {
+      const harness = landingComponentHarness({ signupEnabled });
+      harness.window.location.search = search;
+      harness.render();
+      harness.render();
+      const status = harness.control('campaign-referral-status');
+      assert.equal(status.role, 'status');
+      if (received) {
+        assert.match(status.children, /40 %/);
+        assert.match(status.children, /validación del servidor/);
+        assert.match(status.children, /Este subtotal no incluye el descuento/);
+        assert.doesNotMatch(status.children, /DRIVER_FIXTURE/);
+      } else {
+        assert.equal(status.children, '');
+      }
+      assert.equal(Number(harness.control('budget-total').children.replace(/\D/g, '')), 15000);
+      assert.equal(harness.events.length, 0);
+    }
+  }
+});
+
 test('landing uses one impact projection per render and retains illustrative totals', () => {
   const harness = landingComponentHarness();
   harness.render();

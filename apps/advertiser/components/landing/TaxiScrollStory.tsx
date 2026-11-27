@@ -8,6 +8,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { CITIES, type DemoCity } from "../../lib/landing/model";
+import StoryChapterArt from "./StoryChapterArt";
 import styles from "./taxi-scroll-story.module.css";
 
 type Props = {
@@ -290,12 +291,15 @@ export default function TaxiScrollStory({ city, brandName }: Props) {
             <span>
               {chapter.number} · {chapter.eyebrow}
             </span>
-            <div className={styles.staticPicture} aria-hidden="true">
-              {index === 0
-                ? "TAD · TAXI"
-                : index === 1
-                  ? displayBrand
-                  : "TAD · ACTIVIDAD"}
+            <div className={styles.staticPicture} data-static-art={index}>
+              <StoryChapterArt chapter={index} />
+              <span>
+                {index === 0
+                  ? "TAD · PUBLICIDAD EN MOVIMIENTO"
+                  : index === 1
+                    ? displayBrand
+                    : "TAD · ACTIVIDAD ILUSTRATIVA"}
+              </span>
             </div>
             <h3>{chapter.title}</h3>
             <p>{chapter.description}</p>

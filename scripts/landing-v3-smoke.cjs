@@ -880,6 +880,37 @@ async function main() {
       await slow.close();
     });
 
+    await check('Referral receipt is conditional and does not discount the public budget', async () => {
+      const referralContext = await browser.newContext({ viewport: { width: 390, height: 844 },
+        reducedMotion: 'reduce', serviceWorkers: 'block' });
+      const referralEvidence = evidenceCollector();
+      await guardContext(referralContext, base, referralEvidence);
+      const referralPage = await referralContext.newPage();
+      recordErrors(referralPage, referralEvidence);
+      try {
+        for (const [search, received] of [['?ref=DRIVER_FIXTURE', true], ['?ref=one&ref=two', false], ['', false]]) {
+          const url = new URL(base.href);
+          url.search = search;
+          const response = await referralPage.goto(url.href, { waitUntil: 'networkidle' });
+          assert.equal(response.status(), 200);
+          const status = referralPage.locator('#campaign-referral-status');
+          const text = await status.innerText();
+          if (received) {
+            assert.match(text, /40 %.*validación del servidor/);
+            assert.match(text, /Este subtotal no incluye el descuento/);
+            assert.doesNotMatch(text, /DRIVER_FIXTURE/);
+          } else {
+            assert.equal(text.trim(), '');
+          }
+          assert.equal(amount(await referralPage.locator('#budget-total').innerText()), 15000);
+          const href = await referralPage.locator('#campaign-next').getAttribute('href');
+          assert.equal(new URL(href, base).searchParams.get('ref'), received ? 'DRIVER_FIXTURE' : null);
+          await assertNoHorizontalOverflow(referralPage, 'Referral receipt at 390px');
+        }
+        await assertNoSideEffects(referralContext, referralEvidence);
+      } finally { await referralContext.close(); }
+    });
+
     await check('No private, remote or service worker side effects occurred', async () => {
       await assertNoSideEffects(context, evidence);
     });

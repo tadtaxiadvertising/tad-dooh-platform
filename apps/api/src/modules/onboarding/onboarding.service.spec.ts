@@ -416,7 +416,6 @@ describe("OnboardingService verified driver referral pricing", () => {
   });
 });
 
-
 describe("Public advertiser single-use attempt reservation", () => {
   const attempt = "12345678-1234-4234-8234-123456789abc";
   const request = {

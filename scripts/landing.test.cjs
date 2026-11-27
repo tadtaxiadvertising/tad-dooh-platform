@@ -891,6 +891,7 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
   let tree;
   const requests = [];
   const pending = [];
+  const navigations = [];
   const quoteRequests = [];
   const quotePending = [];
   const quoteTimers = new Map();
@@ -939,13 +940,13 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
       assert.equal(url, '/api/proxy/onboarding/advertiser');
       assert.equal(options.method, 'POST');
       requests.push(JSON.parse(options.body));
-      return new Promise(resolve => pending.push(resolve));
+      return new Promise((resolve, reject) => pending.push({ resolve, reject }));
     },
     imports: {
       react,
       'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
       'next/head': { default: 'Head' },
-      'next/router': { useRouter: () => ({ push() {} }) },
+      'next/router': { useRouter: () => ({ push(destination) { navigations.push(destination); } }) },
       clsx: {},
       '@/components/onboarding/OnboardingWizard': { OnboardingWizard: 'Wizard' },
       '@/components/onboarding/BenefitsStep': { default: 'Benefits' },
@@ -964,6 +965,7 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
   }
   return {
     requests,
+    navigations,
     quoteRequests,
     expectedOffer(overrides = {}) {
       return impact.calculateAdvertiserOffer({
@@ -982,9 +984,13 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
     },
     respond(ok, payload = ok ? { quote: impact.calculateAdvertiserOffer({
       screens: 12, months: 4, includeProduction: false, verifiedDriverCode: Boolean(referral),
-    }) } : { message: 'Fixture rejected' }) {
+    }) } : { message: 'Fixture rejected' }, status = ok ? 201 : 400) {
       assert.ok(pending.length);
-      pending.shift()({ ok, json: async () => payload });
+      pending.shift().resolve({ ok, status, json: async () => payload });
+    },
+    loseResponse() {
+      assert.ok(pending.length);
+      pending.shift().reject(new Error('Fixture connection lost'));
     },
     render() {
       cursor = 0;
@@ -1156,4 +1162,48 @@ test('successful onboarding never substitutes an estimate for an incomplete or i
     await submit();
     assert.equal(harness.requests.length, 1, label);
   }
+});
+
+
+test('ambiguous registration results retain the lock and offer account recovery, never success or resend', async () => {
+  for (const status of [null, 408, 409, 500, 502, 503, 504]) {
+    const harness = readyOnboarding();
+    const submit = harness.props('Commitment').onSubmit;
+    const first = submit();
+    if (status === null) harness.loseResponse();
+    else harness.respond(false, { message: 'Fixture upstream error' }, status);
+    await first;
+    harness.render();
+    assert.equal(harness.props('Wizard').step, 3, String(status));
+    assert.equal(harness.props('Wizard').navigationLocked, true);
+    assert.equal(harness.props('section')['aria-labelledby'], 'uncertain-registration-title');
+    assert.match(harness.props('h1').children, /No pudimos confirmar el resultado/);
+    assert.equal(harness.props('button').children, 'Ir a iniciar sesión');
+    assert.throws(() => harness.props('Commitment'), /Missing onboarding component/);
+    assert.throws(() => harness.props('Success'), /Missing onboarding component/);
+    await submit();
+    harness.props('Wizard').onPrev();
+    harness.props('Wizard').onNext();
+    harness.render();
+    assert.equal(harness.props('Wizard').step, 3);
+    assert.equal(harness.requests.length, 1);
+    harness.props('button').onClick();
+    assert.deepEqual(harness.navigations, ['/advertiser/login']);
+  }
+});
+
+test('explicit throttling keeps registration retryable with clear guidance', async () => {
+  const harness = readyOnboarding();
+  const first = harness.props('Commitment').onSubmit();
+  harness.respond(false, { message: 'Fixture throttled' }, 429);
+  await first;
+  harness.render();
+  assert.equal(harness.props('Wizard').navigationLocked, false);
+  assert.match(harness.props('Commitment').error, /Espera antes de intentarlo/);
+  const retry = harness.props('Commitment').onSubmit();
+  assert.equal(harness.requests.length, 2);
+  harness.respond(true);
+  await retry;
+  harness.render();
+  assert.equal(harness.props('Wizard').step, 4);
 });

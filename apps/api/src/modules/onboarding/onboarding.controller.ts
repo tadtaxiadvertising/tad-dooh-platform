@@ -3,6 +3,7 @@ import {
   Controller,
   Post,
   Body,
+  Headers,
   ForbiddenException,
   UseGuards,
   Req,
@@ -36,8 +37,11 @@ export class OnboardingController {
   @Public()
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post("advertiser")
-  async onboard(@Body() data: OnboardAdvertiserDto) {
-    return this.onboardingService.onboardAdvertiser(data);
+  async onboard(
+    @Body() data: OnboardAdvertiserDto,
+    @Headers("idempotency-key") attemptKey?: string,
+  ) {
+    return this.onboardingService.onboardAdvertiser(data, attemptKey);
   }
 
   /**

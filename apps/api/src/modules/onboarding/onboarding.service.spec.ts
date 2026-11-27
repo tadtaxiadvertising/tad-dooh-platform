@@ -467,6 +467,7 @@ describe("Public advertiser single-use attempt reservation", () => {
     };
     return {
       service: new OnboardingService(prisma as never, supabase as never),
+      otherService: new OnboardingService(prisma as never, supabase as never),
       prisma,
       create,
       update,
@@ -480,7 +481,7 @@ describe("Public advertiser single-use attempt reservation", () => {
     const ctx = fixture();
     const results = await Promise.allSettled([
       ctx.service.onboardAdvertiser(request, attempt),
-      ctx.service.onboardAdvertiser(
+      ctx.otherService.onboardAdvertiser(
         { ...request, password: "different-fixture-password" },
         attempt.toUpperCase(),
       ),

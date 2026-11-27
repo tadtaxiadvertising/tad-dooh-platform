@@ -3,16 +3,23 @@
 import { useState } from "react";
 import {
   ArrowRight,
+  CalendarDays,
   CheckCircle2,
+  Hotel,
+  House,
   QrCode,
   ScanLine,
+  ShoppingBag,
   Smartphone,
+  Utensils,
+  Wrench,
 } from "lucide-react";
 import styles from "./passenger-qr-story.module.css";
 
 const examples = {
   restaurante: {
     label: "Restaurante",
+    icon: Utensils,
     business: "TU RESTAURANTE",
     tablet: "Tu próxima parada tiene mucho sabor.",
     action: "VER EL MENÚ",
@@ -21,6 +28,7 @@ const examples = {
   },
   comercio: {
     label: "Comercio",
+    icon: ShoppingBag,
     business: "TU TIENDA",
     tablet: "Descubre algo especial cerca de ti.",
     action: "VER PRODUCTOS",
@@ -29,11 +37,39 @@ const examples = {
   },
   evento: {
     label: "Evento",
+    icon: CalendarDays,
     business: "TU EVENTO",
     tablet: "Tu próximo plan empieza aquí.",
     action: "CONOCER EL EVENTO",
     mobile: "Un plan para recordar",
     mobileCopy: "Conoce la programación y los detalles del evento.",
+  },
+  inmobiliaria: {
+    label: "Inmobiliaria",
+    icon: House,
+    business: "TU INMOBILIARIA",
+    tablet: "Imagina tu próximo hogar.",
+    action: "VER PROPIEDADES",
+    mobile: "Explora propiedades",
+    mobileCopy: "Descubre opciones y detalles de cada espacio.",
+  },
+  hotel: {
+    label: "Hotel",
+    icon: Hotel,
+    business: "TU HOTEL",
+    tablet: "Tu próxima escapada comienza aquí.",
+    action: "VER EXPERIENCIAS",
+    mobile: "Descubre tu estancia",
+    mobileCopy: "Explora habitaciones y experiencias del hotel.",
+  },
+  servicios: {
+    label: "Servicios",
+    icon: Wrench,
+    business: "TU NEGOCIO",
+    tablet: "Soluciones cerca de ti.",
+    action: "VER SERVICIOS",
+    mobile: "Conoce nuestros servicios",
+    mobileCopy: "Explora las opciones y cómo solicitar información.",
   },
 } as const;
 
@@ -62,6 +98,7 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
   const [selected, setSelected] = useState<Example>("restaurante");
   const [scanned, setScanned] = useState(false);
   const example = examples[selected];
+  const SectorIcon = example.icon;
   // The brand preview remains browser-local; it is never sent to analytics or the API.
   const displayBrand =
     brandName.trim().replace(/\s+/g, " ").slice(0, 24) || example.business;
@@ -142,9 +179,12 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
           <div className={styles.sceneLabel}>01 / PANTALLA EN EL TAXI</div>
           <div className={styles.headrest} aria-hidden="true" />
           <div className={styles.tablet}>
-            <div className={styles.ad}>
+            <div className={styles.ad} data-qr-creative>
               <small>TAD · CREATIVIDAD DE EJEMPLO</small>
-              <span className={styles.brand}>{displayBrand}</span>
+              <div className={styles.adIdentity}>
+                <span className={styles.brand}>{displayBrand}</span>
+                <SectorIcon size={23} aria-hidden="true" />
+              </div>
               <strong>{example.tablet}</strong>
               <div className={styles.offerRow}>
                 <span>{example.action}</span>
@@ -190,7 +230,11 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
             <div className={styles.destination} id="qr-demo-destination">
               <small>{displayBrand} · DEMO</small>
               <span className={styles.offerIcon}>
-                <Smartphone size={26} aria-hidden="true" />
+                {scanned ? (
+                  <SectorIcon size={26} aria-hidden="true" />
+                ) : (
+                  <Smartphone size={26} aria-hidden="true" />
+                )}
               </span>
               <strong>
                 {scanned ? example.mobile : "Tu oferta, a un escaneo"}

@@ -52,6 +52,19 @@ const RANGE_KEYS = [
   "PageUp",
   "PageDown",
 ];
+type CtaDestination =
+  | "advertiser_login"
+  | "advertiser_signup"
+  | "advertiser_lab"
+  | "campaign_story";
+
+type CtaPlacement =
+  | "header"
+  | "hero"
+  | "simulator_intro"
+  | "simulator_result"
+  | "final";
+
 const content = ROLE_CONTENT.advertiser;
 const money = formatRD;
 
@@ -116,19 +129,7 @@ export default function LandingPage() {
   const finalEvent = links.signupEnabled
     ? "advertiser_signup"
     : "advertiser_login";
-  const cta = (
-    destination:
-      | "advertiser_login"
-      | "advertiser_signup"
-      | "advertiser_lab"
-      | "campaign_story",
-    placement:
-      | "header"
-      | "hero"
-      | "simulator_intro"
-      | "simulator_result"
-      | "final",
-  ) =>
+  const cta = (destination: CtaDestination, placement: CtaPlacement) =>
     trackAnalyticsEvent("cta_clicked", {
       role: "advertiser",
       destination,

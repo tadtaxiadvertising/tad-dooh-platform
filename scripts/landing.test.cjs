@@ -880,3 +880,150 @@ test('advertiser brand editor is local-only and never alters the budget or analy
   ], 'Normal preview telemetry must not contain the typed brand.');
   assert.equal(harness.control('hero-brand-name').value, 'Café TAD');
 });
+
+
+// Exercise the real onboarding page with synthetic hooks and an explicitly
+// controlled transport. No actual account, campaign or quote request is sent.
+function onboardingSubmissionHarness() {
+  const hooks = [];
+  let cursor = 0;
+  let effects = [];
+  let tree;
+  const requests = [];
+  const pending = [];
+  const react = {
+    useState(initial) {
+      const i = cursor++;
+      if (!(i in hooks)) hooks[i] = initial;
+      return [hooks[i], value => { hooks[i] = typeof value === 'function' ? value(hooks[i]) : value; }];
+    },
+    useRef(initial) {
+      const i = cursor++;
+      if (!(i in hooks)) hooks[i] = { current: initial };
+      return hooks[i];
+    },
+    useEffect(effect, deps) {
+      const i = cursor++;
+      if (!hooks[i] || deps.some((value, j) => !Object.is(value, hooks[i][j]))) effects.push(effect);
+      hooks[i] = deps;
+    },
+  };
+  const jsx = (type, props) => ({ type, props });
+  const sources = loadTs('packages/impact-calculator/sources.ts');
+  const impact = loadTs('packages/impact-calculator/index.ts', { imports: { './sources': sources } });
+  const pricing = loadTs('apps/advertiser/components/advertiser/simulatorPricing.ts', { imports: { '@tad/impact-calculator': impact } });
+  const Page = loadTs('apps/advertiser/pages/advertiser/onboarding.tsx', {
+    window: { location: { search: '?screens=12&months=4&city=stgo&includeProduction=true&budget=1' } },
+    fetch: (url, options) => {
+      assert.equal(url, '/api/proxy/onboarding/advertiser');
+      assert.equal(options.method, 'POST');
+      requests.push(JSON.parse(options.body));
+      return new Promise(resolve => pending.push(resolve));
+    },
+    imports: {
+      react,
+      'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
+      'next/head': { default: 'Head' },
+      'next/router': { useRouter: () => ({ push() {} }) },
+      clsx: {},
+      '@/components/onboarding/OnboardingWizard': { OnboardingWizard: 'Wizard' },
+      '@/components/onboarding/BenefitsStep': { default: 'Benefits' },
+      '@/components/onboarding/SimulatorStep': { default: 'Simulator' },
+      '@/components/onboarding/CommitmentStep': { default: 'Commitment' },
+      '@/components/onboarding/SuccessStep': { default: 'Success' },
+      '../../components/advertiser/simulatorPricing': pricing,
+      '../../lib/landing/model': model,
+      '../../components/advertiser/referral': { captureReferralCode: () => null, clearReferralCode() {} },
+    },
+  }).default;
+  function find(node, type) {
+    if (Array.isArray(node)) return node.map(child => find(child, type)).find(Boolean);
+    if (!node || typeof node !== 'object') return undefined;
+    return node.type === type ? node.props : find(node.props?.children, type);
+  }
+  return {
+    requests,
+    respond(ok) {
+      assert.ok(pending.length);
+      pending.shift()({ ok, json: async () => ok ? { quote: { subtotal: 120000 } } : { message: 'Fixture rejected' } });
+    },
+    render() {
+      cursor = 0;
+      tree = Page();
+      const committed = effects;
+      effects = [];
+      committed.forEach(effect => effect());
+    },
+    props(type) {
+      const props = find(tree, type);
+      assert.ok(props, 'Missing onboarding component: ' + type);
+      return props;
+    },
+  };
+}
+
+function readyOnboarding() {
+  const harness = onboardingSubmissionHarness();
+  harness.render();
+  harness.render();
+  harness.props('Benefits').onNext();
+  harness.render();
+  const simulator = harness.props('Simulator');
+  assert.equal(simulator.config.screens, 12);
+  assert.equal(simulator.config.months, 4);
+  assert.equal(simulator.city, 'stgo');
+  assert.equal(simulator.config.includeProduction, false);
+  simulator.onNext();
+  harness.render();
+  const form = harness.props('Commitment');
+  assert.equal(form.campaignSummary.budget, 120000);
+  form.onFormChange({ rnc: 'fixture-rnc', repName: 'Fixture', companyName: 'Fixture company', email: 'fixture@example.invalid', phone: 'fixture-phone', password: 'fixture-password' });
+  form.onAgreementsChange({ representative: true, terms: true, content_policy: true, data_processing: true });
+  harness.render();
+  return harness;
+}
+
+test('onboarding prevents concurrent and post-success submissions and preserves campaign handoff', async () => {
+  const harness = readyOnboarding();
+  const submit = harness.props('Commitment').onSubmit;
+  const first = submit();
+  await submit();
+  assert.equal(harness.requests.length, 1);
+  assert.equal(harness.requests[0].targetCity, 'Santiago');
+  assert.equal(harness.requests[0].expectedScreens, 12);
+  assert.equal(harness.requests[0].campaignMonths, 4);
+  assert.equal(harness.requests[0].includeProduction, false);
+  assert.equal(harness.requests[0].budget, 120000);
+  harness.render();
+  assert.equal(harness.props('Wizard').navigationLocked, true);
+  harness.props('Wizard').onPrev();
+  harness.render();
+  assert.equal(harness.props('Wizard').step, 3);
+  harness.respond(true);
+  await first;
+  harness.render();
+  assert.equal(harness.props('Wizard').step, 4);
+  assert.equal(harness.props('Wizard').navigationLocked, true);
+  assert.equal(harness.props('Success').campaignData.budget, 120000);
+  harness.props('Wizard').onPrev();
+  await submit();
+  harness.render();
+  assert.equal(harness.props('Wizard').step, 4);
+  assert.equal(harness.requests.length, 1);
+});
+
+test('onboarding releases the client lock after an explicit failed response', async () => {
+  const harness = readyOnboarding();
+  const first = harness.props('Commitment').onSubmit();
+  harness.respond(false);
+  await first;
+  harness.render();
+  assert.equal(harness.props('Commitment').error, 'Fixture rejected');
+  assert.equal(harness.props('Wizard').navigationLocked, false);
+  const retry = harness.props('Commitment').onSubmit();
+  assert.equal(harness.requests.length, 2);
+  harness.respond(true);
+  await retry;
+  harness.render();
+  assert.equal(harness.props('Wizard').step, 4);
+});

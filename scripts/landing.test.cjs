@@ -528,7 +528,7 @@ function analyticsHarness() {
   return { window, consent, events };
 }
 
-function landingComponentHarness() {
+function landingComponentHarness({ signupEnabled = false } = {}) {
   const analytics = analyticsHarness();
   const hookValues = [];
   let hookIndex = 0;
@@ -570,7 +570,7 @@ function landingComponentHarness() {
       'lucide-react': new Proxy({}, { get: (_, name) => name }),
       '@tad/ui/components/CookieBanner': { default: 'CookieBanner' },
       '@tad/services/cookie-consent': analytics.consent,
-      '../../lib/landing/model': model,
+      '../../lib/landing/model': loadTs(modelPath, { env: { NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: String(signupEnabled) } }),
       '../../lib/landing/content': loadTs('apps/advertiser/lib/landing/content.ts'),
       '../advertiser/simulatorPricing': pricing,
       './CampaignJourney': { default: 'CampaignJourney' },
@@ -603,6 +603,38 @@ function landingComponentHarness() {
     },
   };
 }
+
+test('budget continuation respects signup gate and attributes clicks without personal data', () => {
+  for (const signupEnabled of [false, true]) {
+    const harness = landingComponentHarness({ signupEnabled });
+    harness.window.location.search = '?ref=DRIVER_1&private=fixture';
+    harness.render();
+    harness.render();
+    harness.control('campaign-city').onChange({ target: { value: 'stgo' } });
+    harness.control('campaign-screens').onChange({ target: { value: '12' } });
+    harness.control('campaign-months').onChange({ target: { value: '4' } });
+    harness.render();
+    const next = harness.control('campaign-next');
+    const url = new URL(next.href, 'https://fixture.invalid');
+    assert.equal(url.pathname, signupEnabled ? '/advertiser/onboarding' : '/advertiser/login');
+    assert.equal(url.searchParams.get('ref'), 'DRIVER_1');
+    assert.equal(url.searchParams.has('private'), false);
+    if (signupEnabled) {
+      assert.deepEqual(model.campaignDraftFromSearch(url.search), { screens: 12, months: 4, city: 'stgo' });
+    }
+    next.onClick();
+    assert.equal(harness.events.length, 0);
+    harness.consent.saveCookieConsent({ essential: true, functional: false, analytics: true, advertisement: false });
+    next.onClick();
+    assert.deepEqual(harness.events, [{
+      url: '/', referrer: '', title: '', name: 'cta_clicked',
+      data: { role: 'advertiser', destination: signupEnabled ? 'advertiser_signup' : 'advertiser_login', placement: 'simulator_result' },
+    }]);
+    harness.consent.saveCookieConsent(harness.consent.ESSENTIAL_ONLY);
+    next.onClick();
+    assert.equal(harness.events.length, 1);
+  }
+});
 
 const defaultPreview = { city: 'sd', objective: 'awareness', screens: 3, months: 2, includeProduction: false };
 

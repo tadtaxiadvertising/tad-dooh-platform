@@ -35,6 +35,8 @@ jobs:
         run: node --test scripts/advertiser-release-drift.test.cjs scripts/advertiser-release-gate.test.cjs scripts/advertiser-deployment-check.test.cjs
       - name: Performance measurement regression logic
         run: node --test scripts/landing-v3-measure.test.cjs
+      - name: Advertiser referral attribution regression logic
+        run: node --test scripts/advertiser-referral-capture.test.cjs
       - name: Consent regression logic
         run: node --test scripts/cookie-management.test.cjs
       - name: Type check advertiser landing

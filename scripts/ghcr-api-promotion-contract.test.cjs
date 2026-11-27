@@ -81,7 +81,7 @@ test("publication requires executed and successful exact-SHA CI, not a green-loo
     "'Tests':", "'TypeScript Check':", "'Prisma Validation':",
     "'Security Audit':", "'Format & Lint':",
     "'Build Docker Image (api)':", "'Summary':",
-    "'Run API tests'", "'Advertiser registration PostgreSQL isolation contract'", "'TypeScript check (all workspaces)'",
+    "'Run API tests'", "'Advertiser registration PostgreSQL isolation contract'", "'Advertiser onboarding Prisma integration'", "'TypeScript check (all workspaces)'",
     "'Prisma validate schema'", "'Build canonical Docker image'",
   ]) {
     assert.ok(workflow.includes(required), `Missing promotion gate: ${required}`);

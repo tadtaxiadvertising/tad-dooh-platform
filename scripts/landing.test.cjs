@@ -541,6 +541,7 @@ function landingComponentHarness({ signupEnabled = false } = {}) {
     imports: { '@tad/impact-calculator': impact },
   });
   let projectionCalls = 0;
+  let referralClears = 0;
   const measuredPricing = {
     ...pricing,
     estimateCampaignDetailed(config) {
@@ -585,6 +586,7 @@ function landingComponentHarness({ signupEnabled = false } = {}) {
       '../../lib/landing/model': loadTs(modelPath, { env: { NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: String(signupEnabled) } }),
       '../../lib/landing/content': loadTs('apps/advertiser/lib/landing/content.ts'),
       '../advertiser/simulatorPricing': measuredPricing,
+      '../advertiser/referral': { clearReferralCode() { referralClears++; } },
       './CampaignJourney': { default: 'CampaignJourney' },
       './CreativePreview': { default: 'CreativePreview' },
       './TaxiScrollStory': { default: 'TaxiScrollStory' },
@@ -602,6 +604,7 @@ function landingComponentHarness({ signupEnabled = false } = {}) {
   return {
     ...analytics,
     get projectionCalls() { return projectionCalls; },
+    get referralClears() { return referralClears; },
     render() {
       hookIndex = 0;
       tree = Landing();
@@ -616,6 +619,24 @@ function landingComponentHarness({ signupEnabled = false } = {}) {
     },
   };
 }
+
+test('landing invalidates stale referral only on an explicitly malformed link', () => {
+  for (const [search, clears, ref] of [
+    ['', 0, null],
+    ['?ref=VALID_DRIVER', 0, 'VALID_DRIVER'],
+    ['?ref=one&ref=two', 1, null],
+    ['?ref=', 1, null],
+    ['?ref=bad%20code', 1, null],
+  ]) {
+    const harness = landingComponentHarness({ signupEnabled: true });
+    harness.window.location.search = search;
+    harness.render();
+    harness.render();
+    assert.equal(harness.referralClears, clears);
+    const destination = new URL(harness.control('campaign-next').href, 'https://fixture.invalid');
+    assert.equal(destination.searchParams.get('ref'), ref);
+  }
+});
 
 test('landing uses one impact projection per render and retains illustrative totals', () => {
   const harness = landingComponentHarness();

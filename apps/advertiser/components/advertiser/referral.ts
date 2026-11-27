@@ -11,7 +11,10 @@ export function captureReferralCode(): string | null {
     // A new, well-formed link takes precedence over a stored code. Ambiguous
     // or malformed links must NEVER silently grant a referral discount.
     if (refs.length > 0) {
-      if (refs.length !== 1 || !SAFE_CODE.test(refs[0])) return null;
+      if (refs.length !== 1 || !SAFE_CODE.test(refs[0])) {
+        clearReferralCode();
+        return null;
+      }
       cachedReferralCode = refs[0];
       try {
         sessionStorage.setItem(REFERRAL_STORAGE_KEY, refs[0]);

@@ -49,7 +49,11 @@ test("ambiguous or unsafe query parameters cannot qualify a referral", () => {
     "?ref=one&ref=two", "?ref=", "?ref=%3Cscript%3E",
     "?ref=bad%20code", "?ref=" + "X".repeat(65),
   ]) {
-    assert.equal(harness(search, { stored: "PREVIOUS_CODE" }).captureReferralCode(), null);
+    const ctx = harness(search, { stored: "PREVIOUS_CODE" });
+    assert.equal(ctx.captureReferralCode(), null);
+    assert.equal(ctx.records.size, 0, "Explicit invalid referral clears stale storage");
+    ctx.window.location.search = "";
+    assert.equal(ctx.captureReferralCode(), null, "Bare onboarding URL must not revive the old code");
   }
 });
 
@@ -66,4 +70,20 @@ test("removing referral information clears cached attribution", () => {
   assert.equal(ctx.records.size, 0);
   ctx.window.location.search = "";
   assert.equal(ctx.captureReferralCode(), null);
+});
+
+test("an explicit invalid link invalidates a previously captured code even without storage", () => {
+  for (const denyStorage of [false, true]) {
+    const ctx = harness("?ref=VALID_DRIVER", { denyStorage });
+    assert.equal(ctx.captureReferralCode(), "VALID_DRIVER");
+    ctx.window.location.search = "?ref=one&ref=two";
+    assert.equal(ctx.captureReferralCode(), null);
+    ctx.window.location.search = "";
+    assert.equal(ctx.captureReferralCode(), null);
+  }
+});
+
+test("a valid stored code survives a bare URL when no invalid link was received", () => {
+  const ctx = harness("", { stored: "VALID_DRIVER" });
+  assert.equal(ctx.captureReferralCode(), "VALID_DRIVER");
 });

@@ -60,7 +60,10 @@ export default function CreativePreview() {
   function clear() {
     setMedia(null);
     setError("");
-    if (input.current) input.current.value = "";
+    if (input.current) {
+      input.current.value = "";
+      input.current.focus();
+    }
   }
 
   return (
@@ -175,6 +178,9 @@ export default function CreativePreview() {
               WebM · Máximo 30 MB.
             </small>
           </div>
+          <p role="status" className={styles.selectionStatus}>
+            {media ? "Archivo seleccionado." : "Ningún archivo seleccionado."}
+          </p>
           {media && (
             <div className={styles.selected}>
               <span title={media.name}>{media.name}</span>

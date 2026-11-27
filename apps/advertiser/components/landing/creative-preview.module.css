@@ -36,3 +36,9 @@
 @media (max-width: 760px) {
   .section :global(#creative-preview-title) { scroll-margin-top: 88px; }
 }
+
+/* Keep keyboard focus visible on the light editor and targets usable on mobile. */
+.editor :is(button,input,a):focus-visible { outline:3px solid #171717; outline-offset:3px; }
+.selected button { min-height:44px; min-width:64px; flex-shrink:0; }
+.selectionStatus { font-size:13px; margin:0 0 10px; }
+.eyebrow,.step,.intro h2 span { color:#765c00; }

@@ -148,6 +148,12 @@ jobs:
           set -euo pipefail
           node scripts/advertiser-registration-postgres.cjs --isolated-docker
 
+      - name: Advertiser onboarding Prisma integration
+        timeout-minutes: 6
+        run: |
+          set -euo pipefail
+          node apps/api/scripts/advertiser-onboarding-prisma.cjs --isolated-docker
+
       - name: Fast verification runner regressions (offline fixtures)
         run: python3 -B -m unittest discover -s scripts -p test_run_fast_gates.py -v
 

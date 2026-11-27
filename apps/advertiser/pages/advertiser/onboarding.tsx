@@ -77,7 +77,7 @@ export default function AdvertiserOnboarding() {
     companyName: string;
     screens: number;
     months: number;
-    budget: number;
+    budget: number | null;
     impressions: number;
   } | null>(null);
 
@@ -266,11 +266,16 @@ export default function AdvertiserOnboarding() {
       }
 
       clearReferralCode();
-      // Use the server's recomputed offer, never a client-side price claim.
-      const recordedBudget =
-        typeof data?.quote?.subtotal === "number"
-          ? data.quote.subtotal
-          : displayedBudget;
+      // A successful registration must not be submitted again just because
+      // its receipt is incomplete. Only display a contract-consistent amount.
+      const recordedBudget = matchesAdvertiserOffer(data?.quote, {
+        screens: simulator.screens,
+        months: simulator.months,
+        includeProduction: simulator.includeProduction,
+        verifiedDriverCode: Boolean(referralCode),
+      })
+        ? data.quote.subtotal
+        : null;
       setCampaignData({
         companyName: form.companyName.trim(),
         screens: simulator.screens,

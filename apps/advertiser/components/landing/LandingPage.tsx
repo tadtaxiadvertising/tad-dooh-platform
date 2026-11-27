@@ -30,7 +30,6 @@ import {
   type DemoObjective,
 } from "../../lib/landing/content";
 import {
-  estimateCampaign,
   estimateCampaignDetailed,
   FIXED_FREQUENCY_SECONDS,
 } from "../advertiser/simulatorPricing";
@@ -85,13 +84,13 @@ export default function LandingPage() {
     frequencySeconds: FIXED_FREQUENCY_SECONDS,
     includeProduction,
   };
-  const quote = estimateCampaign(config);
+  // A single projection keeps costs, impact ranges and warnings consistent.
   const projection = estimateCampaignDetailed(config);
   const budgetOutputRef = useRef<HTMLOutputElement>(null);
-  const previousBudgetTotal = useRef(quote.total);
+  const previousBudgetTotal = useRef(projection.totalCost);
   useEffect(() => {
-    if (previousBudgetTotal.current === quote.total) return;
-    previousBudgetTotal.current = quote.total;
+    if (previousBudgetTotal.current === projection.totalCost) return;
+    previousBudgetTotal.current = projection.totalCost;
     // A stable output avoids remounts, mount animation and keyboard focus loss.
     // Query motion preference at the moment the value changes; no animation SDK needed.
     const output = budgetOutputRef.current;
@@ -111,7 +110,7 @@ export default function LandingPage() {
       { duration: 180, easing: "ease-out" },
     );
     return () => animation.cancel();
-  }, [quote.total]);
+  }, [projection.totalCost]);
   const advertiserDestination = referral
     ? `${links.advertiser}?ref=${encodeURIComponent(referral)}`
     : links.advertiser;
@@ -556,11 +555,11 @@ export default function LandingPage() {
               </label>
               <div className="landing-preview-summary">
                 <span>Pantallas y duración (precio de referencia)</span>
-                <strong>{money(quote.screensCost)}</strong>
+                <strong>{money(projection.screensCost)}</strong>
                 <span>Producción creativa (opcional)</span>
                 <strong>
                   {includeProduction
-                    ? money(quote.productionFee)
+                    ? money(projection.productionFee)
                     : "No incluida · RD$ 0"}
                 </strong>
               </div>
@@ -573,7 +572,7 @@ export default function LandingPage() {
                 id="budget-total"
                 htmlFor="campaign-screens campaign-months campaign-production"
               >
-                {money(quote.total)}
+                {money(projection.totalCost)}
               </output>
               <p className="landing-estimate-detail">
                 Impresiones estimadas por modelo:{" "}

@@ -117,3 +117,24 @@
     }
   }
 }
+
+/* Equal editorial artwork for mobile, reduced-motion and SSR/no-JS modes. */
+.section .staticPicture[data-static-art] {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  padding: 0 0 12px;
+  overflow: hidden;
+  background: #141819;
+  color: #fff;
+  border-radius: 16px;
+}
+.staticPicture[data-static-art] svg { display: block; width: 100%; height: auto; }
+.staticPicture[data-static-art] > span {
+  max-width: 100%;
+  padding-inline: 12px;
+  font-size: clamp(12px, 2.8vw, 16px);
+  line-height: 1.4;
+  letter-spacing: .04em;
+  overflow-wrap: anywhere;
+}

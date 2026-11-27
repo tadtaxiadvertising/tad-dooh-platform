@@ -369,14 +369,14 @@ async function main() {
         ['Hotel', 'hotel', /Descubre tu estancia/],
         ['Servicios', 'servicios', /Conoce nuestros servicios/],
       ]) {
-        const previousColor = await visual.locator('[class*="adIdentity"]').evaluate(el => getComputedStyle(el.parentElement).backgroundColor);
+        const previousColor = await visual.locator('[data-qr-creative]').evaluate(el => getComputedStyle(el).backgroundColor);
         const choice = controls.getByRole('button', { name: label, exact: true });
         await choice.focus();
         await choice.press('Enter');
         assert.equal(await choice.getAttribute('aria-pressed'), 'true');
         assert.equal(await visual.getAttribute('data-promotion'), key);
         assert.equal(await visual.getAttribute('data-scanned'), 'false');
-        const nextColor = await visual.locator('[class*="adIdentity"]').evaluate(el => getComputedStyle(el.parentElement).backgroundColor);
+        const nextColor = await visual.locator('[data-qr-creative]').evaluate(el => getComputedStyle(el).backgroundColor);
         assert.notEqual(previousColor, nextColor, 'Sector has a distinct creative palette');
         await scan.click();
         assert.match(await destination.innerText(), copy);

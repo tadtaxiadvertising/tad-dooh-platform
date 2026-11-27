@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { AdvertiserOffer } from "@tad/impact-calculator";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -30,6 +29,8 @@ export interface SimulatorConfig {
 
 interface SimulatorStepProps {
   config: SimulatorConfig;
+  city?: "sd" | "stgo";
+  onCityChange?: (city: "sd" | "stgo") => void;
   onChange: (patch: Partial<SimulatorConfig>) => void;
   onNext: () => void;
   onPrev: () => void;
@@ -43,6 +44,8 @@ const SCREEN_PRESETS = [1, 2, 3, 4, 5];
 
 export default function SimulatorStep({
   config,
+  city = "sd",
+  onCityChange,
   onChange,
   onNext,
   onPrev,
@@ -51,7 +54,7 @@ export default function SimulatorStep({
   verifiedOffer = null,
   quoteStatus = "none",
 }: SimulatorStepProps) {
-  const [customScreens, setCustomScreens] = useState(6);
+  const customScreens = Math.max(6, config.screens);
   const reduceMotion = useReducedMotion();
 
   const estimate = estimateCampaign(config);
@@ -65,12 +68,10 @@ export default function SimulatorStep({
 
   const handleScreenSelect = (n: number) => {
     onChange({ screens: n, frequencySeconds: FIXED_FREQUENCY_SECONDS });
-    if (n <= 5) setCustomScreens(6);
   };
 
   const handleCustomScreensChange = (value: string) => {
     const num = Math.max(6, Math.min(100, parseInt(value) || 6));
-    setCustomScreens(num);
     onChange({ screens: num, frequencySeconds: FIXED_FREQUENCY_SECONDS });
   };
 
@@ -109,6 +110,30 @@ export default function SimulatorStep({
       </div>
 
       <div className="bg-[#121212]/80 border border-white/10 rounded-xl p-5 sm:p-6 space-y-6 flex-1 overflow-y-auto">
+        {onCityChange && (
+          <div className="space-y-2">
+            <label
+              htmlFor="onboarding-campaign-city"
+              className="block text-xs font-bold text-white"
+            >
+              Ciudad de interés
+            </label>
+            <select
+              id="onboarding-campaign-city"
+              value={city}
+              onChange={(event) =>
+                onCityChange(event.target.value === "stgo" ? "stgo" : "sd")
+              }
+              className="w-full min-h-11 px-3 rounded-xl bg-[#121212] text-white border border-white/30 focus-visible:outline-2 focus-visible:outline-[#FDCB01]"
+            >
+              <option value="sd">Santo Domingo</option>
+              <option value="stgo">Santiago</option>
+            </select>
+            <p className="text-xs text-[#AAAAAA]">
+              La disponibilidad se confirma durante la revisión.
+            </p>
+          </div>
+        )}
         {/* Screens Selector */}
         <div>
           <div className="flex justify-between items-end gap-3 mb-3">
@@ -151,9 +176,6 @@ export default function SimulatorStep({
                 max={100}
                 value={customScreens}
                 onChange={(e) => handleCustomScreensChange(e.target.value)}
-                onBlur={() =>
-                  handleCustomScreensChange(customScreens.toString())
-                }
                 className="w-16 bg-transparent border-none outline-none text-white font-black text-base text-center"
                 aria-label="Número de pantallas personalizado"
               />

@@ -44,7 +44,12 @@ interface CommitmentStepProps {
   onFormChange: (patch: Partial<CommitmentForm>) => void;
   agreements: CommitmentAgreements;
   onAgreementsChange: (patch: Partial<CommitmentAgreements>) => void;
-  campaignSummary: { screens: number; months: number; budget: number };
+  campaignSummary: {
+    screens: number;
+    months: number;
+    budget: number;
+    city?: string;
+  };
   onSubmit: () => void;
   onPrev: () => void;
   isLoading: boolean;
@@ -324,6 +329,7 @@ export default function CommitmentStep({
         >
           Tu plan simulado:{" "}
           <span className="text-[#22C55E]">
+            {campaignSummary.city && `${campaignSummary.city} · `}
             {campaignSummary.screens} pantallas · {campaignSummary.months} mes
             {campaignSummary.months > 1 ? "es" : ""} · RD$
             {campaignSummary.budget.toLocaleString()}

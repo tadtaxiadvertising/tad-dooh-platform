@@ -651,11 +651,11 @@
   line-height: 1.02;
   text-wrap: balance;
 }
-.landing :global(h1 > span) { color: #ac8700; }
-.landing :global(.landing-lead) { color: #5f5f59; font-size: 15px; line-height: 1.8; }
-.landing :global(.landing-text-link) { color: #242422; }
+.landing :global(h1 > span) { color: #765c00; }
+.landing :global(.landing-lead) { color: #4b4b45; font-size: clamp(16px, 1.35vw, 19px); line-height: 1.65; min-height: 0; }
+.landing :global(.landing-text-link) { color: #242422; font-size: 14px; }
 .landing :global(.landing-text-link:hover) { color: #9d7a00; }
-.landing :global(.landing-hero-proof) { color: #6f706a; }
+.landing :global(.landing-hero-proof) { color: #57574f; font-size: 13px; }
 .landing :global(.landing-hero-proof svg) { color: #806600; }
 .landing :global(.landing-hero-steps) { border-color: #deded8; }
 .landing :global(.landing-hero-steps li) { color: #57574f; }
@@ -674,7 +674,7 @@
   color: #1a1a18;
 }
 .landing :global(.landing-stage-controls input::placeholder) { color: #7c7b72; }
-.landing :global(.landing-stage-privacy) { color: #72726a; }
+.landing :global(.landing-stage-privacy) { color: #57574f; font-size: 13px; }
 .landing :global(.landing-scene) {
   border-color: #e2c75a;
   box-shadow: 0 25px 65px #24221c26;
@@ -749,7 +749,7 @@
 }
 @media (max-width: 760px) {
   .landing :global(.landing-header) { height: 78px; }
-  .landing :global(.landing-hero) { min-height: auto; padding-block: 48px 62px; }
+  .landing :global(.landing-hero) { min-height: auto; padding-block: 32px 48px; }
   .landing :global(h1) { font-size: clamp(40px, 9.2vw, 64px); letter-spacing: -.062em; }
   .landing :global(.landing-hero-cities) { margin-top: 20px; }
 }
@@ -785,3 +785,7 @@
 /* WCAG AA small-label contrast: decorative yellow stays bright, text turns ink-gold. */
 .landing :global(.landing-hero-steps li > span) { color: #765c00; }
 .landing :global(.landing-card-top .landing-badge) { color: #443903; }
+
+/* Keep the hero's conversion action legible at every breakpoint. */
+.landing :global(.landing-hero-actions .landing-button) { font-size: 15px; min-height: 52px; }
+.landing :global(.landing-hero-copy > .landing-eyebrow) { color: #57574f; font-size: 11px; }

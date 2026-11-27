@@ -303,7 +303,7 @@ async function main() {
         maxRedirects: 0,
       });
       assert.equal(illustrationResponse.status(), 200, 'Public image must not redirect to login');
-      assert.match(illustrationResponse.headers()['content-type'] || '', /^image\/svg\+xml\b/i);
+      assert.equal((illustrationResponse.headers()['content-type'] || '').split(';')[0].trim().toLowerCase(), 'image/svg+xml');
       await illustration.scrollIntoViewIfNeeded();
       await page.waitForFunction(() => {
         const image = document.querySelector('#interaccion-qr img[src="/qr-passenger-journey.svg"]');

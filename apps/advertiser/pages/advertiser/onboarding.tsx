@@ -17,6 +17,11 @@ import CommitmentStep, {
 import SuccessStep from "@/components/onboarding/SuccessStep";
 import { estimateCampaign } from "../../components/advertiser/simulatorPricing";
 import {
+  campaignDraftFromSearch,
+  CITIES,
+  type DemoCity,
+} from "../../lib/landing/model";
+import {
   captureReferralCode,
   clearReferralCode,
 } from "../../components/advertiser/referral";
@@ -52,6 +57,7 @@ export default function AdvertiserOnboarding() {
     frequencySeconds: 30,
     includeProduction: false, // Opcional, desactivado por defecto
   });
+  const [city, setCity] = useState<DemoCity>("sd");
   const [form, setForm] = useState<CommitmentForm>(EMPTY_FORM);
   const [agreements, setAgreements] = useState<CommitmentAgreements>({
     representative: false,
@@ -72,6 +78,15 @@ export default function AdvertiserOnboarding() {
 
   useEffect(() => {
     setReferralCode(captureReferralCode() || "");
+    const draft = campaignDraftFromSearch(window.location.search);
+    if (draft) {
+      setCity(draft.city);
+      setSimulator((current) => ({
+        ...current,
+        screens: draft.screens,
+        months: draft.months,
+      }));
+    }
   }, []);
 
   const quoteKey = `${referralCode}:${simulator.screens}:${simulator.months}:${simulator.includeProduction}`;
@@ -223,7 +238,7 @@ export default function AdvertiserOnboarding() {
           password: form.password,
           budget: displayedBudget,
           expectedScreens: simulator.screens,
-          targetCity: "Santo Domingo",
+          targetCity: CITIES[city],
           campaignMonths: simulator.months,
           frequencySeconds: simulator.frequencySeconds,
           includeProduction: simulator.includeProduction,
@@ -274,6 +289,8 @@ export default function AdvertiserOnboarding() {
         return (
           <SimulatorStep
             config={simulator}
+            city={city}
+            onCityChange={setCity}
             onChange={(patch) =>
               setSimulator((prev) => ({ ...prev, ...patch }))
             }
@@ -300,6 +317,7 @@ export default function AdvertiserOnboarding() {
             campaignSummary={{
               screens: simulator.screens,
               months: simulator.months,
+              city: CITIES[city],
               budget: displayedBudget,
             }}
             onSubmit={handleSubmit}

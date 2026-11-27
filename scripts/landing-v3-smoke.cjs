@@ -513,7 +513,17 @@ async function main() {
       const events = await page.evaluate(() => window.__landingEvents);
       const ctas = events.filter(event => event.name === 'cta_clicked');
       assert.equal(ctas.length, ctaBefore + 1);
-      assert.deepEqual(ctas.at(-1).data, { role: 'advertiser', destination: 'advertiser_lab' });
+      assert.deepEqual(ctas.at(-1).data, { role: 'advertiser', destination: 'advertiser_lab', placement: 'hero' });
+      const next = panel.locator('#campaign-next');
+      assert.equal(await next.getAttribute('href'), '/advertiser/login');
+      await next.scrollIntoViewIfNeeded();
+      assert.ok((await next.boundingBox()).height >= 44, 'Budget action must have a usable touch target');
+      // Observe the real handler without navigating into an authenticated flow.
+      await next.evaluate(element => element.addEventListener('click', event => event.preventDefault(), { once: true }));
+      await next.focus();
+      await next.press('Enter');
+      const budgetCta = await page.evaluate(() => window.__landingEvents.filter(event => event.name === 'cta_clicked').at(-1));
+      assert.deepEqual(budgetCta.data, { role: 'advertiser', destination: 'advertiser_login', placement: 'simulator_result' });
       assert.equal(events.some(event => /onboarding_(started|completed)/.test(event.name || '')), false);
       for (const event of events) {
         assert.equal(event.url, '/');

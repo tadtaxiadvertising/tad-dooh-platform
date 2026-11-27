@@ -17,6 +17,7 @@ import CookieBanner from "@tad/ui/components/CookieBanner";
 import { trackAnalyticsEvent } from "@tad/services/cookie-consent";
 import {
   CITIES,
+  campaignSignupHref,
   formatRD,
   landingLinks,
   referralCodeFromSearch,
@@ -105,9 +106,10 @@ export default function LandingPage() {
   const advertiserDestination = referral
     ? `${links.advertiser}?ref=${encodeURIComponent(referral)}`
     : links.advertiser;
-  const signupDestination = referral
-    ? `${links.advertiserSignup}?ref=${encodeURIComponent(referral)}`
-    : links.advertiserSignup;
+  const signupDestination = campaignSignupHref(
+    { screens, months, city },
+    referral,
+  );
   const cta = (destination: string) =>
     trackAnalyticsEvent("cta_clicked", { role: "advertiser", destination });
   const recordPreview = (
@@ -410,13 +412,14 @@ export default function LandingPage() {
                   href={signupDestination}
                   onClick={() => cta("advertiser_signup")}
                 >
-                  Solicitar registro <ArrowRight size={16} aria-hidden="true" />
+                  Continuar con mi campaña{" "}
+                  <ArrowRight size={16} aria-hidden="true" />
                 </a>
               )}
               <p className="landing-disclaimer">
-                Si la incorporación está cerrada, el acceso al portal existente
-                continúa disponible. La simulación no crea campañas ni reserva
-                pantallas.
+                {links.signupEnabled
+                  ? "Revisa tu configuración en el registro y confirma allí la producción opcional. La simulación no reserva pantallas."
+                  : "Si la incorporación está cerrada, el acceso al portal existente continúa disponible. La simulación no reserva pantallas."}
               </p>
             </div>
             <div className="landing-preview">
@@ -674,11 +677,13 @@ export default function LandingPage() {
           <h2 id="final-title">{content.finalTitle}</h2>
           <p className="landing-final-copy">{content.finalCopy}</p>
           <a
-            href={advertiserDestination}
+            href={links.signupEnabled ? signupDestination : advertiserDestination}
             className="landing-button landing-button-primary"
-            onClick={() => cta("advertiser_login")}
+            onClick={() =>
+              cta(links.signupEnabled ? "advertiser_signup" : "advertiser_login")
+            }
           >
-            {content.cta}
+            {links.signupEnabled ? "Continuar con mi campaña" : content.cta}
             <ArrowUpRight size={19} aria-hidden="true" />
           </a>
         </section>

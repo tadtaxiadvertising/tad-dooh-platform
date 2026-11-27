@@ -514,7 +514,7 @@ export class BiService {
             },
           },
         },
-        orderBy: { hasDiscrepancy: "desc" },
+        orderBy: [{ hasDiscrepancy: "desc" }, { id: "asc" }],
         skip: (safePage - 1) * safeSize,
         take: safeSize,
       }),

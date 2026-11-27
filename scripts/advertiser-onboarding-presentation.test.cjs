@@ -293,3 +293,17 @@ test('driver code discount appears only after server quote verification', () => 
     .onChange({ target: { value: 'DRIVER_TEST_2' } });
   assert.equal(changedCode, 'DRIVER_TEST_2');
 });
+
+
+test('wizard disables back navigation while submitting or after successful registration', () => {
+  for (const step of [3, 4]) {
+    let navigated = 0;
+    const page = render(wizard, { step, totalSteps: 4, navigationLocked: true,
+      onNext() {}, onPrev() { navigated++; }, onClose() { navigated++; },
+      children: React.createElement('p', null, 'Fixture') });
+    const back = page.find('button', node => node['aria-label'] === 'Volver al paso anterior');
+    assert.equal(back.disabled, true);
+    back.onClick();
+    assert.equal(navigated, 0);
+  }
+});

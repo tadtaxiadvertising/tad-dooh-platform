@@ -71,6 +71,7 @@ export default function AdvertiserOnboarding() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submissionUncertain, setSubmissionUncertain] = useState(false);
   // Synchronous lock covers repeated events before React commits loading state.
   const submissionLocked = useRef(false);
   const [campaignData, setCampaignData] = useState<{
@@ -172,7 +173,10 @@ export default function AdvertiserOnboarding() {
   const estimate = estimateCampaign(simulator);
   const displayedBudget = verifiedOffer?.subtotal ?? estimate.total;
 
-  const nextStep = () => setStep((s) => Math.min(s + 1, 4) as OnboardingStep);
+  const nextStep = () => {
+    if (!submissionLocked.current)
+      setStep((s) => Math.min(s + 1, 4) as OnboardingStep);
+  };
   const prevStep = () => {
     if (submissionLocked.current) return;
     setError("");
@@ -260,9 +264,21 @@ export default function AdvertiserOnboarding() {
         : data?.message;
 
       if (!res.ok) {
-        throw new Error(
-          serverMessage || "No pudimos registrar tu campaña. Intenta de nuevo.",
-        );
+        // Validation and throttling reject before provisioning. All other
+        // outcomes may require reconciliation, including identity conflicts.
+        if (res.status === 400 || res.status === 429) {
+          submissionLocked.current = false;
+          setError(
+            res.status === 429
+              ? "Demasiadas solicitudes. Espera antes de intentarlo nuevamente."
+              : typeof serverMessage === "string"
+                ? serverMessage
+                : "Revisa los datos de tu solicitud antes de continuar.",
+          );
+          return;
+        }
+        setSubmissionUncertain(true);
+        return;
       }
 
       clearReferralCode();
@@ -285,11 +301,9 @@ export default function AdvertiserOnboarding() {
       });
       // Keep the lock after a successful request and transition immediately.
       setStep(4);
-    } catch (err: unknown) {
-      submissionLocked.current = false;
-      setError(
-        err instanceof Error ? err.message : "Ocurrió un error inesperado.",
-      );
+    } catch {
+      // The request may have committed before the response was lost.
+      setSubmissionUncertain(true);
     } finally {
       setLoading(false);
     }
@@ -298,6 +312,37 @@ export default function AdvertiserOnboarding() {
   const TOTAL_STEPS = 4;
 
   const renderStepContent = () => {
+    if (submissionUncertain) {
+      return (
+        <section
+          aria-labelledby="uncertain-registration-title"
+          className="flex flex-1 flex-col justify-center gap-5 py-12"
+        >
+          <h1
+            id="uncertain-registration-title"
+            className="text-3xl font-black text-white"
+          >
+            No pudimos confirmar el resultado
+          </h1>
+          <p role="status" className="text-sm leading-relaxed text-[#AAAAAA]">
+            Tu solicitud pudo haber sido procesada. No vuelvas a registrarte
+            hasta comprobar su estado. No podemos confirmar que exista una
+            cuenta o campaña.
+          </p>
+          <p className="text-sm leading-relaxed text-[#AAAAAA]">
+            Intenta acceder al portal. Si no puedes acceder, contacta al equipo
+            TAD para verificar el registro antes de enviar otra solicitud.
+          </p>
+          <button
+            type="button"
+            onClick={goToLogin}
+            className="min-h-[52px] rounded-xl bg-[#FDCB01] px-4 py-3 text-sm font-black text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+          >
+            Ir a iniciar sesión
+          </button>
+        </section>
+      );
+    }
     switch (step) {
       case 1:
         return <BenefitsStep onNext={nextStep} />;
@@ -376,7 +421,7 @@ export default function AdvertiserOnboarding() {
         onNext={nextStep}
         onPrev={prevStep}
         onClose={goToLogin}
-        navigationLocked={loading || step === 4}
+        navigationLocked={loading || submissionUncertain || step === 4}
         stepLabels={["Beneficios", "Simulador", "Compromiso", "Éxito"]}
       >
         {renderStepContent()}

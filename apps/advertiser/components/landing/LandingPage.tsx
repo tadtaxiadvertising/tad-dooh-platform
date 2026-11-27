@@ -608,6 +608,15 @@ export default function LandingPage() {
                   importes del simulador no sustituyen las tarifas aprobadas.
                 </p>
               </aside>
+              <p
+                id="campaign-referral-status"
+                className="landing-referral-status"
+                role="status"
+              >
+                {referral
+                  ? "Código de referido recibido. El descuento del 40 % sobre pantallas está sujeto a validación del servidor durante el registro. Este subtotal no incluye el descuento."
+                  : ""}
+              </p>
               <div className="landing-budget-next">
                 <a
                   id="campaign-next"

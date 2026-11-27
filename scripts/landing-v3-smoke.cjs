@@ -285,7 +285,7 @@ async function main() {
       assert.equal(await panel.locator('#budget-total').innerText(), totalBefore);
     });
 
-    await check('Passenger QR promotion preview works by keyboard without real scanning', async () => {
+    await check('Passenger QR simulation opens and resets the local offer by keyboard', async () => {
       const story = page.locator('#interaccion-qr');
       const controls = story.getByRole('group', { name: 'Tipo de promoción ilustrativa' });
       const restaurant = controls.getByRole('button', { name: 'Restaurante' });
@@ -301,6 +301,11 @@ async function main() {
       assert.ok((await illustration.getAttribute('alt')).includes('copiloto'));
       const illustrationResponse = await page.request.get(new URL('/qr-passenger-journey.svg', base).href);
       assert.equal(illustrationResponse.status(), 200);
+      await illustration.scrollIntoViewIfNeeded();
+      await page.waitForFunction(() => {
+        const image = document.querySelector('#interaccion-qr img[src="/qr-passenger-journey.svg"]');
+        return image && image.complete && image.naturalWidth > 0;
+      });
 
       const brand = page.locator('#hero-brand-name');
       await brand.fill('Café TAD');
@@ -311,16 +316,34 @@ async function main() {
       assert.equal(await commerce.getAttribute('aria-pressed'), 'true');
       assert.equal(await restaurant.getAttribute('aria-pressed'), 'false');
       assert.equal(await story.locator('[data-promotion]').getAttribute('data-promotion'), 'comercio');
-      assert.match(await story.innerText(), /Explora el catálogo/);
+      const visual = story.locator('[data-promotion]');
+      const destination = story.locator('#qr-demo-destination');
+      const scan = story.getByRole('button', { name: 'Simular escaneo del QR', exact: true });
+      assert.equal(await visual.getAttribute('data-scanned'), 'false');
+      assert.match(await destination.innerText(), /Tu oferta, a un escaneo/);
+      assert.ok((await scan.boundingBox()).height >= 44);
+      await scan.focus();
+      await scan.press('Enter');
+      assert.equal(await visual.getAttribute('data-scanned'), 'true');
+      assert.match(await destination.innerText(), /Explora el catálogo/);
+      assert.match(await story.locator('[aria-live="polite"]').innerText(), /Escaneo simulado/);
+      const reset = story.getByRole('button', { name: 'Reiniciar demostración', exact: true });
+      assert.equal(await reset.evaluate(el => document.activeElement === el), true);
+      await reset.press('Enter');
+      assert.equal(await visual.getAttribute('data-scanned'), 'false');
+      await scan.click();
       await event.click();
       assert.equal(await event.getAttribute('aria-pressed'), 'true');
-      assert.match(await story.innerText(), /Conoce la programación/);
+      assert.equal(await visual.getAttribute('data-scanned'), 'false', 'Changing promotion resets scan');
+      await scan.click();
+      assert.match(await destination.innerText(), /Conoce la programación/);
       assert.equal(await story.locator('a[href^="http"]').count(), 0,
         'The QR demo must not redirect to a fabricated advertiser URL.');
       assert.match(await story.innerText(), /no son escaneables/i);
       await brand.fill('');
       await restaurant.click();
       assert.equal(await story.locator('[data-promotion]').getAttribute('data-promotion'), 'restaurante');
+      assert.equal(await visual.getAttribute('data-scanned'), 'false');
     });
 
     await check('Campaign story has four controllable keyboard steps', async () => {

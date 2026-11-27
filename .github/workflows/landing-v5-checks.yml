@@ -51,6 +51,8 @@ jobs:
         run: node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/landing-cinematic.test.cjs scripts/advertiser-motion-v6.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
       - name: Release verification regression logic
         run: node --test scripts/advertiser-release-drift.test.cjs scripts/advertiser-release-gate.test.cjs scripts/advertiser-deployment-check.test.cjs
+      - name: Performance measurement regression logic
+        run: node --test scripts/landing-v3-measure.test.cjs
       - name: Consent regression logic
         run: node --test scripts/cookie-management.test.cjs
       - name: Type check advertiser landing
@@ -154,6 +156,8 @@ jobs:
           export NODE_PATH="$GITHUB_WORKSPACE/apps/driver/node_modules"
           node scripts/landing-v3-smoke.cjs
           node scripts/driver-landing-smoke.cjs
+          # Collect lab evidence after functional checks; no uncalibrated timing thresholds.
+          LANDING_MEASURE_SAMPLES=3 LANDING_MEASURE_REPORT=/tmp/tad-landing-performance/advertiser.json node scripts/landing-v3-measure.cjs
       - name: Preserve read-only browser QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -162,3 +166,11 @@ jobs:
           path: /tmp/tad-landing-screenshots
           if-no-files-found: warn
           retention-days: 5
+      - name: Preserve advertiser lab performance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tad-advertiser-performance-lab
+          path: /tmp/tad-landing-performance/advertiser.json
+          if-no-files-found: warn
+          retention-days: 14

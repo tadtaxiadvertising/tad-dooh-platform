@@ -130,5 +130,36 @@
     "warningCount": 3,
     "infoCount": 32,
     "noPolicyTablesWithEndUserGrants": 0
+  },
+  "continuation563": {
+    "status": "PENDING_VERIFICATION",
+    "baselineCommit": "e7b398bb4dcf2b028ad7e6cef62cf10dfb56b9a7",
+    "candidateCodeCommit": "1561b5245ab092334da493e61852395341ef0c78",
+    "branch": "fix/563-withdrawal-atomic-claim-independent-20261126",
+    "issue": 563,
+    "scope": "Independent candidate; original local Codex branch unavailable, preserved",
+    "verification": {
+      "syntheticMethods": {
+        "executed": 12,
+        "passed": 12,
+        "failed": 0,
+        "runner": "JavaScript evaluation of source methods with TypeScript parameter annotations removed; deterministic mock transaction, not Jest/PostgreSQL"
+      },
+      "jestRegressionCasesAdded": 10,
+      "jest": "NOT_TESTED",
+      "strictTypeScript": "NOT_TESTED",
+      "lint": "NOT_TESTED",
+      "build": "NOT_TESTED",
+      "postgresConcurrency": "BLOCKED",
+      "computerUse": "BLOCKED"
+    },
+    "productionWrites": 0,
+    "productionDeployments": 0,
+    "files": [
+      "apps/api/src/modules/wallet/wallet.service.ts",
+      "apps/api/src/modules/wallet/wallet-withdrawal-atomicity.spec.ts",
+      "docs/audits/computer-use/2026-11-26/checkpoint.json"
+    ],
+    "nextAction": "Review against original Codex candidate when available; run exact-head CI, strict TypeScript, lint/build and isolated PostgreSQL two-session regressions, including rollback and RBAC; no merge/deploy until verified."
   }
 }

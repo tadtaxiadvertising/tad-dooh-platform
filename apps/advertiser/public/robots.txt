@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /advertiser/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /check-in
+Sitemap: https://tad.anunciante.ibusiness.com.do/sitemap.xml

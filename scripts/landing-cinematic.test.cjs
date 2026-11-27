@@ -145,7 +145,7 @@ test("Advertiser QR story uses a local image and reversible example previews wit
   assert.match(story, /loading="lazy"/);
   assert.match(story, /src="\/qr-passenger-journey\.svg"/);
   assert.match(story, /brandName\.trim\(\)\.replace/);
-  for (const example of ["restaurante", "comercio", "evento"]) {
+  for (const example of ["restaurante", "comercio", "evento", "inmobiliaria", "hotel", "servicios"]) {
     assert.ok(story.includes(example + ":"), "QR storyboard missing " + example);
   }
   assert.match(story, /no son escaneables/);

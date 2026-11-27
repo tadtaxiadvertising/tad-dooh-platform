@@ -11,6 +11,7 @@ const { promisify } = require("node:util");
 const { setTimeout: delay } = require("node:timers/promises");
 const exec = promisify(execFile);
 const DB = "tad_onboarding_fixture";
+const localDocker = ["--host", "unix:///var/run/docker.sock"];
 const name = "tad-onboarding-fixture-" + randomUUID();
 const namespace = "public-advertiser-onboarding:single-use:v1";
 const key = createHash("sha256").update(JSON.stringify([namespace, randomUUID()])).digest("hex");
@@ -20,7 +21,7 @@ const ddl = fs.readFileSync(path.join(root,
   "apps/api/prisma/migrations/20261107_secure_idempotency_keys/migration.sql"), "utf8");
 
 async function docker(args, timeout = 15000) {
-  return exec("docker", args, { timeout, maxBuffer: 1024 * 1024 });
+  return exec("docker", [...localDocker, ...args], { timeout, maxBuffer: 1024 * 1024 });
 }
 
 function psqlArgs(app = "fixture_observer") {
@@ -84,7 +85,7 @@ async function verify() {
 
     // Hold the first INSERT uncommitted while a second backend tries the same
     // unique key. Observe PostgreSQL's real lock wait before allowing COMMIT.
-    holder = spawn("docker", psqlArgs("fixture_holder"), { stdio: ["pipe", "pipe", "pipe"] });
+    holder = spawn("docker", [...localDocker, ...psqlArgs("fixture_holder")], { stdio: ["pipe", "pipe", "pipe"] });
     let output = "";
     let errors = "";
     holder.stdout.on("data", chunk => { output += chunk.toString(); });
@@ -142,7 +143,7 @@ async function verify() {
   }
 }
 
-if (process.argv.length !== 3 || process.argv[2] !== "--isolated-docker") {
+if (process.platform !== "linux" || process.argv.length !== 3 || process.argv[2] !== "--isolated-docker") {
   console.error("Refused: invoke with --isolated-docker to create a fresh network-isolated fixture.");
   process.exitCode = 2;
 } else {

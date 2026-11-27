@@ -310,6 +310,30 @@ async function main() {
         return image && image.complete && image.naturalWidth > 0;
       });
 
+      // Measure rendered text against its actual solid background, not token names.
+      const contrast = await story.evaluate(section => {
+        const luminance = color => {
+          const channels = color.match(/[\d.]+/g).slice(0, 3).map(value => Number(value) / 255);
+          return channels.map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+            .reduce((total, value, i) => total + value * [0.2126, 0.7152, 0.0722][i], 0);
+        };
+        const selectors = ['h2', 'h2 span', 'figure figcaption', 'figure + p', 'h3', '[aria-live="polite"]', 'ol h3', 'ol p'];
+        const nodes = selectors.flatMap(selector => [...section.querySelectorAll(selector)]);
+        // Include lead, eyebrow, scan instructions and disclaimer without CSS-module hashes.
+        nodes.push(...section.querySelectorAll(':scope > p, :scope > div:first-child p, button + p'));
+        return [...new Set(nodes)].map(node => {
+          let background = node;
+          while (background && getComputedStyle(background).backgroundColor === 'rgba(0, 0, 0, 0)') {
+            background = background.parentElement;
+          }
+          const fg = luminance(getComputedStyle(node).color);
+          const bg = luminance(getComputedStyle(background || section).backgroundColor);
+          return { label: node.textContent.trim().slice(0, 70), ratio: (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05) };
+        });
+      });
+      assert.ok(contrast.length >= 10, 'Measure actual QR section text');
+      for (const entry of contrast) assert.ok(entry.ratio >= 4.5, 'QR contrast: ' + JSON.stringify(entry));
+
       const brand = page.locator('#hero-brand-name');
       await brand.fill('Café TAD');
       assert.ok((await story.innerText()).includes('Café TAD'),

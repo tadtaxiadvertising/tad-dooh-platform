@@ -23,7 +23,11 @@ function gate() {
 // This does not replace an integration test on two PostgreSQL connections.
 function fixture(
   participants: number,
-  options: { walletCount?: number; creditThrows?: boolean; row?: Partial<Row> } = {},
+  options: {
+    walletCount?: number;
+    creditThrows?: boolean;
+    row?: Partial<Row>;
+  } = {},
 ) {
   let row: Row = {
     id: "synthetic-withdrawal",

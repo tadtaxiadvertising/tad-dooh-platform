@@ -486,9 +486,9 @@ describe("Public advertiser single-use attempt reservation", () => {
         attempt.toUpperCase(),
       ),
     ]);
-    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(
-      1,
-    );
+    expect(
+      results.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
     expect(results).toContainEqual(
       expect.objectContaining({
         status: "rejected",

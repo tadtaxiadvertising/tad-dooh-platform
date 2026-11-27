@@ -213,7 +213,11 @@ async function main() {
     });
 
     await check('Crawler metadata is public, canonical and excludes private routes', async () => {
-      const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
+      const canonicalHref = await page.locator('link[rel="canonical"]').getAttribute('href');
+      assert.ok(canonicalHref, 'Canonical URL must be present');
+      // Next may omit the trailing slash when serializing the origin.
+      // URL normalization preserves strict protocol, host, path and query checks.
+      const canonical = new URL(canonicalHref).href;
       assert.equal(canonical, 'https://tad.anunciante.ibusiness.com.do/');
       const robots = await page.request.get(new URL('/robots.txt', base).href, { maxRedirects: 0 });
       assert.equal(robots.status(), 200);

@@ -457,8 +457,9 @@ export default function BIDashboard() {
               <div className="p-4 border-t border-zinc-800/60 bg-zinc-900/20">
                 {reconciliation && (
                   <p className="mb-2 text-xs text-zinc-400">
-                    {reconciliation.period} · Primeros {reconciliation.data.length}{" "}
-                    de {reconciliation.total} registros; hasta 6 discrepancias.
+                    {reconciliation.period} · Primeros{" "}
+                    {reconciliation.data.length} de {reconciliation.total}{" "}
+                    registros; hasta 6 discrepancias.
                   </p>
                 )}
                 <Link

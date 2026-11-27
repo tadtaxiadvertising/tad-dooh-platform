@@ -292,6 +292,11 @@ jobs:
           path: ./
           extra_args: --results=verified,unknown
 
+  # Public browser QA is fixture-only and now part of the required Summary.
+  landing:
+    name: Required landing gates
+    uses: ./.github/workflows/landing-v5-checks.yml
+
   # ── 6. BUILD IMAGES IN ISOLATED RUNNERS ──────────────────────────────────────
   # Docker builds do not consume the monorepo's installed node_modules. Each
   # image gets a fresh runner so earlier image layers cannot exhaust the disk
@@ -347,7 +352,7 @@ jobs:
   summary:
     name: Summary
     runs-on: ubuntu-24.04
-    needs: [format, typecheck, test, prisma, security, build]
+    needs: [format, typecheck, test, prisma, security, build, landing]
     if: always()
     steps:
       - name: Report results
@@ -358,6 +363,7 @@ jobs:
           PRISMA_RESULT: ${{ needs.prisma.result }}
           SECURITY_RESULT: ${{ needs.security.result }}
           BUILD_RESULT: ${{ needs.build.result }}
+          LANDING_RESULT: ${{ needs.landing.result }}
         run: |
           set -euo pipefail
           echo "## 🚀 CI Quality Gates Summary" >> "$GITHUB_STEP_SUMMARY"
@@ -368,14 +374,16 @@ jobs:
             "- **test**: $TEST_RESULT" \
             "- **prisma**: $PRISMA_RESULT" \
             "- **security**: $SECURITY_RESULT" \
-            "- **build**: $BUILD_RESULT" >> "$GITHUB_STEP_SUMMARY"
+            "- **build**: $BUILD_RESULT" \
+            "- **landing**: $LANDING_RESULT" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           if [ "$FORMAT_RESULT" != "success" ] || \
              [ "$TYPECHECK_RESULT" != "success" ] || \
              [ "$TEST_RESULT" != "success" ] || \
              [ "$PRISMA_RESULT" != "success" ] || \
              [ "$SECURITY_RESULT" != "success" ] || \
-             [ "$BUILD_RESULT" != "success" ]; then
+             [ "$BUILD_RESULT" != "success" ] || \
+             [ "$LANDING_RESULT" != "success" ]; then
             echo "❌ **One or more quality gates did not succeed** — review logs before merging." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi

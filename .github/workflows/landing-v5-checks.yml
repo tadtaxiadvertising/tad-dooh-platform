@@ -1,27 +1,9 @@
 name: Landing V5 Focused Gates
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    paths:
-      - "apps/advertiser/**"
-      - "package.json"
-      - "pnpm-workspace.yaml"
-      - "pnpm-lock.yaml"
-      - "Dockerfile.advertiser"
-      - "scripts/pnpm-overrides*.cjs"
-      - "apps/driver/**"
-      - "scripts/landing*.cjs"
-      - "scripts/driver-landing*.cjs"
-      - "scripts/driver-preview-arithmetic.test.cjs"
-      - "scripts/advertiser-onboarding-presentation.test.cjs"
-      - "scripts/advertiser-release-drift*.cjs"
-      - "scripts/advertiser-release-gate.test.cjs"
-      - "scripts/advertiser-deployment-check.test.cjs"
-      - "verify-deployment.sh"
-      - "scripts/cookie-management.test.cjs"
-      - ".github/workflows/landing-v5-checks.yml"
+  # The main CI Summary now requires this workflow on the same checkout.
+  # Keep manual diagnostics available without duplicate automatic runs.
+  workflow_call:
   workflow_dispatch:
 
 permissions:

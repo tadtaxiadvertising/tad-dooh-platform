@@ -425,6 +425,38 @@ async function main() {
       assert.equal(await steps.nth(1).getAttribute('aria-pressed'), 'true');
     });
 
+    await check('Creative Studio keeps keyboard focus and previews a local image', async () => {
+      const input = page.locator('#creative-preview-file');
+      const studio = page.locator('section[aria-labelledby="creative-preview-title"]');
+      const preview = studio.getByAltText('Vista previa de la creatividad seleccionada');
+      const status = studio.getByRole('status');
+      await input.scrollIntoViewIfNeeded();
+      await input.setInputFiles({
+        name: 'fixture.png',
+        mimeType: 'image/png',
+        buffer: Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c63f87f95e13f00077f02d4680bdf0b0000000049454e44ae426082', 'hex'),
+      });
+      await page.waitForFunction(() => {
+        const image = document.querySelector('img[alt="Vista previa de la creatividad seleccionada"]');
+        return image && image.complete && image.naturalWidth > 0;
+      });
+      assert.match(await status.innerText(), /Archivo seleccionado/);
+      const fill = studio.getByRole('button', { name: 'Llenar pantalla' });
+      await fill.focus();
+      await fill.press('Enter');
+      assert.equal(await fill.getAttribute('aria-pressed'), 'true');
+      assert.equal(await preview.evaluate(image => getComputedStyle(image).objectFit), 'cover');
+      const remove = studio.getByRole('button', { name: 'Quitar', exact: true });
+      assert.ok((await remove.boundingBox()).height >= 44, 'Remove control touch target');
+      await remove.focus();
+      await remove.press('Enter');
+      await preview.waitFor({ state: 'detached' });
+      assert.equal(await input.evaluate(element => element === document.activeElement), true, 'Return focus to the file picker');
+      assert.equal(await input.inputValue(), '');
+      assert.match(await status.innerText(), /Ningún archivo seleccionado/);
+      await assertNoHorizontalOverflow(page, 'Advertiser after creative removal');
+    });
+
     await check('Advertiser campaign calculator shares screen/month pricing and optional production', async () => {
       const screens = panel.getByLabel('Pantallas del ejemplo');
       const months = panel.getByLabel('Duración');

@@ -127,12 +127,17 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
         </div>
       </div>
       <p className={styles.activeCaption} aria-live="polite" aria-atomic="true">
-        Ejemplo seleccionado: {example.label}. {scanned
+        Ejemplo seleccionado: {example.label}.{" "}
+        {scanned
           ? "Escaneo simulado: oferta abierta en el celular de ejemplo."
           : "Listo para simular el escaneo."}
       </p>
 
-      <div className={styles.visual} data-promotion={selected} data-scanned={scanned}>
+      <div
+        className={styles.visual}
+        data-promotion={selected}
+        data-scanned={scanned}
+      >
         <div className={styles.scene}>
           <div className={styles.sceneLabel}>01 / PANTALLA EN EL TAXI</div>
           <div className={styles.headrest} aria-hidden="true" />
@@ -187,8 +192,14 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
               <span className={styles.offerIcon}>
                 <Smartphone size={26} aria-hidden="true" />
               </span>
-              <strong>{scanned ? example.mobile : "Tu oferta, a un escaneo"}</strong>
-              <p>{scanned ? example.mobileCopy : "Simula el escaneo para descubrir la promoción."}</p>
+              <strong>
+                {scanned ? example.mobile : "Tu oferta, a un escaneo"}
+              </strong>
+              <p>
+                {scanned
+                  ? example.mobileCopy
+                  : "Simula el escaneo para descubrir la promoción."}
+              </p>
               {scanned && (
                 <span className={styles.offerLabel}>
                   {example.action} · DEMO
@@ -196,7 +207,11 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
               )}
             </div>
           </div>
-          <p>{scanned ? "La promoción se abre en esta demostración." : "El destino espera al pasajero."}</p>
+          <p>
+            {scanned
+              ? "La promoción se abre en esta demostración."
+              : "El destino espera al pasajero."}
+          </p>
         </div>
       </div>
 
@@ -226,7 +241,7 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
         ))}
       </ol>
       <p className={styles.disclaimer}>
-        Simulación, no una campaña activa: los símbolos QR no son escaneables,
+        Simulación, no una campaña activa: los símbolos QR no son escaneables
         y el escaneo simulado no abre enlaces ni registra actividad. Un escaneo
         real no equivale a una venta. La disponibilidad de destinos QR y sus
         métricas depende de la configuración y validación de la campaña.

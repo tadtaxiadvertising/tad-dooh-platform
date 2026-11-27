@@ -415,3 +415,147 @@ describe("OnboardingService verified driver referral pricing", () => {
     expect(quote.subtotal).toBe(2500);
   });
 });
+
+
+describe("Public advertiser single-use attempt reservation", () => {
+  const attempt = "12345678-1234-4234-8234-123456789abc";
+  const request = {
+    name: "Fixture",
+    companyName: "Fixture Company",
+    email: "signup@example.invalid",
+    phone: "8095550101",
+    password: "fixture-password",
+    budget: 1,
+    expectedScreens: 3,
+    campaignMonths: 2,
+    targetCity: "Santiago",
+  };
+
+  function fixture() {
+    const reserved = new Set<string>();
+    const create = jest.fn(async ({ data }: { data: { key: string } }) => {
+      if (reserved.has(data.key)) throw { code: "P2002" };
+      reserved.add(data.key);
+    });
+    const update = jest.fn().mockResolvedValue({});
+    const createUser = jest.fn().mockResolvedValue({
+      data: { user: { id: "fixture-auth-id" } },
+      error: null,
+    });
+    const deleteUser = jest.fn().mockResolvedValue({ error: null });
+    const tx = {
+      advertiser: {
+        create: jest.fn().mockResolvedValue({
+          id: "fixture-advertiser-id",
+          companyName: request.companyName,
+        }),
+      },
+      campaign: {
+        create: jest.fn().mockResolvedValue({ id: "fixture-campaign-id" }),
+      },
+      idempotencyKey: { update },
+    };
+    const prisma = {
+      advertiser: { findUnique: jest.fn().mockResolvedValue(null) },
+      idempotencyKey: { create },
+      $transaction: jest.fn(async (callback: (tx: unknown) => unknown) =>
+        callback(tx),
+      ),
+    };
+    const supabase = {
+      getClient: () => ({ auth: { admin: { createUser, deleteUser } } }),
+    };
+    return {
+      service: new OnboardingService(prisma as never, supabase as never),
+      prisma,
+      create,
+      update,
+      createUser,
+      deleteUser,
+      tx,
+    };
+  }
+
+  it("reserves one attempt across concurrent service instances without storing credentials or replaying receipts", async () => {
+    const ctx = fixture();
+    const results = await Promise.allSettled([
+      ctx.service.onboardAdvertiser(request, attempt),
+      ctx.service.onboardAdvertiser(
+        { ...request, password: "different-fixture-password" },
+        attempt.toUpperCase(),
+      ),
+    ]);
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(
+      1,
+    );
+    expect(results).toContainEqual(
+      expect.objectContaining({
+        status: "rejected",
+        reason: expect.objectContaining({ status: 409 }),
+      }),
+    );
+    expect(ctx.createUser).toHaveBeenCalledTimes(1);
+    expect(ctx.tx.campaign.create).toHaveBeenCalledTimes(1);
+    expect(ctx.update).toHaveBeenCalledTimes(1);
+    const reservation = ctx.create.mock.calls[0][0].data;
+    expect(reservation.key).toMatch(/^[a-f0-9]{64}$/);
+    expect(JSON.stringify(reservation)).not.toContain(attempt);
+    expect(JSON.stringify(reservation)).not.toContain(request.email);
+    expect(JSON.stringify(reservation)).not.toContain(request.password);
+    expect(ctx.update).toHaveBeenCalledWith({
+      where: { key: reservation.key },
+      data: {
+        isLocked: false,
+        response: JSON.stringify({
+          state: "COMMITTED",
+          authUserId: "fixture-auth-id",
+          advertiserId: "fixture-advertiser-id",
+          campaignId: "fixture-campaign-id",
+        }),
+      },
+    });
+    await expect(
+      ctx.service.onboardAdvertiser(request, attempt),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(ctx.createUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not provision Auth if persistent reservation fails", async () => {
+    const ctx = fixture();
+    ctx.create.mockRejectedValueOnce(new Error("database unavailable"));
+    await expect(
+      ctx.service.onboardAdvertiser(request, attempt),
+    ).rejects.toThrow("database unavailable");
+    expect(ctx.createUser).not.toHaveBeenCalled();
+  });
+
+  it.each([null, "", "weak-key", [attempt]])(
+    "rejects malformed attempt identifiers before provisioning (%p)",
+    async (key) => {
+      const ctx = fixture();
+      await expect(
+        ctx.service.onboardAdvertiser(request, key),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(ctx.create).not.toHaveBeenCalled();
+      expect(ctx.createUser).not.toHaveBeenCalled();
+    },
+  );
+
+  it("keeps an attempt consumed when transaction acknowledgement is lost", async () => {
+    const ctx = fixture();
+    ctx.prisma.$transaction.mockImplementationOnce(
+      async (callback: (tx: unknown) => unknown) => {
+        await callback(ctx.tx);
+        throw new Error("commit acknowledgement lost");
+      },
+    );
+    await expect(
+      ctx.service.onboardAdvertiser(request, attempt),
+    ).rejects.toMatchObject({ status: 500 });
+    expect(ctx.deleteUser).not.toHaveBeenCalled();
+    await expect(
+      ctx.service.onboardAdvertiser(request, attempt),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(ctx.createUser).toHaveBeenCalledTimes(1);
+  });
+});

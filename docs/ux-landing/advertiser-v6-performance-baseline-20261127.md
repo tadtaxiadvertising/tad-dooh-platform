@@ -24,3 +24,12 @@ node --test scripts/landing-v3-measure.test.cjs
 ```
 
 No production deployment, tariff changes or Player modifications. Review the first CI report before claiming any performance improvement.
+
+
+## Post-integration incident — build identity
+
+PRs #589 and #590 merged although the focused workflow failed. Browser logs 140371028012 and 140376099555 show both functional smokes completed, followed by "Running root does not match the measured build". Build log explicitly lists the advertiser App Router root as static (○ /). No lab report was produced. The old identity rule required every route-exclusive manifest JavaScript asset to appear in a DOM script tag; it logged neither missing assets nor response identity. A real mismatch versus an over-restrictive manifest assumption could not be distinguished from those logs alone.
+
+For a static App Router root declared non-revalidating in prerender-manifest.json, verify SHA-256 of the actual decoded navigation response against server/app/index.html. Missing expected artifact fails rather than silently falling back. Record both digests and missing manifest script paths. Retain strict nonempty manifest matching for non-static routes. A different root HTML must fail even if its script tags match. No development override is enabled by CI. This checks exact root HTML, not every served asset byte. Bundle manifest sizing remains separate from actual browser resource measurements.
+
+The revised implementation and three identity regression cases require exact-head CI verification. Until a successful run, do not assert that the failure was a false positive or that a performance baseline exists. Separately verify repository rulesets/required checks: the observed merges with failed focused CI demonstrate a release control gap, but do not establish which rule or bypass permitted the merges.

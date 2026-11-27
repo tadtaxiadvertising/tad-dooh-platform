@@ -38,7 +38,7 @@ test('advertiser public landing has only one audience and the onboarding engine'
     'apps/advertiser/components/landing/LandingPage.tsx'), 'utf8');
   assert.match(landing, /ROLE_CONTENT\.advertiser/);
   assert.match(landing, /estimateCampaignDetailed\(config\)/);
-  assert.match(landing, /estimateCampaign\(config\)/);
+  assert.doesNotMatch(landing, /estimateCampaign\(config\)/);
   assert.match(landing, /setIncludeProduction\] = useState\(false\)/);
   assert.doesNotMatch(landing, /roleButtons|estimateDriverEarnings|landing-driver-path|driver-slots|driver-cpa|ROLES\.map|ROLE_FAQS\[role\]/);
   assert.match(landing, /ROLE_FAQS\.advertiser/);
@@ -540,6 +540,18 @@ function landingComponentHarness({ signupEnabled = false } = {}) {
   const pricing = loadTs('apps/advertiser/components/advertiser/simulatorPricing.ts', {
     imports: { '@tad/impact-calculator': impact },
   });
+  let projectionCalls = 0;
+  const measuredPricing = {
+    ...pricing,
+    estimateCampaignDetailed(config) {
+      projectionCalls++;
+      return pricing.estimateCampaignDetailed(config);
+    },
+    estimateCampaign(config) {
+      projectionCalls++;
+      return pricing.estimateCampaign(config);
+    },
+  };
   const Landing = loadTs('apps/advertiser/components/landing/LandingPage.tsx', {
     window: analytics.window,
     imports: {
@@ -572,7 +584,7 @@ function landingComponentHarness({ signupEnabled = false } = {}) {
       '@tad/services/cookie-consent': analytics.consent,
       '../../lib/landing/model': loadTs(modelPath, { env: { NEXT_PUBLIC_LANDING_SIGNUP_ENABLED: String(signupEnabled) } }),
       '../../lib/landing/content': loadTs('apps/advertiser/lib/landing/content.ts'),
-      '../advertiser/simulatorPricing': pricing,
+      '../advertiser/simulatorPricing': measuredPricing,
       './CampaignJourney': { default: 'CampaignJourney' },
       './CreativePreview': { default: 'CreativePreview' },
       './TaxiScrollStory': { default: 'TaxiScrollStory' },
@@ -589,6 +601,7 @@ function landingComponentHarness({ signupEnabled = false } = {}) {
   }
   return {
     ...analytics,
+    get projectionCalls() { return projectionCalls; },
     render() {
       hookIndex = 0;
       tree = Landing();
@@ -603,6 +616,27 @@ function landingComponentHarness({ signupEnabled = false } = {}) {
     },
   };
 }
+
+test('landing uses one impact projection per render and retains illustrative totals', () => {
+  const harness = landingComponentHarness();
+  harness.render();
+  assert.equal(harness.projectionCalls, 1);
+  const total = () => Number(harness.control('budget-total').children.replace(/\D/g, ''));
+  assert.equal(total(), 15000);
+  harness.control('hero-brand-name').onChange({ target: { value: 'Café TAD' } });
+  harness.render();
+  assert.equal(harness.projectionCalls, 2);
+  assert.equal(total(), 15000);
+  harness.control('campaign-production').onChange({ target: { checked: true } });
+  harness.render();
+  assert.equal(harness.projectionCalls, 3);
+  assert.equal(total(), 17500);
+  harness.control('campaign-screens').onChange({ target: { value: '12' } });
+  harness.control('campaign-months').onChange({ target: { value: '4' } });
+  harness.render();
+  assert.equal(harness.projectionCalls, 4);
+  assert.equal(total(), 122500);
+});
 
 test('budget continuation respects signup gate and attributes clicks without personal data', () => {
   for (const signupEnabled of [false, true]) {

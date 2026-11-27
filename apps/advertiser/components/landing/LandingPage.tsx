@@ -110,6 +110,12 @@ export default function LandingPage() {
     { screens, months, city },
     referral,
   );
+  const finalDestination = links.signupEnabled
+    ? signupDestination
+    : advertiserDestination;
+  const finalEvent = links.signupEnabled
+    ? "advertiser_signup"
+    : "advertiser_login";
   const cta = (destination: string) =>
     trackAnalyticsEvent("cta_clicked", { role: "advertiser", destination });
   const recordPreview = (
@@ -677,11 +683,9 @@ export default function LandingPage() {
           <h2 id="final-title">{content.finalTitle}</h2>
           <p className="landing-final-copy">{content.finalCopy}</p>
           <a
-            href={links.signupEnabled ? signupDestination : advertiserDestination}
+            href={finalDestination}
             className="landing-button landing-button-primary"
-            onClick={() =>
-              cta(links.signupEnabled ? "advertiser_signup" : "advertiser_login")
-            }
+            onClick={() => cta(finalEvent)}
           >
             {links.signupEnabled ? "Continuar con mi campaña" : content.cta}
             <ArrowUpRight size={19} aria-hidden="true" />

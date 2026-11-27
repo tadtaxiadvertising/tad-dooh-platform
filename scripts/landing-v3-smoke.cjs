@@ -265,6 +265,20 @@ async function main() {
       const totalBefore = await panel.locator('#budget-total').innerText();
       assert.equal(await brand.inputValue(), '');
       assert.equal(await brand.getAttribute('maxlength'), '24');
+      assert.equal(await scene.locator('[data-cabin-illustration]').count(), 1);
+      assert.match(await scene.getAttribute('aria-label'), /reposacabezas del copiloto/);
+      const mounted = await scene.evaluate(element => {
+        const display = element.querySelector('.landing-screen');
+        const outer = element.getBoundingClientRect();
+        const inner = display.getBoundingClientRect();
+        return {
+          contained: inner.left >= outer.left && inner.right <= outer.right &&
+            inner.top >= outer.top && inner.bottom <= outer.bottom,
+          animation: getComputedStyle(display).animationName,
+        };
+      });
+      assert.ok(mounted.contained, 'Mounted screen remains inside the cabin');
+      assert.equal(mounted.animation, 'none', 'Mounted screen must not float');
       await brand.fill('Café TAD');
       assert.ok((await screen.innerText()).includes('Café TAD'));
       assert.match(await scene.getAttribute('aria-label'), /marca de ejemplo Café TAD/);

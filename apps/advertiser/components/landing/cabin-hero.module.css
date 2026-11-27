@@ -1,0 +1,151 @@
+/* Conceptual rear-seat view. Static local art; the mounted display is real DOM. */
+.cabin[data-perspective="advertiser"] {
+  background: linear-gradient(155deg, #292e30, #111516 65%, #090b0d);
+  isolation: isolate;
+  container-type: inline-size;
+}
+.cabin[data-city="stgo"] {
+  background: linear-gradient(155deg, #383128, #171c1e 65%, #090b0d);
+}
+.window {
+  position: absolute;
+  inset: 8% 6% 36%;
+  overflow: hidden;
+  border: 9px solid #222629;
+  border-radius: 18% 18% 12% 12%;
+  background: linear-gradient(160deg, #61747b, #283e46 48%, #142327);
+}
+.window::before {
+  content: "";
+  position: absolute;
+  inset: 32% 0 0;
+  background: repeating-linear-gradient(90deg, #151e22 0 18px, #34444a 18px 25px, #1e2e33 25px 45px);
+  clip-path: polygon(0 30%, 12% 30%, 12% 8%, 24% 8%, 24% 44%, 37% 44%, 37% 20%, 50% 20%, 50% 0, 62% 0, 62% 37%, 74% 37%, 74% 12%, 88% 12%, 88% 35%, 100% 35%, 100% 100%, 0 100%);
+}
+.window::after {
+  content: "";
+  position: absolute;
+  inset: 45% 0 8%;
+  background: radial-gradient(ellipse, #ffe1a8aa 0 12%, transparent 30%) 0 0 / 44px 35px;
+  opacity: .55;
+}
+.seat {
+  position: absolute;
+  inset: 32% 8% -12% 27%;
+  border: 2px solid #555956;
+  border-radius: 34% 34% 14% 14%;
+  background: linear-gradient(115deg, #181c20, #414649 48%, #171b1e 85%);
+  box-shadow: inset 0 0 28px #0008, -12px 10px 36px #0007;
+}
+.seat::before {
+  content: "";
+  position: absolute;
+  inset: -23% 16% 51%;
+  border: 2px solid #606463;
+  border-radius: 36% 36% 20% 20%;
+  background: linear-gradient(120deg, #262a2d, #484d50 44%, #1e2225 80%);
+}
+.passenger {
+  position: absolute;
+  left: -8%;
+  bottom: -16%;
+  width: 39%;
+  height: 61%;
+  border-radius: 50% 48% 0 0;
+  background: linear-gradient(115deg, #171a1d, #303437 65%, #0a0c0e);
+  box-shadow: 6px 0 20px #0007;
+}
+.passenger::before {
+  content: "";
+  position: absolute;
+  width: 62%;
+  aspect-ratio: .78;
+  left: 12%;
+  top: -32%;
+  border-radius: 48% 48% 44% 42%;
+  background: linear-gradient(120deg, #131416, #37312d 76%, #211d1b);
+}
+/* Higher specificity than the legacy floating-tablet scene, independent of CSS load order. */
+.cabin[data-perspective="advertiser"] :global(.landing-screen) {
+  top: 25%;
+  left: 29%;
+  right: auto;
+  bottom: 24%;
+  width: 63%;
+  height: auto;
+  padding: clamp(6px, 1.6cqi, 11px);
+  border: 2px solid #65696a;
+  border-radius: 15px;
+  background: #101214;
+  box-shadow: 0 16px 36px #000a;
+  transform: none;
+  animation: none;
+  z-index: 2;
+}
+.cabin[data-perspective="advertiser"] :global(.landing-screen-content) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: clamp(9px, 2.4cqi, 18px);
+}
+.cabin[data-perspective="advertiser"] :global(.landing-screen-content > strong) {
+  font-size: clamp(17px, 5cqi, 32px);
+  line-height: 1.08;
+  margin: 0;
+  letter-spacing: -.045em;
+  overflow-wrap: anywhere;
+}
+.cabin[data-perspective="advertiser"][data-brand-custom="true"] :global(.landing-screen-content > strong) {
+  font-size: clamp(16px, 4.3cqi, 27px);
+}
+.cabin[data-perspective="advertiser"] :global(.landing-screen-footer) {
+  margin-top: 3px;
+  padding-top: 5px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cabin[data-perspective="advertiser"] :global(.landing-screen-tag) {
+  font-size: clamp(7px, 1.6cqi, 10px);
+  letter-spacing: .06em;
+}
+.cabin[data-perspective="advertiser"] :global(.landing-scene-label),
+.cabin[data-perspective="advertiser"] :global(.landing-scene-caption),
+.cabin[data-perspective="advertiser"] :global(.landing-scene-note) {
+  z-index: 3;
+  color: #fff;
+  background: #101214;
+  border-radius: 7px;
+  padding: 8px 10px;
+}
+.cabin[data-perspective="advertiser"] :global(.landing-scene-label) {
+  top: 15px;
+  left: 12px;
+}
+.cabin[data-perspective="advertiser"] :global(.landing-scene-note) {
+  right: 10px;
+  bottom: 12%;
+  max-width: 63%;
+  font-size: 11px;
+}
+.cabin[data-perspective="advertiser"] :global(.landing-scene-note span) {
+  display: inline;
+  margin: 0 5px 0 0;
+}
+.cabin[data-perspective="advertiser"] :global(.landing-scene-caption) {
+  left: 12px;
+  right: 12px;
+  bottom: 9px;
+  font-size: 8px;
+  text-align: center;
+}
+@media (max-width: 380px) {
+  .cabin[data-perspective="advertiser"] :global(.landing-screen) {
+    left: 23%;
+    width: 70%;
+    top: 23%;
+  }
+  .cabin[data-perspective="advertiser"] :global(.landing-scene-note) {
+    max-width: 72%;
+  }
+}

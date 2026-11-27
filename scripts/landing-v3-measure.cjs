@@ -95,6 +95,31 @@ function compareBaseline(current) {
     limitation: 'A difference between local build snapshots. Matching runtime, config and source scope must be reviewed.' };
 }
 
+// CLS session windows start at the first eligible shift, not navigation start.
+function computeCls(shifts) {
+  let maximum = 0;
+  let sum = 0;
+  let start = null;
+  let previous = null;
+  for (const shift of shifts.filter(item => !item.hadRecentInput).sort((a, b) => a.startTime - b.startTime)) {
+    if (start === null || shift.startTime - previous >= 1000 || shift.startTime - start >= 5000) {
+      start = shift.startTime;
+      sum = 0;
+    }
+    sum += shift.value;
+    maximum = Math.max(maximum, sum);
+    previous = shift.startTime;
+  }
+  return maximum;
+}
+
+function medianFinite(values) {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
 async function browserSamples(base, bundle) {
   const count = Number(process.env.LANDING_MEASURE_SAMPLES || 3);
   assert.ok(Number.isInteger(count) && count >= 1 && count <= 5, 'Sample count must be 1..5.');
@@ -147,23 +172,10 @@ async function browserSamples(base, bundle) {
         const lab = window.__landingLab;
         const navigation = performance.getEntriesByType('navigation')[0];
         const fcp = performance.getEntriesByName('first-contentful-paint')[0];
-        let maxCls = 0;
-        let windowCls = 0;
-        let windowStart = 0;
-        let previous = 0;
-        for (const shift of lab.shifts.filter(item => !item.hadRecentInput)) {
-          if (shift.startTime - previous > 1000 || shift.startTime - windowStart > 5000) {
-            windowStart = shift.startTime;
-            windowCls = 0;
-          }
-          windowCls += shift.value;
-          maxCls = Math.max(maxCls, windowCls);
-          previous = shift.startTime;
-        }
         const resources = performance.getEntriesByType('resource');
         return {
           lcpMs: lab.lcp.length ? lab.lcp.at(-1) : null,
-          cls: lab.supported.includes('layout-shift') ? maxCls : null,
+          layoutShifts: lab.supported.includes('layout-shift') ? lab.shifts : null,
           fcpMs: fcp?.startTime ?? null,
           domContentLoadedMs: navigation.domContentLoadedEventEnd,
           loadMs: navigation.loadEventEnd,
@@ -176,6 +188,8 @@ async function browserSamples(base, bundle) {
           hardwareConcurrency: navigator.hardwareConcurrency,
         };
       });
+      sample.cls = sample.layoutShifts === null ? null : computeCls(sample.layoutShifts);
+      delete sample.layoutShifts;
       userAgent = sample.userAgent;
       delete sample.userAgent;
       samples.push({ iteration: index + 1, runtimeMatchesBuild,
@@ -186,10 +200,7 @@ async function browserSamples(base, bundle) {
   } finally {
     await browser.close();
   }
-  const median = key => {
-    const values = samples.map(sample => sample[key]).filter(value => Number.isFinite(value)).sort((a, b) => a - b);
-    return values.length ? values[Math.floor(values.length / 2)] : null;
-  };
+  const median = key => medianFinite(samples.map(sample => sample[key]));
   return { status: developmentAllowed ? 'DEVELOPMENT LOCAL LAB SAMPLES' : 'LOCAL LAB SAMPLES', browser: userAgent,
     developmentHmrAllowed: developmentAllowed,
     allSamplesMatchMeasuredBuild: samples.every(sample => sample.runtimeMatchesBuild),
@@ -220,6 +231,8 @@ async function main() {
   }
   process.stdout.write(JSON.stringify(report, null, 2) + '\n');
 }
+
+module.exports = { computeCls, medianFinite };
 
 if (require.main === module) main().catch(error => {
   process.stderr.write(`FAIL ${error.message}\n`);

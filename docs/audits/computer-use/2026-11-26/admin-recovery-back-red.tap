@@ -30,12 +30,12 @@ not ok 4 - standalone recovery returns to the configured Admin login
   error: |-
     Expected values to be strictly deep-equal:
     + actual - expected
-    
+
     + []
     - [
     -   '/admin/login'
     - ]
-    
+
   code: 'ERR_ASSERTION'
   name: 'AssertionError'
   expected:

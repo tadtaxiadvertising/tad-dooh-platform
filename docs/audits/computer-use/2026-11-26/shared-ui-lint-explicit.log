@@ -15,4 +15,3 @@ C:\tad-audit-current-20261126\packages\ui\components\PortalAuth.tsx
   339:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 ✖ 11 problems (1 error, 10 warnings)
-

@@ -37,7 +37,7 @@
     "Automatic approval review rejected local production-build server start including loopback",
     "Documented Simulator and Remotion hostnames return ENOTFOUND"
   ],
-  "nextAction": "Revisar PR borrador y CI con frozen lockfile. Para verificar la UI final, resolver el rechazo de ejecución del servidor por una vía autorizada; no eludirlo. Después ejecutar browser recovery con proveedor sintético. Confirmar dominios Player/Simulator/Remotion con operador autorizado.",
+  "nextAction": "Review draft PR and exact-SHA CI with frozen lockfile. Browser verification requires an authorized way to run the local server after policy rejection; do not bypass. Confirm service origins and repair Player TLS through an authorized operator.",
   "productionWrites": 0,
   "productionDeployments": 0,
   "prsCreated": [],
@@ -108,5 +108,6 @@
     "scripts/computer-use-offline-queue-audit.cjs",
     "scripts/computer-use-recovery-audit.cjs",
     "docs/audits/computer-use/2026-11-26"
-  ]
+  ],
+  "implementationCommit": "3538a933"
 }

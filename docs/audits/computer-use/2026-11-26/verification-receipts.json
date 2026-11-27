@@ -152,5 +152,6 @@
       "exitCode": null,
       "note": "Automatic approval review rejected both default host and explicitly loopback-only start commands; tool reason only blocked by policy. Commands did not execute. No bypass attempted."
     }
-  ]
+  ],
+  "evidenceNormalization": "Trailing whitespace removed from text TAP/log snapshots only; results and diagnostic content retained."
 }

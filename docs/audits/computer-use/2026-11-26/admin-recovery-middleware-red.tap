@@ -35,9 +35,9 @@ not ok 5 - anonymous recovery is public while the Admin dashboard stays protecte
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
-    
+
     'redirect' !== 'next'
-    
+
   code: 'ERR_ASSERTION'
   name: 'AssertionError'
   expected: 'next'

@@ -41,9 +41,9 @@ not ok 6 - client session restoration does not redirect anonymous recovery to lo
   failureType: 'testCodeFailure'
   error: |-
     The expression evaluated to a falsy value:
-    
+
       assert.ok(paths.includes('/admin/forgot-password'))
-    
+
   code: 'ERR_ASSERTION'
   name: 'AssertionError'
   expected: true
@@ -67,9 +67,9 @@ not ok 7 - Admin recovery renders without the private dashboard layout
   failureType: 'testCodeFailure'
   error: |-
     The input was expected to not match the regular expression /data-private-layout/. Input:
-    
+
     '<div data-private-layout="true"><main>recovery-content</main></div>'
-    
+
   code: 'ERR_ASSERTION'
   name: 'AssertionError'
   expected:

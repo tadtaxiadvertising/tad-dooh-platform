@@ -116,8 +116,24 @@ export default function LandingPage() {
   const finalEvent = links.signupEnabled
     ? "advertiser_signup"
     : "advertiser_login";
-  const cta = (destination: string) =>
-    trackAnalyticsEvent("cta_clicked", { role: "advertiser", destination });
+  const cta = (
+    destination:
+      | "advertiser_login"
+      | "advertiser_signup"
+      | "advertiser_lab"
+      | "campaign_story",
+    placement:
+      | "header"
+      | "hero"
+      | "simulator_intro"
+      | "simulator_result"
+      | "final",
+  ) =>
+    trackAnalyticsEvent("cta_clicked", {
+      role: "advertiser",
+      destination,
+      placement,
+    });
   const recordPreview = (
     patch: Partial<{
       city: DemoCity;
@@ -203,7 +219,7 @@ export default function LandingPage() {
         <a
           href={advertiserDestination}
           className="landing-access"
-          onClick={() => cta("advertiser_login")}
+          onClick={() => cta("advertiser_login", "header")}
         >
           Ingresar <ArrowUpRight size={16} aria-hidden="true" />
         </a>
@@ -228,14 +244,14 @@ export default function LandingPage() {
               <a
                 className="landing-button landing-button-primary"
                 href="#experiencia"
-                onClick={() => cta("advertiser_lab")}
+                onClick={() => cta("advertiser_lab", "hero")}
               >
                 Simular mi campaña <ArrowUpRight size={19} aria-hidden="true" />
               </a>
               <a
                 className="landing-text-link"
                 href="#motion-story"
-                onClick={() => cta("campaign_story")}
+                onClick={() => cta("campaign_story", "hero")}
               >
                 Ver cómo funciona <ArrowRight size={17} aria-hidden="true" />
               </a>
@@ -408,20 +424,10 @@ export default function LandingPage() {
               <a
                 className="landing-button landing-button-light"
                 href={advertiserDestination}
-                onClick={() => cta("advertiser_login")}
+                onClick={() => cta("advertiser_login", "simulator_intro")}
               >
                 Entrar a mi portal <ArrowUpRight size={18} aria-hidden="true" />
               </a>
-              {links.signupEnabled && (
-                <a
-                  className="landing-signup"
-                  href={signupDestination}
-                  onClick={() => cta("advertiser_signup")}
-                >
-                  Continuar con mi campaña{" "}
-                  <ArrowRight size={16} aria-hidden="true" />
-                </a>
-              )}
               <p className="landing-disclaimer">
                 {links.signupEnabled
                   ? "Revisa tu configuración en el registro y confirma allí la producción opcional. La simulación no reserva pantallas."
@@ -591,6 +597,24 @@ export default function LandingPage() {
                   importes del simulador no sustituyen las tarifas aprobadas.
                 </p>
               </aside>
+              <div className="landing-budget-next">
+                <a
+                  id="campaign-next"
+                  className="landing-button landing-button-primary"
+                  href={finalDestination}
+                  onClick={() => cta(finalEvent, "simulator_result")}
+                >
+                  {links.signupEnabled
+                    ? "Continuar con mi campaña"
+                    : "Ingresar al portal"}
+                  <ArrowRight size={18} aria-hidden="true" />
+                </a>
+                <p>
+                  {links.signupEnabled
+                    ? "Podrás revisar tu configuración antes de solicitar la campaña."
+                    : "Acceso para anunciantes registrados."}
+                </p>
+              </div>
               {projection.warnings.length > 0 && (
                 <details className="landing-warning-details">
                   <summary>
@@ -685,7 +709,7 @@ export default function LandingPage() {
           <a
             href={finalDestination}
             className="landing-button landing-button-primary"
-            onClick={() => cta(finalEvent)}
+            onClick={() => cta(finalEvent, "final")}
           >
             {links.signupEnabled ? "Continuar con mi campaña" : content.cta}
             <ArrowUpRight size={19} aria-hidden="true" />

@@ -121,3 +121,7 @@
 .navigation button:disabled { background:#f4f4f1; color:#77776f; border-color:#deded6; }
 .journey .boundary { color:#74746b; }
 @media(max-width:760px) { .step{min-height:156px}.stage{border-radius:18px} }
+
+/* V6 light canvas: a dark focus ring remains visible on white and selected cards. */
+.journey .step:focus-visible,
+.journey .navigation button:focus-visible { outline: 3px solid #171717; outline-offset: 4px; }

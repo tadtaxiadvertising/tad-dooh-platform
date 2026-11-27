@@ -408,11 +408,27 @@ async function main() {
       const story = page.locator('#recorrido-campana');
       const steps = story.locator('button[aria-pressed]');
       assert.equal(await steps.count(), 4);
+      const assertJourneyFocus = async control => {
+        const focus = await control.evaluate(element => {
+          const style = getComputedStyle(element);
+          return {
+            visible: element.matches(':focus-visible'),
+            color: style.outlineColor,
+            style: style.outlineStyle,
+            width: Number.parseFloat(style.outlineWidth),
+          };
+        });
+        assert.equal(focus.visible, true, 'Keyboard navigation must show a focus indicator');
+        assert.equal(focus.color, 'rgb(23, 23, 23)', 'Light journey requires a dark focus ring');
+        assert.equal(focus.style, 'solid');
+        assert.ok(focus.width >= 3, 'Focus indicator must remain clearly visible');
+      };
       const stageTitles = new Set();
       for (let index = 0; index < 4; index += 1) {
         const step = steps.nth(index);
         await step.focus();
         await step.press('Enter');
+        await assertJourneyFocus(step);
         assert.equal(await step.getAttribute('aria-pressed'), 'true');
         assert.equal(await story.locator('button[aria-pressed="true"]').count(), 1);
         stageTitles.add(await story.getByRole('heading', { level: 3 }).innerText());
@@ -423,6 +439,13 @@ async function main() {
       await steps.nth(0).press('ArrowRight');
       assert.equal(await steps.nth(1).evaluate(element => element === document.activeElement), true);
       assert.equal(await steps.nth(1).getAttribute('aria-pressed'), 'true');
+      await assertJourneyFocus(steps.nth(1));
+      const next = story.getByRole('button', { name: 'Siguiente', exact: true });
+      await next.focus();
+      await assertJourneyFocus(next);
+      await next.press('Enter');
+      assert.equal(await steps.nth(2).getAttribute('aria-pressed'), 'true');
+      await assertJourneyFocus(steps.nth(2));
     });
 
     await check('Creative Studio keeps keyboard focus and previews a local image', async () => {

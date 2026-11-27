@@ -96,11 +96,11 @@ export default function StoryChapterArt({ chapter }: { chapter: number }) {
               <rect width="100" height="62" rx="8" fill="#E8EAE4" />
               <circle cx="18" cy="18" r="9" fill="#FDCB01" />
               <path
-            d="m14 18 3 3 6-7"
-            fill="none"
-            stroke="#171717"
-            strokeWidth="2"
-          />
+                d="m14 18 3 3 6-7"
+                fill="none"
+                stroke="#171717"
+                strokeWidth="2"
+              />
               <path d="M13 38h70v5H13zm0 10h47v4H13z" fill="#69706C" />
             </g>
           ))}

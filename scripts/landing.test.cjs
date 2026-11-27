@@ -884,13 +884,18 @@ test('advertiser brand editor is local-only and never alters the budget or analy
 
 // Exercise the real onboarding page with synthetic hooks and an explicitly
 // controlled transport. No actual account, campaign or quote request is sent.
-function onboardingSubmissionHarness() {
+function onboardingSubmissionHarness({ referral = null } = {}) {
   const hooks = [];
   let cursor = 0;
   let effects = [];
   let tree;
   const requests = [];
   const pending = [];
+  const quoteRequests = [];
+  const quotePending = [];
+  const quoteTimers = new Map();
+  let timerId = 0;
+  const cleanups = new Map();
   const react = {
     useState(initial) {
       const i = cursor++;
@@ -904,7 +909,14 @@ function onboardingSubmissionHarness() {
     },
     useEffect(effect, deps) {
       const i = cursor++;
-      if (!hooks[i] || deps.some((value, j) => !Object.is(value, hooks[i][j]))) effects.push(effect);
+      if (!hooks[i] || deps.some((value, j) => !Object.is(value, hooks[i][j]))) {
+        effects.push(() => {
+          cleanups.get(i)?.();
+          const cleanup = effect();
+          if (typeof cleanup === 'function') cleanups.set(i, cleanup);
+          else cleanups.delete(i);
+        });
+      }
       hooks[i] = deps;
     },
   };
@@ -913,8 +925,17 @@ function onboardingSubmissionHarness() {
   const impact = loadTs('packages/impact-calculator/index.ts', { imports: { './sources': sources } });
   const pricing = loadTs('apps/advertiser/components/advertiser/simulatorPricing.ts', { imports: { '@tad/impact-calculator': impact } });
   const Page = loadTs('apps/advertiser/pages/advertiser/onboarding.tsx', {
-    window: { location: { search: '?screens=12&months=4&city=stgo&includeProduction=true&budget=1' } },
+    window: {
+      location: { search: '?screens=12&months=4&city=stgo&includeProduction=true&budget=1' },
+      setTimeout(callback) { quoteTimers.set(++timerId, callback); return timerId; },
+      clearTimeout(id) { quoteTimers.delete(id); },
+    },
     fetch: (url, options) => {
+      if (url === '/api/proxy/onboarding/advertiser/quote') {
+        assert.equal(options.method, 'POST');
+        quoteRequests.push({ ...JSON.parse(options.body), signal: options.signal });
+        return new Promise(resolve => quotePending.push(resolve));
+      }
       assert.equal(url, '/api/proxy/onboarding/advertiser');
       assert.equal(options.method, 'POST');
       requests.push(JSON.parse(options.body));
@@ -933,7 +954,7 @@ function onboardingSubmissionHarness() {
       '@/components/onboarding/SuccessStep': { default: 'Success' },
       '../../components/advertiser/simulatorPricing': pricing,
       '../../lib/landing/model': model,
-      '../../components/advertiser/referral': { captureReferralCode: () => null, clearReferralCode() {} },
+      '../../components/advertiser/referral': { captureReferralCode: () => referral, clearReferralCode() {} },
     },
   }).default;
   function find(node, type) {
@@ -943,6 +964,22 @@ function onboardingSubmissionHarness() {
   }
   return {
     requests,
+    quoteRequests,
+    expectedOffer(overrides = {}) {
+      return impact.calculateAdvertiserOffer({
+        screens: 12, months: 4, includeProduction: false, verifiedDriverCode: true, ...overrides,
+      });
+    },
+    runQuoteTimer() {
+      assert.equal(quoteTimers.size, 1);
+      const [id, callback] = quoteTimers.entries().next().value;
+      quoteTimers.delete(id);
+      return callback();
+    },
+    respondQuote(offer) {
+      assert.ok(quotePending.length);
+      quotePending.shift()({ ok: true, json: async () => offer });
+    },
     respond(ok) {
       assert.ok(pending.length);
       pending.shift()({ ok, json: async () => ok ? { quote: { subtotal: 120000 } } : { message: 'Fixture rejected' } });
@@ -1026,4 +1063,70 @@ test('onboarding releases the client lock after an explicit failed response', as
   await retry;
   harness.render();
   assert.equal(harness.props('Wizard').step, 4);
+});
+
+
+test('only a complete matching server quote may apply a referred advertiser discount', async () => {
+  for (const [label, mutate, valid] of [
+    ['complete', offer => offer, true],
+    ['wrong currency', offer => ({ ...offer, currency: 'USD' }), false],
+    ['wrong production choice', offer => ({ ...offer, productionFee: 2500, subtotal: offer.subtotal + 2500 }), false],
+    ['negative subtotal', offer => ({ ...offer, subtotal: -1 }), false],
+    ['wrong discount', offer => ({ ...offer, discountPercent: 100 }), false],
+    ['taxes included', offer => ({ ...offer, taxesIncluded: true }), false],
+    ['unverified code', offer => ({ ...offer, verifiedDriverCode: false }), false],
+    ['wrong version', offer => ({ ...offer, pricingVersion: 'other-version' }), false],
+    ['wrong screen count', offer => ({ ...offer, screens: 13 }), false],
+    ['incomplete response', offer => ({ pricingVersion: offer.pricingVersion, verifiedDriverCode: true, screens: 12, months: 4, subtotal: offer.subtotal }), false],
+    ['null response', () => null, false],
+  ]) {
+    const harness = onboardingSubmissionHarness({ referral: 'DRIVER_FIXTURE' });
+    harness.render();
+    harness.render();
+    harness.props('Benefits').onNext();
+    harness.render();
+    assert.equal(harness.props('Simulator').quoteStatus, 'checking', label);
+    const pending = harness.runQuoteTimer();
+    assert.equal(harness.quoteRequests.length, 1);
+    assert.equal(harness.quoteRequests[0].includeProduction, false);
+    harness.respondQuote(mutate(harness.expectedOffer()));
+    await pending;
+    harness.render();
+    const simulator = harness.props('Simulator');
+    assert.equal(simulator.quoteStatus, valid ? 'verified' : 'error', label);
+    if (valid) assert.equal(simulator.verifiedOffer.subtotal, 72000);
+    else assert.equal(simulator.verifiedOffer, null, label);
+    simulator.onNext();
+    harness.render();
+    assert.equal(harness.props('Commitment').campaignSummary.budget, valid ? 72000 : 120000, label);
+    if (!valid) {
+      await harness.props('Commitment').onSubmit();
+      harness.render();
+      assert.equal(harness.requests.length, 0, label);
+      assert.match(harness.props('Commitment').error, /Verifica tu código/);
+    }
+  }
+});
+
+test('a late quote cannot restore a stale offer after production selection changes', async () => {
+  const harness = onboardingSubmissionHarness({ referral: 'DRIVER_FIXTURE' });
+  harness.render();
+  harness.render();
+  harness.props('Benefits').onNext();
+  harness.render();
+  const oldQuote = harness.runQuoteTimer();
+  harness.props('Simulator').onChange({ includeProduction: true });
+  harness.render();
+  assert.equal(harness.quoteRequests[0].signal.aborted, true);
+  const newQuote = harness.runQuoteTimer();
+  harness.respondQuote(harness.expectedOffer());
+  await oldQuote;
+  harness.render();
+  assert.equal(harness.props('Simulator').verifiedOffer, null);
+  harness.respondQuote(harness.expectedOffer({ includeProduction: true }));
+  await newQuote;
+  harness.render();
+  assert.equal(harness.props('Simulator').quoteStatus, 'verified');
+  assert.equal(harness.props('Simulator').verifiedOffer.productionFee, 2500);
+  assert.equal(harness.props('Simulator').verifiedOffer.subtotal, 74500);
 });

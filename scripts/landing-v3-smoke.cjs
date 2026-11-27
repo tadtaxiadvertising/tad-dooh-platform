@@ -292,7 +292,7 @@ async function main() {
       const commerce = controls.getByRole('button', { name: 'Comercio' });
       const event = controls.getByRole('button', { name: 'Evento' });
       assert.equal(await story.count(), 1);
-      assert.equal(await controls.getByRole('button').count(), 3);
+      assert.equal(await controls.getByRole('button').count(), 6);
       assert.equal(await restaurant.getAttribute('aria-pressed'), 'true');
       assert.equal(await story.locator('[data-promotion]').getAttribute('data-promotion'), 'restaurante');
       assert.match(await story.innerText(), /Tu próxima parada tiene mucho sabor/);
@@ -364,6 +364,23 @@ async function main() {
       assert.equal(await visual.getAttribute('data-scanned'), 'false', 'Changing promotion resets scan');
       await scan.click();
       assert.match(await destination.innerText(), /Conoce la programación/);
+      for (const [label, key, copy] of [
+        ['Inmobiliaria', 'inmobiliaria', /Explora propiedades/],
+        ['Hotel', 'hotel', /Descubre tu estancia/],
+        ['Servicios', 'servicios', /Conoce nuestros servicios/],
+      ]) {
+        const previousColor = await visual.locator('[class*="adIdentity"]').evaluate(el => getComputedStyle(el.parentElement).backgroundColor);
+        const choice = controls.getByRole('button', { name: label, exact: true });
+        await choice.focus();
+        await choice.press('Enter');
+        assert.equal(await choice.getAttribute('aria-pressed'), 'true');
+        assert.equal(await visual.getAttribute('data-promotion'), key);
+        assert.equal(await visual.getAttribute('data-scanned'), 'false');
+        const nextColor = await visual.locator('[class*="adIdentity"]').evaluate(el => getComputedStyle(el.parentElement).backgroundColor);
+        assert.notEqual(previousColor, nextColor, 'Sector has a distinct creative palette');
+        await scan.click();
+        assert.match(await destination.innerText(), copy);
+      }
       assert.equal(await story.locator('a[href^="http"]').count(), 0,
         'The QR demo must not redirect to a fabricated advertiser URL.');
       assert.match(await story.innerText(), /no son escaneables/i);

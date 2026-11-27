@@ -63,6 +63,7 @@ jobs:
                 'Tests': [
                   'Run API tests',
                   'Advertiser registration PostgreSQL isolation contract',
+                  'Advertiser onboarding Prisma integration',
                   'Driver offline queue retry safety (Node 22)',
                   'Run safe cross-portal integration contracts',
                 ],

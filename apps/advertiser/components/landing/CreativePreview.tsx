@@ -29,6 +29,8 @@ export default function CreativePreview() {
 
   function choose(file?: File) {
     if (!file) return;
+    // Reset even on rejection so the same file can be selected again.
+    if (input.current) input.current.value = "";
     setError("");
     if (!TYPES.has(file.type)) {
       setMedia(null);
@@ -47,7 +49,12 @@ export default function CreativePreview() {
       name: file.name,
     });
     setFit("contain");
-    if (input.current) input.current.value = "";
+  }
+
+  function failPreview(message: string) {
+    // Removing the preview releases its object URL via the effect cleanup.
+    setMedia(null);
+    setError(message);
   }
 
   function clear() {
@@ -85,9 +92,15 @@ export default function CreativePreview() {
             <div className={styles.screen}>
               {media?.type === "image" ? (
                 <img
+                  key={media.url}
                   src={media.url}
                   alt="Vista previa de la creatividad seleccionada"
                   style={{ objectFit: fit }}
+                  onError={() =>
+                    failPreview(
+                      "El navegador no pudo abrir esta imagen. Comprueba el archivo o prueba otro.",
+                    )
+                  }
                 />
               ) : media?.type === "video" ? (
                 <video
@@ -99,7 +112,7 @@ export default function CreativePreview() {
                   aria-label="Reproducir video de prueba"
                   style={{ objectFit: fit }}
                   onError={() =>
-                    setError(
+                    failPreview(
                       "El navegador no pudo reproducir este video. Comprueba el códec o prueba otro archivo.",
                     )
                   }

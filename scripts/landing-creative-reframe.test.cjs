@@ -9,7 +9,7 @@ const collapseLayout = (source) => source.replace(/\s+/g, " ");
 
 test("advertiser creative reframe preserves the live estimate and explicit production opt-in", () => {
   const landing = read("apps/advertiser/components/landing/LandingPage.tsx");
-  assert.match(landing, /estimateCampaign\(config\)/);
+  assert.doesNotMatch(landing, /estimateCampaign\(config\)/);
   assert.match(landing, /estimateCampaignDetailed\(config\)/);
   assert.match(landing, /setIncludeProduction\] = useState\(false\)/);
   assert.match(landing, /id="campaign-production"/);
@@ -84,7 +84,7 @@ test("financial outputs only animate after a changed amount, never on mount", ()
   const advertiser = read("apps/advertiser/components/landing/LandingPage.tsx");
   const driver = read("apps/driver/components/landing/DriverEarningsLab.tsx");
   for (const [name, source] of [["advertiser", advertiser], ["driver", driver]]) {
-    assert.doesNotMatch(source, /<motion\.output|key=\{(?:quote\.total|result\.illustrativeTotalRD)\}/, name);
+    assert.doesNotMatch(source, /<motion\.output|key=\{(?:projection\.totalCost|result\.illustrativeTotalRD)\}/, name);
     assert.match(source, /\.animate\(/, name);
     assert.match(source, /duration:\s*180/, name);
     assert.match(source, /opacity:\s*0\.94/, name);

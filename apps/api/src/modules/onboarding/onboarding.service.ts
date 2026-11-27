@@ -159,89 +159,108 @@ export class OnboardingService {
     }
     const createdAuthUserId = provisioned.user.id;
 
+    // Only an explicitly rejected transaction callback proves that this
+    // request did not complete its database work. A rejected COMMIT response
+    // can instead mean the transaction committed but acknowledgement was lost.
+    let transactionWorkFailed = false;
     try {
       const result = await this.prisma.$transaction(async (tx) => {
-        // 1. Create Advertiser
-        const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
-        const advertiser = await tx.advertiser.create({
-          data: {
-            companyName,
-            contactName: name,
-            email,
-            phone,
-            password: hashedPassword,
-            // NUEVO: Status de onboarding — no ACTIVE directo
-            // Permite al dashboard detectar onboarding incompleto
-            status: "PENDING_REVIEW",
-            referredBy: referrerId,
-          },
-        });
-
-        // 2. Create Initial Campaign (as an "Intent" or actual Campaign)
-        const months = campaignMonths ?? 1;
-        const targetImpressions = expectedScreens * 12500; // Estimación basada en screens
-        const campaign = await tx.campaign.create({
-          data: {
-            name: `Lanzamiento - ${companyName}`,
-            advertiser: companyName,
-            advertiserId: advertiser.id,
-            // Persist the authoritative pre-tax estimate, not a client budget.
-            budget: quote.subtotal,
-            targetImpressions,
-            startDate: new Date(),
-            endDate: new Date(
-              new Date().setMonth(new Date().getMonth() + months),
-            ),
-            status: BUSINESS_RULES.STATUS.CAMPAIGN.PENDING_PAYMENT,
-            active: false, // Inactiva hasta que se pague
-            hasSeenTutorial: true,
-            category: "General",
-            targetCity: targetCity,
-            // Se respeta la duración declarada por el anunciante
-            campaignMonths: months,
-            includeProduction: includeProduction ?? false,
-          },
-        });
-
-        // 3. Register Video Metadata (The actual file upload happens on frontend to storage)
-        if (data.fileMetadata) {
-          await tx.video.create({
+        try {
+          // 1. Create Advertiser
+          const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
+          const advertiser = await tx.advertiser.create({
             data: {
-              campaignId: campaign.id,
-              title: data.fileMetadata.name,
-              url: "PENDING_UPLOAD", // Placeholder, the frontend will handle upload to storage
-              duration: 30, // Default duration per slot
-              fileSize: data.fileMetadata.size,
-              mimeType: data.fileMetadata.type,
+              companyName,
+              contactName: name,
+              email,
+              phone,
+              password: hashedPassword,
+              // NUEVO: Status de onboarding — no ACTIVE directo
+              // Permite al dashboard detectar onboarding incompleto
+              status: "PENDING_REVIEW",
+              referredBy: referrerId,
             },
           });
+
+          // 2. Create Initial Campaign (as an "Intent" or actual Campaign)
+          const months = campaignMonths ?? 1;
+          const targetImpressions = expectedScreens * 12500; // Estimación basada en screens
+          const campaign = await tx.campaign.create({
+            data: {
+              name: `Lanzamiento - ${companyName}`,
+              advertiser: companyName,
+              advertiserId: advertiser.id,
+              // Persist the authoritative pre-tax estimate, not a client budget.
+              budget: quote.subtotal,
+              targetImpressions,
+              startDate: new Date(),
+              endDate: new Date(
+                new Date().setMonth(new Date().getMonth() + months),
+              ),
+              status: BUSINESS_RULES.STATUS.CAMPAIGN.PENDING_PAYMENT,
+              active: false, // Inactiva hasta que se pague
+              hasSeenTutorial: true,
+              category: "General",
+              targetCity: targetCity,
+              // Se respeta la duración declarada por el anunciante
+              campaignMonths: months,
+              includeProduction: includeProduction ?? false,
+            },
+          });
+
+          // 3. Register Video Metadata (The actual file upload happens on frontend to storage)
+          if (data.fileMetadata) {
+            await tx.video.create({
+              data: {
+                campaignId: campaign.id,
+                title: data.fileMetadata.name,
+                url: "PENDING_UPLOAD", // Placeholder, the frontend will handle upload to storage
+                duration: 30, // Default duration per slot
+                fileSize: data.fileMetadata.size,
+                mimeType: data.fileMetadata.type,
+              },
+            });
+          }
+
+          return {
+            advertiserId: advertiser.id,
+            campaignId: campaign.id,
+            companyName: advertiser.companyName,
+            quote,
+          };
+        } catch (error) {
+          transactionWorkFailed = true;
+          throw error;
         }
-
-        this.logger.log(`✅ Onboarding exitoso: ${email} (${advertiser.id})`);
-
-        return {
-          advertiserId: advertiser.id,
-          campaignId: campaign.id,
-          companyName: advertiser.companyName,
-          quote,
-        };
       });
+      this.logger.log(
+        `[ADVERTISER_ONBOARDING_COMMITTED] advertiserId=${result.advertiserId}`,
+      );
       return result;
     } catch (error) {
-      // Compensate only the Auth identity created by this request.
-      // If cleanup fails, preserve the error for operational reconciliation.
+      // Never delete the new identity when the transaction outcome is unknown.
+      // Preserve the Auth user for a privileged reconciliation with PostgreSQL.
+      if (!transactionWorkFailed) {
+        this.logger.error(
+          `[ADVERTISER_ONBOARDING_RECONCILIATION_REQUIRED] authUserId=${createdAuthUserId} reason=transaction_outcome_unknown`,
+        );
+        throw new InternalServerErrorException(
+          "No pudimos confirmar el registro. Verifica el estado de tu solicitud antes de volver a registrarte.",
+        );
+      }
+
       try {
         const { error: cleanupError } = await this.supabaseService
           .getClient()
           .auth.admin.deleteUser(createdAuthUserId);
         if (cleanupError) {
           this.logger.error(
-            "CRITICAL: orphaned advertiser Auth identity; manual reconciliation required",
+            `[ADVERTISER_ONBOARDING_RECONCILIATION_REQUIRED] authUserId=${createdAuthUserId} reason=auth_cleanup_failed`,
           );
         }
       } catch {
         this.logger.error(
-          "CRITICAL: Auth cleanup unavailable; manual reconciliation required",
+          `[ADVERTISER_ONBOARDING_RECONCILIATION_REQUIRED] authUserId=${createdAuthUserId} reason=auth_cleanup_unavailable`,
         );
       }
       this.logger.error("Advertiser onboarding transaction failed");

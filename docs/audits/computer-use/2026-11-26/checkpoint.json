@@ -45,7 +45,7 @@
     "https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/560",
     "https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/561"
   ],
-  "updatedAt": "2026-11-27T00:39:52.139Z",
+  "updatedAt": "2026-11-27T00:41:54.245Z",
   "phase": "Pasada local documentada; UI del artefacto bloqueada por revisión automática; sin despliegue",
   "usersEvaluated": [
     "VISITOR (production read-only)",
@@ -93,7 +93,9 @@
     "blocked": 9
   },
   "permission": "User explicitly chose isolated local tests and production read-only",
-  "pullRequestsCreated": [],
+  "pullRequestsCreated": [
+    "https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/562"
+  ],
   "testsExecutedDetails": "verification-receipts.json",
   "modifiedFiles": [
     ".github/workflows/ci.yml",
@@ -109,5 +111,7 @@
     "scripts/computer-use-recovery-audit.cjs",
     "docs/audits/computer-use/2026-11-26"
   ],
-  "implementationCommit": "3538a933"
+  "implementationCommit": "3538a933",
+  "reviewHead": "52aef2ccdc47e671a33220efa472af3a906935b4",
+  "currentPhase": "DRAFT PR opened; checks pending and runtime blocked"
 }

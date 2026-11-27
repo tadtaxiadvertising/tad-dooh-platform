@@ -15,3 +15,5 @@ API salud/ready/full 200 y tres endpoints protegidos 401; Driver/Advertiser/Admi
 **NO GO para certificar esta plataforma para producción con esta evidencia.** No es una orden de apagar servicios: faltan ciclo autenticado, QR y reproducción real, reconciliación financiera y alcance del TLS. No se midió una caída general ni explotación.
 
 [Informe final](12-FINAL-REPORT.md), [hallazgos](03-FINDINGS.md), [checkpoint](checkpoint.json).
+
+PR de revisión: [#562](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/562), DRAFT. Sin merge ni despliegue. El aviso de seguridad del push informó 885 alertas agregadas en la rama por defecto (27 critical, 361 high, 434 moderate, 63 low); no se validó ni deduplicó ese inventario y no se sumó a los dos hallazgos reproducidos de esta pasada. Mantener el seguimiento de dependencias existente.

@@ -301,3 +301,78 @@ test("successful apply verifies rules, enforcement and protected branch by read-
   assert.equal(f.calls.filter(call => call.method === "PUT").length, 1);
   assert.ok(f.logs.some(message => message.includes("PROTECTION_VERIFIED")));
 });
+
+
+function soloProtection() {
+  const config = installedProtection();
+  return {
+    ...config,
+    required_pull_request_reviews: {
+      ...config.required_pull_request_reviews,
+      required_approving_review_count: 0,
+      require_last_push_approval: false,
+      require_code_owner_reviews: false,
+    },
+  };
+}
+
+test("solo verification accepts only the explicit owner-approved profile using GET", () => {
+  const config = soloProtection();
+  const f = verificationFixture({ config });
+  assert.deepEqual(run({ mode: "--verify-solo", api: f.api, log: f.log }),
+    { verified: true, sha: SHA });
+  assert.equal(f.calls.length, 4);
+  assert.ok(f.calls.every(call => call.method === "GET"));
+  assert.ok(f.logs.some(line => line.includes("profile=solo")));
+  const strict = verificationFixture({ config });
+  assert.throws(() => run({ mode: "--verify", api: strict.api, log: strict.log }),
+    /EXISTING_PROTECTION_INCOMPLETE.*REQUIRED_PR_REVIEWS/);
+});
+
+test("solo verification does not accept missing PR rules or unsafe common protections", () => {
+  const config = soloProtection();
+  const review = config.required_pull_request_reviews;
+  for (const bad of [
+    { ...config, required_pull_request_reviews: null },
+    { ...config, required_pull_request_reviews: { ...review, required_approving_review_count: undefined } },
+    { ...config, required_pull_request_reviews: { ...review, require_last_push_approval: true } },
+    { ...config, required_pull_request_reviews: { ...review, require_code_owner_reviews: true } },
+    { ...config, required_pull_request_reviews: { ...review, dismiss_stale_reviews: false } },
+    { ...config, required_status_checks: { strict: false, checks: [] } },
+    { ...config, required_status_checks: { strict: true, checks: [{ context: "Summary", app_id: 77 }] } },
+    { ...config, enforce_admins: { enabled: false } },
+    { ...config, allow_force_pushes: { enabled: true } },
+    { ...config, allow_deletions: { enabled: true } },
+    { ...config, required_conversation_resolution: { enabled: false } },
+    installedProtection(),
+  ]) {
+    const f = verificationFixture({ config: bad });
+    assert.throws(() => run({ mode: "--verify-solo", api: f.api, log: f.log }),
+      /EXISTING_PROTECTION_INCOMPLETE/);
+    assert.ok(f.calls.every(call => call.method === "GET"));
+  }
+});
+
+test("solo verification refuses missing or red Summary, moving main and forbidden reads", () => {
+  for (const options of [
+    { checks: [] },
+    { checks: [{ ...successfulSummary(), conclusion: "failure" }] },
+    { moved: true },
+    { forbidden: true },
+    { protectedMain: false },
+  ]) {
+    const f = verificationFixture({ config: soloProtection(), ...options });
+    assert.throws(() => run({ mode: "--verify-solo", api: f.api, log: f.log }));
+    assert.ok(f.calls.every(call => call.method === "GET"));
+    assert.ok(f.logs.every(line => !line.includes("READ_ONLY_VERIFIED")));
+  }
+});
+
+test("solo verification never changes the existing installation payload", () => {
+  const f = verificationFixture({ config: soloProtection() });
+  run({ mode: "--verify-solo", env: { TAD_APPROVE_MAIN_PROTECTION: "YES" }, api: f.api, log: f.log });
+  const desired = protectionPayload();
+  assert.equal(desired.required_pull_request_reviews.required_approving_review_count, 1);
+  assert.equal(desired.required_pull_request_reviews.require_last_push_approval, true);
+  assert.ok(f.calls.every(call => call.method === "GET"));
+});

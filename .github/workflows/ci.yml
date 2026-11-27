@@ -177,6 +177,7 @@ jobs:
           node --test scripts/admin-recovery-entry.test.cjs
           node --test scripts/admin-finance-summary.test.cjs
           node --test scripts/admin-reconciliation-pagination.test.cjs
+          node --test scripts/admin-content-request-media.test.cjs
           node --test scripts/advertiser-impact-alias-contract.test.cjs
           node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
           node --test scripts/simulator-key-security.test.cjs scripts/next-security-contract.test.cjs

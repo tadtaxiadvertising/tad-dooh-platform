@@ -54,6 +54,24 @@ describe("OnboardingController security boundary", () => {
     expect(response.discountPercent).toBe(40);
   });
 
+  it("forwards the registration attempt key without changing public access", async () => {
+    const request = {
+      name: "Fixture",
+      companyName: "Fixture Company",
+      email: "signup@example.invalid",
+      phone: "8095550101",
+      password: "fixture-password",
+      budget: 1,
+      expectedScreens: 1,
+      targetCity: "Santiago",
+    };
+    const key = "12345678-1234-4234-8234-123456789abc";
+    await controller.onboard(request, key);
+    expect(service.onboardAdvertiser).toHaveBeenCalledWith(request, key);
+    await controller.onboard(request);
+    expect(service.onboardAdvertiser).toHaveBeenCalledWith(request, undefined);
+  });
+
   it("keeps initial registration public", () => {
     expect(
       Reflect.getMetadata(

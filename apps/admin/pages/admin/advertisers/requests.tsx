@@ -1,5 +1,6 @@
 import type { PortalRequestRecord } from "@/types/admin-api";
 import { getErrorMessage } from "@/lib/error-message";
+import { parseContentRequestMedia } from "@/lib/content-request-media";
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import type { GetServerSideProps } from "next";
@@ -113,6 +114,8 @@ export default function RequestsPage() {
 
     return isOfPortalType && matchesFilter && matchesSearch;
   });
+
+  const contentMedia = parseContentRequestMedia(selectedRequest?.data);
 
   return (
     <>
@@ -371,38 +374,47 @@ export default function RequestsPage() {
                   </p>
                 </div>
 
-                {selectedRequest.type === "CONTENT_UPDATE" &&
-                  selectedRequest.data && (
-                    <div className="bg-tad-yellow/5 border border-tad-yellow/10 rounded-3xl p-8 flex items-center justify-between">
-                      <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center border border-tad-yellow/20 text-tad-yellow">
-                          <Play className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-black uppercase tracking-widest text-white">
-                            Nuevo Media Asset
-                          </h4>
-                          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em] mt-1">
-                            {typeof selectedRequest.data === "string"
-                              ? JSON.parse(selectedRequest.data).filename
-                              : selectedRequest.data.filename}
-                          </p>
-                        </div>
+                {selectedRequest.type === "CONTENT_UPDATE" && (
+                  <div className="bg-tad-yellow/5 border border-tad-yellow/10 rounded-3xl p-8 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-6 min-w-0">
+                      <div className="w-14 h-14 shrink-0 bg-black rounded-2xl flex items-center justify-center border border-tad-yellow/20 text-tad-yellow">
+                        <Play className="w-6 h-6" />
                       </div>
-                      <button
-                        onClick={() => {
-                          const url =
-                            typeof selectedRequest.data === "string"
-                              ? JSON.parse(selectedRequest.data).url
-                              : selectedRequest.data.url;
-                          window.open(url, "_blank");
-                        }}
-                        className="flex items-center gap-2 px-6 py-3 bg-white text-black text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-tad-yellow transition-all"
-                      >
-                        <ExternalLink className="w-3 h-3" /> Previsualizar
-                      </button>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-white">
+                          Nuevo Media Asset
+                        </h4>
+                        <p className="text-[10px] text-zinc-400 font-bold break-all mt-1">
+                          {contentMedia.filename ?? "Nombre no disponible"}
+                        </p>
+                        {!contentMedia.url && (
+                          <p
+                            className="mt-2 text-xs text-zinc-400"
+                            role="status"
+                          >
+                            Vista previa no disponible.
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  )}
+                    <button
+                      type="button"
+                      disabled={!contentMedia.url}
+                      onClick={() => {
+                        if (contentMedia.url) {
+                          window.open(
+                            contentMedia.url,
+                            "_blank",
+                            "noopener,noreferrer",
+                          );
+                        }
+                      }}
+                      className="flex items-center gap-2 px-6 py-3 bg-white text-black text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-tad-yellow transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Previsualizar
+                    </button>
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-4">

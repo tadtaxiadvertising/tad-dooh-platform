@@ -33,6 +33,7 @@ import {
   estimateCampaignDetailed,
   FIXED_FREQUENCY_SECONDS,
 } from "../advertiser/simulatorPricing";
+import { clearReferralCode } from "../advertiser/referral";
 import CampaignJourney from "./CampaignJourney";
 import CreativePreview from "./CreativePreview";
 import TaxiScrollStory from "./TaxiScrollStory";
@@ -74,7 +75,14 @@ export default function LandingPage() {
   const [includeProduction, setIncludeProduction] = useState(false);
   const [referral, setReferral] = useState<string | null>(null);
   useEffect(() => {
-    setReferral(referralCodeFromSearch(window.location.search));
+    const search = window.location.search;
+    const code = referralCodeFromSearch(search);
+    // Do not let an explicit invalid link revive a previous session's code
+    // when the visitor proceeds to the portal without a referral parameter.
+    if (code === null && new URLSearchParams(search).has("ref")) {
+      clearReferralCode();
+    }
+    setReferral(code);
   }, []);
   const previousPreview = useRef("");
   const links = landingLinks();

@@ -11,7 +11,7 @@ export const ROLE_CONTENT = {
   advertiser: {
     eyebrow: "TU NEGOCIO, EN EL RECORRIDO",
     headline: ["Tu marca no espera.", "Va a su encuentro."],
-    lead: "Tu anuncio acompaña recorridos en taxis y, cuando la campaña incorpora un QR, invita a los pasajeros a explorar tu promoción desde sus celulares. Descubre cómo podría verse y simula tu presupuesto antes de solicitar una revisión.",
+    lead: "Anuncia tu negocio en pantallas dentro de taxis. Con un código QR en tu anuncio, los pasajeros interesados pueden descubrir tu promoción desde sus celulares. Simula tu inversión sin crear una cuenta.",
     heroCta: "Explorar mi campaña",
     title: "Que tu marca salga a la calle.",
     description:

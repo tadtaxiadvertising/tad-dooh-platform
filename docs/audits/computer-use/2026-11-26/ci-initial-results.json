@@ -1,0 +1,15 @@
+{
+  "head": "f39a95757347839f0de5b581c8632fd1f7011ed7",
+  "qualityRun": 45918254696,
+  "dockerRun": 45918254674,
+  "format": {
+    "status": "FAIL",
+    "jobId": 140242561737,
+    "cause": "Prettier 3.9.10 flags only newly added apps/admin/pages/admin/forgot-password.tsx in actual CI log",
+    "remediation": "Applied exact Prettier 3.9.10 to that file; no behavior change; eight local regressions pass; new CI pending"
+  },
+  "security": "PASS",
+  "prisma": "PASS",
+  "playerDocker": "PASS",
+  "otherChecks": "IN_PROGRESS at observation; not claimed complete"
+}

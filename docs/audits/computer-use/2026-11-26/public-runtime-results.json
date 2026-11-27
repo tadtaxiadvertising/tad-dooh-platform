@@ -1,0 +1,1992 @@
+{
+  "runId": "TAD-CUA-20261126-01",
+  "method": "Playwright Chromium; fresh context per case; strict TLS",
+  "sourceCommit": "01fb2e0f9507e1c0e3a696c11e76960fa9b56f9a",
+  "deployedCommit": "UNKNOWN",
+  "results": [
+    {
+      "id": "driver-1920x1080",
+      "role": "driver",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "startedAt": "2026-11-27T00:07:20.275Z",
+      "url": "https://tad.driver.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://tad.driver.ibusiness.com.do/_next/image",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "httpErrors": [],
+      "loadMs": 4710,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.driver.ibusiness.com.do/",
+      "title": "TAD Driver | Convierte tus viajes en oportunidades de ingresos",
+      "layout": {
+        "width": 1920,
+        "scrollWidth": 1920,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "Saltar al contenido\nPARA TAXISTAS\nCalcula tus oportunidades\nCómo participar\nPreguntas\nIngresar\n\nTAD · PUBLICIDAD EN MOVIMIENTO\n\nConvierte tus viajes\nen oportunidades de ingresos con TAD.\n\nLa pantalla TAD se instala detrás del reposacabezas del copiloto, frente a los pasajeros. Explora tres formas de obtener compensaciones: campañas elegibles, ventas publicitarias aprobadas y conductores referidos activados. Aplican condiciones y revisión.\n\nCalcula tus ingresos potenciales\nVer las condiciones\n\nIncorporación e instalación sujetas a revisión, disponibilidad y condiciones del programa.\n\nPUBLICIDAD DIGITAL A BORDO · TAD\n01\nPantalla\n02\nVentas\n03\nReferidos\n\nPantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.\n\n01\nPantalla en el taxi\n02\nCampañas elegibles\n03\nActividad validada\nPublicidad digital a bordo\nUna experiencia para taxistas\nCondiciones claras desde el inicio\n\nUNA FORMA DE CONECTAR\n\nTu taxi ya se mueve.\nHaz que cada ruta cuente.\n\nConoce la propuesta, revisa los requisitos y decide si TAD encaja con la forma en que trabajas.\n\n01\nTu taxi, conectado a nuevas oportunidades\n\nUna pantalla TAD detrás del reposacabezas del copiloto, orientada hacia tus pasajeros, muestra campañas elegibles según disponibilidad, revisión y condiciones del programa.\n\n02\nTu operación, con una nueva fuente de ingresos\n\nAl tener una cuenta aprobada, accede al portal de conductor para usar las herramientas habilitadas para tu perfil.\n\n03\nTodo claro, desde el inicio\n",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#contenido"
+        },
+        {
+          "text": "PARA TAXISTAS",
+          "href": "/"
+        },
+        {
+          "text": "Calcula tus oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Calcular oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Calcula tus ingresos potenciales",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Ver las condiciones",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Entender cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Qué necesitas preparar",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Consultar aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Conoce cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Ya tengo cuenta",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Política de cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Portal de conductor",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Soy anunciante",
+          "href": "https://tad.anunciante.ibusiness.com.do/"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/driver-1920x1080.png"
+    },
+    {
+      "id": "driver-1366x768",
+      "role": "driver",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "startedAt": "2026-11-27T00:07:29.351Z",
+      "url": "https://tad.driver.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://tad.driver.ibusiness.com.do/_next/image",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "httpErrors": [],
+      "loadMs": 4071,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.driver.ibusiness.com.do/",
+      "title": "TAD Driver | Convierte tus viajes en oportunidades de ingresos",
+      "layout": {
+        "width": 1366,
+        "scrollWidth": 1366,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "Saltar al contenido\nPARA TAXISTAS\nCalcula tus oportunidades\nCómo participar\nPreguntas\nIngresar\n\nTAD · PUBLICIDAD EN MOVIMIENTO\n\nConvierte tus viajes\nen oportunidades de ingresos con TAD.\n\nLa pantalla TAD se instala detrás del reposacabezas del copiloto, frente a los pasajeros. Explora tres formas de obtener compensaciones: campañas elegibles, ventas publicitarias aprobadas y conductores referidos activados. Aplican condiciones y revisión.\n\nCalcula tus ingresos potenciales\nVer las condiciones\n\nIncorporación e instalación sujetas a revisión, disponibilidad y condiciones del programa.\n\nPUBLICIDAD DIGITAL A BORDO · TAD\n01\nPantalla\n02\nVentas\n03\nReferidos\n\nPantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.\n\n01\nPantalla en el taxi\n02\nCampañas elegibles\n03\nActividad validada\nPublicidad digital a bordo\nUna experiencia para taxistas\nCondiciones claras desde el inicio\n\nUNA FORMA DE CONECTAR\n\nTu taxi ya se mueve.\nHaz que cada ruta cuente.\n\nConoce la propuesta, revisa los requisitos y decide si TAD encaja con la forma en que trabajas.\n\n01\nTu taxi, conectado a nuevas oportunidades\n\nUna pantalla TAD detrás del reposacabezas del copiloto, orientada hacia tus pasajeros, muestra campañas elegibles según disponibilidad, revisión y condiciones del programa.\n\n02\nTu operación, con una nueva fuente de ingresos\n\nAl tener una cuenta aprobada, accede al portal de conductor para usar las herramientas habilitadas para tu perfil.\n\n03\nTodo claro, desde el inicio\n",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#contenido"
+        },
+        {
+          "text": "PARA TAXISTAS",
+          "href": "/"
+        },
+        {
+          "text": "Calcula tus oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Calcular oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Calcula tus ingresos potenciales",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Ver las condiciones",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Entender cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Qué necesitas preparar",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Consultar aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Conoce cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Ya tengo cuenta",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Política de cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Portal de conductor",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Soy anunciante",
+          "href": "https://tad.anunciante.ibusiness.com.do/"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/driver-1366x768.png"
+    },
+    {
+      "id": "driver-1024x768",
+      "role": "driver",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "startedAt": "2026-11-27T00:07:45.477Z",
+      "url": "https://tad.driver.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://tad.driver.ibusiness.com.do/_next/image",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "httpErrors": [],
+      "loadMs": 5975,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.driver.ibusiness.com.do/",
+      "title": "TAD Driver | Convierte tus viajes en oportunidades de ingresos",
+      "layout": {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "Saltar al contenido\nPARA TAXISTAS\nCalcula tus oportunidades\nCómo participar\nPreguntas\nIngresar\n\nTAD · PUBLICIDAD EN MOVIMIENTO\n\nConvierte tus viajes\nen oportunidades de ingresos con TAD.\n\nLa pantalla TAD se instala detrás del reposacabezas del copiloto, frente a los pasajeros. Explora tres formas de obtener compensaciones: campañas elegibles, ventas publicitarias aprobadas y conductores referidos activados. Aplican condiciones y revisión.\n\nCalcula tus ingresos potenciales\nVer las condiciones\n\nIncorporación e instalación sujetas a revisión, disponibilidad y condiciones del programa.\n\nPUBLICIDAD DIGITAL A BORDO · TAD\n01\nPantalla\n02\nVentas\n03\nReferidos\n\nPantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.\n\n01\nPantalla en el taxi\n02\nCampañas elegibles\n03\nActividad validada\nPublicidad digital a bordo\nUna experiencia para taxistas\nCondiciones claras desde el inicio\n\nUNA FORMA DE CONECTAR\n\nTu taxi ya se mueve.\nHaz que cada ruta cuente.\n\nConoce la propuesta, revisa los requisitos y decide si TAD encaja con la forma en que trabajas.\n\n01\nTu taxi, conectado a nuevas oportunidades\n\nUna pantalla TAD detrás del reposacabezas del copiloto, orientada hacia tus pasajeros, muestra campañas elegibles según disponibilidad, revisión y condiciones del programa.\n\n02\nTu operación, con una nueva fuente de ingresos\n\nAl tener una cuenta aprobada, accede al portal de conductor para usar las herramientas habilitadas para tu perfil.\n\n03\nTodo claro, desde el inicio\n",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#contenido"
+        },
+        {
+          "text": "PARA TAXISTAS",
+          "href": "/"
+        },
+        {
+          "text": "Calcula tus oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Calcular oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Calcula tus ingresos potenciales",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Ver las condiciones",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Entender cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Qué necesitas preparar",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Consultar aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Conoce cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Ya tengo cuenta",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Política de cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Portal de conductor",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Soy anunciante",
+          "href": "https://tad.anunciante.ibusiness.com.do/"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/driver-1024x768.png"
+    },
+    {
+      "id": "driver-768x1024",
+      "role": "driver",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "startedAt": "2026-11-27T00:07:55.596Z",
+      "url": "https://tad.driver.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://tad.driver.ibusiness.com.do/_next/image",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "httpErrors": [],
+      "loadMs": 4819,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.driver.ibusiness.com.do/",
+      "title": "TAD Driver | Convierte tus viajes en oportunidades de ingresos",
+      "layout": {
+        "width": 768,
+        "scrollWidth": 768,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "Saltar al contenido\nPARA TAXISTAS\nSecciones\nIngresar\n\nTAD · PUBLICIDAD EN MOVIMIENTO\n\nConvierte tus viajes\nen oportunidades de ingresos con TAD.\n\nLa pantalla TAD se instala detrás del reposacabezas del copiloto, frente a los pasajeros. Explora tres formas de obtener compensaciones: campañas elegibles, ventas publicitarias aprobadas y conductores referidos activados. Aplican condiciones y revisión.\n\nCalcula tus ingresos potenciales\nVer las condiciones\n\nIncorporación e instalación sujetas a revisión, disponibilidad y condiciones del programa.\n\nPUBLICIDAD DIGITAL A BORDO · TAD\n01\nPantalla\n02\nVentas\n03\nReferidos\n\nPantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.\n\n01\nPantalla en el taxi\n02\nCampañas elegibles\n03\nActividad validada\nPublicidad digital a bordo\nUna experiencia para taxistas\nCondiciones claras desde el inicio\n\nUNA FORMA DE CONECTAR\n\nTu taxi ya se mueve.\nHaz que cada ruta cuente.\n\nConoce la propuesta, revisa los requisitos y decide si TAD encaja con la forma en que trabajas.\n\n01\nTu taxi, conectado a nuevas oportunidades\n\nUna pantalla TAD detrás del reposacabezas del copiloto, orientada hacia tus pasajeros, muestra campañas elegibles según disponibilidad, revisión y condiciones del programa.\n\n02\nTu operación, con una nueva fuente de ingresos\n\nAl tener una cuenta aprobada, accede al portal de conductor para usar las herramientas habilitadas para tu perfil.\n\n03\nTodo claro, desde el inicio\n\nRevisa las condiciones, simula escenarios",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#contenido"
+        },
+        {
+          "text": "PARA TAXISTAS",
+          "href": "/"
+        },
+        {
+          "text": "Calcula tus oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Calcular oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Calcula tus ingresos potenciales",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Ver las condiciones",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Entender cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Qué necesitas preparar",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Consultar aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Conoce cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Ya tengo cuenta",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Política de cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Portal de conductor",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Soy anunciante",
+          "href": "https://tad.anunciante.ibusiness.com.do/"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/driver-768x1024.png"
+    },
+    {
+      "id": "driver-390x844",
+      "role": "driver",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "startedAt": "2026-11-27T00:08:03.185Z",
+      "url": "https://tad.driver.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 2930,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.driver.ibusiness.com.do/",
+      "title": "TAD Driver | Convierte tus viajes en oportunidades de ingresos",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "Saltar al contenido\nSecciones\nIngresar\n\nTAD · PUBLICIDAD EN MOVIMIENTO\n\nConvierte tus viajes\nen oportunidades de ingresos con TAD.\n\nLa pantalla TAD se instala detrás del reposacabezas del copiloto, frente a los pasajeros. Explora tres formas de obtener compensaciones: campañas elegibles, ventas publicitarias aprobadas y conductores referidos activados. Aplican condiciones y revisión.\n\nCalcula tus ingresos potenciales\nVer las condiciones\n\nIncorporación e instalación sujetas a revisión, disponibilidad y condiciones del programa.\n\nPUBLICIDAD DIGITAL A BORDO · TAD\n01\nPantalla\n02\nVentas\n03\nReferidos\n\nPantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.\n\n01\nPantalla en el taxi\n02\nCampañas elegibles\n03\nActividad validada\nPublicidad digital a bordo\nUna experiencia para taxistas\nCondiciones claras desde el inicio\n\nUNA FORMA DE CONECTAR\n\nTu taxi ya se mueve.\nHaz que cada ruta cuente.\n\nConoce la propuesta, revisa los requisitos y decide si TAD encaja con la forma en que trabajas.\n\n01\nTu taxi, conectado a nuevas oportunidades\n\nUna pantalla TAD detrás del reposacabezas del copiloto, orientada hacia tus pasajeros, muestra campañas elegibles según disponibilidad, revisión y condiciones del programa.\n\n02\nTu operación, con una nueva fuente de ingresos\n\nAl tener una cuenta aprobada, accede al portal de conductor para usar las herramientas habilitadas para tu perfil.\n\n03\nTodo claro, desde el inicio\n\nRevisa las condiciones, simula escenarios y solicita tu",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#contenido"
+        },
+        {
+          "text": "PARA TAXISTAS",
+          "href": "/"
+        },
+        {
+          "text": "Calcula tus oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Calcular oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Calcula tus ingresos potenciales",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Ver las condiciones",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Entender cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Qué necesitas preparar",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Consultar aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Conoce cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Ya tengo cuenta",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Política de cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Portal de conductor",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Soy anunciante",
+          "href": "https://tad.anunciante.ibusiness.com.do/"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/driver-390x844.png",
+      "salesInteraction": "Ventas: las comisiones corresponden a publicidad efectivamente aprobada, no a simples solicitudes.",
+      "calculatorValue": "15"
+    },
+    {
+      "id": "driver-360x640",
+      "role": "driver",
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "startedAt": "2026-11-27T00:08:08.416Z",
+      "url": "https://tad.driver.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 2974,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.driver.ibusiness.com.do/",
+      "title": "TAD Driver | Convierte tus viajes en oportunidades de ingresos",
+      "layout": {
+        "width": 360,
+        "scrollWidth": 360,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "Saltar al contenido\nSecciones\nIngresar\n\nTAD · PUBLICIDAD EN MOVIMIENTO\n\nConvierte tus viajes\nen oportunidades de ingresos con TAD.\n\nLa pantalla TAD se instala detrás del reposacabezas del copiloto, frente a los pasajeros. Explora tres formas de obtener compensaciones: campañas elegibles, ventas publicitarias aprobadas y conductores referidos activados. Aplican condiciones y revisión.\n\nCalcula tus ingresos potenciales\nVer las condiciones\n\nIncorporación e instalación sujetas a revisión, disponibilidad y condiciones del programa.\n\nPUBLICIDAD DIGITAL A BORDO · TAD\n01\nPantalla\n02\nVentas\n03\nReferidos\n\nPantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.\n\n01\nPantalla en el taxi\n02\nCampañas elegibles\n03\nActividad validada\nPublicidad digital a bordo\nUna experiencia para taxistas\nCondiciones claras desde el inicio\n\nUNA FORMA DE CONECTAR\n\nTu taxi ya se mueve.\nHaz que cada ruta cuente.\n\nConoce la propuesta, revisa los requisitos y decide si TAD encaja con la forma en que trabajas.\n\n01\nTu taxi, conectado a nuevas oportunidades\n\nUna pantalla TAD detrás del reposacabezas del copiloto, orientada hacia tus pasajeros, muestra campañas elegibles según disponibilidad, revisión y condiciones del programa.\n\n02\nTu operación, con una nueva fuente de ingresos\n\nAl tener una cuenta aprobada, accede al portal de conductor para usar las herramientas habilitadas para tu perfil.\n\n03\nTodo claro, desde el inicio\n\nRevisa las condiciones, simula escenarios y solicita tu",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#contenido"
+        },
+        {
+          "text": "PARA TAXISTAS",
+          "href": "/"
+        },
+        {
+          "text": "Calcula tus oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Calcular oportunidades",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Calcula tus ingresos potenciales",
+          "href": "#calculadora"
+        },
+        {
+          "text": "Ver las condiciones",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Entender cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Qué necesitas preparar",
+          "href": "#condiciones"
+        },
+        {
+          "text": "Consultar aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Conoce cómo participar",
+          "href": "#como-participar"
+        },
+        {
+          "text": "Ya tengo cuenta",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Política de cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Portal de conductor",
+          "href": "/driver/login"
+        },
+        {
+          "text": "Soy anunciante",
+          "href": "https://tad.anunciante.ibusiness.com.do/"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/driver-360x640.png"
+    },
+    {
+      "id": "advertiser-1920x1080",
+      "role": "advertiser",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "startedAt": "2026-11-27T00:08:13.751Z",
+      "url": "https://tad.anunciante.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 4016,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.anunciante.ibusiness.com.do/",
+      "title": "TAD | Tu ciudad se mueve. Tu marca también.",
+      "layout": {
+        "width": 1920,
+        "scrollWidth": 1920,
+        "h1": 1,
+        "brokenImages": [
+          "/qr-passenger-journey.svg"
+        ]
+      },
+      "textSample": "Saltar al contenido\nTAD\n.\nTAXI ADVERTISING\nCómo funciona\nPromociones con QR\nSimula tu campaña\nPreguntas\nIngresar\n\nPUBLICIDAD QUE ACOMPAÑA TU CIUDAD\n\nTu marca no espera.\nVa a su encuentro.\n\nTu anuncio acompaña recorridos en taxis y, cuando la campaña incorpora un QR, invita a los pasajeros a explorar tu promoción desde sus celulares. Descubre cómo podría verse y simula tu presupuesto antes de solicitar una revisión.\n\nSimular mi campaña\nVer cómo funciona\nExplora sin crear una cuenta. Datos ilustrativos y tarifas sujetas a validación.\nESCENA URBANA\nSanto Domingo\nSantiago\n01\nImagina\n02\nConfigura\n03\nSolicita revisión\nESCENA · SANTO DOMINGO\nTAXI\nTU MARCA, PRESENTE\ntu marca.\nen camino.\nTAD.\nPUBLICIDAD EN MOVIMIENTO ↗\n01 /\nUna idea que acompaña el recorrido.\nVISTA CONCEPTUAL · NO REPRESENTA UNA CAMPAÑA PUBLICADA\nCambia el mensaje en pantalla\nDar a conocer mi marca\nPresentar una novedad\nConectar con mi ciudad\nTu marca en esta pantalla (opcional)\n\nLa pantalla TAD va detrás del reposacabezas del copiloto, orientada al pasajero. Esta escena es ilustrativa; el nombre de tu marca no se guarda ni se incluye en los eventos de esta demo.\n\nPublicidad en movimiento\nSanto Domingo y Santiago\nCreatividad en tablet\nReportes con contexto\n\nTAD / EXPERIENCIA EN MOVIMIENTO\n\nDe tu idea a la ciudad.\n01 / 03 · DESCUBRE OTRO LUGAR PARA TU MENSAJE\nTAD · TAXI\nUna ciudad que nunca deja de moverse.\n\nMientras la ciudad avanza, tu creatividad puede acompañar los recorridos en taxis.\n\n02 / 03 · UNA PANTALLA FRENT",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#main-content"
+        },
+        {
+          "text": "TAD.TAXI ADVERTISING",
+          "href": "/"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simular campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Simular mi campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Ver cómo funciona",
+          "href": "#motion-story"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Calcular mi campaña ↗",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Entrar a mi portal",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Ingresar como anunciante",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "TAD.",
+          "href": "/"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/advertiser-1920x1080.png"
+    },
+    {
+      "id": "advertiser-1366x768",
+      "role": "advertiser",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "startedAt": "2026-11-27T00:08:22.299Z",
+      "url": "https://tad.anunciante.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 4839,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.anunciante.ibusiness.com.do/",
+      "title": "TAD | Tu ciudad se mueve. Tu marca también.",
+      "layout": {
+        "width": 1366,
+        "scrollWidth": 1366,
+        "h1": 1,
+        "brokenImages": [
+          "/qr-passenger-journey.svg"
+        ]
+      },
+      "textSample": "Saltar al contenido\nTAD\n.\nTAXI ADVERTISING\nCómo funciona\nPromociones con QR\nSimula tu campaña\nPreguntas\nIngresar\n\nPUBLICIDAD QUE ACOMPAÑA TU CIUDAD\n\nTu marca no espera.\nVa a su encuentro.\n\nTu anuncio acompaña recorridos en taxis y, cuando la campaña incorpora un QR, invita a los pasajeros a explorar tu promoción desde sus celulares. Descubre cómo podría verse y simula tu presupuesto antes de solicitar una revisión.\n\nSimular mi campaña\nVer cómo funciona\nExplora sin crear una cuenta. Datos ilustrativos y tarifas sujetas a validación.\nESCENA URBANA\nSanto Domingo\nSantiago\n01\nImagina\n02\nConfigura\n03\nSolicita revisión\nESCENA · SANTO DOMINGO\nTAXI\nTU MARCA, PRESENTE\ntu marca.\nen camino.\nTAD.\nPUBLICIDAD EN MOVIMIENTO ↗\n01 /\nUna idea que acompaña el recorrido.\nVISTA CONCEPTUAL · NO REPRESENTA UNA CAMPAÑA PUBLICADA\nCambia el mensaje en pantalla\nDar a conocer mi marca\nPresentar una novedad\nConectar con mi ciudad\nTu marca en esta pantalla (opcional)\n\nLa pantalla TAD va detrás del reposacabezas del copiloto, orientada al pasajero. Esta escena es ilustrativa; el nombre de tu marca no se guarda ni se incluye en los eventos de esta demo.\n\nPublicidad en movimiento\nSanto Domingo y Santiago\nCreatividad en tablet\nReportes con contexto\n\nTAD / EXPERIENCIA EN MOVIMIENTO\n\nDe tu idea a la ciudad.\n01 / 03 · DESCUBRE OTRO LUGAR PARA TU MENSAJE\nTAD · TAXI\nUna ciudad que nunca deja de moverse.\n\nMientras la ciudad avanza, tu creatividad puede acompañar los recorridos en taxis.\n\n02 / 03 · UNA PANTALLA FRENT",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#main-content"
+        },
+        {
+          "text": "TAD.TAXI ADVERTISING",
+          "href": "/"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simular campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Simular mi campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Ver cómo funciona",
+          "href": "#motion-story"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Calcular mi campaña ↗",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Entrar a mi portal",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Ingresar como anunciante",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "TAD.",
+          "href": "/"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/advertiser-1366x768.png"
+    },
+    {
+      "id": "advertiser-1024x768",
+      "role": "advertiser",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "startedAt": "2026-11-27T00:08:31.503Z",
+      "url": "https://tad.anunciante.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 3617,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.anunciante.ibusiness.com.do/",
+      "title": "TAD | Tu ciudad se mueve. Tu marca también.",
+      "layout": {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "h1": 1,
+        "brokenImages": [
+          "/qr-passenger-journey.svg"
+        ]
+      },
+      "textSample": "Saltar al contenido\nTAD\n.\nCómo funciona\nPromociones con QR\nSimula tu campaña\nPreguntas\nIngresar\n\nPUBLICIDAD QUE ACOMPAÑA TU CIUDAD\n\nTu marca no espera.\nVa a su encuentro.\n\nTu anuncio acompaña recorridos en taxis y, cuando la campaña incorpora un QR, invita a los pasajeros a explorar tu promoción desde sus celulares. Descubre cómo podría verse y simula tu presupuesto antes de solicitar una revisión.\n\nSimular mi campaña\nVer cómo funciona\nExplora sin crear una cuenta. Datos ilustrativos y tarifas sujetas a validación.\nESCENA URBANA\nSanto Domingo\nSantiago\n01\nImagina\n02\nConfigura\n03\nSolicita revisión\nESCENA · SANTO DOMINGO\nTAXI\nTU MARCA, PRESENTE\ntu marca.\nen camino.\nTAD.\nPUBLICIDAD EN MOVIMIENTO ↗\n01 /\nUna idea que acompaña el recorrido.\nVISTA CONCEPTUAL · NO REPRESENTA UNA CAMPAÑA PUBLICADA\nCambia el mensaje en pantalla\nDar a conocer mi marca\nPresentar una novedad\nConectar con mi ciudad\nTu marca en esta pantalla (opcional)\n\nLa pantalla TAD va detrás del reposacabezas del copiloto, orientada al pasajero. Esta escena es ilustrativa; el nombre de tu marca no se guarda ni se incluye en los eventos de esta demo.\n\nPublicidad en movimiento\nSanto Domingo y Santiago\nCreatividad en tablet\nReportes con contexto\n\nTAD / EXPERIENCIA EN MOVIMIENTO\n\nDe tu idea a la ciudad.\n01 / 03 · DESCUBRE OTRO LUGAR PARA TU MENSAJE\nTAD · TAXI\nUna ciudad que nunca deja de moverse.\n\nMientras la ciudad avanza, tu creatividad puede acompañar los recorridos en taxis.\n\n02 / 03 · UNA PANTALLA FRENTE AL PASAJERO\nTU ",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#main-content"
+        },
+        {
+          "text": "TAD.TAXI ADVERTISING",
+          "href": "/"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simular campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Simular mi campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Ver cómo funciona",
+          "href": "#motion-story"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Calcular mi campaña ↗",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Entrar a mi portal",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Ingresar como anunciante",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "TAD.",
+          "href": "/"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/advertiser-1024x768.png"
+    },
+    {
+      "id": "advertiser-768x1024",
+      "role": "advertiser",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "startedAt": "2026-11-27T00:08:38.946Z",
+      "url": "https://tad.anunciante.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 3348,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.anunciante.ibusiness.com.do/",
+      "title": "TAD | Tu ciudad se mueve. Tu marca también.",
+      "layout": {
+        "width": 768,
+        "scrollWidth": 768,
+        "h1": 1,
+        "brokenImages": [
+          "/qr-passenger-journey.svg"
+        ]
+      },
+      "textSample": "Saltar al contenido\nTAD\n.\nCómo funciona\nPromociones con QR\nSimula tu campaña\nPreguntas\nIngresar\n\nPUBLICIDAD QUE ACOMPAÑA TU CIUDAD\n\nTu marca no espera.\nVa a su encuentro.\n\nTu anuncio acompaña recorridos en taxis y, cuando la campaña incorpora un QR, invita a los pasajeros a explorar tu promoción desde sus celulares. Descubre cómo podría verse y simula tu presupuesto antes de solicitar una revisión.\n\nSimular mi campaña\nVer cómo funciona\nExplora sin crear una cuenta. Datos ilustrativos y tarifas sujetas a validación.\nESCENA URBANA\nSanto Domingo\nSantiago\n01\nImagina\n02\nConfigura\n03\nSolicita revisión\nESCENA · SANTO DOMINGO\nTAXI\nTU MARCA, PRESENTE\ntu marca.\nen camino.\nTAD.\nPUBLICIDAD EN MOVIMIENTO ↗\n01 /\nUna idea que acompaña el recorrido.\nVISTA CONCEPTUAL · NO REPRESENTA UNA CAMPAÑA PUBLICADA\nCambia el mensaje en pantalla\nDar a conocer mi marca\nPresentar una novedad\nConectar con mi ciudad\nTu marca en esta pantalla (opcional)\n\nLa pantalla TAD va detrás del reposacabezas del copiloto, orientada al pasajero. Esta escena es ilustrativa; el nombre de tu marca no se guarda ni se incluye en los eventos de esta demo.\n\nPublicidad en movimiento\nSanto Domingo y Santiago\nCreatividad en tablet\nReportes con contexto\n\nTAD / EXPERIENCIA EN MOVIMIENTO\n\nDe tu idea a la ciudad.\n01 / 03 · DESCUBRE OTRO LUGAR PARA TU MENSAJE\nTAD · TAXI\nUna ciudad que nunca deja de moverse.\n\nMientras la ciudad avanza, tu creatividad puede acompañar los recorridos en taxis.\n\n02 / 03 · UNA PANTALLA FRENTE AL PASAJERO\nTU ",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#main-content"
+        },
+        {
+          "text": "TAD.TAXI ADVERTISING",
+          "href": "/"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simular campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Simular mi campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Ver cómo funciona",
+          "href": "#motion-story"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Calcular mi campaña ↗",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Entrar a mi portal",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Ingresar como anunciante",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "TAD.",
+          "href": "/"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/advertiser-768x1024.png"
+    },
+    {
+      "id": "advertiser-390x844",
+      "role": "advertiser",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "startedAt": "2026-11-27T00:08:48.025Z",
+      "url": "https://tad.anunciante.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 2895,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.anunciante.ibusiness.com.do/",
+      "title": "TAD | Tu ciudad se mueve. Tu marca también.",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": 1,
+        "brokenImages": [
+          "/qr-passenger-journey.svg"
+        ]
+      },
+      "textSample": "Saltar al contenido\nTAD\n.\nSecciones\nIngresar\n\nPUBLICIDAD QUE ACOMPAÑA TU CIUDAD\n\nTu marca no espera.\nVa a su encuentro.\n\nTu anuncio acompaña recorridos en taxis y, cuando la campaña incorpora un QR, invita a los pasajeros a explorar tu promoción desde sus celulares. Descubre cómo podría verse y simula tu presupuesto antes de solicitar una revisión.\n\nSimular mi campaña\nVer cómo funciona\nExplora sin crear una cuenta. Datos ilustrativos y tarifas sujetas a validación.\nESCENA URBANA\nSanto Domingo\nSantiago\n01\nImagina\n02\nConfigura\n03\nSolicita revisión\nESCENA · SANTO DOMINGO\nTAXI\nTU MARCA, PRESENTE\ntu marca.\nen camino.\nTAD.\nPUBLICIDAD EN MOVIMIENTO ↗\n01 /\nUna idea que acompaña el recorrido.\nVISTA CONCEPTUAL · NO REPRESENTA UNA CAMPAÑA PUBLICADA\nCambia el mensaje en pantalla\nDar a conocer mi marca\nPresentar una novedad\nConectar con mi ciudad\nTu marca en esta pantalla (opcional)\n\nLa pantalla TAD va detrás del reposacabezas del copiloto, orientada al pasajero. Esta escena es ilustrativa; el nombre de tu marca no se guarda ni se incluye en los eventos de esta demo.\n\nPublicidad en movimiento\nSanto Domingo y Santiago\nCreatividad en tablet\nReportes con contexto\n\nTAD / EXPERIENCIA EN MOVIMIENTO\n\nDe tu idea a la ciudad.\n01 / 03 · DESCUBRE OTRO LUGAR PARA TU MENSAJE\nTAD · TAXI\nUna ciudad que nunca deja de moverse.\n\nMientras la ciudad avanza, tu creatividad puede acompañar los recorridos en taxis.\n\n02 / 03 · UNA PANTALLA FRENTE AL PASAJERO\nTU MARCA\nEl mensaje encuentra su espacio.\n\nLa pantalla",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#main-content"
+        },
+        {
+          "text": "TAD.TAXI ADVERTISING",
+          "href": "/"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simular campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Simular mi campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Ver cómo funciona",
+          "href": "#motion-story"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Calcular mi campaña ↗",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Entrar a mi portal",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Ingresar como anunciante",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "TAD.",
+          "href": "/"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/advertiser-390x844.png"
+    },
+    {
+      "id": "advertiser-360x640",
+      "role": "advertiser",
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "startedAt": "2026-11-27T00:08:53.906Z",
+      "url": "https://tad.anunciante.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 2930,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.anunciante.ibusiness.com.do/",
+      "title": "TAD | Tu ciudad se mueve. Tu marca también.",
+      "layout": {
+        "width": 360,
+        "scrollWidth": 360,
+        "h1": 1,
+        "brokenImages": [
+          "/qr-passenger-journey.svg"
+        ]
+      },
+      "textSample": "Saltar al contenido\nTAD\n.\nSecciones\nIngresar\n\nPUBLICIDAD QUE ACOMPAÑA TU CIUDAD\n\nTu marca no espera.\nVa a su encuentro.\n\nTu anuncio acompaña recorridos en taxis y, cuando la campaña incorpora un QR, invita a los pasajeros a explorar tu promoción desde sus celulares. Descubre cómo podría verse y simula tu presupuesto antes de solicitar una revisión.\n\nSimular mi campaña\nVer cómo funciona\nExplora sin crear una cuenta. Datos ilustrativos y tarifas sujetas a validación.\nESCENA URBANA\nSanto Domingo\nSantiago\n01\nImagina\n02\nConfigura\n03\nSolicita revisión\nESCENA · SANTO DOMINGO\nTAXI\nTU MARCA, PRESENTE\ntu marca.\nen camino.\nTAD.\nPUBLICIDAD EN MOVIMIENTO ↗\n01 /\nUna idea que acompaña el recorrido.\nVISTA CONCEPTUAL · NO REPRESENTA UNA CAMPAÑA PUBLICADA\nCambia el mensaje en pantalla\nDar a conocer mi marca\nPresentar una novedad\nConectar con mi ciudad\nTu marca en esta pantalla (opcional)\n\nLa pantalla TAD va detrás del reposacabezas del copiloto, orientada al pasajero. Esta escena es ilustrativa; el nombre de tu marca no se guarda ni se incluye en los eventos de esta demo.\n\nPublicidad en movimiento\nSanto Domingo y Santiago\nCreatividad en tablet\nReportes con contexto\n\nTAD / EXPERIENCIA EN MOVIMIENTO\n\nDe tu idea a la ciudad.\n01 / 03 · DESCUBRE OTRO LUGAR PARA TU MENSAJE\nTAD · TAXI\nUna ciudad que nunca deja de moverse.\n\nMientras la ciudad avanza, tu creatividad puede acompañar los recorridos en taxis.\n\n02 / 03 · UNA PANTALLA FRENTE AL PASAJERO\nTU MARCA\nEl mensaje encuentra su espacio.\n\nLa pantalla",
+      "links": [
+        {
+          "text": "Saltar al contenido",
+          "href": "#main-content"
+        },
+        {
+          "text": "TAD.TAXI ADVERTISING",
+          "href": "/"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Promociones con QR",
+          "href": "#interaccion-qr"
+        },
+        {
+          "text": "Simular campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Preguntas frecuentes",
+          "href": "#preguntas"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Simular mi campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Ver cómo funciona",
+          "href": "#motion-story"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Prueba tu creatividad ↗",
+          "href": "#creative-preview-title"
+        },
+        {
+          "text": "Simula tu campaña",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Calcular mi campaña ↗",
+          "href": "#experiencia"
+        },
+        {
+          "text": "Entrar a mi portal",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "Ingresar como anunciante",
+          "href": "/advertiser/login"
+        },
+        {
+          "text": "TAD.",
+          "href": "/"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Aviso legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/advertiser-360x640.png"
+    },
+    {
+      "id": "admin-1920x1080",
+      "role": "admin",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "startedAt": "2026-11-27T00:08:59.300Z",
+      "url": "https://tad.adm.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 5141,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.adm.ibusiness.com.do/admin/login",
+      "title": "TAD NODE | Centro de Control Administrativo",
+      "layout": {
+        "width": 1920,
+        "scrollWidth": 1920,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "T\nTAD NODE\n\nCentro de Control Administrativo\n\nCorreo\nContraseña\n¿Olvidaste tu contraseña?\nIniciar sesión\nO\nContinuar con Google\nVerified Access\n© 2026 TAD Taxi Advertising S.R.L.\n·\nPrivacidad\nTérminos\nCookies\nAviso Legal\nConfiguración de cookies\n\nTú decides sobre las cookies\n\nLas necesarias permiten iniciar sesión, proteger tu cuenta y mantener las funciones operativas. Las opcionales están desactivadas hasta que las autorices. Rechazarlas no impide usar TAD.\n\nGuardamos tu decisión durante 180 días en este navegador y portal. Ver política e inventario.\n\nRechazar opcionales\nPersonalizar\nAceptar opcionales\n\nTAD NODE | Centro de Control Administrativo",
+      "links": [
+        {
+          "text": "¿Olvidaste tu contraseña?",
+          "href": "#"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Aviso Legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/admin-1920x1080.png"
+    },
+    {
+      "id": "admin-1366x768",
+      "role": "admin",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "startedAt": "2026-11-27T00:09:06.041Z",
+      "url": "https://tad.adm.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 3983,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.adm.ibusiness.com.do/admin/login",
+      "title": "TAD NODE | Centro de Control Administrativo",
+      "layout": {
+        "width": 1366,
+        "scrollWidth": 1366,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "T\nTAD NODE\n\nCentro de Control Administrativo\n\nCorreo\nContraseña\n¿Olvidaste tu contraseña?\nIniciar sesión\nO\nContinuar con Google\nVerified Access\n© 2026 TAD Taxi Advertising S.R.L.\n·\nPrivacidad\nTérminos\nCookies\nAviso Legal\nConfiguración de cookies\n\nTú decides sobre las cookies\n\nLas necesarias permiten iniciar sesión, proteger tu cuenta y mantener las funciones operativas. Las opcionales están desactivadas hasta que las autorices. Rechazarlas no impide usar TAD.\n\nGuardamos tu decisión durante 180 días en este navegador y portal. Ver política e inventario.\n\nRechazar opcionales\nPersonalizar\nAceptar opcionales\n\nTAD NODE | Centro de Control Administrativo",
+      "links": [
+        {
+          "text": "¿Olvidaste tu contraseña?",
+          "href": "#"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Aviso Legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/admin-1366x768.png"
+    },
+    {
+      "id": "admin-1024x768",
+      "role": "admin",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "startedAt": "2026-11-27T00:09:12.517Z",
+      "url": "https://tad.adm.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 6896,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.adm.ibusiness.com.do/admin/login",
+      "title": "TAD NODE | Centro de Control Administrativo",
+      "layout": {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "T\nTAD NODE\n\nCentro de Control Administrativo\n\nCorreo\nContraseña\n¿Olvidaste tu contraseña?\nIniciar sesión\nO\nContinuar con Google\nVerified Access\n© 2026 TAD Taxi Advertising S.R.L.\n·\nPrivacidad\nTérminos\nCookies\nAviso Legal\nConfiguración de cookies\n\nTú decides sobre las cookies\n\nLas necesarias permiten iniciar sesión, proteger tu cuenta y mantener las funciones operativas. Las opcionales están desactivadas hasta que las autorices. Rechazarlas no impide usar TAD.\n\nGuardamos tu decisión durante 180 días en este navegador y portal. Ver política e inventario.\n\nRechazar opcionales\nPersonalizar\nAceptar opcionales\n\nTAD NODE | Centro de Control Administrativo",
+      "links": [
+        {
+          "text": "¿Olvidaste tu contraseña?",
+          "href": "#"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Aviso Legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/admin-1024x768.png"
+    },
+    {
+      "id": "admin-768x1024",
+      "role": "admin",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "startedAt": "2026-11-27T00:09:20.768Z",
+      "url": "https://tad.adm.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 4771,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.adm.ibusiness.com.do/admin/login",
+      "title": "TAD NODE | Centro de Control Administrativo",
+      "layout": {
+        "width": 768,
+        "scrollWidth": 768,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "T\nTAD NODE\n\nCentro de Control Administrativo\n\nCorreo\nContraseña\n¿Olvidaste tu contraseña?\nIniciar sesión\nO\nContinuar con Google\nVerified Access\n© 2026 TAD Taxi Advertising S.R.L.\n·\nPrivacidad\nTérminos\nCookies\nAviso Legal\nConfiguración de cookies\n\nTú decides sobre las cookies\n\nLas necesarias permiten iniciar sesión, proteger tu cuenta y mantener las funciones operativas. Las opcionales están desactivadas hasta que las autorices. Rechazarlas no impide usar TAD.\n\nGuardamos tu decisión durante 180 días en este navegador y portal. Ver política e inventario.\n\nRechazar opcionales\nPersonalizar\nAceptar opcionales\n\nTAD NODE | Centro de Control Administrativo",
+      "links": [
+        {
+          "text": "¿Olvidaste tu contraseña?",
+          "href": "#"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Aviso Legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/admin-768x1024.png"
+    },
+    {
+      "id": "admin-390x844",
+      "role": "admin",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "startedAt": "2026-11-27T00:09:27.490Z",
+      "url": "https://tad.adm.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 4252,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.adm.ibusiness.com.do/admin/login",
+      "title": "TAD NODE | Centro de Control Administrativo",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "T\nTAD NODE\n\nCentro de Control Administrativo\n\nCorreo\nContraseña\n¿Olvidaste tu contraseña?\nIniciar sesión\nO\nContinuar con Google\nVerified Access\n© 2026 TAD Taxi Advertising S.R.L.\nPrivacidad\nTérminos\nCookies\nAviso Legal\nConfiguración de cookies\n\nTú decides sobre las cookies\n\nLas necesarias permiten iniciar sesión, proteger tu cuenta y mantener las funciones operativas. Las opcionales están desactivadas hasta que las autorices. Rechazarlas no impide usar TAD.\n\nGuardamos tu decisión durante 180 días en este navegador y portal. Ver política e inventario.\n\nRechazar opcionales\nPersonalizar\nAceptar opcionales\n\nTAD NODE | Centro de Control Administrativo",
+      "links": [
+        {
+          "text": "¿Olvidaste tu contraseña?",
+          "href": "#"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Aviso Legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/admin-390x844.png"
+    },
+    {
+      "id": "admin-360x640",
+      "role": "admin",
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "startedAt": "2026-11-27T00:09:33.838Z",
+      "url": "https://tad.adm.ibusiness.com.do",
+      "status": "PASS",
+      "pageErrors": [],
+      "failedRequests": [],
+      "httpErrors": [],
+      "loadMs": 4018,
+      "httpStatus": 200,
+      "finalUrl": "https://tad.adm.ibusiness.com.do/admin/login",
+      "title": "TAD NODE | Centro de Control Administrativo",
+      "layout": {
+        "width": 360,
+        "scrollWidth": 360,
+        "h1": 1,
+        "brokenImages": []
+      },
+      "textSample": "T\nTAD NODE\n\nCentro de Control Administrativo\n\nCorreo\nContraseña\n¿Olvidaste tu contraseña?\nIniciar sesión\nO\nContinuar con Google\nVerified Access\n© 2026 TAD Taxi Advertising S.R.L.\nPrivacidad\nTérminos\nCookies\nAviso Legal\nConfiguración de cookies\n\nTú decides sobre las cookies\n\nLas necesarias permiten iniciar sesión, proteger tu cuenta y mantener las funciones operativas. Las opcionales están desactivadas hasta que las autorices. Rechazarlas no impide usar TAD.\n\nGuardamos tu decisión durante 180 días en este navegador y portal. Ver política e inventario.\n\nRechazar opcionales\nPersonalizar\nAceptar opcionales\n\nTAD NODE | Centro de Control Administrativo",
+      "links": [
+        {
+          "text": "¿Olvidaste tu contraseña?",
+          "href": "#"
+        },
+        {
+          "text": "Privacidad",
+          "href": "/politica-de-privacidad"
+        },
+        {
+          "text": "Términos",
+          "href": "/terminos-de-servicio"
+        },
+        {
+          "text": "Cookies",
+          "href": "/politica-de-cookies"
+        },
+        {
+          "text": "Aviso Legal",
+          "href": "/aviso-legal"
+        },
+        {
+          "text": "Ver política e inventario",
+          "href": "/politica-de-cookies"
+        }
+      ],
+      "screenshot": "evidence/screenshots/admin-360x640.png"
+    },
+    {
+      "id": "player-1920x1080",
+      "role": "player",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "startedAt": "2026-11-27T00:09:39.613Z",
+      "url": "https://tad.player.ibusiness.com.do",
+      "status": "BLOCKED",
+      "pageErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://tad.player.ibusiness.com.do/",
+          "error": "net::ERR_CERT_AUTHORITY_INVALID"
+        }
+      ],
+      "httpErrors": [],
+      "error": "page.goto: net::ERR_CERT_AUTHORITY_INVALID at https://tad.player.ibusiness.com.do/\nCall log:\n\u001b[2m  - navigating to \"https://tad.player.ibusiness.com.do/\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "id": "player-1366x768",
+      "role": "player",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "startedAt": "2026-11-27T00:09:42.649Z",
+      "url": "https://tad.player.ibusiness.com.do",
+      "status": "BLOCKED",
+      "pageErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://tad.player.ibusiness.com.do/",
+          "error": "net::ERR_CERT_AUTHORITY_INVALID"
+        }
+      ],
+      "httpErrors": [],
+      "error": "page.goto: net::ERR_CERT_AUTHORITY_INVALID at https://tad.player.ibusiness.com.do/\nCall log:\n\u001b[2m  - navigating to \"https://tad.player.ibusiness.com.do/\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "id": "player-1024x768",
+      "role": "player",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "startedAt": "2026-11-27T00:09:44.525Z",
+      "url": "https://tad.player.ibusiness.com.do",
+      "status": "BLOCKED",
+      "pageErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://tad.player.ibusiness.com.do/",
+          "error": "net::ERR_CERT_AUTHORITY_INVALID"
+        }
+      ],
+      "httpErrors": [],
+      "error": "page.goto: net::ERR_CERT_AUTHORITY_INVALID at https://tad.player.ibusiness.com.do/\nCall log:\n\u001b[2m  - navigating to \"https://tad.player.ibusiness.com.do/\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "id": "player-768x1024",
+      "role": "player",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "startedAt": "2026-11-27T00:09:47.057Z",
+      "url": "https://tad.player.ibusiness.com.do",
+      "status": "BLOCKED",
+      "pageErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://tad.player.ibusiness.com.do/",
+          "error": "net::ERR_CERT_AUTHORITY_INVALID"
+        }
+      ],
+      "httpErrors": [],
+      "error": "page.goto: net::ERR_CERT_AUTHORITY_INVALID at https://tad.player.ibusiness.com.do/\nCall log:\n\u001b[2m  - navigating to \"https://tad.player.ibusiness.com.do/\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "id": "player-390x844",
+      "role": "player",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "startedAt": "2026-11-27T00:09:48.671Z",
+      "url": "https://tad.player.ibusiness.com.do",
+      "status": "BLOCKED",
+      "pageErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://tad.player.ibusiness.com.do/",
+          "error": "net::ERR_CERT_AUTHORITY_INVALID"
+        }
+      ],
+      "httpErrors": [],
+      "error": "page.goto: net::ERR_CERT_AUTHORITY_INVALID at https://tad.player.ibusiness.com.do/\nCall log:\n\u001b[2m  - navigating to \"https://tad.player.ibusiness.com.do/\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "id": "player-360x640",
+      "role": "player",
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "startedAt": "2026-11-27T00:09:50.417Z",
+      "url": "https://tad.player.ibusiness.com.do",
+      "status": "BLOCKED",
+      "pageErrors": [],
+      "failedRequests": [
+        {
+          "url": "https://tad.player.ibusiness.com.do/",
+          "error": "net::ERR_CERT_AUTHORITY_INVALID"
+        }
+      ],
+      "httpErrors": [],
+      "error": "page.goto: net::ERR_CERT_AUTHORITY_INVALID at https://tad.player.ibusiness.com.do/\nCall log:\n\u001b[2m  - navigating to \"https://tad.player.ibusiness.com.do/\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "id": "driver-anonymous-private-route",
+      "role": "driver",
+      "url": "https://tad.driver.ibusiness.com.do/driver/dashboard",
+      "startedAt": "2026-11-27T00:09:53.184Z",
+      "httpStatus": 200,
+      "finalUrl": "https://tad.driver.ibusiness.com.do/driver/login",
+      "textSample": "TAD\nDOOH PLATFORM\n\nPORTAL DEL CONDUCTOR\n\nTELÉFONO\nCONTRASEÑA\nIniciar Sesión\nO\nContinuar con Google\n\n¿Quieres unirte a la red TAD?\nCrear cuenta\n\n© 2026 Proyecto TAD (Taxi Advertising) · IBUSIN3SS SRL\n·\nPrivacidad\nTérminos\nCookies\nAviso Legal\nConfiguración de cookies\n\nTú decides sobre las cookies\n\nLas necesarias permiten iniciar sesión, proteger tu cuenta y mantener las funciones operativas. Las opcionales están desactivadas hasta que las autorices. Rechazarlas no impide usar TAD.\n\nGuardamos tu decisión durante 180 días en este navegador y portal. Ver política e inventario.\n\nRechazar opcionales\nPersonalizar\nAceptar opcionales",
+      "status": "PENDING_VERIFICATION"
+    },
+    {
+      "id": "advertiser-anonymous-private-route",
+      "role": "advertiser",
+      "url": "https://tad.anunciante.ibusiness.com.do/dashboard",
+      "startedAt": "2026-11-27T00:09:57.979Z",
+      "httpStatus": 200,
+      "finalUrl": "https://tad.anunciante.ibusiness.com.do/advertiser/login",
+      "textSample": "TAD\n\nPORTAL DE ANUNCIANTES\n\nPOTENCIA TU MARCA\nCORREO\nPASSWORD\nENTRAR AL PORTAL\nO\nContinuar con Google\n\nCada día sin presencia en la calle es alcance que captura tu competencia.\n\n¿OLVIDASTE TU CONTRASEÑA?\nAÚN NO TIENES CUENTA · SIMULA TU CAMPAÑA GRATIS\n© 2026 TAD Taxi Advertising S.R.L. · Red DOOH República Dominicana\n·\nPrivacidad\nTérminos\nCookies\nAviso Legal\nConfiguración de cookies\n\nTú decides sobre las cookies\n\nLas necesarias permiten iniciar sesión, proteger tu cuenta y mantener las funciones operativas. Las opcionales están desactivadas hasta que las autorices. Rechazarlas no impide usar TAD.\n\nGuardamos tu decisión durante 180 días en este navegador y portal. Ver política e inventario.\n\nRechazar opcionales\nPersonalizar\nAceptar opcionales",
+      "status": "PENDING_VERIFICATION"
+    },
+    {
+      "id": "admin-anonymous-private-route",
+      "role": "admin",
+      "url": "https://tad.adm.ibusiness.com.do/dashboard",
+      "startedAt": "2026-11-27T00:10:03.143Z",
+      "httpStatus": 200,
+      "finalUrl": "https://tad.adm.ibusiness.com.do/admin/login",
+      "textSample": "T\nTAD NODE\n\nCentro de Control Administrativo\n\nCorreo\nContraseña\n¿Olvidaste tu contraseña?\nIniciar sesión\nO\nContinuar con Google\nVerified Access\n© 2026 TAD Taxi Advertising S.R.L.\n·\nPrivacidad\nTérminos\nCookies\nAviso Legal\nConfiguración de cookies\n\nTú decides sobre las cookies\n\nLas necesarias permiten iniciar sesión, proteger tu cuenta y mantener las funciones operativas. Las opcionales están desactivadas hasta que las autorices. Rechazarlas no impide usar TAD.\n\nGuardamos tu decisión durante 180 días en este navegador y portal. Ver política e inventario.\n\nRechazar opcionales\nPersonalizar\nAceptar opcionales",
+      "status": "PENDING_VERIFICATION"
+    }
+  ]
+}

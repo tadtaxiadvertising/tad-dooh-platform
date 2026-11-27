@@ -6,7 +6,7 @@ import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { isPublicLegalPath } from '@tad/services/cookie-consent';
 import { clearAuthCookies, writeAccessTokenCookie, writeSsrSessionCookie } from '@tad/services/session-cookies';
 
-const PUBLIC_PATHS = ['/login', '/register', '/admin/login', '/advertiser/login', '/advertiser/onboarding', '/driver/login', '/driver/onboarding', '/check-in'];
+const PUBLIC_PATHS = ['/login', '/register', '/admin/login', '/admin/forgot-password', '/advertiser/login', '/advertiser/onboarding', '/driver/login', '/driver/onboarding', '/check-in'];
 
 interface AuthContextValue {
   session: Session | null;

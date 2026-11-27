@@ -24,6 +24,7 @@ function AppWrapper({
     [
       "/login",
       "/admin/login",
+      "/admin/forgot-password",
       "/advertiser/login",
       "/driver/login",
       "/check-in",

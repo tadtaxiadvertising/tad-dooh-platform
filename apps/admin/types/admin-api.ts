@@ -50,7 +50,7 @@ export interface PortalRequestRecord {
   createdAt?: string;
   advertiser?: { companyName?: string; email?: string };
   driver?: { fullName?: string };
-  data?: { filename?: string; url?: string };
+  data?: unknown;
 }
 
 export interface LedgerRecord {

@@ -1,7 +1,10 @@
 import type { LedgerRecord } from "@/types/admin-api";
 import { getErrorMessage } from "@/lib/error-message";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { parseFinancialSummary, formatFinancialMetric } from "@/lib/finance-summary";
+import {
+  parseFinancialSummary,
+  formatFinancialMetric,
+} from "@/lib/finance-summary";
 import type { FinancialSummary } from "@/lib/finance-summary";
 import type { GetServerSideProps } from "next";
 import Link from "next/link";

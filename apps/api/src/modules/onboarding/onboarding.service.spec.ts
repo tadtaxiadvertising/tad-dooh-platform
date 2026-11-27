@@ -14,7 +14,12 @@ describe("OnboardingService password safety", () => {
   };
   const service = new OnboardingService(prisma as never, supabase as never);
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    supabase.getClient.mockReturnValue({
+      auth: { admin: { createUser, deleteUser } },
+    });
+  });
 
   it.each([undefined, "", "1234567"])(
     "rejects invalid password before any database access (%s)",
@@ -140,18 +145,67 @@ describe("OnboardingService password safety", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("deletes only the newly created Auth identity if Prisma transaction fails", async () => {
+  it("deletes only the newly created Auth identity if transaction work explicitly fails", async () => {
+    prisma.advertiser.findUnique.mockResolvedValue(null);
+    createUser.mockResolvedValue({
+      data: { user: { id: "auth-created-1" } },
+      error: null,
+    });
+    prisma.$transaction.mockImplementation(
+      async (callback: (tx: unknown) => unknown) =>
+        callback({
+          advertiser: {
+            create: jest.fn().mockRejectedValue(new Error("write rejected")),
+          },
+        }),
+    );
+    deleteUser.mockResolvedValue({ error: null });
+    await expect(service.onboardAdvertiser(validRequest)).rejects.toMatchObject(
+      { status: 500 },
+    );
+    expect(deleteUser).toHaveBeenCalledWith("auth-created-1");
+  });
+
+  it("preserves Auth when transaction setup fails without a callback outcome", async () => {
     prisma.advertiser.findUnique.mockResolvedValue(null);
     createUser.mockResolvedValue({
       data: { user: { id: "auth-created-1" } },
       error: null,
     });
     prisma.$transaction.mockRejectedValue(new Error("database unavailable"));
-    deleteUser.mockResolvedValue({ error: null });
     await expect(service.onboardAdvertiser(validRequest)).rejects.toMatchObject(
       { status: 500 },
     );
-    expect(deleteUser).toHaveBeenCalledWith("auth-created-1");
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("preserves Auth when database work completed but commit acknowledgement is lost", async () => {
+    prisma.advertiser.findUnique.mockResolvedValue(null);
+    createUser.mockResolvedValue({
+      data: { user: { id: "auth-created-1" } },
+      error: null,
+    });
+    const tx = {
+      advertiser: {
+        create: jest.fn().mockResolvedValue({
+          id: "adv-1",
+          companyName: "Test Company",
+        }),
+      },
+      campaign: { create: jest.fn().mockResolvedValue({ id: "camp-1" }) },
+    };
+    prisma.$transaction.mockImplementation(
+      async (callback: (tx: unknown) => unknown) => {
+        await callback(tx);
+        throw new Error("commit acknowledgement lost");
+      },
+    );
+    await expect(service.onboardAdvertiser(validRequest)).rejects.toMatchObject(
+      { status: 500 },
+    );
+    expect(tx.advertiser.create).toHaveBeenCalledTimes(1);
+    expect(tx.campaign.create).toHaveBeenCalledTimes(1);
+    expect(deleteUser).not.toHaveBeenCalled();
   });
 
   it("does not delete an existing identity when the email is already registered", async () => {
@@ -171,7 +225,14 @@ describe("OnboardingService password safety", () => {
       data: { user: { id: "auth-created-1" } },
       error: null,
     });
-    prisma.$transaction.mockRejectedValue(new Error("database unavailable"));
+    prisma.$transaction.mockImplementation(
+      async (callback: (tx: unknown) => unknown) =>
+        callback({
+          advertiser: {
+            create: jest.fn().mockRejectedValue(new Error("write rejected")),
+          },
+        }),
+    );
     deleteUser.mockRejectedValue(new Error("network unavailable"));
     await expect(service.onboardAdvertiser(validRequest)).rejects.toMatchObject(
       { status: 500 },

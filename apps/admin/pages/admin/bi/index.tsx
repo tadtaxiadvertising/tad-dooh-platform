@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { parseReconciliationPage } from "@/lib/reconciliation-page";
+import type { ReconciliationPage } from "@/lib/reconciliation-page";
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -239,40 +241,41 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 export default function BIDashboard() {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KpiData | null>(null);
-  const [discrepancies, setDiscrepancies] = useState<DiscrepancyItem[]>([]);
+  const [reconciliation, setReconciliation] =
+    useState<ReconciliationPage | null>(null);
+  const reconciliationRequest = useRef(0);
+  const discrepancies =
+    reconciliation?.data.filter((row) => row.hasDiscrepancy).slice(0, 6) ?? [];
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
 
   const fetchAll = useCallback(async () => {
+    const request = ++reconciliationRequest.current;
     setLoading(true);
+    setReconciliation(null);
     try {
       const currentPeriod = new Date().toISOString().slice(0, 7); // "YYYY-MM"
       const [kpiData, reconcData] = await Promise.allSettled([
         getBiKpis(),
-        getReconciliationReport(currentPeriod),
+        getReconciliationReport(currentPeriod, 1, 100),
       ]);
 
+      if (request !== reconciliationRequest.current) return;
       if (kpiData.status === "fulfilled") {
         setKpis(kpiData.value);
       }
-      if (reconcData.status === "fulfilled") {
-        const data = Array.isArray(reconcData.value) ? reconcData.value : [];
-        setDiscrepancies(
-          data
-            .filter(
-              (r: DiscrepancyItem & { hasDiscrepancy?: boolean }) =>
-                r.hasDiscrepancy,
-            )
-            .slice(0, 6),
-        );
-      }
+      setReconciliation(
+        reconcData.status === "fulfilled"
+          ? parseReconciliationPage(reconcData.value, currentPeriod, 1, 100)
+          : null,
+      );
 
       setLastRefreshed(new Date());
     } catch (err) {
       console.error("BI fetch error:", err);
       toast.error("Error al cargar indicadores de negocio");
     } finally {
-      setLoading(false);
+      if (request === reconciliationRequest.current) setLoading(false);
     }
   }, []);
 
@@ -417,6 +420,10 @@ export default function BIDashboard() {
                       <div className="h-2 bg-zinc-800/60 rounded w-full" />
                     </div>
                   ))
+                ) : !reconciliation ? (
+                  <p role="alert" className="p-4 text-sm text-rose-400">
+                    No se pudo verificar la conciliación.
+                  </p>
                 ) : discrepancies.length > 0 ? (
                   discrepancies.map((d) => (
                     <div
@@ -442,12 +449,19 @@ export default function BIDashboard() {
                   <div className="flex flex-col items-center justify-center py-12 gap-2 text-zinc-700">
                     <Activity className="w-8 h-8" />
                     <p className="text-[10px] font-black uppercase tracking-widest">
-                      Sin discrepancias activas
+                      Sin discrepancias en esta página
                     </p>
                   </div>
                 )}
               </div>
               <div className="p-4 border-t border-zinc-800/60 bg-zinc-900/20">
+                {reconciliation && (
+                  <p className="mb-2 text-xs text-zinc-400">
+                    {reconciliation.period} · Primeros{" "}
+                    {reconciliation.data.length} de {reconciliation.total}{" "}
+                    registros; hasta 6 discrepancias.
+                  </p>
+                )}
                 <Link
                   href="/admin/bi/reconciliation"
                   className="flex items-center justify-center gap-2 w-full py-2.5 bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"

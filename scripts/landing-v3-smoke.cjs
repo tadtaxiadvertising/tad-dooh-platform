@@ -740,6 +740,14 @@ async function main() {
           }
           await assertAdvertiserLinks(staticPage);
           const chapters = staticPage.locator('#motion-story article');
+          const art = chapters.locator('[data-static-art] svg');
+          assert.equal(await art.count(), 3, 'Each static chapter must retain its editorial illustration');
+          for (const illustration of await art.all()) {
+            assert.equal(await illustration.getAttribute('aria-hidden'), 'true');
+            const box = await illustration.boundingBox();
+            assert.ok(box && box.width > 0 && box.height > 0, 'Static illustration is visible without JavaScript');
+            assert.ok(Math.abs(box.width / box.height - 2) < 0.05, 'Static art keeps its intrinsic aspect ratio');
+          }
           assert.equal(await chapters.count(), 3,
             'No-JS browser must retain all narrative chapters.');
           assert.equal(await chapters.first().isVisible(), true,

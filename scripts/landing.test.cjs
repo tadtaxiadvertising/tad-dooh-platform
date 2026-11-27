@@ -76,6 +76,27 @@ test('referral transfer permits a single bounded code and drops other URL data',
   }
 });
 
+test('campaign handoff accepts only bounded non-contractual preferences', () => {
+  const draft = { screens: 12, months: 4, city: 'stgo' };
+  const href = model.campaignSignupHref(draft, 'DRIVER_1');
+  const url = new URL(href, 'https://fixture.invalid');
+  assert.equal(url.pathname, '/advertiser/onboarding');
+  assert.deepEqual(model.campaignDraftFromSearch(url.search), draft);
+  assert.equal(model.referralCodeFromSearch(url.search), 'DRIVER_1');
+  assert.deepEqual([...url.searchParams.keys()], ['screens', 'months', 'city', 'ref']);
+  assert.equal(new URL(model.campaignSignupHref(draft, 'https://evil.invalid'), url).searchParams.has('ref'), false);
+  for (const query of [
+    '', '?screens=12&months=4', '?screens=0&months=4&city=stgo',
+    '?screens=16&months=4&city=stgo', '?screens=1.5&months=4&city=stgo',
+    '?screens=2&months=13&city=stgo', '?screens=2&months=0&city=stgo',
+    '?screens=2&months=4&city=unknown', '?screens=2&screens=3&months=4&city=sd',
+    '?screens=2&months=4&months=5&city=sd', '?screens=2&months=4&city=sd&city=stgo',
+  ]) assert.equal(model.campaignDraftFromSearch(query), null, query);
+  assert.deepEqual(model.campaignDraftFromSearch(
+    '?screens=12&months=4&city=stgo&budget=1&includeProduction=true&verifiedDriverCode=true&next=https://evil.invalid'
+  ), draft, 'Untrusted price, production and eligibility are ignored');
+});
+
 test('campaign budget clamps and rounds to the declared RD$5000 steps', () => {
   for (const [input, expected] of [
     [-1, 5000], [0, 5000], [5000, 5000], [7499.9, 5000], [7500, 10000],

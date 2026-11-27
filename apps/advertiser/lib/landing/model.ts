@@ -11,6 +11,53 @@ export const CITIES: Record<DemoCity, string> = {
   stgo: "Santiago",
 };
 
+export type LandingCampaignDraft = {
+  screens: number;
+  months: number;
+  city: DemoCity;
+};
+
+/** Only non-sensitive, non-contractual campaign preferences travel in the URL. */
+export function campaignDraftFromSearch(
+  search: string,
+): LandingCampaignDraft | null {
+  const params = new URLSearchParams(search);
+  const screens = params.getAll("screens");
+  const months = params.getAll("months");
+  const cities = params.getAll("city");
+  if (
+    screens.length !== 1 ||
+    months.length !== 1 ||
+    cities.length !== 1 ||
+    !/^[1-9]$|^1[0-5]$/.test(screens[0]) ||
+    !/^[1-9]$|^1[0-2]$/.test(months[0]) ||
+    (cities[0] !== "sd" && cities[0] !== "stgo")
+  ) {
+    return null;
+  }
+  return {
+    screens: Number(screens[0]),
+    months: Number(months[0]),
+    city: cities[0],
+  };
+}
+
+/** The destination is fixed; no price, identity or production opt-in is transferred. */
+export function campaignSignupHref(
+  draft: LandingCampaignDraft,
+  referral: string | null,
+): string {
+  const params = new URLSearchParams({
+    screens: String(draft.screens),
+    months: String(draft.months),
+    city: draft.city,
+  });
+  if (referral && /^[A-Za-z0-9_-]{1,64}$/.test(referral)) {
+    params.set("ref", referral);
+  }
+  return `/advertiser/onboarding?${params.toString()}`;
+}
+
 export function estimateDriverEarnings(slots: number, cpa: number) {
   const safeSlots = Number.isFinite(slots)
     ? Math.max(0, Math.min(15, Math.trunc(slots)))

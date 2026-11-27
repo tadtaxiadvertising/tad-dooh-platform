@@ -172,6 +172,27 @@ test('wizard back action retains the existing close and previous-step callbacks'
   assert.equal(previous, 1);
 });
 
+test('onboarding simulator keeps inherited custom screens and allows explicit city review', () => {
+  let config = { screens: 12, months: 4, frequencySeconds: 30, includeProduction: false };
+  let city = 'stgo';
+  const props = () => ({
+    config, city, onCityChange: value => { city = value; },
+    onChange: patch => { config = { ...config, ...patch }; },
+    onNext() {}, onPrev() {},
+  });
+  let page = render(simulator, props());
+  assert.equal(page.find('input', input => input['aria-label'] === 'Número de pantallas personalizado').value, 12);
+  assert.equal(page.find('input', input => input.type === 'range').value, 4);
+  assert.equal(page.find('input', input => input.type === 'checkbox').checked, false);
+  const select = page.find('select', element => element.id === 'onboarding-campaign-city');
+  assert.equal(select.value, 'stgo');
+  select.onChange({ target: { value: 'sd' } });
+  page = render(simulator, props());
+  assert.equal(page.find('select', element => element.id === 'onboarding-campaign-city').value, 'sd');
+  assert.equal(config.screens, 12);
+  assert.equal(config.months, 4);
+});
+
 test('simulator keeps live model quotes, deliberate production opt-in and existing navigation', () => {
   let config = { screens: 3, months: 2, frequencySeconds: 30, includeProduction: false };
   let next = 0;

@@ -216,7 +216,7 @@ test("main protection plan is read-only, app-pinned and matches CI Summary contr
 
   const ci = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
   assert.match(ci, /summary:\n    name: Summary/);
-  assert.match(ci, /needs: \[format, typecheck, test, prisma, security, build\]/);
+  assert.match(ci, /needs: \[format, typecheck, test, prisma, security, build, landing\]/);
   assert.match(ci, /if: always\(\)/);
   assert.match(ci, /\$BUILD_RESULT" != "success"/);
 });

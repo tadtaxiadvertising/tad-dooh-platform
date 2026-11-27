@@ -129,12 +129,19 @@ export default function LandingPage() {
   const finalEvent = links.signupEnabled
     ? "advertiser_signup"
     : "advertiser_login";
-  const cta = (destination: CtaDestination, placement: CtaPlacement) =>
+  const nextLabel = links.signupEnabled
+    ? "Continuar con mi campaña"
+    : "Ingresar al portal";
+  const nextHint = links.signupEnabled
+    ? "Podrás revisar tu configuración antes de solicitar la campaña."
+    : "Acceso para anunciantes registrados.";
+  function cta(destination: CtaDestination, placement: CtaPlacement) {
     trackAnalyticsEvent("cta_clicked", {
       role: "advertiser",
       destination,
       placement,
     });
+  }
   const recordPreview = (
     patch: Partial<{
       city: DemoCity;
@@ -605,16 +612,10 @@ export default function LandingPage() {
                   href={finalDestination}
                   onClick={() => cta(finalEvent, "simulator_result")}
                 >
-                  {links.signupEnabled
-                    ? "Continuar con mi campaña"
-                    : "Ingresar al portal"}
+                  {nextLabel}
                   <ArrowRight size={18} aria-hidden="true" />
                 </a>
-                <p>
-                  {links.signupEnabled
-                    ? "Podrás revisar tu configuración antes de solicitar la campaña."
-                    : "Acceso para anunciantes registrados."}
-                </p>
+                <p>{nextHint}</p>
               </div>
               {projection.warnings.length > 0 && (
                 <details className="landing-warning-details">

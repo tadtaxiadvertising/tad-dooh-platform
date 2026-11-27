@@ -15,7 +15,10 @@ import CommitmentStep, {
   CommitmentForm,
 } from "@/components/onboarding/CommitmentStep";
 import SuccessStep from "@/components/onboarding/SuccessStep";
-import { estimateCampaign } from "../../components/advertiser/simulatorPricing";
+import {
+  estimateCampaign,
+  matchesAdvertiserOffer,
+} from "../../components/advertiser/simulatorPricing";
 import {
   campaignDraftFromSearch,
   CITIES,
@@ -135,13 +138,14 @@ export default function AdvertiserOnboarding() {
           }
           throw new Error("Quote API unavailable");
         }
-        const offer: AdvertiserOffer = await res.json();
+        const offer: unknown = await res.json();
         if (
-          offer.pricingVersion !== "TAD-2026-11-18-DRIVER40" ||
-          offer.verifiedDriverCode !== true ||
-          offer.screens !== simulator.screens ||
-          offer.months !== simulator.months ||
-          !Number.isFinite(offer.subtotal)
+          !matchesAdvertiserOffer(offer, {
+            screens: simulator.screens,
+            months: simulator.months,
+            includeProduction: simulator.includeProduction,
+            verifiedDriverCode: true,
+          })
         ) {
           throw new Error("Unexpected quote response");
         }

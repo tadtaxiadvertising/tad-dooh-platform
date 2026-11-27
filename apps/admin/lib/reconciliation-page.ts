@@ -27,9 +27,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isCount(value: unknown): value is number {
-  return (
-    typeof value === "number" && Number.isSafeInteger(value) && value >= 0
-  );
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
 function isAmount(value: unknown): value is number {
@@ -77,7 +75,8 @@ export function parseReconciliationPage(
     !isCount(totalPages) ||
     totalPages !== Math.ceil(total / pageSize) ||
     !Array.isArray(data) ||
-    data.length !== Math.max(0, Math.min(pageSize, total - (page - 1) * pageSize))
+    data.length !==
+      Math.max(0, Math.min(pageSize, total - (page - 1) * pageSize))
   ) {
     return null;
   }

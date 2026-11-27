@@ -62,6 +62,7 @@ jobs:
                 'TypeScript Check': ['TypeScript check (all workspaces)'],
                 'Tests': [
                   'Run API tests',
+                  'Advertiser registration PostgreSQL isolation contract',
                   'Driver offline queue retry safety (Node 22)',
                   'Run safe cross-portal integration contracts',
                 ],

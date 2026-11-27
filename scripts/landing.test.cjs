@@ -487,6 +487,21 @@ test('real middleware keeps onboarding and legal pages publicly accessible', asy
   assert.equal(harness.backendCalls(), 0);
 });
 
+test('public crawler metadata bypasses auth only at the two exact paths', async () => {
+  const harness = middlewareHarness();
+  for (const pathname of ['/robots.txt', '/sitemap.xml']) {
+    for (const token of [undefined, 'malformed', fixtureToken('ADVERTISER')]) {
+      assert.equal((await harness.run(pathname, token)).kind, 'next');
+    }
+    assert.equal((await harness.run(pathname + '/private')).kind, 'redirect');
+  }
+  assert.equal(harness.calls(), 0);
+  assert.equal(harness.backendCalls(), 0);
+  for (const pathname of ['/advertiser/private.xml', '/advertiser/robots.txt', '/advertiser/dashboard']) {
+    assert.equal((await harness.run(pathname)).kind, 'redirect');
+  }
+});
+
 test('public QR illustration bypasses auth only at its exact asset path', async () => {
   const harness = middlewareHarness();
   for (const token of [undefined, 'malformed', fixtureToken('ADVERTISER')]) {

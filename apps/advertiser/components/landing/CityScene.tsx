@@ -4,6 +4,7 @@ import {
   type LandingRole,
 } from "../../lib/landing/model";
 import { OBJECTIVES, type DemoObjective } from "../../lib/landing/content";
+import styles from "./cabin-hero.module.css";
 
 export default function CityScene({
   role = "advertiser",
@@ -71,14 +72,18 @@ export default function CityScene({
           note: <>{preview.note}</>,
         };
   const sceneAriaLabel =
-    `Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}` +
+    (role === "advertiser"
+      ? "Ilustración desde el asiento trasero: tablet detrás del reposacabezas del copiloto"
+      : `Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}`) +
     (role === "advertiser"
       ? `, escenario ${CITIES[city]}, objetivo ${OBJECTIVES[objective]}` +
         (displayBrand ? `, marca de ejemplo ${displayBrand}` : "")
       : "");
   return (
     <div
-      className="landing-scene"
+      className={
+        role === "advertiser" ? `landing-scene ${styles.cabin}` : "landing-scene"
+      }
       data-perspective={role}
       data-city={city}
       data-objective={role === "advertiser" ? objective : undefined}
@@ -88,27 +93,39 @@ export default function CityScene({
       aria-label={sceneAriaLabel}
       role="img"
     >
-      <div className="landing-scene-grid" />
+      {role === "advertiser" ? (
+        <div aria-hidden="true" data-cabin-illustration>
+          <div className={styles.window} />
+          <div className={styles.seat} />
+          <div className={styles.passenger} />
+        </div>
+      ) : (
+        <div className="landing-scene-grid" />
+      )}
       <div className="landing-scene-label">
         <span />{" "}
         {role === "advertiser"
           ? `ESCENA · ${CITIES[city].toUpperCase()}`
           : scene.label}
       </div>
-      <div className="landing-orbit landing-orbit-one" />
-      <div className="landing-orbit landing-orbit-two" />
-      <div className="landing-road">
-        <span />
-        <span />
-        <span />
-      </div>
-      <div className="landing-taxi">
-        <div className="landing-taxi-roof">TAXI</div>
-        <div className="landing-taxi-window" />
-        <div className="landing-taxi-door" />
-        <div className="landing-wheel landing-wheel-left" />
-        <div className="landing-wheel landing-wheel-right" />
-      </div>
+      {role === "driver" && (
+        <>
+          <div className="landing-orbit landing-orbit-one" />
+          <div className="landing-orbit landing-orbit-two" />
+          <div className="landing-road">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="landing-taxi">
+            <div className="landing-taxi-roof">TAXI</div>
+            <div className="landing-taxi-window" />
+            <div className="landing-taxi-door" />
+            <div className="landing-wheel landing-wheel-left" />
+            <div className="landing-wheel landing-wheel-right" />
+          </div>
+        </>
+      )}
       <div className="landing-screen">
         <div className="landing-screen-camera" />
         <div className="landing-screen-content">

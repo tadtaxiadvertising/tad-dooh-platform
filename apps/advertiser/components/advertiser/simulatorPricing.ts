@@ -1,6 +1,9 @@
 import {
+  calculateAdvertiserOffer,
   calculateImpactLegacy,
   calculateImpact,
+  type AdvertiserOffer,
+  type AdvertiserOfferInput,
   getSource,
   ImpactOutput,
 } from "@tad/impact-calculator";
@@ -79,6 +82,26 @@ export function estimateCampaignDetailed(config: CampaignConfig): ImpactOutput {
     includeProduction: config.includeProduction,
     mode: "expected",
   });
+}
+
+/**
+ * Check the server response against the shared versioned offer contract.
+ * This is a consistency check, never evidence of referral eligibility.
+ */
+export function matchesAdvertiserOffer(
+  offer: unknown,
+  config: AdvertiserOfferInput,
+): offer is AdvertiserOffer {
+  if (!offer || typeof offer !== "object" || Array.isArray(offer)) return false;
+  try {
+    const expected = calculateAdvertiserOffer(config);
+    const received = offer as Record<string, unknown>;
+    return Object.entries(expected).every(
+      ([key, value]) => received[key] === value,
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**

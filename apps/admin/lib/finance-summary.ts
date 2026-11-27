@@ -32,10 +32,7 @@ export function parseFinancialSummary(value: unknown): FinancialSummary | null {
   return { mrr, activeSubscribers, campaignRevenue, burnRate, netProjection };
 }
 
-export function formatFinancialMetric(
-  value: unknown,
-  currency = true,
-): string {
+export function formatFinancialMetric(value: unknown, currency = true): string {
   if (!isFiniteNumber(value)) return "No disponible";
   return `${currency ? "RD$ " : ""}${value.toLocaleString()}`;
 }

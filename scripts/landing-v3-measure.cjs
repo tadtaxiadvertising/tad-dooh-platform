@@ -11,6 +11,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const zlib = require('node:zlib');
+const { createHash } = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const { localBaseUrl, loadChromium, outsideDirectory, gitSha, guardContext,
   evidenceCollector, recordErrors, assertNoSideEffects } = require('./landing-v3-smoke.cjs');
@@ -39,6 +40,25 @@ function assetSize(asset) {
     gzipBytes: zlib.gzipSync(bytes, { level: 9 }).length };
 }
 
+function sha256(bytes) {
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+// Static App Router pages have an exact prerendered HTML artifact. Manifest
+// chunk membership is a size accounting model, not a contract for script tags.
+function runtimeIdentity({ rootHtmlSha256, responseBody, routeExclusiveJs, scriptPaths }) {
+  const missingManifestScripts = routeExclusiveJs
+    .filter(asset => !scriptPaths.includes('/_next/' + asset.file))
+    .map(asset => asset.file);
+  const observedHtmlSha256 = sha256(responseBody);
+  const method = rootHtmlSha256 ? 'prerendered-html-sha256' : 'manifest-script-paths';
+  const matches = rootHtmlSha256
+    ? observedHtmlSha256 === rootHtmlSha256
+    : routeExclusiveJs.length > 0 && missingManifestScripts.length === 0;
+  return { matches, method, expectedHtmlSha256: rootHtmlSha256 || null,
+    observedHtmlSha256, missingManifestScripts };
+}
+
 function bundleMeasurement() {
   const buildManifest = readJson(path.join(BUILD, 'build-manifest.json'));
   const appManifestPath = path.join(BUILD, 'app-build-manifest.json');
@@ -47,6 +67,11 @@ function bundleMeasurement() {
   const pagesRoot = buildManifest.pages?.['/'];
   assert.ok(appRoot || pagesRoot, 'No landing root entry exists in the current build manifests.');
   const router = appRoot ? 'App Router' : 'Pages Router';
+  const prerender = appRoot ? readJson(path.join(BUILD, 'prerender-manifest.json')) : null;
+  const staticRoot = prerender?.routes?.['/']?.initialRevalidateSeconds === false;
+  const rootHtmlSha256 = staticRoot
+    ? sha256(fs.readFileSync(path.join(BUILD, 'server', 'app', 'index.html')))
+    : null;
   const shellFiles = appRoot ? appManifest.pages['/layout'] || [] : buildManifest.pages['/_app'] || [];
   const rootFiles = appRoot || pagesRoot;
   const allInitial = [...new Set([...shellFiles, ...rootFiles,
@@ -60,6 +85,7 @@ function bundleMeasurement() {
   return {
     router,
     buildDirectory: BUILD,
+    rootHtmlSha256,
     sourceObservation: {
       utc: new Date().toISOString(), root: sourceRoot,
       sha: execFileSync('git', ['-C', sourceRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
@@ -161,11 +187,6 @@ async function browserSamples(base, bundle) {
       await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
       const scriptPaths = await page.locator('script[src]').evaluateAll(elements =>
         elements.map(element => new URL(element.src).pathname));
-      const runtimeMatchesBuild = bundle.routeExclusiveJs.files.every(asset =>
-        scriptPaths.includes(`/_next/${asset.file}`));
-      assert.ok(runtimeMatchesBuild || developmentAllowed,
-        'Running root does not match the measured build. Use this build\'s production server, '
-        + 'or explicitly allow development sampling with LANDING_ALLOW_DEV_HMR=true.');
       // Two rendered frames flush entries already delivered by the browser; no arbitrary sleep.
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const sample = await page.evaluate(() => {
@@ -188,11 +209,22 @@ async function browserSamples(base, bundle) {
           hardwareConcurrency: navigator.hardwareConcurrency,
         };
       });
+      // Read the navigation body after collecting timings. The browser returns
+      // decoded bytes, matching Next's static HTML file rather than wire gzip.
+      const identity = runtimeIdentity({
+        rootHtmlSha256: bundle.rootHtmlSha256,
+        responseBody: await response.body(),
+        routeExclusiveJs: bundle.routeExclusiveJs.files,
+        scriptPaths,
+      });
+      const runtimeMatchesBuild = identity.matches;
+      assert.ok(runtimeMatchesBuild || developmentAllowed,
+        'Running root does not match the measured build: ' + JSON.stringify(identity));
       sample.cls = sample.layoutShifts === null ? null : computeCls(sample.layoutShifts);
       delete sample.layoutShifts;
       userAgent = sample.userAgent;
       delete sample.userAgent;
-      samples.push({ iteration: index + 1, runtimeMatchesBuild,
+      samples.push({ iteration: index + 1, runtimeMatchesBuild, buildIdentity: identity,
         allowedDevelopmentHmrConnections: evidence.devHmr.length, ...sample });
       await assertNoSideEffects(context, evidence);
       await context.close();
@@ -211,6 +243,7 @@ async function browserSamples(base, bundle) {
       'No INP claim: initial navigation has no representative user interaction sample.',
       ...(developmentAllowed ? ['Development mode is explicitly permitted. These timings do not certify the production build or production performance budgets.'] : []),
       'Cookie prompt is part of the fresh visitor page.', 'Local transport compression/config may differ from deployment.',
+      'Static HTML identity verifies the root response, not the bytes of every served chunk.',
       'LCP and CLS reflect the initial viewport through network idle, not the entire visit.'] };
 }
 
@@ -232,7 +265,7 @@ async function main() {
   process.stdout.write(JSON.stringify(report, null, 2) + '\n');
 }
 
-module.exports = { computeCls, medianFinite };
+module.exports = { computeCls, medianFinite, runtimeIdentity };
 
 if (require.main === module) main().catch(error => {
   process.stderr.write(`FAIL ${error.message}\n`);

@@ -19,7 +19,7 @@ test("Advertiser cinematic scene follows its existing campaign city, with real b
   assert.match(styles, /landing-hero-cities button:focus-visible/);
   assert.match(styles, /min-height: 46px/);
   assert.match(landing, /setIncludeProduction\] = useState\(false\)/);
-  assert.match(landing, /estimateCampaign\(config\)/);
+  assert.doesNotMatch(landing, /estimateCampaign\(config\)/);
 });
 
 test("Advertiser hero illustrates a mounted passenger display without external assets", () => {

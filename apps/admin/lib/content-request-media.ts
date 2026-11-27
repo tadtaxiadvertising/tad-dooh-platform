@@ -38,11 +38,6 @@ export function parseContentRequestMedia(data: unknown): ContentRequestMedia {
     return { filename: null, url: null };
   }
   const { filename, url } = value as Record<string, unknown>;
-  return {
-    filename:
-      typeof filename === "string" && filename.trim()
-        ? filename.trim()
-        : null,
-    url: previewUrl(url),
-  };
+  const safeFilename = typeof filename === "string" ? filename.trim() : "";
+  return { filename: safeFilename || null, url: previewUrl(url) };
 }

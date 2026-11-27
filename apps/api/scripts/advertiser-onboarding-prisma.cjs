@@ -180,16 +180,30 @@ async function verify() {
     }, failedAttempt), error => error.getStatus() === 409);
     assert.equal(provisioned.length, 2);
     console.log("PASS real Prisma rollback preserves reservation and compensates only newly provisioned fixture identity");
-    console.log("TAD_ADVERTISER_PRISMA_INTEGRATION_PASS");
   } finally {
-    await Promise.allSettled(clients.map(client => client.$disconnect()));
-    try { await docker(["rm", "-f", name]); }
-    catch (error) {
-      if (!error.stderr?.includes("No such container")) throw error;
-    } finally {
-      fs.rmSync(directory, { recursive: true, force: true });
+    const disconnected = await Promise.allSettled(clients.map(client => client.$disconnect()));
+    // PostgreSQL must shut down cleanly to unlink its own Unix socket and lock
+    // file. SIGKILL (docker rm -f) can leave those entries in the bind mount,
+    // whose permissions are managed by the postgres container user.
+    try {
+      await docker(["stop", "--time", "10", name], 20000);
+    } catch (error) {
+      if (!error.stderr?.includes("No such container")) {
+        // Contain a failed shutdown, but do not report a passing test.
+        await docker(["rm", "-f", name]);
+        throw error;
+      }
+    }
+    // An empty mounted directory can be removed through its writable parent
+    // regardless of container UID. Do not recursively traverse a Unix socket.
+    fs.rmdirSync(socket);
+    fs.rmdirSync(directory);
+    for (const result of disconnected) {
+      if (result.status === "rejected") throw result.reason;
     }
   }
+  // Success includes cleanup, not just the database assertions.
+  console.log("TAD_ADVERTISER_PRISMA_INTEGRATION_PASS");
 }
 
 if (process.platform !== "linux" || process.argv.length !== 3 || process.argv[2] !== "--isolated-docker") {

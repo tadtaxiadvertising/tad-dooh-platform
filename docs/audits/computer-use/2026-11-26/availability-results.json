@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-11-27T00:11:14.669Z",
+  "method": "Node HTTPS GET; strict TLS; no credentials; no response bodies stored",
+  "results": [
+    {
+      "url": "https://tad.api.ibusiness.com.do/health",
+      "httpStatus": 200,
+      "status": "PASS"
+    },
+    {
+      "url": "https://tad.api.ibusiness.com.do/health/ready",
+      "httpStatus": 200,
+      "status": "PASS"
+    },
+    {
+      "url": "https://tad.api.ibusiness.com.do/health/full",
+      "httpStatus": 200,
+      "status": "PASS"
+    },
+    {
+      "url": "https://tad.api.ibusiness.com.do/api/v1/drivers",
+      "httpStatus": 401,
+      "status": "PASS"
+    },
+    {
+      "url": "https://tad.api.ibusiness.com.do/api/v1/system-settings",
+      "httpStatus": 401,
+      "status": "PASS"
+    },
+    {
+      "url": "https://tad.api.ibusiness.com.do/api/v1/bi/kpis",
+      "httpStatus": 401,
+      "status": "PASS"
+    },
+    {
+      "url": "https://tad.player.ibusiness.com.do/",
+      "status": "BLOCKED",
+      "error": "DEPTH_ZERO_SELF_SIGNED_CERT"
+    }
+  ]
+}

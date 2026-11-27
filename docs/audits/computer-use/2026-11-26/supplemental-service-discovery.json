@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-11-27T00:38:51.485Z",
+  "method": "Strict HTTPS GET, no response bodies",
+  "results": [
+    {
+      "url": "https://tad.simulator.ibusiness.com.do/",
+      "status": "BLOCKED",
+      "error": "ENOTFOUND"
+    },
+    {
+      "url": "https://tad.remotion.ibusiness.com.do/",
+      "status": "BLOCKED",
+      "error": "ENOTFOUND"
+    }
+  ]
+}

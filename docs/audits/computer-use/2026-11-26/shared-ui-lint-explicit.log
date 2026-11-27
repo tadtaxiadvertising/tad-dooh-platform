@@ -1,0 +1,18 @@
+
+C:\tad-audit-current-20261126\packages\ui\components\AuthProvider.tsx
+   21:58  warning  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   50:36  warning  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  273:5   error    Definition for rule 'react-hooks/exhaustive-deps' was not found  react-hooks/exhaustive-deps
+
+C:\tad-audit-current-20261126\packages\ui\components\PortalAuth.tsx
+   97:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  140:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  166:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  166:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  206:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  273:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  298:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  339:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 11 problems (1 error, 10 warnings)
+

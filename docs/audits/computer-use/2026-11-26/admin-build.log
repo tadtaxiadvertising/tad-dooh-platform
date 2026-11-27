@@ -1,0 +1,79 @@
+   ▲ Next.js 15.5.28
+   - Experiments (use with caution):
+     ✓ webpackBuildWorker
+     · clientTraceMetadata
+
+   Skipping validation of types
+   Skipping linting
+   Creating an optimized production build ...
+[@sentry/nextjs] Could not find a Next.js instrumentation file. This indicates an incomplete configuration of the Sentry SDK. An instrumentation file is required for the Sentry SDK to be initialized on the server: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#create-initialization-config-files (you can suppress this warning by setting SENTRY_SUPPRESS_INSTRUMENTATION_FILE_WARNING=1 as environment variable)
+[@sentry/nextjs] Could not find a Next.js instrumentation file. This indicates an incomplete configuration of the Sentry SDK. An instrumentation file is required for the Sentry SDK to be initialized on the server: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#create-initialization-config-files (you can suppress this warning by setting SENTRY_SUPPRESS_INSTRUMENTATION_FILE_WARNING=1 as environment variable)
+[@sentry/nextjs] Could not find a Next.js instrumentation file. This indicates an incomplete configuration of the Sentry SDK. An instrumentation file is required for the Sentry SDK to be initialized on the server: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#create-initialization-config-files (you can suppress this warning by setting SENTRY_SUPPRESS_INSTRUMENTATION_FILE_WARNING=1 as environment variable)
+ ✓ Compiled successfully in 2.9min
+   Collecting page data ...
+   Generating static pages (0/10) ...
+   Generating static pages (2/10) 
+   Generating static pages (4/10) 
+   Generating static pages (7/10) 
+ ✓ Generating static pages (10/10)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (pages)                                 Size  First Load JS
+┌ ƒ /                                        412 B         309 kB
+├   /_app                                      0 B         308 kB
+├ ○ /404                                   1.43 kB         310 kB
+├ ƒ /admin                                   707 B         309 kB
+├ ƒ /admin/advertisers                     6.73 kB         315 kB
+├ ƒ /admin/advertisers/[id]                3.83 kB         319 kB
+├ ƒ /admin/advertisers/requests            45.9 kB         354 kB
+├ ƒ /admin/analytics                       6.38 kB         421 kB
+├ ƒ /admin/analytics/history               3.93 kB         312 kB
+├ ƒ /admin/auth/callback                     508 B         309 kB
+├ ƒ /admin/bi                              5.31 kB         314 kB
+├ ƒ /admin/bi/reconciliation               5.26 kB         314 kB
+├ ƒ /admin/campaigns                       5.67 kB         318 kB
+├ ƒ /admin/campaigns/[id]                  8.52 kB         321 kB
+├ ƒ /admin/campaigns/[id]/report           6.18 kB         425 kB
+├ ƒ /admin/campaigns/new                   5.04 kB         314 kB
+├ ƒ /admin/dashboard                       6.71 kB         422 kB
+├ ○ /admin/dashboard/realtime (11147 ms)   10.5 kB         319 kB
+├ ƒ /admin/devices                         4.14 kB         316 kB
+├ ƒ /admin/drivers                           10 kB         318 kB
+├ ƒ /admin/drivers/onboarding/[id]         6.38 kB         315 kB
+├ ƒ /admin/finance                         7.02 kB         319 kB
+├ ƒ /admin/finance/exports                  3.2 kB         312 kB
+├ ƒ /admin/finance/investor                2.27 kB         311 kB
+├ ƒ /admin/fleet                           9.15 kB         321 kB
+├ ƒ /admin/fleet/offline                   1.76 kB         310 kB
+├ ƒ /admin/forgot-password                   511 B         309 kB
+├ ○ /admin/login (4367 ms)                 3.05 kB         312 kB
+├ ƒ /admin/media                           13.3 kB         332 kB
+├ ƒ /admin/monitoring                      2.72 kB         311 kB
+├ ƒ /admin/profile                         2.69 kB         311 kB
+├ ƒ /admin/referrals                       3.58 kB         312 kB
+├ ƒ /admin/settings                         5.7 kB         314 kB
+├ ○ /admin/tracking (4370 ms)              7.21 kB         316 kB
+├ ƒ /admin/update-password                   507 B         309 kB
+├ ƒ /api/proxy/[...path]                       0 B         308 kB
+├ ○ /aviso-legal (4367 ms)                 3.85 kB         312 kB
+├ ƒ /check-in                              4.62 kB         313 kB
+├ ƒ /login                                 1.88 kB         310 kB
+├ ƒ /p                                     3.23 kB         312 kB
+├ ƒ /p/[id]                                3.64 kB         312 kB
+├ ○ /politica-de-cookies (4369 ms)           413 B         309 kB
+├ ○ /politica-de-privacidad (4367 ms)      6.63 kB         315 kB
+├ ○ /social-agent (4369 ms)                4.91 kB         313 kB
+└ ○ /terminos-de-servicio (4368 ms)        5.94 kB         314 kB
++ First Load JS shared by all               334 kB
+  ├ chunks/framework-264b911da73e827a.js   57.3 kB
+  ├ chunks/main-fa2124d2bb9864ec.js          39 kB
+  ├ chunks/pages/_app-2b010d176b908be3.js   210 kB
+  ├ css/b11f58f6743afdfd.css               25.1 kB
+  └ other shared chunks (total)            2.55 kB
+
+ƒ Middleware                                105 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

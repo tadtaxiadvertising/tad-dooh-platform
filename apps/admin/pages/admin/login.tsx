@@ -307,7 +307,7 @@ export default function AdminLoginPage() {
 
               <div className="text-right">
                 <a
-                  href="#"
+                  href="/admin/forgot-password"
                   className="text-xs font-medium text-white transition-colors hover:text-[#eab308]"
                 >
                   ¿Olvidaste tu contraseña?

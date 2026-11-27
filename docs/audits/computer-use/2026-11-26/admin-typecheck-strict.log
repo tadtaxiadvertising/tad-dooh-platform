@@ -1,0 +1,169 @@
+apps/admin/pages/admin/advertisers/[id].tsx(83,26): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(85,5): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(91,3): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(124,17): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(126,14): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(133,18): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(140,16): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(140,43): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(140,64): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(146,12): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(149,41): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(171,67): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(255,10): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(255,10): error TS18048: 'advertiser.campaigns.length' is possibly 'undefined'.
+apps/admin/pages/admin/advertisers/[id].tsx(256,11): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/[id].tsx(256,11): error TS18048: 'advertiser.campaigns' is possibly 'undefined'.
+apps/admin/pages/admin/advertisers/[id].tsx(309,22): error TS18048: 'campaign.targetImpressions' is possibly 'undefined'.
+apps/admin/pages/admin/advertisers/[id].tsx(315,28): error TS18048: 'campaign.targetImpressions' is possibly 'undefined'.
+apps/admin/pages/admin/advertisers/[id].tsx(369,67): error TS18047: 'advertiser' is possibly 'null'.
+apps/admin/pages/admin/advertisers/requests.tsx(260,33): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+apps/admin/pages/admin/advertisers/requests.tsx(397,33): error TS18048: 'selectedRequest.data' is possibly 'undefined'.
+apps/admin/pages/admin/bi/reconciliation.tsx(245,13): error TS18048: 'kpis.discrepancyCount' is possibly 'undefined'.
+apps/admin/pages/admin/bi/reconciliation.tsx(247,22): error TS18048: 'kpis.discrepancyCount' is possibly 'undefined'.
+apps/admin/pages/admin/bi/reconciliation.tsx(338,26): error TS18048: 'r.totalPlaybacks' is possibly 'undefined'.
+apps/admin/pages/admin/bi/reconciliation.tsx(398,29): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+apps/admin/pages/admin/campaigns/[id]/report.tsx(106,30): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+apps/admin/pages/admin/campaigns/[id]/report.tsx(221,21): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+apps/admin/pages/admin/campaigns/[id]/report.tsx(222,21): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+apps/admin/pages/admin/campaigns/[id]/report.tsx(324,64): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+apps/admin/pages/admin/campaigns/[id]/report.tsx(370,34): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+apps/admin/pages/admin/dashboard/realtime.tsx(382,19): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string | null>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<string | null>'.
+apps/admin/pages/admin/dashboard/realtime.tsx(386,46): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+apps/admin/pages/admin/dashboard/realtime.tsx(577,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: MapViewProps, context?: any): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | ... 4 more ... | undefined', gave the following error.
+    Type 'Device[]' is not assignable to type 'MapLocation[]'.
+      Type 'Device' is not assignable to type 'MapLocation'.
+        Types of property 'lastLat' are incompatible.
+          Type 'number | null' is not assignable to type 'number | undefined'.
+            Type 'null' is not assignable to type 'number | undefined'.
+  Overload 2 of 2, '(props: MapViewProps): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | ... 4 more ... | undefined', gave the following error.
+    Type 'Device[]' is not assignable to type 'MapLocation[]'.
+      Type 'Device' is not assignable to type 'MapLocation'.
+        Types of property 'lastLat' are incompatible.
+          Type 'number | null' is not assignable to type 'number | undefined'.
+            Type 'null' is not assignable to type 'number | undefined'.
+apps/admin/pages/admin/dashboard/realtime.tsx(737,50): error TS2345: Argument of type 'Device' is not assignable to parameter of type 'MapLocation'.
+  Types of property 'lastLat' are incompatible.
+    Type 'number | null' is not assignable to type 'number | undefined'.
+      Type 'null' is not assignable to type 'number | undefined'.
+apps/admin/pages/admin/finance/exports.tsx(56,7): error TS18048: 'c.name' is possibly 'undefined'.
+apps/admin/pages/admin/finance/exports.tsx(57,7): error TS18048: 'c.advertiser' is possibly 'undefined'.
+apps/admin/pages/admin/finance/exports.tsx(137,61): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+apps/admin/pages/admin/finance/exports.tsx(145,68): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+apps/admin/pages/admin/finance/index.tsx(842,34): error TS18048: 'item.taxAmount' is possibly 'undefined'.
+apps/admin/pages/admin/finance/index.tsx(853,30): error TS18048: 'item.netAmount' is possibly 'undefined'.
+apps/admin/pages/admin/finance/index.tsx(912,25): error TS18048: 'summary.netProjection' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(471,29): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(predicate: (value: FleetDevice | null, index: number, array: (FleetDevice | null)[]) => value is FleetDevice | null, thisArg?: any): (FleetDevice | null)[]', gave the following error.
+    Argument of type '(d: FleetDevice) => boolean' is not assignable to parameter of type '(value: FleetDevice | null, index: number, array: (FleetDevice | null)[]) => value is FleetDevice | null'.
+      Types of parameters 'd' and 'value' are incompatible.
+        Type 'FleetDevice | null' is not assignable to type 'FleetDevice'.
+          Type 'null' is not assignable to type 'FleetDevice'.
+  Overload 2 of 2, '(predicate: (value: FleetDevice | null, index: number, array: (FleetDevice | null)[]) => unknown, thisArg?: any): (FleetDevice | null)[]', gave the following error.
+    Argument of type '(d: FleetDevice) => boolean' is not assignable to parameter of type '(value: FleetDevice | null, index: number, array: (FleetDevice | null)[]) => unknown'.
+      Types of parameters 'd' and 'value' are incompatible.
+        Type 'FleetDevice | null' is not assignable to type 'FleetDevice'.
+          Type 'null' is not assignable to type 'FleetDevice'.
+apps/admin/pages/admin/fleet/index.tsx(493,26): error TS2345: Argument of type '(device: FleetDevice, i: number) => JSX.Element' is not assignable to parameter of type '(value: FleetDevice | null, index: number, array: (FleetDevice | null)[]) => Element'.
+  Types of parameters 'device' and 'value' are incompatible.
+    Type 'FleetDevice | null' is not assignable to type 'FleetDevice'.
+      Type 'null' is not assignable to type 'FleetDevice'.
+apps/admin/pages/admin/fleet/index.tsx(568,27): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(574,29): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(575,36): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(588,32): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(590,46): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(699,25): error TS2345: Argument of type '(device: FleetDevice, i: number) => JSX.Element' is not assignable to parameter of type '((value: FleetDevice, index: number, array: FleetDevice[]) => Element) & ((value: null, index: number, array: null[]) => Element)'.
+  Type '(device: FleetDevice, i: number) => JSX.Element' is not assignable to type '(value: null, index: number, array: null[]) => Element'.
+    Types of parameters 'device' and 'value' are incompatible.
+      Type 'null' is not assignable to type 'FleetDevice'.
+apps/admin/pages/admin/fleet/index.tsx(713,41): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+apps/admin/pages/admin/fleet/index.tsx(879,27): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(886,27): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(892,29): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(893,36): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(909,62): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(930,83): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(933,61): error TS18047: 'device' is possibly 'null'.
+apps/admin/pages/admin/fleet/index.tsx(986,9): error TS2322: Type 'FleetDevice | null' is not assignable to type '{ id?: string | undefined; device_id?: string | undefined; deviceId?: string | undefined; taxi_number?: string | undefined; taxiNumber?: string | undefined; city?: string | undefined; status?: string | undefined; driverId?: string | undefined; driver?: { ...; } | undefined; } | null | undefined'.
+  Type 'FleetDevice' is not assignable to type '{ id?: string | undefined; device_id?: string | undefined; deviceId?: string | undefined; taxi_number?: string | undefined; taxiNumber?: string | undefined; city?: string | undefined; status?: string | undefined; driverId?: string | undefined; driver?: { ...; } | undefined; }'.
+    Types of property 'driver' are incompatible.
+      Type '{ id: string; fullName: string; phone: string; subscriptionPaid: boolean; } | null' is not assignable to type '{ id?: string | undefined; } | undefined'.
+        Type 'null' is not assignable to type '{ id?: string | undefined; } | undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1088,19): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1089,19): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1090,16): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1091,18): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1092,17): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1093,20): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1094,18): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1099,8): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1107,22): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1107,32): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1110,9): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1114,8): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1122,13): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1134,15): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1144,47): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1145,45): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1157,17): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1162,16): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1170,12): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1173,16): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1187,13): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1188,46): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1230,13): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1230,23): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1255,30): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1255,51): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1256,64): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/fleet/index.tsx(1266,126): error TS18048: 'device' is possibly 'undefined'.
+apps/admin/pages/admin/referrals/index.tsx(156,19): error TS18048: 'stats.topRecruiters.length' is possibly 'undefined'.
+apps/admin/pages/admin/referrals/index.tsx(157,17): error TS18047: 'stats' is possibly 'null'.
+apps/admin/pages/admin/referrals/index.tsx(157,17): error TS18048: 'stats.topRecruiters' is possibly 'undefined'.
+apps/admin/pages/admin/referrals/index.tsx(264,41): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+apps/admin/pages/admin/tracking/index.tsx(283,27): error TS2345: Argument of type '(prev: MapLocation[]) => (MapLocation | { taxiNumber: string; driverName: string; city: null; plate: null; status: string; subscriptionStatus: string; driverId: string; ... 7 more ...; isOnline: boolean; })[]' is not assignable to parameter of type 'SetStateAction<MapLocation[]>'.
+  Type '(prev: MapLocation[]) => (MapLocation | { taxiNumber: string; driverName: string; city: null; plate: null; status: string; subscriptionStatus: string; driverId: string; ... 7 more ...; isOnline: boolean; })[]' is not assignable to type '(prevState: MapLocation[]) => MapLocation[]'.
+    Type '(MapLocation | { taxiNumber: string; driverName: string; city: null; plate: null; status: string; subscriptionStatus: string; driverId: string; deviceId: string; lastLat: number; ... 5 more ...; isOnline: boolean; })[]' is not assignable to type 'MapLocation[]'.
+      Type 'MapLocation | { taxiNumber: string; driverName: string; city: null; plate: null; status: string; subscriptionStatus: string; driverId: string; deviceId: string; lastLat: number; ... 5 more ...; isOnline: boolean; }' is not assignable to type 'MapLocation'.
+        Type '{ taxiNumber: string; driverName: string; city: null; plate: null; status: string; subscriptionStatus: string; driverId: string; deviceId: string; lastLat: number; lastLng: number; speed: number; bearing: number; lastSeen: string; _lastPingAt: string; isOnline: boolean; }' is not assignable to type 'MapLocation'.
+          Types of property 'city' are incompatible.
+            Type 'null' is not assignable to type 'string | undefined'.
+apps/admin/pages/admin/tracking/index.tsx(356,28): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string | null>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<string | null>'.
+apps/admin/pages/admin/tracking/index.tsx(361,48): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.

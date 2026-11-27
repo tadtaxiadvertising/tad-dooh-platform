@@ -1,0 +1,86 @@
+TAP version 13
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# Subtest: Admin recovery link resolves to its public recovery route
+ok 1 - Admin recovery link resolves to its public recovery route
+  ---
+  duration_ms: 925.4784
+  type: 'test'
+  ...
+# Subtest: shared auth opens the recovery form when explicitly requested
+ok 2 - shared auth opens the recovery form when explicitly requested
+  ---
+  duration_ms: 659.9806
+  type: 'test'
+  ...
+# Subtest: shared auth keeps the existing default login form
+ok 3 - shared auth keeps the existing default login form
+  ---
+  duration_ms: 480.5111
+  type: 'test'
+  ...
+# Subtest: standalone recovery returns to the configured Admin login
+not ok 4 - standalone recovery returns to the configured Admin login
+  ---
+  duration_ms: 415.7826
+  type: 'test'
+  location: 'C:\\tad-audit-current-20261126\\scripts\\admin-recovery-entry.test.cjs:46:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+    + []
+    - [
+    -   '/admin/login'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: '/admin/login'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (C:\tad-audit-current-20261126\scripts\admin-recovery-entry.test.cjs:61:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Admin recovery page renders the shared recovery entry
+ok 5 - Admin recovery page renders the shared recovery entry
+  ---
+  duration_ms: 478.8908
+  type: 'test'
+  ...
+# Subtest: anonymous recovery is public while the Admin dashboard stays protected
+ok 6 - anonymous recovery is public while the Admin dashboard stays protected
+  ---
+  duration_ms: 103.55
+  type: 'test'
+  ...
+# Subtest: client session restoration does not redirect anonymous recovery to login
+ok 7 - client session restoration does not redirect anonymous recovery to login
+  ---
+  duration_ms: 9.6271
+  type: 'test'
+  ...
+# Subtest: Admin recovery renders without the private dashboard layout
+ok 8 - Admin recovery renders without the private dashboard layout
+  ---
+  duration_ms: 33.6369
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 7
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8016.3018

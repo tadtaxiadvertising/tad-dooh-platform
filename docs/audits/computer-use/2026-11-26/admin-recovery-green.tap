@@ -1,0 +1,61 @@
+TAP version 13
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# Subtest: Admin recovery link resolves to its public recovery route
+ok 1 - Admin recovery link resolves to its public recovery route
+  ---
+  duration_ms: 1114.9676
+  type: 'test'
+  ...
+# Subtest: shared auth opens the recovery form when explicitly requested
+ok 2 - shared auth opens the recovery form when explicitly requested
+  ---
+  duration_ms: 696.7382
+  type: 'test'
+  ...
+# Subtest: shared auth keeps the existing default login form
+ok 3 - shared auth keeps the existing default login form
+  ---
+  duration_ms: 620.231
+  type: 'test'
+  ...
+# Subtest: standalone recovery returns to the configured Admin login
+ok 4 - standalone recovery returns to the configured Admin login
+  ---
+  duration_ms: 296.0476
+  type: 'test'
+  ...
+# Subtest: Admin recovery page renders the shared recovery entry
+ok 5 - Admin recovery page renders the shared recovery entry
+  ---
+  duration_ms: 329.9136
+  type: 'test'
+  ...
+# Subtest: anonymous recovery is public while the Admin dashboard stays protected
+ok 6 - anonymous recovery is public while the Admin dashboard stays protected
+  ---
+  duration_ms: 93.8284
+  type: 'test'
+  ...
+# Subtest: client session restoration does not redirect anonymous recovery to login
+ok 7 - client session restoration does not redirect anonymous recovery to login
+  ---
+  duration_ms: 3.6066
+  type: 'test'
+  ...
+# Subtest: Admin recovery renders without the private dashboard layout
+ok 8 - Admin recovery renders without the private dashboard layout
+  ---
+  duration_ms: 57.2127
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5090.7385

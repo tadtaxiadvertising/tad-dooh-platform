@@ -1,0 +1,86 @@
+TAP version 13
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# Subtest: Admin recovery link resolves to its public recovery route
+not ok 1 - Admin recovery link resolves to its public recovery route
+  ---
+  duration_ms: 643.6249
+  type: 'test'
+  location: 'C:\\tad-audit-current-20261126\\scripts\\admin-recovery-entry.test.cjs:31:1'
+  failureType: 'testCodeFailure'
+  error: 'React is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    AdminLoginPage (apps/admin/pages/admin/login.tsx:64:5)
+    react-stack-bottom-frame (C:\tad-dooh-platform\node_modules\.pnpm\react-dom@19.0.0_react@19.0.0\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:8524:18)
+    renderWithHooks (C:\tad-dooh-platform\node_modules\.pnpm\react-dom@19.0.0_react@19.0.0\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:4524:19)
+    renderElement (C:\tad-dooh-platform\node_modules\.pnpm\react-dom@19.0.0_react@19.0.0\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:4959:23)
+    retryNode (C:\tad-dooh-platform\node_modules\.pnpm\react-dom@19.0.0_react@19.0.0\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5613:22)
+    performWork (C:\tad-dooh-platform\node_modules\.pnpm\react-dom@19.0.0_react@19.0.0\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:6416:19)
+    startWork (C:\tad-dooh-platform\node_modules\.pnpm\react-dom@19.0.0_react@19.0.0\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:7027:7)
+    renderToStringImpl (C:\tad-dooh-platform\node_modules\.pnpm\react-dom@19.0.0_react@19.0.0\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:7111:7)
+    process.env.NODE_ENV.exports.renderToStaticMarkup (C:\tad-dooh-platform\node_modules\.pnpm\react-dom@19.0.0_react@19.0.0\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:8558:14)
+    TestContext.<anonymous> (C:\tad-audit-current-20261126\scripts\admin-recovery-entry.test.cjs:33:14)
+  ...
+# Subtest: shared auth opens the recovery form when explicitly requested
+not ok 2 - shared auth opens the recovery form when explicitly requested
+  ---
+  duration_ms: 632.7877
+  type: 'test'
+  location: 'C:\\tad-audit-current-20261126\\scripts\\admin-recovery-entry.test.cjs:36:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /Recuperar acceso/. Input:
+    
+    '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/><title></title><div class="min-h-screen bg-[#08090a] flex items-center justify-center p-4 relative overflow-hidden font-sans text-[#f7f8f8]"><div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none"><div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] blur-[140px] rounded-full opacity-[0.05]"></div></div><div class="w-full max-w-[340px] transition-all duration-500 translate-y-4 opacity-0"><div class="flex flex-col items-center mb-6"><div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4 bg-yellow-400"><span class="text-base font-bold text-black tracking-tight">T</span></div><h1 class="text-xl font-semibold text-[#f7f8f8] tracking-tight">TAD Admin</h1><p class="text-[13px] text-[#8a8f98] mt-0.5"></p></div><div class="relative bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-lg p-5 backdrop-blur-sm"><form class="space-y-4"><div><label for="login-email" class="block text-[12px] font-medium text-[#8a8f98] mb-1.5">Correo</label><input id="login-email" type="email" placeholder="usuario@tad.do" required="" class="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-md px-3 py-2.5 text-[13px] text-[#f7f8f8] placeholder:text-[#62666d] focus:outline-none focus:border-[rgba(255,255,255,0.15)] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)] transition-all" value=""/></div><div><div class="flex items-center justify-between mb-1.5"><label for="login-password" class="text-[12px] font-medium text-[#8a8f98]">Contraseña</label><button type="button" class="text-[11px] text-[#8a8f98] hover:text-[#f7f8f8] transition-colors">¿Olvidaste tu contraseña?</button></div><div class="relative"><input id="login-password" type="password" placeholder="••••••••" required="" minLength="6" class="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-md px-3 py-2.5 pr-10 text-[13px] text-[#f7f8f8] placeholder:text-[#62666d] focus:outline-none focus:border-[rgba(255,255,255,0.15)] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)] transition-all" value=""/><button type="button" tabindex="-1" class="absolute inset-y-0 right-2.5 flex items-center text-[#62666d] hover:text-[#8a8f98] transition-colors"><svg></svg></button></div></div><button id="login-submit" type="submit" class="w-full bg-[#f7f8f8] text-[#08090a] font-semibold text-[13px] py-2.5 rounded-md transition-all hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-1"><svg></svg><span>Iniciar sesión</span></button><div class="flex items-center gap-3 pt-1" aria-hidden="true"><div class="flex-1 h-px bg-[rgba(255,255,255,0.08)]"></div><span class="text-[10px] uppercase tracking-widest text-[#62666d] font-semibold">o</span><div class="flex-1 h-px bg-[rgba(255,255,255,0.08)]"></div></div></form></div><p class="text-center text-[11px] text-[#62666d] mt-5">TAD Taxi Advertising S.R.L.</p></div></div>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/><title></title><div class="min-h-screen bg-[#08090a] flex items-center justify-center p-4 relative overflow-hidden font-sans text-[#f7f8f8]"><div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none"><div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] blur-[140px] rounded-full opacity-[0.05]"></div></div><div class="w-full max-w-[340px] transition-all duration-500 translate-y-4 opacity-0"><div class="flex flex-col items-center mb-6"><div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4 bg-yellow-400"><span class="text-base font-bold text-black tracking-tight">T</span></div><h1 class="text-xl font-semibold text-[#f7f8f8] tracking-tight">TAD Admin</h1><p class="text-[13px] text-[#8a8f98] mt-0.5"></p></div><div class="relative bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-lg p-5 backdrop-blur-sm"><form class="space-y-4"><div><label for="login-email" class="block text-[12px] font-medium text-[#8a8f98] mb-1.5">Correo</label><input id="login-email" type="email" placeholder="usuario@tad.do" required="" class="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-md px-3 py-2.5 text-[13px] text-[#f7f8f8] placeholder:text-[#62666d] focus:outline-none focus:border-[rgba(255,255,255,0.15)] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)] transition-all" value=""/></div><div><div class="flex items-center justify-between mb-1.5"><label for="login-password" class="text-[12px] font-medium text-[#8a8f98]">Contraseña</label><button type="button" class="text-[11px] text-[#8a8f98] hover:text-[#f7f8f8] transition-colors">¿Olvidaste tu contraseña?</button></div><div class="relative"><input id="login-password" type="password" placeholder="••••••••" required="" minLength="6" class="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-md px-3 py-2.5 pr-10 text-[13px] text-[#f7f8f8] placeholder:text-[#62666d] focus:outline-none focus:border-[rgba(255,255,255,0.15)] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)] transition-all" value=""/><button type="button" tabindex="-1" class="absolute inset-y-0 right-2.5 flex items-center text-[#62666d] hover:text-[#8a8f98] transition-colors"><svg></svg></button></div></div><button id="login-submit" type="submit" class="w-full bg-[#f7f8f8] text-[#08090a] font-semibold text-[13px] py-2.5 rounded-md transition-all hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-1"><svg></svg><span>Iniciar sesión</span></button><div class="flex items-center gap-3 pt-1" aria-hidden="true"><div class="flex-1 h-px bg-[rgba(255,255,255,0.08)]"></div><span class="text-[10px] uppercase tracking-widest text-[#62666d] font-semibold">o</span><div class="flex-1 h-px bg-[rgba(255,255,255,0.08)]"></div></div></form></div><p class="text-center text-[11px] text-[#62666d] mt-5">TAD Taxi Advertising S.R.L.</p></div></div>'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (C:\tad-audit-current-20261126\scripts\admin-recovery-entry.test.cjs:39:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: shared auth keeps the existing default login form
+ok 3 - shared auth keeps the existing default login form
+  ---
+  duration_ms: 373.9589
+  type: 'test'
+  ...
+# Subtest: Admin recovery page renders the shared recovery entry
+not ok 4 - Admin recovery page renders the shared recovery entry
+  ---
+  duration_ms: 268.6711
+  type: 'test'
+  location: 'C:\\tad-audit-current-20261126\\scripts\\admin-recovery-entry.test.cjs:46:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, open 'C:\\tad-audit-current-20261126\\apps\\admin\\pages\\admin\\forgot-password.tsx'"
+  code: 'ENOENT'
+  stack: |-
+    Object.readFileSync (node:fs:441:20)
+    load (C:\tad-audit-current-20261126\scripts\admin-recovery-entry.test.cjs:15:38)
+    TestContext.<anonymous> (C:\tad-audit-current-20261126\scripts\admin-recovery-entry.test.cjs:48:28)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 1
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3700.358

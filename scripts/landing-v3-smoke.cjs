@@ -212,6 +212,31 @@ async function main() {
         /TAD Taxi Advertising/i, 'The accessible brand name must include its visible desktop tagline.');
     });
 
+    await check('Crawler metadata is public, canonical and excludes private routes', async () => {
+      const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
+      assert.equal(canonical, 'https://tad.anunciante.ibusiness.com.do/');
+      const robots = await page.request.get(new URL('/robots.txt', base).href, { maxRedirects: 0 });
+      assert.equal(robots.status(), 200);
+      assert.match(robots.headers()['content-type'] || '', /^text\/plain\b/i);
+      const directives = (await robots.text()).trim().split(/\r?\n/);
+      assert.ok(directives.includes('User-agent: *'));
+      for (const prefix of ['/advertiser/', '/api/', '/login', '/register', '/check-in']) {
+        assert.ok(directives.includes('Disallow: ' + prefix));
+      }
+      assert.ok(directives.includes('Sitemap: ' + canonical + 'sitemap.xml'));
+      assert.ok(!directives.includes('Disallow: /'));
+      const sitemap = await page.request.get(new URL('/sitemap.xml', base).href, { maxRedirects: 0 });
+      assert.equal(sitemap.status(), 200);
+      assert.match(sitemap.headers()['content-type'] || '', /^(application|text)\/xml\b/i);
+      const locations = await page.evaluate(xml => {
+        const document = new DOMParser().parseFromString(xml, 'application/xml');
+        if (document.querySelector('parsererror')) throw new Error('Invalid sitemap XML');
+        return [...document.getElementsByTagNameNS('http://www.sitemaps.org/schemas/sitemap/0.9', 'loc')]
+          .map(node => node.textContent);
+      }, await sitemap.text());
+      assert.deepEqual(locations, [canonical], 'Only the canonical public landing belongs in this acquisition sitemap');
+    });
+
     await check('Advertiser white motion narrative has accessible reduced-motion chapters', async () => {
       const story = page.locator('#motion-story');
       assert.equal(await story.count(), 1, 'The scroll story must have one anchor.');

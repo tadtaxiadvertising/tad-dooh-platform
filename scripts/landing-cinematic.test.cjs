@@ -22,6 +22,19 @@ test("Advertiser cinematic scene follows its existing campaign city, with real b
   assert.match(landing, /estimateCampaign\(config\)/);
 });
 
+test("Advertiser hero illustrates a mounted passenger display without external assets", () => {
+  const scene = read("apps/advertiser/components/landing/CityScene.tsx");
+  const css = read("apps/advertiser/components/landing/cabin-hero.module.css");
+  assert.match(scene, /data-cabin-illustration/);
+  assert.match(scene, /tablet detrás del reposacabezas del copiloto/);
+  assert.match(scene, /className=\{styles\.seat\}/);
+  assert.match(scene, /className=\{styles\.passenger\}/);
+  assert.match(css, /animation: none;/);
+  assert.match(css, /overflow-wrap: anywhere;/);
+  assert.doesNotMatch(css, /url\(/i);
+  assert.doesNotMatch(scene, /fetch\(|localStorage|dangerouslySetInnerHTML/);
+});
+
 test("Driver chapters are reversible and do not change the earnings helper", () => {
   const landing = read("apps/driver/components/landing/DriverLandingPage.tsx");
   const lab = read("apps/driver/components/landing/DriverEarningsLab.tsx");

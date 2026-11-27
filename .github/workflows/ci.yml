@@ -45,6 +45,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Temporary formatter diagnostic for onboarding regression
+        run: |
+          set -euo pipefail
+          file=apps/api/src/modules/onboarding/onboarding.service.spec.ts
+          formatted="$(mktemp)"
+          trap 'rm -f "$formatted"' EXIT
+          pnpm dlx prettier@3.9.10 "$file" > "$formatted"
+          diff -u "$file" "$formatted" || test "$?" -eq 1
+
       - name: Format check (prettier)
         run: |
           set -euo pipefail

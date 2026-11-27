@@ -71,19 +71,21 @@ export default function CityScene({
           ),
           note: <>{preview.note}</>,
         };
-  const sceneAriaLabel =
-    (role === "advertiser"
+  const sceneDescription =
+    role === "advertiser"
       ? "Ilustración desde el asiento trasero: tablet detrás del reposacabezas del copiloto"
-      : `Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}`) +
+      : `Ilustración de taxi y pantalla: ${scene.label.toLowerCase()}`;
+  const sceneClassName =
+    role === "advertiser" ? `landing-scene ${styles.cabin}` : "landing-scene";
+  const sceneAriaLabel =
+    sceneDescription +
     (role === "advertiser"
       ? `, escenario ${CITIES[city]}, objetivo ${OBJECTIVES[objective]}` +
         (displayBrand ? `, marca de ejemplo ${displayBrand}` : "")
       : "");
   return (
     <div
-      className={
-        role === "advertiser" ? `landing-scene ${styles.cabin}` : "landing-scene"
-      }
+      className={sceneClassName}
       data-perspective={role}
       data-city={city}
       data-objective={role === "advertiser" ? objective : undefined}

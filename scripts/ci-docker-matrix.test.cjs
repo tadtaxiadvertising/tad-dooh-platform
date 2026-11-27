@@ -16,7 +16,7 @@ test("required CI Docker matrix covers all five canonical portal images", () => 
     assert.ok(fs.existsSync(path.join(__dirname, "..", dockerfile)), `${dockerfile} missing`);
   }
   assert.match(section, /needs: \[format, typecheck, test, prisma, security\]/);
-  assert.match(workflow, /needs: \[format, typecheck, test, prisma, security, build\]/);
+  assert.match(workflow, /needs: \[format, typecheck, test, prisma, security, build, landing\]/);
 });
 
 test("PR-triggered quality and Docker workflows explicitly restrict GITHUB_TOKEN", () => {

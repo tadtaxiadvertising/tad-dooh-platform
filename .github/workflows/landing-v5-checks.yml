@@ -37,6 +37,9 @@ jobs:
         run: node --test scripts/landing-v3-measure.test.cjs
       - name: Advertiser referral attribution regression logic
         run: node --test scripts/advertiser-referral-capture.test.cjs
+
+      - name: Advertiser proxy replay regression
+        run: node --test scripts/advertiser-proxy-replay.test.cjs
       - name: Consent regression logic
         run: node --test scripts/cookie-management.test.cjs
       - name: Type check advertiser landing

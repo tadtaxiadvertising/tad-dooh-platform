@@ -1,0 +1,223 @@
+{
+  "implementationSha": "06fadd22148e0e65e3604fe0fbb72d1709a17e53",
+  "qualityRun": {
+    "id": 45918437013,
+    "url": "https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/45918437013",
+    "result": "PASS",
+    "jobs": [
+      {
+        "id": 140243136338,
+        "name": "Prisma Validation",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Run actions/checkout@v4",
+          "Run pnpm/action-setup@v3",
+          "Run actions/setup-node@v4",
+          "Install dependencies",
+          "Prisma validate schema",
+          "Prisma generate clients",
+          "Managed and atomic recovery contracts (offline)",
+          "Post Run actions/setup-node@v4",
+          "Post Run pnpm/action-setup@v3",
+          "Post Run actions/checkout@v4",
+          "Complete job"
+        ]
+      },
+      {
+        "id": 140243136548,
+        "name": "TypeScript Check",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Run actions/checkout@v4",
+          "Run pnpm/action-setup@v3",
+          "Run actions/setup-node@v4",
+          "Install dependencies",
+          "Build shared impact calculator before consumer checks",
+          "TypeScript check (all workspaces)",
+          "Post Run actions/setup-node@v4",
+          "Post Run pnpm/action-setup@v3",
+          "Post Run actions/checkout@v4",
+          "Complete job"
+        ]
+      },
+      {
+        "id": 140243136564,
+        "name": "Security Audit",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Run actions/checkout@v4",
+          "Run pnpm/action-setup@v3",
+          "Run actions/setup-node@v4",
+          "Reject tracked credentials before dependency installation",
+          "Install dependencies",
+          "npm audit (high severity only)",
+          "TruffleHog secret scan",
+          "Post Run actions/setup-node@v4",
+          "Post Run pnpm/action-setup@v3",
+          "Post Run actions/checkout@v4",
+          "Complete job"
+        ]
+      },
+      {
+        "id": 140243136592,
+        "name": "Tests",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Run actions/checkout@v4",
+          "Run pnpm/action-setup@v3",
+          "Run actions/setup-node@v4",
+          "Install dependencies",
+          "Build shared impact calculator before consumer checks",
+          "Verify built impact calculator public contract",
+          "Run API tests",
+          "Fast verification runner regressions (offline fixtures)",
+          "Driver offline queue retry safety (Node 22)",
+          "Player offline Proof-of-Play durability and event contracts (Node 22)",
+          "Player offline media cache and worker regressions (Node 22)",
+          "Run safe cross-portal integration contracts",
+          "Post Run actions/setup-node@v4",
+          "Post Run pnpm/action-setup@v3",
+          "Post Run actions/checkout@v4",
+          "Complete job"
+        ]
+      },
+      {
+        "id": 140243136607,
+        "name": "Format & Lint",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Run actions/checkout@v4",
+          "Run pnpm/action-setup@v3",
+          "Run actions/setup-node@v4",
+          "Verify lockfile mappings before dependency installation",
+          "Verify pinned overrides match the frozen lockfile",
+          "Install dependencies",
+          "Format check (prettier)",
+          "Lint (ESLint)",
+          "Post Run actions/setup-node@v4",
+          "Post Run pnpm/action-setup@v3",
+          "Post Run actions/checkout@v4",
+          "Complete job"
+        ]
+      },
+      {
+        "id": 140243621088,
+        "name": "Build Docker Image (player)",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Run actions/checkout@v4",
+          "Inspect runner disk",
+          "Build Docker image",
+          "Post Run actions/checkout@v4",
+          "Complete job"
+        ]
+      },
+      {
+        "id": 140243621101,
+        "name": "Build Docker Image (admin)",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Run actions/checkout@v4",
+          "Inspect runner disk",
+          "Build Docker image",
+          "Post Run actions/checkout@v4",
+          "Complete job"
+        ]
+      },
+      {
+        "id": 140243621106,
+        "name": "Build Docker Image (advertiser)",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Run actions/checkout@v4",
+          "Inspect runner disk",
+          "Build Docker image",
+          "Post Run actions/checkout@v4",
+          "Complete job"
+        ]
+      },
+      {
+        "id": 140243621120,
+        "name": "Build Docker Image (driver)",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Run actions/checkout@v4",
+          "Inspect runner disk",
+          "Build Docker image",
+          "Post Run actions/checkout@v4",
+          "Complete job"
+        ]
+      },
+      {
+        "id": 140243621170,
+        "name": "Build Docker Image (api)",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Run actions/checkout@v4",
+          "Inspect runner disk",
+          "Build Docker image",
+          "Post Run actions/checkout@v4",
+          "Complete job"
+        ]
+      },
+      {
+        "id": 140244323660,
+        "name": "Summary",
+        "result": "success",
+        "executedSteps": [
+          "Set up job",
+          "Report results",
+          "Complete job"
+        ]
+      }
+    ]
+  },
+  "dockerRun": {
+    "id": 45918436990,
+    "url": "https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/45918436990",
+    "result": "PASS",
+    "jobs": [
+      {
+        "id": 140243136141,
+        "name": "Build Docker Image (driver)",
+        "result": "success"
+      },
+      {
+        "id": 140243136467,
+        "name": "Build Docker Image (player)",
+        "result": "success"
+      },
+      {
+        "id": 140243136489,
+        "name": "Build Docker Image (api)",
+        "result": "success"
+      },
+      {
+        "id": 140243136504,
+        "name": "Build Docker Image (admin)",
+        "result": "success"
+      }
+    ]
+  },
+  "api": {
+    "suites": 102,
+    "passed": 892,
+    "failed": 0
+  },
+  "adminRecovery": {
+    "passed": 8,
+    "failed": 0,
+    "registeredInCI": true
+  },
+  "scope": "Executed CI with frozen lockfile; no production runtime or provider verification. Local 173 cases retain separate counts; overlapping suites are not summed."
+}

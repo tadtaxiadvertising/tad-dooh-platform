@@ -37,7 +37,7 @@
     "Automatic approval review rejected local production-build server start including loopback",
     "Documented Simulator and Remotion hostnames return ENOTFOUND"
   ],
-  "nextAction": "Review draft PR and exact-SHA CI with frozen lockfile. Browser verification requires an authorized way to run the local server after policy rejection; do not bypass. Confirm service origins and repair Player TLS through an authorized operator.",
+  "nextAction": "Keep PR draft. Runtime correction requires an authorized way to run the compiled server after policy rejection; do not bypass. Reverify intended Player/Simulator/Remotion origins and obtain isolated authenticated sandbox before the 23-step business flow. No merge/deploy authorized.",
   "productionWrites": 0,
   "productionDeployments": 0,
   "prsCreated": [],
@@ -45,7 +45,7 @@
     "https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/560",
     "https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/561"
   ],
-  "updatedAt": "2026-11-27T00:41:54.245Z",
+  "updatedAt": "2026-11-27T00:51:00.505Z",
   "phase": "Pasada local documentada; UI del artefacto bloqueada por revisión automática; sin despliegue",
   "usersEvaluated": [
     "VISITOR (production read-only)",
@@ -112,6 +112,23 @@
     "docs/audits/computer-use/2026-11-26"
   ],
   "implementationCommit": "3538a933",
-  "reviewHead": "52aef2ccdc47e671a33220efa472af3a906935b4",
-  "currentPhase": "DRAFT PR opened; checks pending and runtime blocked"
+  "reviewHead": "06fadd22148e0e65e3604fe0fbb72d1709a17e53",
+  "currentPhase": "Implementation CI verified; read-only Supabase follow-up complete; runtime/provider remains blocked",
+  "ci": {
+    "implementationSha": "06fadd22148e0e65e3604fe0fbb72d1709a17e53",
+    "jobsPassed": 15,
+    "jobsFailed": 0,
+    "apiSuitesPassed": 102,
+    "apiTestsPassed": 892,
+    "recoveryRegressionsPassed": 8,
+    "qualityRun": 45918437013,
+    "dockerRun": 45918436990
+  },
+  "supabaseReadOnly": {
+    "project": "ltdcdhqixvbpdcitthqf",
+    "warningsExistingIssue": 507,
+    "warningCount": 3,
+    "infoCount": 32,
+    "noPolicyTablesWithEndUserGrants": 0
+  }
 }

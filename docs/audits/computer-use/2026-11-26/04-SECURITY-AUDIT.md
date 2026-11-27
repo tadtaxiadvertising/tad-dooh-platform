@@ -19,3 +19,7 @@ IDOR real de dos tenants, XSS/CSRF/SSRF, uploads maliciosos, revocación y sesio
 Computer Use produjo una captura inconsistente con el árbol accesible y timeouts; no se persistió como evidencia de TAD. Browser Use reportó deshabilitado. Se continuó con Chromium aislado sin ignorar TLS.
 
 [Navegación pública](public-runtime-results.json), [disponibilidad/TLS](availability-results.json), [cola offline](offline-browser-results.json), [recuperación](admin-recovery-browser-results.json), [unitarias Player](player-unit-results.tap), [regresión Admin](admin-recovery-green.tap).
+
+## Ampliación de catálogo y asesores en solo lectura
+
+Proyecto documentado ltdcdhqixvbpdcitthqf: Supabase informa ACTIVE_HEALTHY; no equivale a salud global ni acredita por sí solo el destino del API público. La consulta agregada en BEGIN READ ONLY y con timeout de 5 s observó 56 tablas de aplicación sin extensiones: 32 con RLS, 23 con FORCE RLS, 32 sin políticas; **cero tablas sin RLS con grants para anon/authenticated y cero tablas sin políticas con esos grants**. No se consultaron filas de clientes ni cuerpos de funciones. Las 32 INFO no demuestran exposición pública. Permanecen 2 WARN de search_path y 1 WARN de protección de contraseñas filtradas, ya cubiertas por #507; no se creó un duplicado ni se alteró configuración. Ownership de backend, Storage y aislamiento de usuarios reales siguen pendientes. [Evidencia](supabase-readonly-followup.json) y [consulta](readonly-rls-catalog.sql).

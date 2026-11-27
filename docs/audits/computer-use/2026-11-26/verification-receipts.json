@@ -153,5 +153,14 @@
       "note": "Automatic approval review rejected both default host and explicitly loopback-only start commands; tool reason only blocked by policy. Commands did not execute. No bypass attempted."
     }
   ],
-  "evidenceNormalization": "Trailing whitespace removed from text TAP/log snapshots only; results and diagnostic content retained."
+  "evidenceNormalization": "Trailing whitespace removed from text TAP/log snapshots only; results and diagnostic content retained.",
+  "ciContinuation": {
+    "implementationSha": "06fadd22148e0e65e3604fe0fbb72d1709a17e53",
+    "jobsPassed": 15,
+    "apiSuites": 102,
+    "apiTests": 892,
+    "recoveryTests": 8,
+    "receipt": "ci-verified-06fadd22.json"
+  },
+  "databaseReadOnlyContinuation": "supabase-readonly-followup.json"
 }

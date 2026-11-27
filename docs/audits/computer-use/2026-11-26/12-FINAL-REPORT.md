@@ -49,7 +49,7 @@ Recomendación: **NO GO para certificación productiva**, por TLS Player y cober
 
 ## Límites de calidad del candidato
 
-Admin compila con la configuración de tipos del workspace (strict=false), pero el gate adicional --strict falla. No presentar este candidato como listo para release; la configuración existente del build omite typecheck/lint integrados y esos checks se ejecutaron aparte. Dependencias locales reutilizadas resuelven Next 15.5.28 mientras manifest declara 15.5.29: CI con instalación frozen-lockfile debe verificar la versión final. Ver verification-receipts.json.
+Admin compila con la configuración de tipos del workspace (strict=false), pero el gate adicional --strict falla. No presentar este candidato como listo para release; la configuración existente del build omite typecheck/lint integrados y esos checks se ejecutaron aparte. Dependencias locales reutilizadas resuelven Next 15.5.28 mientras manifest declara 15.5.29: La continuación confirmó CI con instalación frozen-lockfile para la implementación 06fadd22; ver recibo al final. Ver verification-receipts.json.
 
 ## Resultado final de compilación y límite de ejecución
 
@@ -58,3 +58,11 @@ Build Admin final: PASS, exit 0, incluido /admin/forgot-password. Ocho regresion
 Descubrimiento adicional: Simulator y Remotion documentados devolvieron ENOTFOUND desde este host; cuenta como dos probes bloqueadas, no prueba de caída de sus despliegues actuales ni causa raíz común. Sus orígenes canónicos deben confirmarse.
 
 PR de revisión: [#562](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/562), DRAFT. Sin merge ni despliegue. El aviso de seguridad del push informó 885 alertas agregadas en la rama por defecto (27 critical, 361 high, 434 moderate, 63 low); no se validó ni deduplicó ese inventario y no se sumó a los dos hallazgos reproducidos de esta pasada. Mantener el seguimiento de dependencias existente.
+
+## Continuación verificada — 26 nov 2026, 20:49 La Paz
+
+Implementación 06fadd22148e0e65e3604fe0fbb72d1709a17e53: **15/15 jobs CI SUCCESS**, con pasos realmente ejecutados. [Quality Gates](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/45918437013) y [Docker](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/45918436990). El log confirma **102 suites / 892 pruebas API PASS** y **8/8 regresiones de recuperación PASS**. TypeScript configurado, Seguridad, Prisma, Format/Lint y los builds Docker de API/Admin/Advertiser/Driver/Player aprobaron con instalación frozen-lockfile. Esto resuelve el CI pendiente de la implementación; no resuelve el override strict local ni la verificación visual/proveedor. [Recibo](ci-verified-06fadd22.json). Los 173 casos locales se mantienen aparte por solapamiento con las suites CI. Los commits de esta continuación solo cambian evidencia/documentación.
+
+## Ampliación de catálogo y asesores en solo lectura
+
+Proyecto documentado ltdcdhqixvbpdcitthqf: Supabase informa ACTIVE_HEALTHY; no equivale a salud global ni acredita por sí solo el destino del API público. La consulta agregada en BEGIN READ ONLY y con timeout de 5 s observó 56 tablas de aplicación sin extensiones: 32 con RLS, 23 con FORCE RLS, 32 sin políticas; **cero tablas sin RLS con grants para anon/authenticated y cero tablas sin políticas con esos grants**. No se consultaron filas de clientes ni cuerpos de funciones. Las 32 INFO no demuestran exposición pública. Permanecen 2 WARN de search_path y 1 WARN de protección de contraseñas filtradas, ya cubiertas por #507; no se creó un duplicado ni se alteró configuración. Ownership de backend, Storage y aislamiento de usuarios reales siguen pendientes. [Evidencia](supabase-readonly-followup.json) y [consulta](readonly-rls-catalog.sql).

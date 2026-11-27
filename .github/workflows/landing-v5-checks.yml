@@ -16,6 +16,10 @@ on:
       - "scripts/driver-landing*.cjs"
       - "scripts/driver-preview-arithmetic.test.cjs"
       - "scripts/advertiser-onboarding-presentation.test.cjs"
+      - "scripts/advertiser-release-drift*.cjs"
+      - "scripts/advertiser-release-gate.test.cjs"
+      - "scripts/advertiser-deployment-check.test.cjs"
+      - "verify-deployment.sh"
       - "scripts/cookie-management.test.cjs"
       - ".github/workflows/landing-v5-checks.yml"
   workflow_dispatch:
@@ -45,6 +49,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Landing and driver regression logic
         run: node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/landing-cinematic.test.cjs scripts/advertiser-motion-v6.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
+      - name: Release verification regression logic
+        run: node --test scripts/advertiser-release-drift.test.cjs scripts/advertiser-release-gate.test.cjs scripts/advertiser-deployment-check.test.cjs
       - name: Consent regression logic
         run: node --test scripts/cookie-management.test.cjs
       - name: Type check advertiser landing
@@ -143,6 +149,8 @@ jobs:
           }
           ready 3003 "$ADV_PID"
           ready 3004 "$DRV_PID"
+          # Require the deployed feature markers in real server HTML before browser QA.
+          node scripts/advertiser-release-drift.cjs --require-v6-582 "$LANDING_BASE_URL"
           export NODE_PATH="$GITHUB_WORKSPACE/apps/driver/node_modules"
           node scripts/landing-v3-smoke.cjs
           node scripts/driver-landing-smoke.cjs

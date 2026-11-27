@@ -542,10 +542,22 @@ async function main() {
       assert.equal((await readBudgetEvents()).length, afterMonth, 'Month blur must not duplicate its key event.');
       const ctaBefore = await page.evaluate(() => window.__landingEvents.filter(event => event.name === 'cta_clicked').length);
       await hero.locator('a[href="#experiencia"]').click();
-      const events = await page.evaluate(() => window.__landingEvents);
-      const ctas = events.filter(event => event.name === 'cta_clicked');
+      const heroEvents = await page.evaluate(() => window.__landingEvents);
+      const ctas = heroEvents.filter(event => event.name === 'cta_clicked');
       assert.equal(ctas.length, ctaBefore + 1);
-      assert.deepEqual(ctas.at(-1).data, { role: 'advertiser', destination: 'advertiser_lab' });
+      assert.deepEqual(ctas.at(-1).data, { role: 'advertiser', destination: 'advertiser_lab', placement: 'hero' });
+      const next = panel.locator('#campaign-next');
+      assert.equal(await next.getAttribute('href'), '/advertiser/login');
+      await next.scrollIntoViewIfNeeded();
+      assert.ok((await next.boundingBox()).height >= 44, 'Budget action must have a usable touch target');
+      // Observe the real handler without navigating into an authenticated flow.
+      await next.evaluate(element => element.addEventListener('click', event => event.preventDefault(), { once: true }));
+      await next.focus();
+      await next.press('Enter');
+      const events = await page.evaluate(() => window.__landingEvents);
+      const budgetCtas = events.filter(event => event.name === 'cta_clicked');
+      assert.equal(budgetCtas.length, ctaBefore + 2, 'Each CTA emits exactly one event');
+      assert.deepEqual(budgetCtas.at(-1).data, { role: 'advertiser', destination: 'advertiser_login', placement: 'simulator_result' });
       assert.equal(events.some(event => /onboarding_(started|completed)/.test(event.name || '')), false);
       for (const event of events) {
         assert.equal(event.url, '/');
@@ -565,7 +577,10 @@ async function main() {
       await pressRange(screens, 'End', 15);
       await screens.press('Tab');
       await hero.locator('a[href="#experiencia"]').click();
-      assert.equal(await page.evaluate(() => window.__landingEvents.length), previousCount);
+      await next.evaluate(element => element.addEventListener('click', event => event.preventDefault(), { once: true }));
+      await next.focus();
+      await next.press('Enter');
+      assert.equal(await page.evaluate(() => window.__landingEvents.length), previousCount, 'Both CTA placements remain silent after revocation');
       await setRangeWithKeyboard(screens, 3);
       await setRangeWithKeyboard(months, 2);
       await objective.selectOption('awareness');

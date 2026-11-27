@@ -890,6 +890,7 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
   let effects = [];
   let tree;
   const requests = [];
+  const attemptKeys = [];
   const pending = [];
   const navigations = [];
   const quoteRequests = [];
@@ -928,6 +929,7 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
   const Page = loadTs('apps/advertiser/pages/advertiser/onboarding.tsx', {
     window: {
       location: { search: '?screens=12&months=4&city=stgo&includeProduction=true&budget=1' },
+      crypto: { randomUUID: () => require('node:crypto').randomUUID() },
       setTimeout(callback) { quoteTimers.set(++timerId, callback); return timerId; },
       clearTimeout(id) { quoteTimers.delete(id); },
     },
@@ -939,6 +941,7 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
       }
       assert.equal(url, '/api/proxy/onboarding/advertiser');
       assert.equal(options.method, 'POST');
+      attemptKeys.push(options.headers['Idempotency-Key']);
       requests.push(JSON.parse(options.body));
       return new Promise((resolve, reject) => pending.push({ resolve, reject }));
     },
@@ -965,6 +968,7 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
   }
   return {
     requests,
+    attemptKeys,
     navigations,
     quoteRequests,
     expectedOffer(overrides = {}) {
@@ -1034,6 +1038,7 @@ test('onboarding prevents concurrent and post-success submissions and preserves 
   const first = submit();
   await submit();
   assert.equal(harness.requests.length, 1);
+  assert.match(harness.attemptKeys[0], /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
   assert.equal(harness.requests[0].targetCity, 'Santiago');
   assert.equal(harness.requests[0].expectedScreens, 12);
   assert.equal(harness.requests[0].campaignMonths, 4);
@@ -1067,6 +1072,7 @@ test('onboarding releases the client lock after an explicit failed response', as
   assert.equal(harness.props('Wizard').navigationLocked, false);
   const retry = harness.props('Commitment').onSubmit();
   assert.equal(harness.requests.length, 2);
+  assert.notEqual(harness.attemptKeys[0], harness.attemptKeys[1]);
   harness.respond(true);
   await retry;
   harness.render();
@@ -1202,6 +1208,7 @@ test('explicit throttling keeps registration retryable with clear guidance', asy
   assert.match(harness.props('Commitment').error, /Espera antes de intentarlo/);
   const retry = harness.props('Commitment').onSubmit();
   assert.equal(harness.requests.length, 2);
+  assert.notEqual(harness.attemptKeys[0], harness.attemptKeys[1]);
   harness.respond(true);
   await retry;
   harness.render();

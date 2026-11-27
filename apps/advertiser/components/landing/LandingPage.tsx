@@ -59,11 +59,7 @@ type CtaDestination =
   | "campaign_story";
 
 type CtaPlacement =
-  | "header"
-  | "hero"
-  | "simulator_intro"
-  | "simulator_result"
-  | "final";
+  "header" | "hero" | "simulator_intro" | "simulator_result" | "final";
 
 const content = ROLE_CONTENT.advertiser;
 const money = formatRD;

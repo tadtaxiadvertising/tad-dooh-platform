@@ -75,7 +75,7 @@
   letter-spacing: -0.03em;
 }
 
-.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: min(100%, 490px); }
 .choices button {
   min-height: 46px;
   padding: 11px 18px;
@@ -361,7 +361,8 @@
 @media (max-width: 700px) {
   .demoControls { align-items: flex-start; flex-direction: column; }
   .choices { width: 100%; }
-  .choices button { flex: 1 1 0; padding: 12px; }
+  .choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .choices button { padding: 12px 8px; overflow-wrap: anywhere; }
 }
 
 @media (max-width: 600px) {
@@ -382,3 +383,22 @@
 @media (prefers-reduced-motion: reduce) {
   .choices button, .cta { transition: none; }
 }
+
+/* Distinct creative palettes preserve TAD's yellow frame and use solid readable surfaces. */
+.adIdentity { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+.adIdentity svg { flex-shrink: 0; }
+.visual[data-promotion="restaurante"] .ad { background: #ffcf55; color: #291a0a; }
+.visual[data-promotion="comercio"] .ad { background: #e4e7fa; color: #27264c; }
+.visual[data-promotion="evento"] .ad { background: #efd5f0; color: #39213d; }
+.visual[data-promotion="inmobiliaria"] .ad { background: #d9eadb; color: #193d28; }
+.visual[data-promotion="hotel"] .ad { background: #d6ebf2; color: #153c4c; }
+.visual[data-promotion="servicios"] .ad { background: #f4e7d6; color: #44311c; }
+.visual[data-promotion="restaurante"] .offerIcon { background: #ffcf55; color: #291a0a; }
+.visual[data-promotion="comercio"] .offerIcon { background: #e4e7fa; color: #27264c; }
+.visual[data-promotion="evento"] .offerIcon { background: #efd5f0; color: #39213d; }
+.visual[data-promotion="inmobiliaria"] .offerIcon { background: #d9eadb; color: #193d28; }
+.visual[data-promotion="hotel"] .offerIcon { background: #d6ebf2; color: #153c4c; }
+.visual[data-promotion="servicios"] .offerIcon { background: #f4e7d6; color: #44311c; }
+/* Longer sector copy may scroll inside the mock phone rather than clipping. */
+.destination { overflow-y: auto; }
+.destination strong, .destination p, .destination small, .offerLabel { flex-shrink: 0; }

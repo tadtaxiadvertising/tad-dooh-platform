@@ -235,13 +235,23 @@ export default function AdvertiserOnboarding() {
       return;
     }
 
+    if (typeof window.crypto?.randomUUID !== "function") {
+      setError(
+        "No pudimos iniciar un registro seguro. Utiliza un navegador actualizado y una conexión HTTPS.",
+      );
+      return;
+    }
+    const attemptKey = window.crypto.randomUUID();
     submissionLocked.current = true;
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/proxy/onboarding/advertiser", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": attemptKey,
+        },
         body: JSON.stringify({
           name: form.repName.trim(),
           companyName: form.companyName.trim(),

@@ -27,8 +27,12 @@ function checkUrl(raw) {
   return url.href;
 }
 
+function renderedMarkup(html) {
+  return html.replace(/<!--[\s\S]*?-->|<(script|style|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
+}
+
 function inspectHtml(html) {
-  const normalized = html.replace(/\s+/g, " ");
+  const normalized = renderedMarkup(html).replace(/\s+/g, " ");
   const hasStory = /id=["']motion-story["']/.test(normalized);
   const hasHeadline = normalized.includes("Tu marca no espera.") &&
     normalized.includes("Va a su encuentro.");
@@ -44,13 +48,14 @@ function inspectHtml(html) {
 // Check rendered markup, not serialized React payloads or comments.
 // This confirms visible feature markers, not a particular Git commit or behavior.
 function inspectMilestone(html) {
-  const markup = html.replace(/<!--[\s\S]*?-->|<(script|style|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
+  const markup = renderedMarkup(html);
+  const qr = markup.match(/<section\b[^>]*\sid=["']interaccion-qr["'][^>]*>[\s\S]*?<\/section\s*>/i)?.[0] || "";
   const markers = {
     cabin: /<div\b[^>]*\sdata-cabin-illustration(?:=["'][^"']*["'])?(?=[\s>])/i.test(markup),
-    qrCreative: /<div\b[^>]*\sdata-qr-creative(?:=["'][^"']*["'])?(?=[\s>])/i.test(markup),
-    scanControl: /<button\b[^>]*\saria-controls=["']qr-demo-destination["']/i.test(markup),
+    qrCreative: /<div\b[^>]*\sdata-qr-creative(?:=["'][^"']*["'])?(?=[\s>])/i.test(qr),
+    scanControl: /<button\b[^>]*\saria-controls=["']qr-demo-destination["']/i.test(qr),
   };
-  const labels = [...markup.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button\s*>/gi)]
+  const labels = [...qr.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button\s*>/gi)]
     .map(match => match[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim());
   const missingSectors = ["Restaurante", "Comercio", "Evento", "Inmobiliaria", "Hotel", "Servicios"]
     .filter(label => !labels.includes(label));

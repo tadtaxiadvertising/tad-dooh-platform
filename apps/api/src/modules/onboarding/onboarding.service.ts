@@ -12,6 +12,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { SupabaseService } from "../supabase/supabase.service";
 import * as bcrypt from "bcrypt";
 import { isEmail } from "class-validator";
+import { createHash } from "node:crypto";
 import {
   BCRYPT_ROUNDS,
   BUSINESS_RULES,
@@ -85,7 +86,18 @@ export class OnboardingService {
     return quote;
   }
 
-  async onboardAdvertiser(data: OnboardAdvertiserDto) {
+  async onboardAdvertiser(data: OnboardAdvertiserDto, attemptKey?: unknown) {
+    // Compatibility stage: legacy callers may omit the key. A supplied key
+    // must be a UUIDv4 and is consumed once, regardless of payload.
+    if (
+      attemptKey !== undefined &&
+      (typeof attemptKey !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          attemptKey,
+        ))
+    ) {
+      throw new BadRequestException("Identificador de registro no válido.");
+    }
     const {
       name,
       companyName,
@@ -142,6 +154,43 @@ export class OnboardingService {
       );
     }
 
+    // Dedicated namespace: never replay anonymous registration responses.
+    // requestHash is a protocol sentinel, NOT a digest of personal data.
+    const namespace = "public-advertiser-onboarding:single-use:v1";
+    const reservationKey =
+      typeof attemptKey === "string"
+        ? createHash("sha256")
+            .update(JSON.stringify([namespace, attemptKey.toLowerCase()]))
+            .digest("hex")
+        : null;
+    if (reservationKey) {
+      try {
+        await this.prisma.idempotencyKey.create({
+          data: {
+            key: reservationKey,
+            driverId: namespace,
+            path: "/onboarding/advertiser",
+            method: "POST",
+            requestHash: createHash("sha256").update(namespace).digest("hex"),
+            isLocked: true,
+            expiresAt: new Date(Date.now() + 86_400_000),
+          },
+        });
+      } catch (error) {
+        if (
+          error != null &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2002"
+        ) {
+          throw new ConflictException(
+            "La solicitud ya fue iniciada. Comprueba su estado antes de registrarte nuevamente.",
+          );
+        }
+        throw error;
+      }
+    }
+
     // Create a unique Supabase Auth identity before the Prisma transaction.
     // Never reuse or overwrite an existing identity: this is a public endpoint.
     const { data: provisioned, error: provisionError } =
@@ -158,6 +207,11 @@ export class OnboardingService {
       );
     }
     const createdAuthUserId = provisioned.user.id;
+    if (reservationKey) {
+      this.logger.log(
+        `[ADVERTISER_ONBOARDING_AUTH_PROVISIONED] reservation=${reservationKey} authUserId=${createdAuthUserId}`,
+      );
+    }
 
     // Only an explicitly rejected transaction callback proves that this
     // request did not complete its database work. A rejected COMMIT response
@@ -218,6 +272,23 @@ export class OnboardingService {
                 duration: 30, // Default duration per slot
                 fileSize: data.fileMetadata.size,
                 mimeType: data.fileMetadata.type,
+              },
+            });
+          }
+
+          if (reservationKey) {
+            // Commit the operation marker atomically with the business rows.
+            // The anonymous endpoint never reads/replays this internal receipt.
+            await tx.idempotencyKey.update({
+              where: { key: reservationKey },
+              data: {
+                isLocked: false,
+                response: JSON.stringify({
+                  state: "COMMITTED",
+                  authUserId: createdAuthUserId,
+                  advertiserId: advertiser.id,
+                  campaignId: campaign.id,
+                }),
               },
             });
           }

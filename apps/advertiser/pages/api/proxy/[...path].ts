@@ -164,8 +164,13 @@ export default async function handler(
       return headers;
     };
 
+    const method = req.method || "GET";
+    // A network error does not prove that a write never reached the backend.
+    // Only safe reads may be replayed or follow an upstream redirect.
+    const canReplay = method === "GET" || method === "HEAD";
     const fetchOptions: RequestInit & { duplex?: "half" } = {
-      method: req.method || "GET",
+      method,
+      redirect: canReplay ? "follow" : "error",
       headers: getForwardHeaders(targetUrl),
       signal: AbortSignal.timeout(60000),
     };
@@ -210,6 +215,7 @@ export default async function handler(
         errorMessage.includes("EAI_AGAIN");
 
       if (
+        canReplay &&
         isNetworkError &&
         (BACKEND_BASE.includes("api:3000") ||
           BACKEND_BASE.includes("localhost"))
@@ -335,7 +341,7 @@ export default async function handler(
     );
 
     return res.status(503).json({
-      error: "Backend no disponible (Incluso tras reintento)",
+      error: "Backend no disponible",
       message: errorMessage,
       targetUrl,
       hint: "Asegúrate de que el backend tad-api esté encendido en EasyPanel",

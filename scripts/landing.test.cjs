@@ -466,6 +466,22 @@ test('real middleware keeps onboarding and legal pages publicly accessible', asy
   assert.equal(harness.backendCalls(), 0);
 });
 
+test('public QR illustration bypasses auth only at its exact asset path', async () => {
+  const harness = middlewareHarness();
+  for (const token of [undefined, 'malformed', fixtureToken('ADVERTISER')]) {
+    assert.equal((await harness.run('/qr-passenger-journey.svg', token)).kind, 'next');
+  }
+  assert.equal(harness.calls(), 0);
+  assert.equal(harness.backendCalls(), 0);
+  for (const pathname of [
+    '/qr-passenger-journey.svg/private',
+    '/advertiser/private.svg',
+    '/advertiser/dashboard',
+  ]) {
+    assert.equal((await harness.run(pathname)).kind, 'redirect');
+  }
+});
+
 test('Next redirect configuration no longer shadows the root and preserves proxy/login aliases', async () => {
   const redirects = await require('../apps/advertiser/next.config.js').redirects();
   assert.equal(redirects.some(redirect => redirect.source === '/'), false);

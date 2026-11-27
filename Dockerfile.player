@@ -33,5 +33,10 @@ RUN pnpm --filter tad-player run build
 FROM nginx:alpine AS runner
 COPY --from=builder /app/apps/player/dist /usr/share/nginx/html
 
+# Static origin liveness only: does not certify API or offline playback.
+RUN test -s /usr/share/nginx/html/index.html \
+    && test -s /usr/share/nginx/html/sw.js \
+    && printf '%s\n' '{"status":"OK"}' > /usr/share/nginx/html/health
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

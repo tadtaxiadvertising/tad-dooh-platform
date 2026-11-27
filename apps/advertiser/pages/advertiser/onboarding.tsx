@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { AdvertiserOffer } from "@tad/impact-calculator";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -68,6 +68,8 @@ export default function AdvertiserOnboarding() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Synchronous lock covers repeated events before React commits loading state.
+  const submissionLocked = useRef(false);
   const [campaignData, setCampaignData] = useState<{
     companyName: string;
     screens: number;
@@ -168,6 +170,7 @@ export default function AdvertiserOnboarding() {
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4) as OnboardingStep);
   const prevStep = () => {
+    if (submissionLocked.current) return;
     setError("");
     setStep((s) => Math.max(s - 1, 1) as OnboardingStep);
   };
@@ -208,6 +211,7 @@ export default function AdvertiserOnboarding() {
   };
 
   const handleSubmit = async () => {
+    if (submissionLocked.current) return;
     if (
       referralCode &&
       (!verifiedOffer || effectiveQuoteStatus !== "verified")
@@ -223,6 +227,7 @@ export default function AdvertiserOnboarding() {
       return;
     }
 
+    submissionLocked.current = true;
     setLoading(true);
     setError("");
     try {
@@ -269,8 +274,10 @@ export default function AdvertiserOnboarding() {
         budget: recordedBudget,
         impressions: estimate.impressions,
       });
-      setTimeout(() => setStep(4), 600);
+      // Keep the lock after a successful request and transition immediately.
+      setStep(4);
     } catch (err: unknown) {
+      submissionLocked.current = false;
       setError(
         err instanceof Error ? err.message : "Ocurrió un error inesperado.",
       );
@@ -360,6 +367,7 @@ export default function AdvertiserOnboarding() {
         onNext={nextStep}
         onPrev={prevStep}
         onClose={goToLogin}
+        navigationLocked={loading || step === 4}
         stepLabels={["Beneficios", "Simulador", "Compromiso", "Éxito"]}
       >
         {renderStepContent()}

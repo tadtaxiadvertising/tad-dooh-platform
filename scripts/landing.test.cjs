@@ -980,9 +980,11 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
       assert.ok(quotePending.length);
       quotePending.shift()({ ok: true, json: async () => offer });
     },
-    respond(ok) {
+    respond(ok, payload = ok ? { quote: impact.calculateAdvertiserOffer({
+      screens: 12, months: 4, includeProduction: false, verifiedDriverCode: Boolean(referral),
+    }) } : { message: 'Fixture rejected' }) {
       assert.ok(pending.length);
-      pending.shift()({ ok, json: async () => ok ? { quote: { subtotal: 120000 } } : { message: 'Fixture rejected' } });
+      pending.shift()({ ok, json: async () => payload });
     },
     render() {
       cursor = 0;
@@ -1129,4 +1131,29 @@ test('a late quote cannot restore a stale offer after production selection chang
   assert.equal(harness.props('Simulator').quoteStatus, 'verified');
   assert.equal(harness.props('Simulator').verifiedOffer.productionFee, 2500);
   assert.equal(harness.props('Simulator').verifiedOffer.subtotal, 74500);
+});
+
+
+test('successful onboarding never substitutes an estimate for an incomplete or inconsistent receipt', async () => {
+  for (const [label, makePayload] of [
+    ['missing quote', () => ({})],
+    ['partial quote', () => ({ quote: { subtotal: 120000 } })],
+    ['wrong currency', h => ({ quote: { ...h.expectedOffer({ verifiedDriverCode: false }), currency: 'USD' } })],
+    ['wrong production', h => ({ quote: h.expectedOffer({ verifiedDriverCode: false, includeProduction: true }) })],
+    ['negative subtotal', h => ({ quote: { ...h.expectedOffer({ verifiedDriverCode: false }), subtotal: -1 } })],
+    ['unexpected referral discount', h => ({ quote: h.expectedOffer() })],
+    ['null body', () => null],
+  ]) {
+    const harness = readyOnboarding();
+    const submit = harness.props('Commitment').onSubmit;
+    const pending = submit();
+    harness.respond(true, makePayload(harness));
+    await pending;
+    harness.render();
+    assert.equal(harness.props('Wizard').step, 4, label);
+    assert.equal(harness.props('Success').campaignData.budget, null, label);
+    assert.equal(harness.props('Wizard').navigationLocked, true, label);
+    await submit();
+    assert.equal(harness.requests.length, 1, label);
+  }
 });

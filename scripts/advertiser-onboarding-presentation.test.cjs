@@ -30,6 +30,7 @@ const allowedSources = new Set([
   'apps/advertiser/components/onboarding/BenefitsStep.tsx',
   'apps/advertiser/components/onboarding/SimulatorStep.tsx',
   'apps/advertiser/components/onboarding/OnboardingWizard.tsx',
+  'apps/advertiser/components/onboarding/SuccessStep.tsx',
   'apps/advertiser/components/advertiser/simulatorPricing.ts',
   'packages/impact-calculator/index.ts',
   'packages/impact-calculator/sources.ts',
@@ -74,6 +75,7 @@ const benefits = loadSource(path.join(ROOT, 'apps/advertiser/components/onboardi
 const simulator = loadSource(path.join(ROOT, 'apps/advertiser/components/onboarding/SimulatorStep.tsx')).default;
 const wizard = loadSource(path.join(ROOT, 'apps/advertiser/components/onboarding/OnboardingWizard.tsx')).OnboardingWizard;
 const pricing = loadSource(path.join(ROOT, 'apps/advertiser/components/advertiser/simulatorPricing.ts'));
+const success = loadSource(path.join(ROOT, 'apps/advertiser/components/onboarding/SuccessStep.tsx')).default;
 
 function text(node) {
   if (node == null || typeof node === 'boolean') return '';
@@ -305,5 +307,21 @@ test('wizard disables back navigation while submitting or after successful regis
     assert.equal(back.disabled, true);
     back.onClick();
     assert.equal(navigated, 0);
+  }
+});
+
+
+test('registration receipt distinguishes recorded pre-tax subtotal from pending confirmation', () => {
+  const props = { companyName: 'Fixture', screens: 12, months: 4, impressions: 123 };
+  const verified = render(success, { onContinue() {}, campaignData: { ...props, budget: 120000 } });
+  assert.ok(verified.html.includes('Subtotal registrado (sin ITBIS)'));
+  assert.ok(verified.html.includes((120000).toLocaleString('es-DO')));
+  assert.ok(!verified.html.includes('Pendiente de confirmación'));
+  for (const campaignData of [{ ...props, budget: null }, undefined]) {
+    const pending = render(success, { onContinue() {}, campaignData });
+    assert.ok(pending.html.includes('Pendiente de confirmación'));
+    assert.ok(pending.html.includes('sin volver a registrarte'));
+    assert.doesNotMatch(pending.html, /RD\$\s*0/);
+    assert.ok(pending.html.includes('Ir a iniciar sesión'));
   }
 });

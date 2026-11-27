@@ -9,7 +9,7 @@ interface SuccessStepProps {
     companyName: string;
     screens: number;
     months: number;
-    budget: number;
+    budget: number | null;
     impressions: number;
   };
 }
@@ -132,10 +132,18 @@ export default function SuccessStep({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9, duration: 0.4 }}
         >
-          <span className="text-xs text-[#AAAAAA]">Presupuesto estimado:</span>
-          <span className="text-xl font-black text-white tabular-nums">
-            RD$ {campaignData?.budget?.toLocaleString() || "0"}
+          <span className="text-xs text-[#AAAAAA]">
+            Subtotal registrado (sin ITBIS):
           </span>
+          {campaignData?.budget != null ? (
+            <span className="text-xl font-black text-white tabular-nums">
+              RD$ {campaignData.budget.toLocaleString("es-DO")}
+            </span>
+          ) : (
+            <span className="text-sm font-semibold text-[#FDCB01] text-right">
+              Pendiente de confirmación
+            </span>
+          )}
         </motion.div>
 
         <motion.div
@@ -150,6 +158,13 @@ export default function SuccessStep({
           </span>
         </motion.div>
       </motion.div>
+
+      {campaignData?.budget == null && (
+        <p role="status" className="mb-6 text-sm text-[#AAAAAA]">
+          No pudimos confirmar el importe en la respuesta del registro. Consulta
+          el estado de tu solicitud en el portal sin volver a registrarte.
+        </p>
+      )}
 
       {/* Next Steps */}
       <motion.div

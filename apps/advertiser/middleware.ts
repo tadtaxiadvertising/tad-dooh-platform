@@ -16,6 +16,7 @@ const PUBLIC_PATHS = new Set([
   "/check-in",
   "/login",
   "/register", // legacy referral URL redirected by next.config.js
+  "/qr-passenger-journey.svg", // exact public landing illustration, not a route wildcard
 ]);
 
 interface TrustedAdvertiserSession {

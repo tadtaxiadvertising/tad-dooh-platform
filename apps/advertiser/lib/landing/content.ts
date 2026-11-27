@@ -75,7 +75,7 @@ export const ROLE_FAQS: Record<
     ],
     [
       "¿Cuántas personas verán mi anuncio?",
-      "Esta demo no estima alcance. Las impresiones dependen de la metodología, la actividad y los supuestos de una campaña; no equivalen a personas únicas ni a atención individual verificada.",
+      "El simulador muestra un rango de impresiones estimadas según la metodología y los supuestos del modelo. No estima cuántas personas únicas verán tu anuncio ni confirma atención individual. La actividad real se interpreta en los reportes de campaña.",
     ],
     [
       "¿Cómo interactúan los pasajeros con una promoción mediante QR?",

@@ -60,6 +60,7 @@ const steps = [
 
 export default function PassengerQrStory({ brandName = "" }: Props) {
   const [selected, setSelected] = useState<Example>("restaurante");
+  const [scanned, setScanned] = useState(false);
   const example = examples[selected];
   // The brand preview remains browser-local; it is never sent to analytics or the API.
   const displayBrand =
@@ -115,7 +116,10 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
               key={key}
               type="button"
               aria-pressed={selected === key}
-              onClick={() => setSelected(key)}
+              onClick={() => {
+                setSelected(key);
+                setScanned(false);
+              }}
             >
               {examples[key].label}
             </button>
@@ -123,11 +127,17 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
         </div>
       </div>
       <p className={styles.activeCaption} aria-live="polite" aria-atomic="true">
-        Ejemplo seleccionado: {example.label}. Vista ilustrativa, sin enlace
-        activo.
+        Ejemplo seleccionado: {example.label}.{" "}
+        {scanned
+          ? "Escaneo simulado: oferta abierta en el celular de ejemplo."
+          : "Listo para simular el escaneo."}
       </p>
 
-      <div className={styles.visual} data-promotion={selected}>
+      <div
+        className={styles.visual}
+        data-promotion={selected}
+        data-scanned={scanned}
+      >
         <div className={styles.scene}>
           <div className={styles.sceneLabel}>01 / PANTALLA EN EL TAXI</div>
           <div className={styles.headrest} aria-hidden="true" />
@@ -163,7 +173,9 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
                 <QrCode size={72} strokeWidth={1.2} aria-hidden="true" />
               </span>
               <small>Cámara del pasajero</small>
-              <span className={styles.cameraHint}>Código ilustrativo</span>
+              <span className={styles.cameraHint}>
+                {scanned ? "Escaneo simulado" : "Código ilustrativo"}
+              </span>
             </div>
           </div>
           <p>Escanea solo si le interesa.</p>
@@ -175,24 +187,45 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
           <div className={styles.sceneLabel}>03 / DESTINO MÓVIL</div>
           <div className={styles.phone}>
             <div className={styles.speaker} aria-hidden="true" />
-            <div className={styles.destination}>
+            <div className={styles.destination} id="qr-demo-destination">
               <small>{displayBrand} · DEMO</small>
               <span className={styles.offerIcon}>
                 <Smartphone size={26} aria-hidden="true" />
               </span>
-              <strong>{example.mobile}</strong>
-              <p>{example.mobileCopy}</p>
-              <span
-                className={styles.fakeButton}
-                aria-label="Ejemplo visual de un botón, no interactivo"
-              >
-                {example.action}
-                <ArrowRight size={13} aria-hidden="true" />
-              </span>
+              <strong>
+                {scanned ? example.mobile : "Tu oferta, a un escaneo"}
+              </strong>
+              <p>
+                {scanned
+                  ? example.mobileCopy
+                  : "Simula el escaneo para descubrir la promoción."}
+              </p>
+              {scanned && (
+                <span className={styles.offerLabel}>
+                  {example.action} · DEMO
+                </span>
+              )}
             </div>
           </div>
-          <p>La marca recibe una visita potencial.</p>
+          <p>
+            {scanned
+              ? "La promoción se abre en esta demostración."
+              : "El destino espera al pasajero."}
+          </p>
         </div>
+      </div>
+
+      <div className={styles.scanActions}>
+        <button
+          type="button"
+          className={styles.scanButton}
+          aria-controls="qr-demo-destination"
+          onClick={() => setScanned((current) => !current)}
+        >
+          <ScanLine size={18} aria-hidden="true" />
+          {scanned ? "Reiniciar demostración" : "Simular escaneo del QR"}
+        </button>
+        <p>Prueba local: no requiere cámara ni envía datos.</p>
       </div>
 
       <ol className={styles.steps}>
@@ -208,9 +241,9 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
         ))}
       </ol>
       <p className={styles.disclaimer}>
-        Simulación, no una campaña activa: los símbolos QR no son escaneables,
-        los botones del celular no navegan y no hay seguimiento de pasajeros. Un
-        escaneo no equivale a una venta. La disponibilidad de destinos QR y sus
+        Simulación, no una campaña activa: los símbolos QR no son escaneables y
+        el escaneo simulado no abre enlaces ni registra actividad. Un escaneo
+        real no equivale a una venta. La disponibilidad de destinos QR y sus
         métricas depende de la configuración y validación de la campaña.
       </p>
       <a href="#experiencia" className={styles.cta}>

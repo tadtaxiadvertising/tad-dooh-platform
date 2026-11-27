@@ -134,7 +134,13 @@ test("Advertiser QR story uses a local image and reversible example previews wit
   assert.match(landing, /href="#interaccion-qr"/);
   assert.match(story, /useState<Example>\("restaurante"\)/);
   assert.match(story, /aria-pressed=\{selected === key\}/);
-  assert.match(story, /onClick=\{\(\) => setSelected\(key\)\}/);
+  assert.match(story, /setSelected\(key\);\s*setScanned\(false\);/);
+  assert.match(story, /useState\(false\)/);
+  assert.match(story, /setScanned\(\(current\) => !current\)/);
+  assert.match(story, /aria-controls="qr-demo-destination"/);
+  assert.match(story, /Simular escaneo del QR/);
+  assert.match(story, /Reiniciar demostración/);
+  assert.match(css, /\.scanButton:focus-visible/);
   assert.match(story, /aria-live="polite"/);
   assert.match(story, /loading="lazy"/);
   assert.match(story, /src="\/qr-passenger-journey\.svg"/);

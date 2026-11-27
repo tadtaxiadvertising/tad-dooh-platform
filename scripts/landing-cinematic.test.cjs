@@ -170,3 +170,18 @@ test("Advertiser QR story uses a local image and reversible example previews wit
   assert.doesNotMatch(image, /<script\b|<(?:image|use)\b[^>]*https?:\/\//i);
   assert.match(copy, /¿Cómo interactúan los pasajeros con una promoción mediante QR\?/);
 });
+
+
+test("mobile narrative has three original decorative vector scenes without external assets", () => {
+  const story = read("apps/advertiser/components/landing/TaxiScrollStory.tsx");
+  const art = read("apps/advertiser/components/landing/StoryChapterArt.tsx");
+  const css = read("apps/advertiser/components/landing/taxi-scroll-story.module.css");
+  assert.match(story, /<StoryChapterArt chapter=\{index\} \/>/);
+  assert.match(story, /data-static-art=\{index\}/);
+  assert.match(art, /viewBox="0 0 480 240"/);
+  assert.match(art, /aria-hidden="true"/);
+  assert.match(art, /chapter === 0/);
+  assert.match(art, /chapter === 1/);
+  assert.doesNotMatch(art, /https?:|<image\b|fetch\(|dangerouslySetInnerHTML/);
+  assert.match(css, /staticPicture\[data-static-art\] svg/);
+});

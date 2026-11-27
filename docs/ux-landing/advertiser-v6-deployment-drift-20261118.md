@@ -89,3 +89,18 @@ node --test scripts/advertiser-release-gate.test.cjs scripts/advertiser-deployme
 ```
 
 El chequeo de fingerprint confirma **contenido de versión**, no integridad de un despliegue completo. Si la salida sigue marcando versión antigua mientras GitHub main tiene V6, inspeccionar el servicio real `tad-advertiser` en EasyPanel y su commit efectivo antes de lanzar un redeploy o modificar proxy/caché.
+
+
+## Hito V6 hasta PR #582 — 2026-11-27
+
+El fingerprint original distingue V6 de V5, pero no acredita las mejoras posteriores. El modo estricto opcional exige los marcadores SSR de cabina, creatividad sectorial, control QR y seis sectores del PR #582.
+
+```bash
+node scripts/advertiser-release-drift.cjs --require-v6-582
+```
+
+En un entorno aislado puede añadirse la raíz HTTP loopback como argumento. Sin el flag se conserva el comportamiento original, incluidos los códigos de salida. El JSON informa `milestone.confirmed`, `markers` y `missingSectors`. Con el flag, una V6 incompleta devuelve 2 con `reason: "milestone-drift"`; los fallos de transporte/HTTP devuelven 3. Solo GET, sin seguir redirecciones, sin credenciales.
+
+La comprobación excluye comentarios, scripts, estilos y templates; verifica marcadores HTML, no el SHA desplegado ni la funcionalidad de los controles. Se requiere contraste del commit/imagen activa en EasyPanel, revisión visual y smoke aislado para certificar la publicación. No incluye el PR #583 mientras esté pendiente.
+
+Evidencia local: Node 22, cinco tests aprobados de `advertiser-release-drift.test.cjs`, blobs Git cotejados con los de la rama (script `63305259d00b924e2592d2dcc031bfc39bd16345`, tests `ee738b5894519de235be594acf8d45d0f64a0c4c`). La consulta real devolvió exit 3, `transport-error`, y curl no pudo resolver el dominio desde este entorno. No se infiere caída de producción. CI y prueba contra una compilación real pendientes.

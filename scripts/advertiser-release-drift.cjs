@@ -27,8 +27,12 @@ function checkUrl(raw) {
   return url.href;
 }
 
+function renderedMarkup(html) {
+  return html.replace(/<!--[\s\S]*?-->|<(script|style|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
+}
+
 function inspectHtml(html) {
-  const normalized = html.replace(/\s+/g, " ");
+  const normalized = renderedMarkup(html).replace(/\s+/g, " ");
   const hasStory = /id=["']motion-story["']/.test(normalized);
   const hasHeadline = normalized.includes("Tu marca no espera.") &&
     normalized.includes("Va a su encuentro.");
@@ -41,7 +45,29 @@ function inspectHtml(html) {
   };
 }
 
-async function probe(url, get = globalThis.fetch) {
+// Check rendered markup, not serialized React payloads or comments.
+// This confirms visible feature markers, not a particular Git commit or behavior.
+function inspectMilestone(html) {
+  const markup = renderedMarkup(html);
+  const qr = markup.match(/<section\b[^>]*\sid=["']interaccion-qr["'][^>]*>[\s\S]*?<\/section\s*>/i)?.[0] || "";
+  const markers = {
+    cabin: /<div\b[^>]*\sdata-cabin-illustration(?:=["'][^"']*["'])?(?=[\s>])/i.test(markup),
+    qrCreative: /<div\b[^>]*\sdata-qr-creative(?:=["'][^"']*["'])?(?=[\s>])/i.test(qr),
+    scanControl: /<button\b[^>]*\saria-controls=["']qr-demo-destination["']/i.test(qr),
+  };
+  const labels = [...qr.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button\s*>/gi)]
+    .map(match => match[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim());
+  const missingSectors = ["Restaurante", "Comercio", "Evento", "Inmobiliaria", "Hotel", "Servicios"]
+    .filter(label => !labels.includes(label));
+  return {
+    milestone: "v6-582",
+    markers,
+    missingSectors,
+    confirmed: Object.values(markers).every(Boolean) && missingSectors.length === 0,
+  };
+}
+
+async function probe(url, get = globalThis.fetch, { requireMilestone = false } = {}) {
   const address = checkUrl(url);
   let response;
   try {
@@ -87,18 +113,26 @@ async function probe(url, get = globalThis.fetch) {
     return { exitCode: 3, reason: "body-too-large", ...meta };
   }
   const fingerprint = inspectHtml(html);
+  const milestone = inspectMilestone(html);
+  const v6 = fingerprint.version === "motion-v6";
+  const accepted = v6 && (!requireMilestone || milestone.confirmed);
   return {
-    exitCode: fingerprint.version === "motion-v6" ? 0 : 2,
-    reason: fingerprint.version === "motion-v6" ? "up-to-date" : "release-drift",
+    exitCode: accepted ? 0 : 2,
+    reason: !v6 ? "release-drift" : !accepted ? "milestone-drift" : "up-to-date",
     ...fingerprint,
+    milestone,
     ...meta,
   };
 }
 
 async function main(args = process.argv.slice(2)) {
-  if (args.length > 1) throw new Error("Usage: node scripts/advertiser-release-drift.cjs [canonical-or-loopback-root]");
-  const url = checkUrl(args[0] || CANONICAL);
-  const result = await probe(url);
+  const requireMilestone = args.includes("--require-v6-582");
+  const targets = args.filter(arg => arg !== "--require-v6-582");
+  if (targets.length > 1 || args.length - targets.length > 1 || targets.some(arg => arg.startsWith("--"))) {
+    throw new Error("Usage: node scripts/advertiser-release-drift.cjs [--require-v6-582] [canonical-or-loopback-root]");
+  }
+  const url = checkUrl(targets[0] || CANONICAL);
+  const result = await probe(url, globalThis.fetch, { requireMilestone });
   process.stdout.write(JSON.stringify({
     target: new URL(url).hostname,
     ...result,
@@ -112,4 +146,4 @@ if (require.main === module) {
     process.exitCode = 3;
   });
 }
-module.exports = { checkUrl, inspectHtml, probe };
+module.exports = { checkUrl, inspectHtml, inspectMilestone, probe };

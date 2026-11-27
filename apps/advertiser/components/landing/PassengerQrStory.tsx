@@ -179,7 +179,7 @@ export default function PassengerQrStory({ brandName = "" }: Props) {
           <div className={styles.sceneLabel}>01 / PANTALLA EN EL TAXI</div>
           <div className={styles.headrest} aria-hidden="true" />
           <div className={styles.tablet}>
-            <div className={styles.ad}>
+            <div className={styles.ad} data-qr-creative>
               <small>TAD · CREATIVIDAD DE EJEMPLO</small>
               <div className={styles.adIdentity}>
                 <span className={styles.brand}>{displayBrand}</span>

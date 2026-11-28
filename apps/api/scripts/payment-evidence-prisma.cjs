@@ -536,6 +536,67 @@ async function verify() {
     assert.equal(differentCreation.find(result => result.status === "rejected").reason.getStatus(), 409);
     console.log("PASS same-reference intent races preserve one committed financial tuple");
 
+    for (const status of ["CANCELLED", "REDIRECTED", "UNKNOWN"]) {
+      const blocked = await first.paymentIntent.create({ data: {
+        type: "ADVERTISER_CAMPAIGN", amount: 1000,
+        reference: randomUUID(), idempotencyKey: randomUUID(), status,
+      } });
+      await assert.rejects(service.submitEvidence({
+        paymentIntentId: blocked.id, fileUrl: "https://fixture.invalid/blocked",
+        submittedBy: "fixture-submitter",
+      }), error => error.getStatus() === 409);
+      assert.equal(await second.paymentEvidence.count({
+        where: { paymentIntentId: blocked.id },
+      }), 0);
+      assert.equal((await second.paymentIntent.findUniqueOrThrow({
+        where: { id: blocked.id },
+      })).status, status);
+    }
+
+    const cancelled = await payment(await lead());
+    const cancelGate = readGate();
+    const pausedReplacement = new PaymentEvidenceService({
+      $transaction(callback) {
+        return first.$transaction(tx => callback({
+          paymentIntent: tx.paymentIntent,
+          paymentEvidence: {
+            async findFirst(args) {
+              return cancelGate.pause(await tx.paymentEvidence.findFirst(args));
+            },
+            updateMany: tx.paymentEvidence.updateMany.bind(tx.paymentEvidence),
+            findUniqueOrThrow: tx.paymentEvidence.findUniqueOrThrow.bind(tx.paymentEvidence),
+          },
+          humanReviewTask: tx.humanReviewTask,
+        }));
+      },
+    }, {});
+    const originalTask = await second.humanReviewTask.findFirstOrThrow({
+      where: { entityId: cancelled.evidence.id },
+    });
+    const pendingReplacement = pausedReplacement.submitEvidence(resubmit(cancelled));
+    const rejectedReplacement = assert.rejects(pendingReplacement, error => error.getStatus() === 409);
+    await cancelGate.arrived;
+    try {
+      await second.paymentIntent.update({
+        where: { id: cancelled.intent.id }, data: { status: "CANCELLED" },
+      });
+    } finally {
+      cancelGate.release();
+    }
+    await rejectedReplacement;
+    const preservedEvidence = await second.paymentEvidence.findUniqueOrThrow({
+      where: { id: cancelled.evidence.id },
+    });
+    assert.equal(preservedEvidence.fileUrl, cancelled.evidence.fileUrl);
+    assert.equal(preservedEvidence.submittedAt.getTime(), cancelled.evidence.submittedAt.getTime());
+    assert.deepEqual((await second.humanReviewTask.findUniqueOrThrow({
+      where: { id: originalTask.id },
+    })).payload, originalTask.payload);
+    assert.equal((await second.paymentIntent.findUniqueOrThrow({
+      where: { id: cancelled.intent.id },
+    })).status, "CANCELLED");
+    console.log("PASS unsupported intake states and concurrent cancellation preserve evidence and review task");
+
     const rollbackLead = await lead();
     const rollbackPayment = await payment(rollbackLead);
     // A real SQL constraint fails AFTER the payment, verification, commission

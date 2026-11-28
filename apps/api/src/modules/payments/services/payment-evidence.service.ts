@@ -67,11 +67,9 @@ export class PaymentEvidenceService {
       }
 
       if (
-        ["PAID", "REJECTED", "REFUNDED", "FAILED", "EXPIRED"].includes(
-          paymentIntent.status,
-        )
+        !["CREATED", "PENDING", "UNDER_REVIEW"].includes(paymentIntent.status)
       ) {
-        throw new ConflictException("Payment intent is already resolved");
+        throw new ConflictException("Payment intent does not accept evidence");
       }
 
       // Idempotente: si ya hay una evidencia pendiente, la actualizamos en
@@ -83,6 +81,9 @@ export class PaymentEvidenceService {
         },
       });
       if (existing) {
+        if (paymentIntent.status !== "UNDER_REVIEW") {
+          throw new ConflictException("Payment intent requires reconciliation");
+        }
         this.logger.warn(
           `Evidence already exists for ${input.paymentIntentId}, updating`,
         );
@@ -130,9 +131,30 @@ export class PaymentEvidenceService {
             "Payment review task requires reconciliation",
           );
         }
+        // Lock/revalidate the parent last, in the same order as review.
+        // A concurrent terminal transition or changed terms rolls back both
+        // the replacement and its review snapshot.
+        const parent = await tx.paymentIntent.updateMany({
+          where: {
+            id: paymentIntent.id,
+            status: "UNDER_REVIEW",
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            type: paymentIntent.type,
+            leadId: paymentIntent.leadId,
+          },
+          data: { status: "UNDER_REVIEW" },
+        });
+        if (parent.count !== 1) {
+          throw new ConflictException("Payment intent changed during submit");
+        }
         return tx.paymentEvidence.findUniqueOrThrow({
           where: { id: existing.id },
         });
+      }
+
+      if (paymentIntent.status === "UNDER_REVIEW") {
+        throw new ConflictException("Payment intent requires reconciliation");
       }
 
       // Crear nueva evidencia
@@ -164,7 +186,14 @@ export class PaymentEvidenceService {
 
       // Actualizar PaymentIntent status a UNDER_REVIEW
       const claimed = await tx.paymentIntent.updateMany({
-        where: { id: input.paymentIntentId, status: paymentIntent.status },
+        where: {
+          id: input.paymentIntentId,
+          status: paymentIntent.status,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          type: paymentIntent.type,
+          leadId: paymentIntent.leadId,
+        },
         data: { status: "UNDER_REVIEW" },
       });
       if (claimed.count !== 1) {

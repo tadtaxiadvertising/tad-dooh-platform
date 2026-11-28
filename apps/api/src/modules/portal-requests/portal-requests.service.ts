@@ -1,3 +1,4 @@
+import { advertiserSafeSelect } from "../advertisers/advertiser-safe-select";
 import {
   BadRequestException,
   ConflictException,
@@ -87,7 +88,7 @@ export class PortalRequestsService {
     return this.prisma.portalRequest.findUnique({
       where: { id },
       include: {
-        advertiser: true,
+        advertiser: { select: advertiserSafeSelect },
         driver: true,
       },
     });
@@ -149,7 +150,10 @@ export class PortalRequestsService {
       return this.prisma.portalRequest.update({
         where: { id },
         data: { adminNotes: updateData.adminNotes },
-        include: { advertiser: true, driver: true },
+        include: {
+          advertiser: { select: advertiserSafeSelect },
+          driver: true,
+        },
       });
     }
 
@@ -172,7 +176,7 @@ export class PortalRequestsService {
 
     return this.prisma.portalRequest.findUnique({
       where: { id },
-      include: { advertiser: true, driver: true },
+      include: { advertiser: { select: advertiserSafeSelect }, driver: true },
     });
   }
 

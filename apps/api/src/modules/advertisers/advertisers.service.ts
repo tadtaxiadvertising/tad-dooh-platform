@@ -1,4 +1,5 @@
 import { withMediaMimeAliases } from "../media/media-response";
+import { advertiserSafeSelect } from "./advertiser-safe-select";
 import {
   Injectable,
   UnauthorizedException,
@@ -165,7 +166,8 @@ export class AdvertisersService {
 
   async findAll() {
     return this.prisma.advertiser.findMany({
-      include: {
+      select: {
+        ...advertiserSafeSelect,
         _count: { select: { campaigns: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -175,7 +177,8 @@ export class AdvertisersService {
   async findOne(id: string) {
     const advertiser = await this.prisma.advertiser.findUnique({
       where: { id },
-      include: {
+      select: {
+        ...advertiserSafeSelect,
         campaigns: {
           include: {
             metrics: true,
@@ -234,6 +237,7 @@ export class AdvertisersService {
         status: BUSINESS_RULES.STATUS.ADVERTISER.INITIAL,
         referredBy: referredByDriverId,
       },
+      select: advertiserSafeSelect,
     });
   }
 
@@ -252,18 +256,26 @@ export class AdvertisersService {
       updateData.password = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
     }
 
-    return this.prisma.advertiser.update({ where: { id }, data: updateData });
+    return this.prisma.advertiser.update({
+      where: { id },
+      data: updateData,
+      select: advertiserSafeSelect,
+    });
   }
 
   async remove(id: string) {
     await this.prisma.campaign.deleteMany({ where: { advertiserId: id } });
-    return this.prisma.advertiser.delete({ where: { id } });
+    return this.prisma.advertiser.delete({
+      where: { id },
+      select: advertiserSafeSelect,
+    });
   }
 
   async getPortalData(id: string) {
     const advertiser = await this.prisma.advertiser.findUnique({
       where: { id },
-      include: {
+      select: {
+        ...advertiserSafeSelect,
         campaigns: {
           where: { active: true },
           include: {
@@ -786,7 +798,8 @@ export class AdvertisersService {
   async getAdminProfile(id: string) {
     const advertiser = await this.prisma.advertiser.findUnique({
       where: { id },
-      include: {
+      select: {
+        ...advertiserSafeSelect,
         campaigns: {
           orderBy: { createdAt: "desc" },
           include: {

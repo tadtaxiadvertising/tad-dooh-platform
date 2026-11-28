@@ -160,6 +160,34 @@ async function verify() {
     assert.equal(deleted.length, 0);
     console.log("PASS real Prisma services share one durable reservation, authoritative price and receipt");
 
+    // Verify the shared response projection using the generated Prisma client
+    // against the real synthetic advertiser, including a nested relation.
+    const { advertiserSafeSelect } = require("../src/modules/advertisers/advertiser-safe-select.ts");
+    const { AdvertisersService } = require("../src/modules/advertisers/advertisers.service.ts");
+    const advertiserId = success[0].value.advertiserId;
+    const credential = await first.advertiser.findUniqueOrThrow({
+      where: { id: advertiserId }, select: { password: true },
+    });
+    assert.ok(typeof credential.password === "string" && credential.password.length > 0);
+    const commercial = await first.advertiser.findUniqueOrThrow({
+      where: { id: advertiserId }, select: advertiserSafeSelect,
+    });
+    assert.equal(Object.hasOwn(commercial, "password"), false);
+    assert.equal(commercial.companyName, request.companyName);
+    const nested = await first.campaign.findUniqueOrThrow({
+      where: { id: campaign.id }, select: { advertiser: true, advertiserRef: { select: advertiserSafeSelect } },
+    });
+    assert.equal(typeof nested.advertiser, "string");
+    assert.equal(Object.hasOwn(nested.advertiserRef, "password"), false);
+    assert.deepEqual(nested.advertiserRef, commercial);
+    const advertiserService = new AdvertisersService(first, {});
+    const updated = await advertiserService.update(advertiserId, { companyName: request.companyName });
+    assert.equal(Object.hasOwn(updated, "password"), false);
+    assert.equal(updated.id, advertiserId);
+    assert.ok((await first.advertiser.findUniqueOrThrow({ where: { id: advertiserId }, select: { password: true } })).password === credential.password);
+    console.log("PASS real Prisma commercial projection excludes credentials from direct, nested and update responses");
+
+
     // Inject a real DB error AFTER campaign INSERT, during the optional video
     // write, using a temporary fixture constraint. No mocked transaction.
     await sql("ALTER TABLE videos ADD CONSTRAINT fixture_reject_video CHECK (title <> 'reject-fixture')");

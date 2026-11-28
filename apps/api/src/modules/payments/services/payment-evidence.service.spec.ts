@@ -25,6 +25,7 @@ interface RecordingTx {
   humanReviewTask: {
     create: jest.Mock;
     updateMany: jest.Mock;
+    count: jest.Mock;
   };
   paymentVerification: {
     create: jest.Mock;
@@ -49,6 +50,7 @@ function makeRecordingTx(): RecordingTx {
     humanReviewTask: {
       create: jest.fn(),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      count: jest.fn().mockResolvedValue(0),
     },
     paymentVerification: { create: jest.fn() },
   };
@@ -555,6 +557,8 @@ describe("PaymentEvidenceService", () => {
     });
     tx.paymentEvidence.findUnique.mockResolvedValue({
       id: "ev-1",
+      fileUrl: input.fileUrl,
+      submittedAt: new Date("2026-01-01T00:00:00Z"),
       reviewStatus: "PAYMENT_CONFIRMED",
       reviewedBy: "op1",
     });
@@ -581,6 +585,59 @@ describe("PaymentEvidenceService", () => {
     expect(tx.paymentIntent.updateMany).toHaveBeenCalledTimes(1);
   });
 
+  it.each([false, true])("blocks inconsistent tasks (%s)", async (extra) => {
+    const tx = makeRecordingTx();
+    const submittedAt = new Date("2026-01-01T00:00:00Z");
+    prisma.paymentEvidence.findUnique.mockResolvedValue({
+      id: "ev-1",
+      paymentIntentId: "int-1",
+      reviewStatus: "SUBMITTED",
+      submittedAt,
+    });
+    tx.paymentEvidence.findUnique.mockResolvedValue({
+      id: "ev-1",
+      fileUrl: input.fileUrl,
+      reviewStatus: "PAYMENT_CONFIRMED",
+      submittedAt,
+    });
+    tx.paymentIntent.findUnique.mockResolvedValue({
+      ...intent,
+      status: "UNDER_REVIEW",
+    });
+    tx.humanReviewTask.updateMany.mockResolvedValue({
+      count: extra ? 1 : 0,
+    });
+    tx.humanReviewTask.count.mockResolvedValue(extra ? 1 : 0);
+    prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+    await expect(
+      service.reviewEvidence({
+        evidenceId: "ev-1",
+        expectedSubmittedAt: submittedAt,
+        reviewedBy: "op1",
+        status: "PAYMENT_CONFIRMED",
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(tx.humanReviewTask.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        payload: {
+          equals: {
+            paymentIntentId: intent.id,
+            fileUrl: input.fileUrl,
+            amount: intent.amount,
+            currency: intent.currency,
+            type: intent.type,
+            leadId: intent.leadId,
+            submittedAt: submittedAt.toISOString(),
+          },
+        },
+      }),
+      data: expect.objectContaining({ status: "APPROVED" }),
+    });
+    expect(tx.paymentIntent.updateMany).not.toHaveBeenCalled();
+    expect(tx.paymentVerification.create).not.toHaveBeenCalled();
+  });
+
   it.each([999, 1001, 0, 1000.5])(
     "rejects non-matching confirmation amount %s",
     async (amountConfirmed) => {
@@ -594,6 +651,8 @@ describe("PaymentEvidenceService", () => {
       });
       tx.paymentEvidence.findUnique.mockResolvedValue({
         id: "ev-1",
+        fileUrl: input.fileUrl,
+        submittedAt: new Date("2026-01-01T00:00:00Z"),
         reviewStatus: "PAYMENT_CONFIRMED",
       });
       tx.paymentIntent.findUnique.mockResolvedValue({
@@ -629,6 +688,8 @@ describe("PaymentEvidenceService", () => {
       });
       tx.paymentEvidence.findUnique.mockResolvedValue({
         id: "ev-1",
+        fileUrl: input.fileUrl,
+        submittedAt: new Date("2026-01-01T00:00:00Z"),
         reviewStatus: status,
       });
       tx.paymentIntent.findUnique.mockResolvedValue({
@@ -683,6 +744,8 @@ describe("PaymentEvidenceService", () => {
       });
       tx.paymentEvidence.findUnique.mockResolvedValue({
         id: "ev-1",
+        fileUrl: input.fileUrl,
+        submittedAt: new Date("2026-01-01T00:00:00Z"),
         reviewStatus: "PAYMENT_CONFIRMED",
       });
       prisma.$transaction.mockImplementation(async (cb) => cb(tx));

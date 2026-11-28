@@ -211,7 +211,7 @@ export class PaymentEvidenceService {
 
   private reviewSnapshot(
     intent: PaymentIntent,
-    input: CreatePaymentEvidenceInput,
+    input: Pick<CreatePaymentEvidenceInput, "fileUrl">,
     submittedAt: Date,
   ): Prisma.InputJsonObject {
     return {
@@ -299,13 +299,29 @@ export class PaymentEvidenceService {
           );
         }
 
-        // Actualizar HumanReviewTask
+        const paymentIntent = await tx.paymentIntent.findUnique({
+          where: { id: evidence.paymentIntentId },
+        });
+        if (!paymentIntent || paymentIntent.status !== "UNDER_REVIEW") {
+          throw new ConflictException("Payment intent requires reconciliation");
+        }
+        const snapshot = this.reviewSnapshot(
+          paymentIntent,
+          updatedEvidence,
+          updatedEvidence.submittedAt,
+        );
+        const pendingTask = {
+          type: "PAYMENT_VERIFICATION",
+          entityId: input.evidenceId,
+          entityType: "PaymentEvidence",
+          status: "PENDING",
+        };
+
+        // Compare the complete canonical snapshot at the write boundary.
         const task = await tx.humanReviewTask.updateMany({
           where: {
-            type: "PAYMENT_VERIFICATION",
-            entityId: input.evidenceId,
-            entityType: "PaymentEvidence",
-            status: "PENDING",
+            ...pendingTask,
+            payload: { equals: snapshot },
           },
           data: {
             status:
@@ -322,18 +338,33 @@ export class PaymentEvidenceService {
           );
         }
 
+        // A second pending task with a different payload must not be hidden
+        // by the snapshot predicate.
+        if ((await tx.humanReviewTask.count({ where: pendingTask })) !== 0) {
+          throw new ConflictException(
+            "Payment review task requires reconciliation",
+          );
+        }
+
         // Si confirmado, crear PaymentVerification y actualizar PaymentIntent
         if (input.status === "PAYMENT_CONFIRMED") {
           await this.confirmPayment(
             tx,
-            evidence.paymentIntentId,
+            paymentIntent,
             input.reviewedBy,
             input.amountConfirmed,
           );
         } else {
           // Do not overwrite a concurrent external terminal decision.
           const rejected = await tx.paymentIntent.updateMany({
-            where: { id: evidence.paymentIntentId, status: "UNDER_REVIEW" },
+            where: {
+              id: paymentIntent.id,
+              status: "UNDER_REVIEW",
+              amount: paymentIntent.amount,
+              currency: paymentIntent.currency,
+              type: paymentIntent.type,
+              leadId: paymentIntent.leadId,
+            },
             data: { status: "REJECTED" },
           });
           if (rejected.count !== 1) {
@@ -359,21 +390,11 @@ export class PaymentEvidenceService {
    */
   private async confirmPayment(
     tx: Prisma.TransactionClient,
-    paymentIntentId: string,
+    paymentIntent: PaymentIntent,
     verifiedBy: string,
     amountConfirmed?: number,
   ) {
-    const paymentIntent = await tx.paymentIntent.findUnique({
-      where: { id: paymentIntentId },
-    });
-
-    if (!paymentIntent) {
-      throw new NotFoundException(`PaymentIntent ${paymentIntentId} not found`);
-    }
-
-    if (paymentIntent.status !== "UNDER_REVIEW") {
-      throw new ConflictException("Payment intent requires reconciliation");
-    }
+    const paymentIntentId = paymentIntent.id;
 
     // This flow represents a full payment in integer minor units.
     const confirmedAmount = amountConfirmed ?? paymentIntent.amount;

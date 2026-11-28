@@ -1279,3 +1279,56 @@ test('explicit throttling keeps registration retryable with clear guidance', asy
   harness.render();
   assert.equal(harness.props('Wizard').step, 4);
 });
+
+test('legacy advertiser recovery view never promises email, submits credentials or starts another registration', () => {
+  const hooks = [];
+  let cursor = 0;
+  let requests = 0;
+  const react = {
+    useState(initial) {
+      const index = cursor++;
+      if (!(index in hooks)) hooks[index] = initial;
+      return [hooks[index], value => { hooks[index] = value; }];
+    },
+    useEffect() {},
+  };
+  const jsx = (type, props) => ({ type, props });
+  const Login = loadTs('apps/advertiser/pages/advertiser/login.tsx', {
+    fetch() { requests++; throw new Error('Unexpected recovery request'); },
+    imports: {
+      '@tad/services/session-cookies': { writeAccessTokenCookie() { throw new Error('Unexpected session'); } },
+      react,
+      'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
+      'next/router': { useRouter: () => ({ replace() { throw new Error('Unexpected navigation'); } }) },
+      'next/head': { default: 'Head' },
+      'lucide-react': Object.fromEntries(['Mail', 'Lock', 'Eye', 'EyeOff', 'ArrowRight', 'AlertCircle', 'Loader2', 'TrendingUp'].map(name => [name, name])),
+      '../../components/advertiser/CityMapBackdrop': { default: 'Backdrop' },
+      '../../components/advertiser/referral': { captureReferralCode() {}, clearReferralCode() {} },
+      '@tad/ui': { GoogleSignInButton: 'GoogleSignInButton' },
+      '@tad/services': { PORTAL_CONFIGS: { ADVERTISER: {} } },
+    },
+  }).default;
+  function render() { cursor = 0; return Login(); }
+  function nodes(node) {
+    if (Array.isArray(node)) return node.flatMap(nodes);
+    if (!node || typeof node !== 'object') return [];
+    return [node, ...nodes(node.props?.children)];
+  }
+  let tree = nodes(render());
+  tree.find(n => n.props?.id === 'adv-password').props.onChange({ target: { value: 'fixture-password' } });
+  tree = nodes(render());
+  tree.find(n => n.type === 'button' && n.props.children === '¿Olvidaste tu contraseña?').props.onClick();
+  tree = nodes(render());
+  const notice = tree.find(n => n.props?.role === 'status');
+  assert.match(notice.props.children, /No se ha enviado ningún correo/);
+  assert.match(notice.props.children, /No compartas tu contraseña/);
+  assert.ok(!tree.some(n => n.type === 'form'));
+  assert.ok(!tree.some(n => n.props?.href === '/advertiser/onboarding'));
+  assert.equal(requests, 0);
+  tree.find(n => n.type === 'button' && n.props.children === 'Volver al portal').props.onClick();
+  tree = nodes(render());
+  assert.equal(tree.find(n => n.props?.id === 'adv-password').props.value, '');
+  assert.ok(tree.some(n => n.type === 'form'));
+  assert.ok(tree.some(n => n.type === 'GoogleSignInButton'));
+  assert.equal(requests, 0);
+});

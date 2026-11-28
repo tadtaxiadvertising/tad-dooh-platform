@@ -116,7 +116,7 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
       contactName: "",
       email: "",
       phone: "",
-        whatsapp: "",
+      whatsapp: "",
       instagram: "",
       facebook: "",
       websiteUrl: "",

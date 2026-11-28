@@ -198,7 +198,14 @@ export class OnboardingService {
         email,
         password,
         email_confirm: false,
-        app_metadata: { role: "ADVERTISER" },
+        // Correlation survives a lost createUser response when Auth persisted
+        // the identity. This is not a credential or authorization claim.
+        app_metadata: {
+          role: "ADVERTISER",
+          ...(reservationKey
+            ? { tad_onboarding_reservation: reservationKey }
+            : {}),
+        },
       });
     if (provisionError || !provisioned?.user?.id) {
       this.logger.warn("Advertiser Auth provisioning failed");

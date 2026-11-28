@@ -27,6 +27,10 @@ jobs:
         with:
           persist-credentials: false
 
+      # Green CI cannot prove the production schema or restore is ready.
+      - name: Require reviewed production recovery release approval
+        run: node scripts/assert-api-release-hold.cjs
+
       - name: Require same-SHA executed green CI and Docker checks
         uses: actions/github-script@v7
         with:
@@ -64,6 +68,7 @@ jobs:
                   'Run API tests',
                   'Advertiser registration PostgreSQL isolation contract',
                   'Advertiser onboarding Prisma integration',
+                  'Payment evidence PostgreSQL concurrency and rollback',
                   'Driver offline queue retry safety (Node 22)',
                   'Run safe cross-portal integration contracts',
                 ],

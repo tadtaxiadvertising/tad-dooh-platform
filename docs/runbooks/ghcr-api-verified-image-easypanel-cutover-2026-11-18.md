@@ -33,6 +33,12 @@ The published image uses `ghcr.io/tadtaxiadvertising/tad-dooh-platform-api:sha-<
 
 **Current blocker:** GitHub Actions runners fail before job steps (#147), so this workflow should **fail closed** until runners and required checks are restored. Branch protection on the private repository is separately required to stop unverified merges (#313). A successfully published image is not automatically approved for production.
 
+## Active recovery publication hold (2026-11-28)
+
+The production publisher now reads `scripts/api-production-release-hold.json` before CI evidence inspection, Docker setup or registry login. The current state is BLOCKED: the ownership migration is merged, but the production catalogue inspected on 2026-11-28 lacks its table and Prisma history entry (#217, #627). CI green is not production schema parity.
+
+Do not clear this state by environment override, deleting the manifest, or skipping the gate. A separately reviewed PR must document independent encrypted backup and isolated restore, complete generated-client parity and migration history, target identity, approved migration outcome, verified runtime/image and rollback readiness before changing the state and linking the recovery review PR. The manifest is an explicit reviewed release decision, not proof of those checks by itself. This blocks only the audited GHCR publisher; it does not stop EasyPanel source rebuilds or other external deployers. Keep those pinned to the last verified image via the infrastructure operator. CI builds and disposable PostgreSQL tests remain enabled.
+
 ## Authorized operator cutover procedure
 
 **Phase A — Containment and rotation planning (P0)**

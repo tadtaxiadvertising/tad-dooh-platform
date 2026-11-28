@@ -655,7 +655,10 @@ export class FinanceService {
   async generateInvoiceHtml(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
-      include: { advertiserRef: true, media: { select: mediaSafeSelect } },
+      include: {
+        advertiserRef: { select: { companyName: true, email: true } },
+        media: { select: mediaSafeSelect },
+      },
     });
 
     if (!campaign) return null;
@@ -890,7 +893,7 @@ export class FinanceService {
     // Facturas emitidas a anunciantes (fuente primaria de ventas)
     const invoices = await this.prisma.invoice.findMany({
       where: { issueDate: { gte: start, lt: end } },
-      include: { advertiser: true },
+      include: { advertiser: { select: { companyName: true } } },
       orderBy: { issueDate: "asc" },
     });
 

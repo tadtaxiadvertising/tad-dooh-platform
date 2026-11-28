@@ -136,13 +136,55 @@ describe("existing Prisma profile and receipt contracts", () => {
     expect(result).toMatchObject({ success: true });
     expect(findUnique).toHaveBeenCalledWith({
       where: { id: "invoice-1", advertiserId: "adv-1" },
-      include: { advertiser: true },
+      include: {
+        advertiser: { select: { companyName: true, contactName: true } },
+      },
     });
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "recipient@example.test",
         attachments: [expect.objectContaining({ content: pdf })],
       }),
+    );
+  });
+
+  it("exports DGII 607 using only the company name and unchanged persisted amounts", async () => {
+    const findMany = jest.fn(async () => [
+      {
+        id: "invoice-fixture",
+        advertiserId: "advertiser-fixture",
+        advertiser: { companyName: "Fixture company" },
+        issueDate: new Date("2026-11-01T12:00:00Z"),
+        subtotal: 2500,
+        taxAmount: 450,
+        totalAmount: 2950,
+      },
+    ]);
+    const sales = jest.fn(async () => []);
+    const method = loadMethod(
+      path.join(__dirname, "finance.service.ts"),
+      "FinanceService",
+      "exportDgii607",
+    );
+    const csv = await method.call(
+      {
+        prisma: {
+          invoice: { findMany },
+          financialTransaction: { findMany: sales },
+        },
+        sanitizeCsvField: (value: unknown) => String(value),
+      },
+      2026,
+    );
+    expect(findMany).toHaveBeenCalledWith({
+      where: {
+        issueDate: { gte: new Date(2026, 0, 1), lt: new Date(2027, 0, 1) },
+      },
+      include: { advertiser: { select: { companyName: true } } },
+      orderBy: { issueDate: "asc" },
+    });
+    expect(csv).toContain(
+      ",2026-11-01,advertiser-fixture,Fixture company,0,2500,450,2950",
     );
   });
 

@@ -519,7 +519,9 @@ export class FinanceController {
   ) {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id: invoiceId, advertiserId },
-      include: { advertiser: true },
+      include: {
+        advertiser: { select: { companyName: true, contactName: true } },
+      },
     });
     if (!invoice) return { success: false, message: "Factura no encontrada" };
 

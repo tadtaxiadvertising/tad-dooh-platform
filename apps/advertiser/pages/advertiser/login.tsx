@@ -210,9 +210,7 @@ export default function AdvertiserLoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-3.5 flex items-center text-white/30 hover:text-[#FDCB01] transition-colors"
                     aria-label={
-                      showPassword
-                        ? "Ocultar contraseña"
-                        : "Mostrar contraseña"
+                      showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
                     }
                   >
                     {showPassword ? (
@@ -239,7 +237,10 @@ export default function AdvertiserLoginPage() {
                 </button>
 
                 {/* ─── OAuth Divider + Google Sign-In ─── */}
-                <div className="flex items-center gap-3 pt-1" aria-hidden="true">
+                <div
+                  className="flex items-center gap-3 pt-1"
+                  aria-hidden="true"
+                >
                   <div className="flex-1 h-px bg-white/10" />
                   <span className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">
                     o

@@ -56,20 +56,21 @@ describe("ManualTransferProvider", () => {
     ).rejects.toThrow(ConflictException);
   });
 
-  it("does not fabricate status, verification, webhook, refund or reconciliation results", async () => {
+  it("refuses unsupported financial operations", async () => {
     const adapter = provider("123456789");
-    await expect(
-      adapter.getPaymentIntentStatus(input.reference),
-    ).rejects.toThrow(ConflictException);
+    const reference = input.reference;
+    await expect(adapter.getPaymentIntentStatus(reference)).rejects.toThrow(
+      ConflictException,
+    );
     await expect(adapter.verifyPayment(input.reference)).rejects.toThrow(
       ConflictException,
     );
     await expect(
       adapter.processWebhook({ reference: input.reference, amount: 1000 }),
     ).rejects.toThrow(ConflictException);
-    await expect(
-      adapter.refundPayment(input.reference, 1000),
-    ).rejects.toThrow(ConflictException);
+    await expect(adapter.refundPayment(reference, 1000)).rejects.toThrow(
+      ConflictException,
+    );
     await expect(adapter.reconcileDaily(new Date())).rejects.toThrow(
       ConflictException,
     );

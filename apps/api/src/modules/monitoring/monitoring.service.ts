@@ -1,4 +1,3 @@
-import { advertiserSafeSelect } from "../advertisers/advertiser-safe-select";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { PrismaService } from "../prisma/prisma.service";
@@ -196,7 +195,7 @@ export class MonitoringService {
       select: {
         id: true,
         name: true,
-        advertiser: { select: advertiserSafeSelect },
+        advertiser: true,
         targetImpressions: true,
         metrics: {
           take: 1,

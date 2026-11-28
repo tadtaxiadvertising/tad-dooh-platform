@@ -164,6 +164,8 @@ async function verify() {
       });
       assert.equal(tasks.length, 1);
       assert.equal(tasks[0].status, confirmed ? "APPROVED" : "REJECTED");
+    assert.equal(tasks[0].payload.fileUrl, row.paymentEvidence.fileUrl);
+    assert.equal(tasks[0].payload.submittedAt, row.paymentEvidence.submittedAt.toISOString());
     }
     async function verifyCommission(leadRow, expected, sourceType = "ADVERTISER_SALE") {
       const rows = await first.commission.findMany({
@@ -311,6 +313,11 @@ async function verify() {
       const replacement = await service.submitEvidence(resubmit(stale));
       assert.equal(replacement.submittedAt.getTime(), future.getTime() + 1);
       assert.equal(replacement.fileUrl, resubmit(stale).fileUrl);
+      const snapshot = await second.humanReviewTask.findFirstOrThrow({
+        where: { entityId: stale.evidence.id, entityType: "PaymentEvidence" },
+      });
+      assert.equal(snapshot.payload.fileUrl, replacement.fileUrl);
+      assert.equal(snapshot.payload.submittedAt, replacement.submittedAt.toISOString());
       // A different reviewer can confirm the replacement before the old
       // transaction resumes; identical status alone is not an idempotent replay.
       // Simulate an old browser submitting after the replacement committed.
@@ -366,6 +373,40 @@ async function verify() {
     });
     assert.equal(finalEvidence.fileUrl, winning.evidence.fileUrl);
     console.log("PASS stale resubmission cannot reopen confirmed evidence");
+
+    const missingTaskLead = await lead();
+    const missingTask = await payment(missingTaskLead);
+    await first.humanReviewTask.deleteMany({
+      where: { entityId: missingTask.evidence.id, entityType: "PaymentEvidence" },
+    });
+    await assert.rejects(service.submitEvidence(resubmit(missingTask)), error => error.getStatus() === 409);
+    const preserved = await second.paymentEvidence.findUniqueOrThrow({
+      where: { id: missingTask.evidence.id },
+    });
+    assert.equal(preserved.fileUrl, missingTask.evidence.fileUrl);
+    assert.equal(preserved.submittedAt.getTime(), missingTask.evidence.submittedAt.getTime());
+    await assert.rejects(service.reviewEvidence(decision(missingTask, "PAYMENT_CONFIRMED", "fixture-a")), error => error.getStatus() === 409);
+    const pending = await first.paymentEvidence.findUniqueOrThrow({
+      where: { id: missingTask.evidence.id },
+    });
+    assert.equal(pending.reviewStatus, "SUBMITTED");
+    await verifyCommission(missingTaskLead, 0);
+    console.log("PASS missing task rolls back replacement and review");
+
+    const { SocialAgentController } = require("../src/modules/social-agent/social-agent.controller.ts");
+    const social = new SocialAgentController({}, {}, first);
+    const socialPayment = await payment(await lead());
+    const paymentTask = await first.humanReviewTask.findFirstOrThrow({
+      where: { entityId: socialPayment.evidence.id, entityType: "PaymentEvidence" },
+    });
+    const admin = { user: { id: "fixture-admin", role: "ADMIN" } };
+    for (const method of ["approveReview", "rejectReview"]) {
+      await assert.rejects(social[method](paymentTask.id, {}, admin), error => error.getStatus() === 409);
+    }
+    assert.equal((await second.humanReviewTask.findUniqueOrThrow({
+      where: { id: paymentTask.id },
+    })).status, "PENDING");
+    console.log("PASS social review routes cannot decide payment tasks");
 
     const rollbackLead = await lead();
     const rollbackPayment = await payment(rollbackLead);

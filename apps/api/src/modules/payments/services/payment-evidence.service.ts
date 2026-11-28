@@ -112,12 +112,29 @@ export class PaymentEvidenceService {
         if (updated.count !== 1) {
           throw new ConflictException("Payment evidence changed during submit");
         }
+        const task = await tx.humanReviewTask.updateMany({
+          where: {
+            type: "PAYMENT_VERIFICATION",
+            entityId: existing.id,
+            entityType: "PaymentEvidence",
+            status: "PENDING",
+          },
+          data: {
+            payload: this.reviewSnapshot(paymentIntent, input, nextSubmittedAt),
+          },
+        });
+        if (task.count !== 1) {
+          throw new ConflictException(
+            "Payment review task requires reconciliation",
+          );
+        }
         return tx.paymentEvidence.findUniqueOrThrow({
           where: { id: existing.id },
         });
       }
 
       // Crear nueva evidencia
+      const submittedAt = new Date();
       const evidence = await tx.paymentEvidence.create({
         data: {
           paymentIntentId: input.paymentIntentId,
@@ -126,6 +143,7 @@ export class PaymentEvidenceService {
           fileSize: input.fileSize,
           mimeType: input.mimeType,
           submittedBy: input.submittedBy,
+          submittedAt,
           reviewStatus: "SUBMITTED",
           metadata: input.metadata,
         },
@@ -138,14 +156,7 @@ export class PaymentEvidenceService {
           entityId: evidence.id,
           entityType: "PaymentEvidence",
           status: "PENDING",
-          payload: {
-            paymentIntentId: input.paymentIntentId,
-            fileUrl: input.fileUrl,
-            amount: paymentIntent.amount,
-            currency: paymentIntent.currency,
-            type: paymentIntent.type,
-            leadId: paymentIntent.leadId,
-          },
+          payload: this.reviewSnapshot(paymentIntent, input, submittedAt),
         },
       });
 
@@ -165,6 +176,22 @@ export class PaymentEvidenceService {
     });
 
     return result;
+  }
+
+  private reviewSnapshot(
+    intent: PaymentIntent,
+    input: CreatePaymentEvidenceInput,
+    submittedAt: Date,
+  ): Prisma.InputJsonObject {
+    return {
+      paymentIntentId: intent.id,
+      fileUrl: input.fileUrl,
+      amount: intent.amount,
+      currency: intent.currency,
+      type: intent.type,
+      leadId: intent.leadId,
+      submittedAt: submittedAt.toISOString(),
+    };
   }
 
   /**
@@ -242,8 +269,9 @@ export class PaymentEvidenceService {
         }
 
         // Actualizar HumanReviewTask
-        await tx.humanReviewTask.updateMany({
+        const task = await tx.humanReviewTask.updateMany({
           where: {
+            type: "PAYMENT_VERIFICATION",
             entityId: input.evidenceId,
             entityType: "PaymentEvidence",
             status: "PENDING",
@@ -256,6 +284,12 @@ export class PaymentEvidenceService {
             reviewNote: input.reviewNote,
           },
         });
+
+        if (task.count !== 1) {
+          throw new ConflictException(
+            "Payment review task requires reconciliation",
+          );
+        }
 
         // Si confirmado, crear PaymentVerification y actualizar PaymentIntent
         if (input.status === "PAYMENT_CONFIRMED") {

@@ -45,7 +45,10 @@ function makeRecordingTx(): RecordingTx {
       update: jest.fn(),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
-    humanReviewTask: { create: jest.fn(), updateMany: jest.fn() },
+    humanReviewTask: {
+      create: jest.fn(),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
     paymentVerification: { create: jest.fn() },
   };
 }
@@ -173,6 +176,26 @@ describe("PaymentEvidenceService", () => {
     });
   });
 
+  it.each([0, 2])(
+    "rejects replacement when %s pending payment tasks match",
+    async (count) => {
+      const tx = makeRecordingTx();
+      tx.paymentIntent.findUnique.mockResolvedValue(intent);
+      tx.paymentEvidence.findFirst.mockResolvedValue({
+        id: "ev-1",
+        reviewStatus: "SUBMITTED",
+        submittedAt: new Date("2026-01-01T00:00:00Z"),
+      });
+      tx.humanReviewTask.updateMany.mockResolvedValue({ count });
+      prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+      await expect(service.submitEvidence(input)).rejects.toMatchObject({
+        status: 409,
+      });
+      expect(tx.paymentEvidence.findUniqueOrThrow).not.toHaveBeenCalled();
+    },
+  );
+
   it("advances the submitted version even if the previous timestamp is ahead", async () => {
     const previous = new Date(Date.now() + 60000);
     const tx = makeRecordingTx();
@@ -195,6 +218,20 @@ describe("PaymentEvidenceService", () => {
       data: expect.objectContaining({
         submittedAt: new Date(previous.getTime() + 1),
       }),
+    });
+    expect(tx.humanReviewTask.updateMany).toHaveBeenCalledWith({
+      where: {
+        type: "PAYMENT_VERIFICATION",
+        entityId: "ev-1",
+        entityType: "PaymentEvidence",
+        status: "PENDING",
+      },
+      data: {
+        payload: expect.objectContaining({
+          fileUrl: input.fileUrl,
+          submittedAt: new Date(previous.getTime() + 1).toISOString(),
+        }),
+      },
     });
   });
 

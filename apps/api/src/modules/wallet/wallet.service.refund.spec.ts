@@ -39,6 +39,7 @@ describe("WalletService - idempotencia de reembolso de retiro (F3)", () => {
     const pending: any = {
       id: "tx-1",
       type: "WITHDRAWAL",
+      category: "DRIVER_PAYOUT",
       amount: 5000,
       entityId: "driver-1",
       status: "PENDING",
@@ -51,21 +52,34 @@ describe("WalletService - idempotencia de reembolso de retiro (F3)", () => {
     // primera y devuelve count=0 a la segunda (idempotente).
     tx.financialTransaction.findUnique
       .mockResolvedValueOnce(pending)
-      .mockResolvedValueOnce(pending);
+      .mockResolvedValueOnce(pending)
+      .mockResolvedValueOnce({ ...pending, status: "FAILED" });
     tx.financialTransaction.updateMany
       .mockResolvedValueOnce({ count: 1 })
       .mockResolvedValueOnce({ count: 0 });
 
-    await Promise.all([
+    const results = await Promise.all([
       service.refundFailedWithdrawal("tx-1", "fallo bancario"),
       service.refundFailedWithdrawal("tx-1", "fallo bancario"),
     ]);
 
     // Solo la primera petición abona el balance; la segunda es idempotente.
+    expect(results.map((result) => result.idempotent).sort()).toEqual([
+      false,
+      true,
+    ]);
+    expect(tx.financialTransaction.findUnique).toHaveBeenCalledTimes(3);
     expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
     expect(tx.financialTransaction.updateMany).toHaveBeenCalledTimes(2);
     expect(tx.financialTransaction.updateMany).toHaveBeenCalledWith({
-      where: { id: "tx-1", type: "WITHDRAWAL", status: "PENDING" },
+      where: {
+        id: "tx-1",
+        type: "WITHDRAWAL",
+        status: "PENDING",
+        category: "DRIVER_PAYOUT",
+        entityId: "driver-1",
+        amount: 5000,
+      },
       data: { status: "FAILED", note: expect.stringContaining("fallo") },
     });
   });

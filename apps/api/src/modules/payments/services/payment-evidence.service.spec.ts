@@ -29,7 +29,11 @@ interface RecordingTx {
 function makeRecordingTx(): RecordingTx {
   return {
     paymentIntent: { findUnique: jest.fn(), update: jest.fn() },
-    paymentEvidence: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+    paymentEvidence: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     humanReviewTask: { create: jest.fn(), updateMany: jest.fn() },
     paymentVerification: { create: jest.fn() },
   };
@@ -58,8 +62,17 @@ describe("PaymentEvidenceService", () => {
   beforeEach(async () => {
     prisma = {
       $transaction: jest.fn(),
-      paymentIntent: { findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
-      paymentEvidence: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+      paymentIntent: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        update: jest.fn(),
+      },
+      paymentEvidence: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+      },
       humanReviewTask: { create: jest.fn(), updateMany: jest.fn() },
       paymentVerification: { create: jest.fn() },
     };
@@ -105,7 +118,9 @@ describe("PaymentEvidenceService", () => {
     const tx = makeRecordingTx();
     (tx.paymentIntent.findUnique as jest.Mock).mockResolvedValue(intent);
     (tx.paymentEvidence.findFirst as jest.Mock).mockResolvedValue(null);
-    (tx.paymentEvidence.create as jest.Mock).mockResolvedValue({ id: "ev-1" } as any);
+    (tx.paymentEvidence.create as jest.Mock).mockResolvedValue({
+      id: "ev-1",
+    } as any);
     (tx.humanReviewTask.create as jest.Mock).mockResolvedValue(undefined);
     (tx.paymentIntent.update as jest.Mock).mockResolvedValue(undefined);
     prisma.$transaction.mockImplementation(async (cb) => cb(tx));
@@ -120,7 +135,11 @@ describe("PaymentEvidenceService", () => {
   });
 
   it("es idempotente en submitEvidence al encontrar evidencia pendiente", async () => {
-    const existing = { id: "ev-1", paymentIntentId: "int-1", reviewStatus: "SUBMITTED" } as any;
+    const existing = {
+      id: "ev-1",
+      paymentIntentId: "int-1",
+      reviewStatus: "SUBMITTED",
+    } as any;
     const tx = makeRecordingTx();
     (tx.paymentIntent.findUnique as jest.Mock).mockResolvedValue(intent);
     (tx.paymentEvidence.findFirst as jest.Mock).mockResolvedValue(existing);
@@ -182,7 +201,12 @@ describe("PaymentEvidenceService", () => {
       id: "ev-1",
       paymentIntentId: "int-1",
       reviewStatus: "SUBMITTED",
-      paymentIntent: { id: "int-1", status: "UNDER_REVIEW", type: "ADVERTISER_CAMPAIGN", amount: 1000 } as any,
+      paymentIntent: {
+        id: "int-1",
+        status: "UNDER_REVIEW",
+        type: "ADVERTISER_CAMPAIGN",
+        amount: 1000,
+      } as any,
     } as any;
     const tx = makeRecordingTx();
     (prisma.paymentEvidence.findUnique as jest.Mock).mockResolvedValue(evidence);
@@ -198,7 +222,9 @@ describe("PaymentEvidenceService", () => {
       reviewedBy: "op1",
     } as any);
     (tx.humanReviewTask.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
-    (tx.paymentVerification.create as jest.Mock).mockResolvedValue({ id: "pv-1" } as any);
+    (tx.paymentVerification.create as jest.Mock).mockResolvedValue({
+      id: "pv-1",
+    } as any);
     (tx.paymentIntent.update as jest.Mock).mockResolvedValue(undefined);
     prisma.$transaction.mockImplementation(async (cb) => cb(tx));
 
@@ -221,7 +247,9 @@ describe("PaymentEvidenceService", () => {
     const tx = makeRecordingTx();
     (tx.paymentIntent.findUnique as jest.Mock).mockResolvedValue(intent);
     (tx.paymentEvidence.findFirst as jest.Mock).mockResolvedValue(null);
-    (tx.paymentEvidence.create as jest.Mock).mockResolvedValue({ id: "ev-1" } as any);
+    (tx.paymentEvidence.create as jest.Mock).mockResolvedValue({
+      id: "ev-1",
+    } as any);
     (tx.humanReviewTask.create as jest.Mock).mockResolvedValue(undefined);
     prisma.$transaction.mockImplementation(async (cb) => cb(tx));
 
@@ -238,11 +266,17 @@ describe("PaymentEvidenceService", () => {
     const tx = makeRecordingTx();
     (tx.paymentIntent.findUnique as jest.Mock).mockResolvedValue(intent);
     (tx.paymentEvidence.findFirst as jest.Mock).mockResolvedValue(null);
-    (tx.paymentEvidence.create as jest.Mock).mockResolvedValue({ id: "ev-1" } as any);
-    (tx.humanReviewTask.create as jest.Mock).mockRejectedValue(new Error("rollback gate"));
+    (tx.paymentEvidence.create as jest.Mock).mockResolvedValue({
+      id: "ev-1",
+    } as any);
+    (tx.humanReviewTask.create as jest.Mock).mockRejectedValue(
+      new Error("rollback gate"),
+    );
     prisma.$transaction.mockImplementation(async (cb) => cb(tx));
 
-    await expect(service.submitEvidence(input)).rejects.toThrow("rollback gate");
+    await expect(service.submitEvidence(input)).rejects.toThrow(
+      "rollback gate",
+    );
     expect(tx.humanReviewTask.create).toHaveBeenCalledTimes(1);
     expect(tx.paymentIntent.update).toHaveBeenCalledTimes(0);
   });

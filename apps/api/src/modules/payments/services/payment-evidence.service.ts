@@ -189,7 +189,8 @@ export class PaymentEvidenceService {
           status: "PENDING",
         },
         data: {
-          status: input.status === "PAYMENT_CONFIRMED" ? "APPROVED" : "REJECTED",
+          status:
+            input.status === "PAYMENT_CONFIRMED" ? "APPROVED" : "REJECTED",
           reviewerId: input.reviewedBy,
           reviewedAt: new Date(),
           reviewNote: input.reviewNote,

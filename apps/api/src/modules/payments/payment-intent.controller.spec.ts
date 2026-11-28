@@ -1,5 +1,9 @@
 import { ConfigModule } from "@nestjs/config";
-import { BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from "@nestjs/common";
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { PrismaModule } from "../prisma/prisma.module";
@@ -48,7 +52,11 @@ describe("PaymentIntentController", () => {
       $transaction: jest.Mock;
       paymentIntent: { findUnique: jest.Mock; update: jest.Mock };
       lead: { findUnique: jest.Mock };
-      paymentEvidence: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+      paymentEvidence: {
+        findFirst: jest.Mock;
+        create: jest.Mock;
+        update: jest.Mock;
+      };
       humanReviewTask: { create: jest.Mock };
     };
 
@@ -57,7 +65,11 @@ describe("PaymentIntentController", () => {
         $transaction: jest.fn(),
         paymentIntent: { findUnique: jest.fn(), update: jest.fn() },
         lead: { findUnique: jest.fn() },
-        paymentEvidence: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+        paymentEvidence: {
+          findFirst: jest.fn(),
+          create: jest.fn(),
+          update: jest.fn(),
+        },
         humanReviewTask: { create: jest.fn() },
       };
       // El PaymentEvidenceService ahora envuelve todo el flujo en
@@ -107,7 +119,7 @@ describe("PaymentIntentController", () => {
       await expect(
         controller.submitEvidence(
           "pi-1",
-          { user: { id: "user-a", role: "ADVERTISER", email: "", } } as any,
+          { user: { id: "user-a", role: "ADVERTISER", email: "" } } as any,
           { fileUrl: "https://x.test/a.pdf" },
         ),
       ).rejects.toThrow(ForbiddenException);
@@ -134,7 +146,7 @@ describe("PaymentIntentController", () => {
       await expect(
         controller.submitEvidence(
           "pi-2",
-          { user: { id: "user-b", role: "ADVERTISER", email: "", } } as any,
+          { user: { id: "user-b", role: "ADVERTISER", email: "" } } as any,
           { fileUrl: "https://x.test/b.pdf" },
         ),
       ).rejects.toThrow(ForbiddenException);
@@ -150,10 +162,16 @@ describe("PaymentIntentController", () => {
         status: "PENDING",
         leadId: "lead-1",
       });
-      prisma.lead.findUnique.mockReturnValue({ id: "lead-1", type: "ADVERTISER" });
+      prisma.lead.findUnique.mockReturnValue({
+        id: "lead-1",
+        type: "ADVERTISER",
+      });
       prisma.paymentEvidence.findFirst.mockReturnValue(null);
       prisma.paymentEvidence.create.mockReturnValue({ id: "ev-3" });
-      prisma.paymentIntent.update.mockReturnValue({ id: "pi-3", status: "UNDER_REVIEW" });
+      prisma.paymentIntent.update.mockReturnValue({
+        id: "pi-3",
+        status: "UNDER_REVIEW",
+      });
       prisma.paymentIntent.findUnique.mockReturnValueOnce({
         id: "pi-3",
         type: "ADVERTISER_CAMPAIGN",
@@ -166,7 +184,7 @@ describe("PaymentIntentController", () => {
 
       const result = await controller.submitEvidence(
         "pi-3",
-        { user: { id: "user-x", role: "ADVERTISER", email: "", } } as any,
+        { user: { id: "user-x", role: "ADVERTISER", email: "" } } as any,
         { fileUrl: "https://x.test/c.pdf" },
       );
       expect(result).toHaveProperty("id", "ev-3");

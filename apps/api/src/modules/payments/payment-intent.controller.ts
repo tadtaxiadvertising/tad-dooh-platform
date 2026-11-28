@@ -128,7 +128,7 @@ export class PaymentIntentController {
           where: { id: existing.leadId },
         });
         const sameEntity =
-          req.user?.role === "ADMIN" || (lead?.type === req.user?.role);
+          req.user?.role === "ADMIN" || lead?.type === req.user?.role;
         if (!sameEntity) {
           throw new ForbiddenException(
             "No puedes reutilizar una intención de pago que no te pertenece.",
@@ -285,7 +285,7 @@ export class PaymentIntentController {
       ? await this.prisma.lead.findUnique({ where: { id: intent.leadId } })
       : null;
     const ownedByActor =
-      req.user?.role === "ADMIN" || (intentLead?.type === req.user?.role);
+      req.user?.role === "ADMIN" || intentLead?.type === req.user?.role;
     if (!ownedByActor) {
       throw new ForbiddenException(
         "No tienes permiso para adjuntar evidencia a esta intención de pago.",

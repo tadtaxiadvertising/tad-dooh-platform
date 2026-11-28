@@ -140,14 +140,24 @@ describe("AuthService login fails closed on database outage", () => {
       const supabase = {
         getAnonClient: jest.fn(() => anonClient),
         getClient: jest.fn(() => ({
-          auth: { admin: { updateUserById: jest.fn().mockResolvedValue({ error: null }) } },
+          auth: {
+            admin: {
+              updateUserById: jest.fn().mockResolvedValue({ error: null }),
+            },
+          },
         })),
       };
       const prisma = {
-        user: { findUnique: jest.fn().mockResolvedValue({ id: "admin-1", role: null }) },
+        user: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({ id: "admin-1", role: null }),
+        },
         advertiser: { findUnique: jest.fn().mockResolvedValue(null) },
         driver: {
-          findUnique: jest.fn().mockResolvedValue({ id: "driver-1", authUserId: "auth-1" }),
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({ id: "driver-1", authUserId: "auth-1" }),
           findFirst: jest.fn(),
         },
       };
@@ -158,9 +168,18 @@ describe("AuthService login fails closed on database outage", () => {
         },
       });
       const service = Object.create(AuthService.prototype) as AuthService;
-      Object.assign(service, { prisma, supabaseService: supabase, logger: { log: jest.fn(), error: jest.fn(), debug: jest.fn() } });
-      const outcome = await service.login({ email: "driver@example.test", password: "password123" });
-      expect(prisma.driver.findUnique).toHaveBeenCalledWith({ where: { authUserId: "auth-1" } });
+      Object.assign(service, {
+        prisma,
+        supabaseService: supabase,
+        logger: { log: jest.fn(), error: jest.fn(), debug: jest.fn() },
+      });
+      const outcome = await service.login({
+        email: "driver@example.test",
+        password: "password123",
+      });
+      expect(prisma.driver.findUnique).toHaveBeenCalledWith({
+        where: { authUserId: "auth-1" },
+      });
       expect(prisma.driver.findFirst).not.toHaveBeenCalled();
       expect(outcome).toHaveProperty("user.role", "DRIVER");
       expect(outcome).toHaveProperty("user.entityId", "driver-1");
@@ -179,11 +198,19 @@ describe("AuthService login fails closed on database outage", () => {
       const supabase = {
         getAnonClient: jest.fn(() => anonClient),
         getClient: jest.fn(() => ({
-          auth: { admin: { updateUserById: jest.fn().mockResolvedValue({ error: null }) } },
+          auth: {
+            admin: {
+              updateUserById: jest.fn().mockResolvedValue({ error: null }),
+            },
+          },
         })),
       };
       const prisma = {
-        user: { findUnique: jest.fn().mockResolvedValue({ id: "admin-1", role: null }) },
+        user: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({ id: "admin-1", role: null }),
+        },
         advertiser: { findUnique: jest.fn().mockResolvedValue(null) },
         driver: { findUnique: jest.fn().mockResolvedValue(null) },
       };
@@ -194,12 +221,28 @@ describe("AuthService login fails closed on database outage", () => {
         },
       });
       const service = Object.create(AuthService.prototype) as AuthService;
-      Object.assign(service, { prisma, supabaseService: supabase, logger: { log: jest.fn(), error: jest.fn(), debug: jest.fn(), warn: jest.fn() } });
+      Object.assign(service, {
+        prisma,
+        supabaseService: supabase,
+        logger: {
+          log: jest.fn(),
+          error: jest.fn(),
+          debug: jest.fn(),
+          warn: jest.fn(),
+        },
+      });
       await expect(
-        service.login({ email: "attacker@example.test", password: "password123" }),
+        service.login({
+          email: "attacker@example.test",
+          password: "password123",
+        }),
       ).rejects.toThrow();
-      expect(prisma.driver.findUnique).toHaveBeenCalledWith({ where: { authUserId: "attacker-auth" } });
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: "attacker@example.test" } });
+      expect(prisma.driver.findUnique).toHaveBeenCalledWith({
+        where: { authUserId: "attacker-auth" },
+      });
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: "attacker@example.test" },
+      });
     });
   });
 });

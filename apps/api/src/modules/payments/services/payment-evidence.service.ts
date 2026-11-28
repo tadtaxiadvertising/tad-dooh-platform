@@ -7,10 +7,15 @@
  *
  * Estados: SUBMITTED → UNDER_REVIEW → PAYMENT_CONFIRMED | REJECTED
  */
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
-import type { PaymentIntent, Prisma } from "@prisma/client";
+import { Prisma, type PaymentIntent } from "@prisma/client";
 
 export interface CreatePaymentEvidenceInput {
   paymentIntentId: string;
@@ -60,6 +65,14 @@ export class PaymentEvidenceService {
         );
       }
 
+      if (
+        ["PAID", "REJECTED", "REFUNDED", "FAILED", "EXPIRED"].includes(
+          paymentIntent.status,
+        )
+      ) {
+        throw new ConflictException("Payment intent is already resolved");
+      }
+
       // Idempotente: si ya hay una evidencia pendiente, la actualizamos en
       // lugar de crear una duplicada dentro de la misma transacción.
       const existing = await tx.paymentEvidence.findFirst({
@@ -72,8 +85,13 @@ export class PaymentEvidenceService {
         this.logger.warn(
           `Evidence already exists for ${input.paymentIntentId}, updating`,
         );
-        return tx.paymentEvidence.update({
-          where: { id: existing.id },
+        // A stale submission must never reopen a reviewed evidence row.
+        const updated = await tx.paymentEvidence.updateMany({
+          where: {
+            id: existing.id,
+            reviewStatus: existing.reviewStatus,
+            submittedAt: existing.submittedAt,
+          },
           data: {
             fileUrl: input.fileUrl,
             fileHash: input.fileHash,
@@ -84,6 +102,12 @@ export class PaymentEvidenceService {
             reviewStatus: "SUBMITTED",
             metadata: input.metadata,
           },
+        });
+        if (updated.count !== 1) {
+          throw new ConflictException("Payment evidence changed during submit");
+        }
+        return tx.paymentEvidence.findUniqueOrThrow({
+          where: { id: existing.id },
         });
       }
 
@@ -120,10 +144,13 @@ export class PaymentEvidenceService {
       });
 
       // Actualizar PaymentIntent status a UNDER_REVIEW
-      await tx.paymentIntent.update({
-        where: { id: input.paymentIntentId },
+      const claimed = await tx.paymentIntent.updateMany({
+        where: { id: input.paymentIntentId, status: paymentIntent.status },
         data: { status: "UNDER_REVIEW" },
       });
+      if (claimed.count !== 1) {
+        throw new ConflictException("Payment intent changed during submit");
+      }
 
       this.logger.log(
         `Payment evidence ${evidence.id} submitted, HumanReviewTask created`,
@@ -154,61 +181,76 @@ export class PaymentEvidenceService {
       );
     }
 
-    // Idempotente: si ya está confirmada o rechazada, solo devolvemos el
-    // estado anterior; el flujo no se reejecuta.
-    if (evidence.reviewStatus === "PAYMENT_CONFIRMED") {
-      return evidence;
-    }
-    if (evidence.reviewStatus === "REJECTED") {
-      return evidence;
+    if (evidence.reviewStatus === input.status) return evidence;
+    if (!["SUBMITTED", "UNDER_REVIEW"].includes(evidence.reviewStatus)) {
+      throw new ConflictException("Payment evidence decision already resolved");
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Actualizar evidencia
-      const updatedEvidence = await tx.paymentEvidence.update({
-        where: { id: input.evidenceId },
-        data: {
-          reviewStatus: input.status,
-          reviewedBy: input.reviewedBy,
-          reviewedAt: new Date(),
-          reviewNote: input.reviewNote,
-        },
-      });
-
-      // Actualizar HumanReviewTask
-      await tx.humanReviewTask.updateMany({
-        where: {
-          entityId: input.evidenceId,
-          entityType: "PaymentEvidence",
-          status: "PENDING",
-        },
-        data: {
-          status:
-            input.status === "PAYMENT_CONFIRMED" ? "APPROVED" : "REJECTED",
-          reviewerId: input.reviewedBy,
-          reviewedAt: new Date(),
-          reviewNote: input.reviewNote,
-        },
-      });
-
-      // Si confirmado, crear PaymentVerification y actualizar PaymentIntent
-      if (input.status === "PAYMENT_CONFIRMED") {
-        await this.confirmPayment(
-          tx,
-          evidence.paymentIntentId,
-          input.reviewedBy,
-          input.amountConfirmed,
-        );
-      } else {
-        // Rechazado
-        await tx.paymentIntent.update({
-          where: { id: evidence.paymentIntentId },
-          data: { status: "REJECTED" },
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        // Only one reviewer can claim this exact pending evidence version.
+        const claimed = await tx.paymentEvidence.updateMany({
+          where: {
+            id: input.evidenceId,
+            reviewStatus: evidence.reviewStatus,
+            submittedAt: evidence.submittedAt,
+          },
+          data: {
+            reviewStatus: input.status,
+            reviewedBy: input.reviewedBy,
+            reviewedAt: new Date(),
+            reviewNote: input.reviewNote,
+          },
         });
-      }
+        const updatedEvidence = await tx.paymentEvidence.findUnique({
+          where: { id: input.evidenceId },
+        });
+        if (!updatedEvidence || updatedEvidence.reviewStatus !== input.status) {
+          throw new ConflictException("Payment evidence changed during review");
+        }
+        if (claimed.count === 0) return updatedEvidence;
+        if (claimed.count !== 1) {
+          throw new ConflictException(
+            "Unexpected payment evidence claim count",
+          );
+        }
 
-      return updatedEvidence;
-    });
+        // Actualizar HumanReviewTask
+        await tx.humanReviewTask.updateMany({
+          where: {
+            entityId: input.evidenceId,
+            entityType: "PaymentEvidence",
+            status: "PENDING",
+          },
+          data: {
+            status:
+              input.status === "PAYMENT_CONFIRMED" ? "APPROVED" : "REJECTED",
+            reviewerId: input.reviewedBy,
+            reviewedAt: new Date(),
+            reviewNote: input.reviewNote,
+          },
+        });
+
+        // Si confirmado, crear PaymentVerification y actualizar PaymentIntent
+        if (input.status === "PAYMENT_CONFIRMED") {
+          await this.confirmPayment(
+            tx,
+            evidence.paymentIntentId,
+            input.reviewedBy,
+            input.amountConfirmed,
+          );
+        } else {
+          // Rechazado
+          await tx.paymentIntent.update({
+            where: { id: evidence.paymentIntentId },
+            data: { status: "REJECTED" },
+          });
+        }
+
+        return updatedEvidence;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
 
     return result;
   }
@@ -316,19 +358,16 @@ export class PaymentEvidenceService {
     }
 
     // Verificar si ya se creó comisión para este referido
-    const existingAttribution = await tx.referralAttribution.findUnique({
-      where: { leadId: paymentIntent.leadId },
-    });
-
-    if (existingAttribution?.commissionCreated) {
-      this.logger.log(
-        `Commission already created for lead ${paymentIntent.leadId}`,
-      );
-      return;
-    }
-
-    // Crear comisión para el referente (RD$500)
     const commissionRef = `REF-DRIVER-${paymentIntent.leadId}-${Date.now()}`;
+    const claimed = await this.claimReferralCommission(
+      tx,
+      paymentIntent.leadId,
+      lead.referrerId,
+      lead.referrerCode ?? "",
+      "DRIVER_SUBSCRIPTION",
+      commissionRef,
+    );
+    if (!claimed) return;
 
     await tx.commission.create({
       data: {
@@ -345,32 +384,6 @@ export class PaymentEvidenceService {
       },
     });
 
-    // Actualizar ReferralAttribution
-    if (existingAttribution) {
-      await tx.referralAttribution.update({
-        where: { id: existingAttribution.id },
-        data: {
-          conversionAt: new Date(),
-          conversionType: "DRIVER_SUBSCRIPTION",
-          commissionCreated: true,
-          commissionId: commissionRef,
-        },
-      });
-    } else {
-      await tx.referralAttribution.create({
-        data: {
-          leadId: paymentIntent.leadId,
-          referrerId: lead.referrerId ?? "",
-          referrerCode: lead.referrerCode ?? "",
-          conversionAt: new Date(),
-          conversionType: "DRIVER_SUBSCRIPTION",
-          commissionCreated: true,
-          commissionId: commissionRef,
-        },
-      });
-    }
-
-    // Actualizar lead
     await tx.lead.update({
       where: { id: paymentIntent.leadId },
       data: { status: "CONVERTED" },
@@ -403,14 +416,16 @@ export class PaymentEvidenceService {
 
     if (!lead || !lead.referrerId) return;
 
-    const existingAttribution = await tx.referralAttribution.findUnique({
-      where: { leadId: paymentIntent.leadId },
-    });
-
-    if (existingAttribution?.commissionCreated) return;
-
-    // Crear comisión para referente (RD$500)
     const commissionRef = `REF-ADV-${paymentIntent.leadId}-${Date.now()}`;
+    const claimed = await this.claimReferralCommission(
+      tx,
+      paymentIntent.leadId,
+      lead.referrerId,
+      lead.referrerCode ?? "",
+      "ADVERTISER_CAMPAIGN",
+      commissionRef,
+    );
+    if (!claimed) return;
 
     await tx.commission.create({
       data: {
@@ -427,30 +442,6 @@ export class PaymentEvidenceService {
       },
     });
 
-    if (existingAttribution) {
-      await tx.referralAttribution.update({
-        where: { id: existingAttribution.id },
-        data: {
-          conversionAt: new Date(),
-          conversionType: "ADVERTISER_CAMPAIGN",
-          commissionCreated: true,
-          commissionId: commissionRef,
-        },
-      });
-    } else {
-      await tx.referralAttribution.create({
-        data: {
-          leadId: paymentIntent.leadId,
-          referrerId: lead.referrerId ?? "",
-          referrerCode: lead.referrerCode ?? "",
-          conversionAt: new Date(),
-          conversionType: "ADVERTISER_CAMPAIGN",
-          commissionCreated: true,
-          commissionId: commissionRef,
-        },
-      });
-    }
-
     await tx.lead.update({
       where: { id: paymentIntent.leadId },
       data: { status: "CONVERTED" },
@@ -459,6 +450,40 @@ export class PaymentEvidenceService {
     this.logger.log(
       `Advertiser referral commission created for referrer ${lead.referrerId}`,
     );
+  }
+
+  /**
+   * Reserve the unique lead attribution before creating its commission.
+   * The reservation and the commission commit or roll back together.
+   */
+  private async claimReferralCommission(
+    tx: Prisma.TransactionClient,
+    leadId: string,
+    referrerId: string,
+    referrerCode: string,
+    conversionType: "DRIVER_SUBSCRIPTION" | "ADVERTISER_CAMPAIGN",
+    commissionRef: string,
+  ): Promise<boolean> {
+    await tx.referralAttribution.createMany({
+      data: [{ leadId, referrerId, referrerCode }],
+      skipDuplicates: true,
+    });
+    const claimed = await tx.referralAttribution.updateMany({
+      where: { leadId, commissionCreated: false, commissionId: null },
+      data: {
+        conversionAt: new Date(),
+        conversionType,
+        commissionCreated: true,
+        commissionId: commissionRef,
+      },
+    });
+    if (claimed.count === 1) return true;
+
+    const current = await tx.referralAttribution.findUnique({
+      where: { leadId },
+    });
+    if (claimed.count === 0 && current?.commissionCreated) return false;
+    throw new ConflictException("Referral attribution requires reconciliation");
   }
 
   /**

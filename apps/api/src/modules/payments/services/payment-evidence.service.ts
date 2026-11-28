@@ -47,7 +47,7 @@ export class PaymentEvidenceService {
 
   /**
    * Recibe un comprobante de pago y lo asocia a una PaymentIntent
-   * Idempotente por paymentIntentId + fileHash
+   * Una evidencia por intención; las sustituciones crean una nueva versión.
    */
   async submitEvidence(input: CreatePaymentEvidenceInput) {
     this.logger.log(
@@ -100,13 +100,15 @@ export class PaymentEvidenceService {
           },
           data: {
             fileUrl: input.fileUrl,
-            fileHash: input.fileHash,
-            fileSize: input.fileSize,
-            mimeType: input.mimeType,
+            // A replacement is a new file, not a patch of its predecessor.
+            // Prisma omits undefined fields; explicitly clear absent descriptors.
+            fileHash: input.fileHash ?? null,
+            fileSize: input.fileSize ?? null,
+            mimeType: input.mimeType ?? null,
             submittedBy: input.submittedBy,
             submittedAt: nextSubmittedAt,
             reviewStatus: "SUBMITTED",
-            metadata: input.metadata,
+            metadata: input.metadata ?? Prisma.DbNull,
           },
         });
         if (updated.count !== 1) {

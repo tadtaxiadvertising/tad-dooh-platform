@@ -1,3 +1,4 @@
+import { advertiserSafeSelect } from "../advertisers/advertiser-safe-select";
 import type { AuthenticatedRequest } from "../auth/auth.types";
 import {
   Controller,
@@ -599,7 +600,7 @@ export class CampaignController {
       select: {
         id: true,
         name: true,
-        advertiser: true,
+        advertiser: { select: advertiserSafeSelect },
         media: {
           select: {
             id: true,

@@ -1,7 +1,4 @@
-import {
-  ConflictException,
-  ServiceUnavailableException,
-} from "@nestjs/common";
+import { ConflictException, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ManualTransferProvider } from "./manual-transfer.provider";
 

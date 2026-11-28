@@ -323,7 +323,11 @@ export class SocialAgentService {
    */
   async getPendingReviews() {
     return this.prisma.humanReviewTask.findMany({
-      where: { status: "PENDING" },
+      where: {
+        type: "SOCIAL_POST",
+        entityType: "SocialPostDraft",
+        status: "PENDING",
+      },
       orderBy: { createdAt: "desc" },
     });
   }

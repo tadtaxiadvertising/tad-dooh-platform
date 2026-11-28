@@ -1,6 +1,8 @@
 import type { AuthenticatedRequest } from "../auth/auth.types";
 import {
   Controller,
+  ConflictException,
+  ForbiddenException,
   Get,
   Post,
   Body,
@@ -73,17 +75,7 @@ export class SocialAgentController {
     @Body() body: { note?: string },
     @Req() req: AuthenticatedRequest,
   ) {
-    const reviewerId = req.user?.sub || req.user?.id || "unknown-admin";
-    const task = await this.prisma.humanReviewTask.update({
-      where: { id: taskId },
-      data: {
-        status: "APPROVED",
-        reviewerId,
-        reviewedAt: new Date(),
-        reviewNote: body.note || "Approved by admin",
-      },
-    });
-    return { success: true, task };
+    return this.decideSocialReview(taskId, "APPROVED", body.note, req);
   }
 
   @Post("review/:id/reject")
@@ -93,17 +85,44 @@ export class SocialAgentController {
     @Body() body: { note?: string },
     @Req() req: AuthenticatedRequest,
   ) {
-    const reviewerId = req.user?.sub || req.user?.id || "unknown-admin";
-    const task = await this.prisma.humanReviewTask.update({
-      where: { id: taskId },
-      data: {
-        status: "REJECTED",
-        reviewerId,
-        reviewedAt: new Date(),
-        reviewNote: body.note || "Rejected by admin",
-      },
+    return this.decideSocialReview(taskId, "REJECTED", body.note, req);
+  }
+
+  private async decideSocialReview(
+    taskId: string,
+    status: "APPROVED" | "REJECTED",
+    note: string | undefined,
+    req: AuthenticatedRequest,
+  ) {
+    const reviewerId = req.user?.id;
+    if (req.user?.role !== UserRole.ADMIN || !reviewerId) {
+      throw new ForbiddenException("Social review operator required");
+    }
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.humanReviewTask.updateMany({
+        where: {
+          id: taskId,
+          type: "SOCIAL_POST",
+          entityType: "SocialPostDraft",
+          status: "PENDING",
+        },
+        data: {
+          status,
+          reviewerId,
+          reviewedAt: new Date(),
+          reviewNote:
+            note ||
+            (status === "APPROVED" ? "Approved by admin" : "Rejected by admin"),
+        },
+      });
+      if (updated.count !== 1) {
+        throw new ConflictException("Pending social review task required");
+      }
+      const task = await tx.humanReviewTask.findUniqueOrThrow({
+        where: { id: taskId },
+      });
+      return { success: true, task };
     });
-    return { success: true, task };
   }
 
   @Post("publish-approved/:taskId")

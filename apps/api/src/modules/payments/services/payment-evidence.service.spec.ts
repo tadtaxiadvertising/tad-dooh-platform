@@ -247,6 +247,75 @@ describe("PaymentEvidenceService", () => {
     expect(tx.paymentIntent.update).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["DRIVER_SUBSCRIPTION", "ADVERTISER_CAMPAIGN"])(
+    "keeps %s referral writes inside payment confirmation transaction",
+    async (type) => {
+      const tx = {
+        ...makeRecordingTx(),
+        lead: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: "lead-1",
+            referrerId: "driver-1",
+            referrerCode: "FIXTURE",
+          }),
+          update: jest.fn(),
+        },
+        referralAttribution: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn(),
+        },
+        commission: { create: jest.fn() },
+      };
+      prisma.paymentEvidence.findUnique.mockResolvedValue({
+        id: "ev-1",
+        paymentIntentId: "int-1",
+        reviewStatus: "SUBMITTED",
+      });
+      tx.paymentIntent.findUnique.mockResolvedValue({
+        ...intent,
+        type,
+        status: "UNDER_REVIEW",
+      });
+      tx.paymentEvidence.update.mockResolvedValue({
+        id: "ev-1",
+        reviewStatus: "PAYMENT_CONFIRMED",
+      });
+      prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+      const review = {
+        evidenceId: "ev-1",
+        reviewedBy: "op1",
+        status: "PAYMENT_CONFIRMED" as const,
+      };
+      await expect(service.reviewEvidence(review)).resolves.toMatchObject({
+        reviewStatus: "PAYMENT_CONFIRMED",
+      });
+      expect(tx.commission.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          driverId: "driver-1",
+          amount: 500,
+          status: "PENDING",
+          sourceType:
+            type === "DRIVER_SUBSCRIPTION"
+              ? "DRIVER_REFERRAL"
+              : "ADVERTISER_SALE",
+        }),
+      });
+      expect(tx.referralAttribution.create).toHaveBeenCalledTimes(1);
+      expect(tx.lead.update).toHaveBeenCalledWith({
+        where: { id: "lead-1" },
+        data: { status: "CONVERTED" },
+      });
+
+      // A downstream write failure must reject the enclosing callback.
+      tx.lead.update.mockRejectedValueOnce(new Error("fixture write failure"));
+      await expect(service.reviewEvidence(review)).rejects.toThrow(
+        "fixture write failure",
+      );
+      expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    },
+  );
+
   it("revuelve la operación transaccional y queda atómica al éxito en full", async () => {
     const tx = makeRecordingTx();
     (tx.paymentIntent.findUnique as jest.Mock).mockResolvedValue(intent);

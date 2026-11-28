@@ -268,11 +268,13 @@ export class PaymentEvidenceService {
     // Disparar flujo según tipo
     if (paymentIntent.type === "DRIVER_SUBSCRIPTION") {
       await this.handleDriverSubscriptionConfirmed(
+        tx,
         paymentIntent,
         confirmedAmount,
       );
     } else if (paymentIntent.type === "ADVERTISER_CAMPAIGN") {
       await this.handleAdvertiserCampaignConfirmed(
+        tx,
         paymentIntent,
         confirmedAmount,
       );
@@ -290,6 +292,7 @@ export class PaymentEvidenceService {
    * - Actualiza onboardingStatus
    */
   private async handleDriverSubscriptionConfirmed(
+    tx: Prisma.TransactionClient,
     paymentIntent: PaymentIntent,
     amount: number,
   ) {
@@ -303,7 +306,7 @@ export class PaymentEvidenceService {
     }
 
     // Buscar lead
-    const lead = await this.prisma.lead.findUnique({
+    const lead = await tx.lead.findUnique({
       where: { id: paymentIntent.leadId },
     });
 
@@ -313,10 +316,9 @@ export class PaymentEvidenceService {
     }
 
     // Verificar si ya se creó comisión para este referido
-    const existingAttribution =
-      await this.prisma.referralAttribution.findUnique({
-        where: { leadId: paymentIntent.leadId },
-      });
+    const existingAttribution = await tx.referralAttribution.findUnique({
+      where: { leadId: paymentIntent.leadId },
+    });
 
     if (existingAttribution?.commissionCreated) {
       this.logger.log(
@@ -328,7 +330,7 @@ export class PaymentEvidenceService {
     // Crear comisión para el referente (RD$500)
     const commissionRef = `REF-DRIVER-${paymentIntent.leadId}-${Date.now()}`;
 
-    await this.prisma.commission.create({
+    await tx.commission.create({
       data: {
         driverId: lead.referrerId,
         amount: 500,
@@ -345,7 +347,7 @@ export class PaymentEvidenceService {
 
     // Actualizar ReferralAttribution
     if (existingAttribution) {
-      await this.prisma.referralAttribution.update({
+      await tx.referralAttribution.update({
         where: { id: existingAttribution.id },
         data: {
           conversionAt: new Date(),
@@ -355,7 +357,7 @@ export class PaymentEvidenceService {
         },
       });
     } else {
-      await this.prisma.referralAttribution.create({
+      await tx.referralAttribution.create({
         data: {
           leadId: paymentIntent.leadId,
           referrerId: lead.referrerId ?? "",
@@ -369,7 +371,7 @@ export class PaymentEvidenceService {
     }
 
     // Actualizar lead
-    await this.prisma.lead.update({
+    await tx.lead.update({
       where: { id: paymentIntent.leadId },
       data: { status: "CONVERTED" },
     });
@@ -385,6 +387,7 @@ export class PaymentEvidenceService {
    * - Crea comisión de referido si aplica
    */
   private async handleAdvertiserCampaignConfirmed(
+    tx: Prisma.TransactionClient,
     paymentIntent: PaymentIntent,
     amount: number,
   ) {
@@ -394,14 +397,14 @@ export class PaymentEvidenceService {
 
     if (!paymentIntent.leadId) return;
 
-    const lead = await this.prisma.lead.findUnique({
+    const lead = await tx.lead.findUnique({
       where: { id: paymentIntent.leadId },
     });
 
     if (!lead || !lead.referrerId) return;
 
     const existingAttribution =
-      await this.prisma.referralAttribution.findUnique({
+      await tx.referralAttribution.findUnique({
         where: { leadId: paymentIntent.leadId },
       });
 
@@ -410,7 +413,7 @@ export class PaymentEvidenceService {
     // Crear comisión para referente (RD$500)
     const commissionRef = `REF-ADV-${paymentIntent.leadId}-${Date.now()}`;
 
-    await this.prisma.commission.create({
+    await tx.commission.create({
       data: {
         driverId: lead.referrerId,
         amount: 500,
@@ -426,7 +429,7 @@ export class PaymentEvidenceService {
     });
 
     if (existingAttribution) {
-      await this.prisma.referralAttribution.update({
+      await tx.referralAttribution.update({
         where: { id: existingAttribution.id },
         data: {
           conversionAt: new Date(),
@@ -436,7 +439,7 @@ export class PaymentEvidenceService {
         },
       });
     } else {
-      await this.prisma.referralAttribution.create({
+      await tx.referralAttribution.create({
         data: {
           leadId: paymentIntent.leadId,
           referrerId: lead.referrerId ?? "",
@@ -449,7 +452,7 @@ export class PaymentEvidenceService {
       });
     }
 
-    await this.prisma.lead.update({
+    await tx.lead.update({
       where: { id: paymentIntent.leadId },
       data: { status: "CONVERTED" },
     });

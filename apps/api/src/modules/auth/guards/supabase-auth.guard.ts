@@ -13,6 +13,10 @@ import { AdvertisersService } from "../../advertisers/advertisers.service";
 import * as jwt from "jsonwebtoken";
 import { createHash } from "node:crypto";
 import { AuthUser } from "../auth.types";
+import { PrismaService } from "../../prisma/prisma.service";
+import { assertCommittedAdvertiserRegistration } from "../committed-advertiser-registration";
+
+type VerifiedSession = { user: AuthUser; correlation?: unknown };
 
 /**
  * SUPABASE AUTH GUARD — Política "Deny-by-Default".
@@ -37,7 +41,7 @@ export class SupabaseAuthGuard implements CanActivate {
   // The bounded LRU avoids indefinite process-memory growth with new sessions.
   private static sessionCache = new Map<
     string,
-    { user: AuthUser; expiry: number }
+    VerifiedSession & { expiry: number }
   >();
   private static readonly MAX_CACHED_SESSIONS = 2_048;
   private static nextSessionCacheSweepAt = 0;
@@ -47,7 +51,7 @@ export class SupabaseAuthGuard implements CanActivate {
     return createHash("sha256").update(token).digest("hex");
   }
 
-  private static getCachedSession(token: string): AuthUser | undefined {
+  private static getCachedSession(token: string): VerifiedSession | undefined {
     const key = SupabaseAuthGuard.cacheKey(token);
     const cache = SupabaseAuthGuard.sessionCache;
     const stored = cache.get(key);
@@ -59,10 +63,14 @@ export class SupabaseAuthGuard implements CanActivate {
     // Refresh LRU recency without extending the session validation TTL.
     cache.delete(key);
     cache.set(key, stored);
-    return stored.user;
+    return stored;
   }
 
-  private cacheVerifiedSession(token: string, user: AuthUser): void {
+  private cacheVerifiedSession(
+    token: string,
+    user: AuthUser,
+    correlation?: unknown,
+  ): void {
     const cache = SupabaseAuthGuard.sessionCache;
     const now = Date.now();
     // Bounded sweep only when full: avoid a linear scan per request at 10x.
@@ -78,7 +86,7 @@ export class SupabaseAuthGuard implements CanActivate {
 
     const key = SupabaseAuthGuard.cacheKey(token);
     cache.delete(key);
-    cache.set(key, { user, expiry: now + this.CACHE_TTL_MS });
+    cache.set(key, { user, correlation, expiry: now + this.CACHE_TTL_MS });
     if (cache.size > SupabaseAuthGuard.MAX_CACHED_SESSIONS) {
       const oldest = cache.keys().next().value;
       if (oldest !== undefined) cache.delete(oldest);
@@ -90,6 +98,7 @@ export class SupabaseAuthGuard implements CanActivate {
     private supabaseService: SupabaseService,
     private configService: ConfigService,
     private advertisersService: AdvertisersService,
+    private prisma: PrismaService,
   ) {
     this.isDev = process.env.NODE_ENV === "development";
     this.allowDevBypass = this.isDev && process.env.ALLOW_DEV_BYPASS === "true";
@@ -119,6 +128,36 @@ export class SupabaseAuthGuard implements CanActivate {
 
     await this.resolveRequestUser(context, true);
     return true;
+  }
+
+  // Identity verification may be cached, but registration authorization
+  // must consult the current durable receipt on every correlated request.
+  private async acceptVerifiedSession(
+    request: { user?: AuthUser },
+    strict: boolean,
+    session: VerifiedSession,
+    token?: string,
+  ): Promise<void> {
+    const { user, correlation } = session;
+    try {
+      await assertCommittedAdvertiserRegistration(
+        this.prisma,
+        correlation,
+        user.id,
+        user.role === "ADVERTISER" ? (user.entityId ?? null) : null,
+      );
+    } catch {
+      delete request.user;
+      this.logger.warn("ADVERTISER_REGISTRATION_AUTHORIZATION_DENIED");
+      if (strict) {
+        throw new UnauthorizedException("Sesión de anunciante inválida.");
+      }
+      return;
+    }
+    request.user = user;
+    if (token !== undefined) {
+      this.cacheVerifiedSession(token, user, correlation);
+    }
   }
 
   /**
@@ -191,10 +230,9 @@ export class SupabaseAuthGuard implements CanActivate {
     }
 
     // --- CACHE LOOKUP ---
-    const cachedUser = SupabaseAuthGuard.getCachedSession(token);
-    if (cachedUser) {
-      request.user = cachedUser;
-      return;
+    const cachedSession = SupabaseAuthGuard.getCachedSession(token);
+    if (cachedSession) {
+      return this.acceptVerifiedSession(request, strict, cachedSession);
     }
 
     const jwtSecret =
@@ -240,20 +278,22 @@ export class SupabaseAuthGuard implements CanActivate {
           }
 
           if (payload) {
-            request.user = {
-              id: payload.sub,
-              email: payload.email,
-              role: payload.app_metadata?.role || payload.role || "GUEST",
-              entityId: payload.app_metadata?.entityId || null,
-            };
-
-            // Cache the verified identity without retaining the raw JWT.
-            this.cacheVerifiedSession(token, request.user);
-
-            this.logger.verbose(
-              `✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`,
+            // Return the authorization promise without awaiting inside the
+            // signature-verification catch: denial must not trigger fallback.
+            return this.acceptVerifiedSession(
+              request,
+              strict,
+              {
+                user: {
+                  id: payload.sub,
+                  email: payload.email,
+                  role: payload.app_metadata?.role || payload.role || "GUEST",
+                  entityId: payload.app_metadata?.entityId || null,
+                },
+                correlation: payload.app_metadata?.tad_onboarding_reservation,
+              },
+              token,
             );
-            return;
           }
         }
       } catch (err: unknown) {
@@ -298,28 +338,21 @@ export class SupabaseAuthGuard implements CanActivate {
         const roleFromMeta = data.user.app_metadata?.role || "GUEST";
         const entityId = data.user.app_metadata?.entityId || null;
 
-        request.user = {
-          id: data.user.id,
-          email: data.user.email,
-          role: roleFromMeta,
-          entityId,
-        };
-
-        // Cache the verified identity without retaining the raw JWT.
-        this.cacheVerifiedSession(token, request.user);
-
-        if (roleFromMeta === "GUEST") {
-          this.logger.warn(
-            `⚠️ [AUTH_GUARD] Usuario autenticado pero sin rol en metadata: ${data.user.email}. ` +
-              `Verifica si las claims están correctas en Supabase.`,
-          );
-        } else {
-          // Log a nivel verbose para que no inunde la consola en producción por cada request
-          this.logger.verbose(
-            `✅ [AUTH] ESTRATEGIA 2 OK (Red): ${data.user.email} [${roleFromMeta}]`,
-          );
-        }
-        return;
+        // As above, authorization denial is terminal, not a network failure.
+        return this.acceptVerifiedSession(
+          request,
+          strict,
+          {
+            user: {
+              id: data.user.id,
+              email: data.user.email ?? "",
+              role: roleFromMeta,
+              entityId,
+            },
+            correlation: data.user.app_metadata?.tad_onboarding_reservation,
+          },
+          token,
+        );
       }
 
       if (error) {
@@ -337,7 +370,10 @@ export class SupabaseAuthGuard implements CanActivate {
     // --- ESTRATEGIA 3: DEV BYPASS ---
     if (this.allowDevBypass) {
       const decoded = jwt.decode(token) as jwt.JwtPayload;
-      if (decoded) {
+      if (
+        decoded &&
+        decoded.app_metadata?.tad_onboarding_reservation === undefined
+      ) {
         this.logger.warn(`🚩 [AUTH] DEV BYPASS UTILIZADO: ${decoded.email}`);
         request.user = {
           id: decoded.sub || "dev-user",

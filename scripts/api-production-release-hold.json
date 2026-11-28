@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "state": "BLOCKED",
+  "reason": "Production schema recovery and independently verified restore pending (#217, #627).",
+  "recoveryReview": null
+}

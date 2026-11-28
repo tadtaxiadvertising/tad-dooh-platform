@@ -17,6 +17,28 @@ const apiDockerignore = fs.readFileSync(
 );
 const dockerfile = fs.readFileSync(path.join(root, "Dockerfile.api"), "utf8");
 
+test("production publication hold runs before build or registry authentication", () => {
+  const hold = workflow.indexOf("node scripts/assert-api-release-hold.cjs");
+  assert.ok(hold >= 0);
+  assert.ok(hold < workflow.indexOf("Require same-SHA executed green CI and Docker checks"));
+  assert.ok(hold < workflow.indexOf("Set up Docker Buildx"));
+  assert.ok(hold < workflow.indexOf("docker/login-action@v3"));
+  assert.ok(workflow.includes("'Payment evidence PostgreSQL concurrency and rollback'"));
+});
+
+test("release hold rejects unknown or unreviewed approval states", () => {
+  const { assertReleaseAllowed } = require("./assert-api-release-hold.cjs");
+  for (const state of [null, {}, { version: 1, state: "BLOCKED" },
+    { version: 1, state: "REVIEWED_RELEASE_ALLOWED", recoveryReview: null },
+    { version: 1, state: "REVIEWED_RELEASE_ALLOWED", recoveryReview: -1 },
+    { version: 2, state: "REVIEWED_RELEASE_ALLOWED", recoveryReview: 123 }]) {
+    assert.throws(() => assertReleaseAllowed(state), /API_RELEASE_HOLD/);
+  }
+  assert.doesNotThrow(() => assertReleaseAllowed({
+    version: 1, state: "REVIEWED_RELEASE_ALLOWED", recoveryReview: 123,
+  }));
+});
+
 test("image promotion is manual-only, main-only and tied to current head SHA", () => {
   assert.match(workflow, /^on:\n  workflow_dispatch:\s*$/m);
   assert.doesNotMatch(workflow, /^on:\n\s+(push|pull_request|schedule):/m);

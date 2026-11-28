@@ -75,11 +75,11 @@ export class AuthService {
       const [adminUser, advertiser, driver] = await Promise.all([
         this.prisma.user.findUnique({ where: { email } }),
         this.prisma.advertiser.findUnique({ where: { email } }),
-        this.prisma.driver.findFirst({
-          where: {
-            OR: [{ phone: email.split("@")[0] }, { phone: email }],
-          },
-        }),
+        // F1 FIX: identity is verified from the authenticated Supabase user id.
+        // A driver is only that identity when its authUserId matches the
+        // signed-in user. The old phone-prefix lookup allowed one account to
+        // inherit another driver's identity. Unlinked accounts are denied.
+        this.prisma.driver.findUnique({ where: { authUserId: userId } }),
       ]);
 
       // Determinar rol e ID de entidad

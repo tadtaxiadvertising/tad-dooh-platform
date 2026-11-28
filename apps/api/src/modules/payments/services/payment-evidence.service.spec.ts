@@ -348,20 +348,17 @@ describe("PaymentEvidenceService", () => {
     "CANCELLED",
     "REDIRECTED",
     "UNKNOWN",
-  ])(
-    "rejects submission on a resolved %s intent",
-    async (status) => {
-      const tx = makeRecordingTx();
-      tx.paymentIntent.findUnique.mockResolvedValue({ ...intent, status });
-      prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+  ])("rejects submission on a resolved %s intent", async (status) => {
+    const tx = makeRecordingTx();
+    tx.paymentIntent.findUnique.mockResolvedValue({ ...intent, status });
+    prisma.$transaction.mockImplementation(async (cb) => cb(tx));
 
-      await expect(service.submitEvidence(input)).rejects.toMatchObject({
-        status: 409,
-      });
-      expect(tx.paymentEvidence.create).not.toHaveBeenCalled();
-      expect(tx.paymentEvidence.updateMany).not.toHaveBeenCalled();
-    },
-  );
+    await expect(service.submitEvidence(input)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(tx.paymentEvidence.create).not.toHaveBeenCalled();
+    expect(tx.paymentEvidence.updateMany).not.toHaveBeenCalled();
+  });
 
   it("rejects an under-review intent without pending evidence", async () => {
     const tx = makeRecordingTx();

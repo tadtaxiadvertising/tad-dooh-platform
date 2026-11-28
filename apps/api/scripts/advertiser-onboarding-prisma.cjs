@@ -175,10 +175,11 @@ async function verify() {
     assert.equal(Object.hasOwn(commercial, "password"), false);
     assert.equal(commercial.companyName, request.companyName);
     const nested = await first.campaign.findUniqueOrThrow({
-      where: { id: campaign.id }, select: { advertiser: { select: advertiserSafeSelect } },
+      where: { id: campaign.id }, select: { advertiser: true, advertiserRef: { select: advertiserSafeSelect } },
     });
-    assert.equal(Object.hasOwn(nested.advertiser, "password"), false);
-    assert.deepEqual(nested.advertiser, commercial);
+    assert.equal(typeof nested.advertiser, "string");
+    assert.equal(Object.hasOwn(nested.advertiserRef, "password"), false);
+    assert.deepEqual(nested.advertiserRef, commercial);
     const advertiserService = new AdvertisersService(first, {});
     const updated = await advertiserService.update(advertiserId, { companyName: request.companyName });
     assert.equal(Object.hasOwn(updated, "password"), false);

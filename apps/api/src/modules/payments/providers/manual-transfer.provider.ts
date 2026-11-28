@@ -10,7 +10,12 @@
  * 3. Humano revisa → PaymentVerification → PAYMENT_CONFIRMED
  * 4. Sistema crea comisión y activa flujo correspondiente
  */
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
   IPaymentProvider,
@@ -21,6 +26,7 @@ import {
   PaymentVerificationResult,
   RefundResult,
   PaymentProviderType,
+  PaymentNotificationPayload,
 } from "../interfaces/payment-provider.interface";
 
 @Injectable()
@@ -32,27 +38,40 @@ export class ManualTransferProvider implements IPaymentProvider {
     provider: "MANUAL_TRANSFER",
   };
 
-  // Configuración bancaria de TAD (inyectable via ConfigService)
-  private readonly bankConfig = {
-    bankName: "Banco Popular Dominicano",
-    accountName: "TAD Taxi Advertising SRL",
-    accountNumber: "XXXXXXXXXX", // Configurar via env
-    accountType: "Corriente",
-    currency: "DOP",
-    swiftCode: "BPDODOSD", // Si aplica
-  };
-
   constructor(private readonly configService: ConfigService) {}
 
   async initialize(_config: PaymentProviderConfig): Promise<void> {
-    this.logger.log(`Initializing ${this.providerType} provider`);
-    // Cargar config bancaria desde env
-    this.bankConfig.accountNumber =
-      this.configService.get("TAD_BANK_ACCOUNT") ||
-      this.bankConfig.accountNumber;
-    this.bankConfig.accountName =
-      this.configService.get("TAD_BANK_ACCOUNT_NAME") ||
-      this.bankConfig.accountName;
+    this.logger.log("Manual transfer adapter initialized");
+  }
+
+  // Resolve configuration at use time: the factory does not call initialize.
+  // Never generate instructions with placeholder account details.
+  private getBankConfig() {
+    const accountNumber = this.configService
+      .get<string>("TAD_BANK_ACCOUNT")
+      ?.trim();
+    const accountName =
+      this.configService.get<string>("TAD_BANK_ACCOUNT_NAME")?.trim() ||
+      "TAD Taxi Advertising SRL";
+
+    if (
+      !accountNumber ||
+      !/^\d+$/.test(accountNumber) ||
+      /^0+$/.test(accountNumber)
+    ) {
+      throw new ServiceUnavailableException(
+        "Manual transfer account configuration is unavailable",
+      );
+    }
+
+    return {
+      bankName: "Banco Popular Dominicano",
+      accountName,
+      accountNumber,
+      accountType: "Corriente",
+      currency: "DOP",
+      swiftCode: "BPDODOSD",
+    };
   }
 
   /**
@@ -66,7 +85,11 @@ export class ManualTransferProvider implements IPaymentProvider {
       `Creating manual payment intent: ${input.reference} for ${input.amount} ${input.currency}`,
     );
 
-    const instructions = this.generatePaymentInstructions(input);
+    if (input.currency !== "DOP") {
+      throw new ConflictException("Manual transfer supports DOP only");
+    }
+    const bankConfig = this.getBankConfig();
+    const instructions = this.generatePaymentInstructions(input, bankConfig);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 días
 
     return {
@@ -75,7 +98,7 @@ export class ManualTransferProvider implements IPaymentProvider {
       paymentInstructions: instructions,
       expiresAt,
       providerData: {
-        bankConfig: this.bankConfig,
+        bankConfig,
         amount: input.amount,
         currency: input.currency,
         type: input.type,
@@ -87,7 +110,10 @@ export class ManualTransferProvider implements IPaymentProvider {
   /**
    * Genera instrucciones de pago formateadas para el usuario
    */
-  private generatePaymentInstructions(input: CreatePaymentIntentInput): string {
+  private generatePaymentInstructions(
+    input: CreatePaymentIntentInput,
+    bankConfig: ReturnType<ManualTransferProvider["getBankConfig"]>,
+  ): string {
     const amountFormatted = this.formatCurrency(input.amount, input.currency);
 
     return `
@@ -97,11 +123,11 @@ MONTO: ${amountFormatted}
 REFERENCIA: ${input.reference} (OBLIGATORIO incluir en la transferencia)
 
 DATOS BANCARIOS:
-Banco: ${this.bankConfig.bankName}
-Titular: ${this.bankConfig.accountName}
-Cuenta: ${this.bankConfig.accountNumber}
-Tipo: ${this.bankConfig.accountType}
-Moneda: ${this.bankConfig.currency}
+Banco: ${bankConfig.bankName}
+Titular: ${bankConfig.accountName}
+Cuenta: ${bankConfig.accountNumber}
+Tipo: ${bankConfig.accountType}
+Moneda: ${bankConfig.currency}
 
 INSTRUCCIONES:
 1. Realiza la transferencia desde tu banca online o app móvil
@@ -126,111 +152,51 @@ IMPORTANTE:
     return `${amount / 100} ${currency}`;
   }
 
-  /**
-   * Obtiene estado - para transferencia manual depende de revisión humana
-   */
+  // This adapter has no bank connection or authoritative payment ledger.
+  // Callers must use the canonical persisted evidence review workflow.
   async getPaymentIntentStatus(
-    reference: string,
+    _reference: string,
   ): Promise<PaymentIntentResult> {
-    // En implementación real, consultaría BD por PaymentIntent
-    // Por ahora retorna estado basado en si hay verificación humana
-    this.logger.log(`Getting status for manual payment: ${reference}`);
-
-    return {
-      id: reference,
-      status: "PENDING", // CREATED, PENDING, PAID, FAILED, EXPIRED
-      providerData: {
-        bankConfig: this.bankConfig,
-      },
-    };
+    throw new ConflictException("Use the persisted payment intent status");
   }
 
-  /**
-   * Verificación manual - llamada tras revisión humana exitosa
-   */
-  async verifyPayment(reference: string): Promise<PaymentVerificationResult> {
-    this.logger.log(`Manual verification triggered for: ${reference}`);
-
-    // En implementación real, esto se llama desde PaymentVerificationService
-    // tras confirmación humana exitosa
-    return {
-      verified: true,
-      amountConfirmed: 0, // Se llena desde BD
-      currency: "DOP",
-      paidAt: new Date(),
-      providerRef: reference,
-      rawResponse: { verifiedBy: "human_operator", method: "manual_review" },
-    };
+  async verifyPayment(_reference: string): Promise<PaymentVerificationResult> {
+    throw new ConflictException("Manual payment verification requires review");
   }
 
-  /**
-   * Procesa webhook - no aplica para transferencia manual
-   * Pero puede recibir notificaciones de banca online si se integra
-   */
   async processWebhook(
-    payload: import("../interfaces/payment-provider.interface").PaymentNotificationPayload,
+    _payload: PaymentNotificationPayload,
     _signature?: string,
   ): Promise<PaymentWebhookPayload> {
-    this.logger.warn(
-      `Webhook received for manual transfer (unexpected):`,
-      payload,
-    );
-
-    return {
-      provider: "MANUAL_TRANSFER",
-      eventType: "MANUAL_NOTIFICATION",
-      transactionId: payload.transactionId || `manual-${Date.now()}`,
-      reference: payload.reference || "",
-      idempotencyKey: payload.idempotencyKey || "",
-      amount: payload.amount || 0,
-      currency: payload.currency || "DOP",
-      status: "PAID",
-      paidAt: new Date(),
-      rawData: payload,
-    };
+    throw new ConflictException("Manual transfer webhooks are not supported");
   }
 
-  /**
-   * Reembolso manual - requiere intervención humana
-   */
   async refundPayment(
-    reference: string,
-    amount?: number,
-    reason?: string,
+    _reference: string,
+    _amount?: number,
+    _reason?: string,
   ): Promise<RefundResult> {
-    this.logger.log(
-      `Manual refund requested for: ${reference}, amount: ${amount}, reason: ${reason}`,
-    );
-
-    return {
-      success: true,
-      refundId: `manual-refund-${Date.now()}`,
-      amount: amount || 0,
-      status: "PENDING", // Requiere procesamiento humano/bancario
-    };
+    throw new ConflictException("Manual refund requires reconciliation");
   }
 
-  /**
-   * Conciliación diaria - para transferencia manual revisa PaymentIntent pendientes
-   */
-  async reconcileDaily(date: Date): Promise<PaymentWebhookPayload[]> {
-    this.logger.log(
-      `Daily reconciliation for manual transfers: ${date.toISOString().split("T")[0]}`,
-    );
-
-    // En implementación real, consultaría PaymentIntent con status CREATED/PENDING
-    // y verificaría cuáles tienen PaymentVerification confirmada
-    return [];
+  async reconcileDaily(_date: Date): Promise<PaymentWebhookPayload[]> {
+    throw new ConflictException("Bank reconciliation is not configured");
   }
 
-  /**
-   * Health check - siempre healthy para transferencia manual
-   */
+  // Local configuration readiness only; not a bank connectivity check.
   async healthCheck(): Promise<{
     healthy: boolean;
     latencyMs?: number;
     error?: string;
   }> {
-    return { healthy: true, latencyMs: 0 };
+    try {
+      this.getBankConfig();
+      return { healthy: true, latencyMs: 0 };
+    } catch {
+      return {
+        healthy: false,
+        error: "Manual transfer account configuration is unavailable",
+      };
+    }
   }
 }

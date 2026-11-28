@@ -18,6 +18,7 @@ import {
   BUSINESS_RULES,
 } from "../../common/constants/business-rules";
 import { OAuthExchangeDto, OAuthPortalRole } from "./dto/oauth-exchange.dto";
+import { assertCommittedAdvertiserRegistration } from "./committed-advertiser-registration";
 
 @Injectable()
 export class AuthService {
@@ -28,74 +29,6 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
   ) {}
-
-  /**
-   * A correlated public registration cannot become a different account through
-   * role resolution or OAuth auto-provisioning. Only the server-owned committed
-   * receipt may establish this link. Legacy identities have no correlation.
-   */
-  private async assertCommittedAdvertiserRegistration(
-    correlation: unknown,
-    authUserId: string,
-    advertiserId: string | null,
-  ): Promise<void> {
-    if (correlation === undefined) return;
-
-    const pending = () =>
-      new ForbiddenException({
-        code: "ADVERTISER_REGISTRATION_RECONCILIATION_REQUIRED",
-        message:
-          "No pudimos confirmar tu registro. Contacta a soporte de TAD antes de volver a registrarte.",
-      });
-    if (
-      typeof correlation !== "string" ||
-      !/^[a-f0-9]{64}$/.test(correlation) ||
-      !advertiserId
-    ) {
-      throw pending();
-    }
-
-    const reservation = await this.prisma.idempotencyKey.findUnique({
-      where: { key: correlation },
-      select: {
-        driverId: true,
-        path: true,
-        method: true,
-        isLocked: true,
-        response: true,
-      },
-    });
-    if (
-      !reservation ||
-      reservation.driverId !== "public-advertiser-onboarding:single-use:v1" ||
-      reservation.path !== "/onboarding/advertiser" ||
-      reservation.method !== "POST" ||
-      reservation.isLocked ||
-      !reservation.response ||
-      reservation.response.length > 4096
-    ) {
-      throw pending();
-    }
-
-    let receipt: unknown;
-    try {
-      receipt = JSON.parse(reservation.response);
-    } catch {
-      throw pending();
-    }
-    if (
-      !receipt ||
-      typeof receipt !== "object" ||
-      !("state" in receipt) ||
-      receipt.state !== "COMMITTED" ||
-      !("authUserId" in receipt) ||
-      receipt.authUserId !== authUserId ||
-      !("advertiserId" in receipt) ||
-      receipt.advertiserId !== advertiserId
-    ) {
-      throw pending();
-    }
-  }
 
   async login(dto: LoginDto) {
     this.logger.log(`🔐 Intentando login para: ${dto.email}`);
@@ -166,7 +99,8 @@ export class AuthService {
         this.logger.debug(`Found Driver with ID: ${entityId}`);
       }
 
-      await this.assertCommittedAdvertiserRegistration(
+      await assertCommittedAdvertiserRegistration(
+        this.prisma,
         data.user.app_metadata?.tad_onboarding_reservation,
         userId,
         role === "ADVERTISER" ? entityId : null,
@@ -413,7 +347,8 @@ export class AuthService {
     } | null = null;
 
     if (dto.intended_role === OAuthPortalRole.ADMIN) {
-      await this.assertCommittedAdvertiserRegistration(
+      await assertCommittedAdvertiserRegistration(
+        this.prisma,
         payload.app_metadata?.tad_onboarding_reservation,
         userId,
         null,
@@ -427,7 +362,8 @@ export class AuthService {
       const advertiser = await this.prisma.advertiser.findUnique({
         where: { email },
       });
-      await this.assertCommittedAdvertiserRegistration(
+      await assertCommittedAdvertiserRegistration(
+        this.prisma,
         payload.app_metadata?.tad_onboarding_reservation,
         userId,
         advertiser?.id ?? null,

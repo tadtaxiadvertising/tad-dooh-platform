@@ -514,8 +514,77 @@ describe("PaymentEvidenceService", () => {
     expect(tx.paymentEvidence.updateMany).toHaveBeenCalledTimes(1);
     expect(tx.humanReviewTask.updateMany).toHaveBeenCalledTimes(1);
     expect(tx.paymentVerification.create).toHaveBeenCalledTimes(1);
-    expect(tx.paymentIntent.update).toHaveBeenCalledTimes(1);
+    expect(tx.paymentIntent.updateMany).toHaveBeenCalledTimes(1);
   });
+
+  it.each([999, 1001, 0, 1000.5])(
+    "rejects non-matching confirmation amount %s",
+    async (amountConfirmed) => {
+      const submittedAt = new Date("2026-01-01T00:00:00Z");
+      const tx = makeRecordingTx();
+      prisma.paymentEvidence.findUnique.mockResolvedValue({
+        id: "ev-1",
+        paymentIntentId: "int-1",
+        reviewStatus: "SUBMITTED",
+        submittedAt,
+      });
+      tx.paymentEvidence.findUnique.mockResolvedValue({
+        id: "ev-1",
+        reviewStatus: "PAYMENT_CONFIRMED",
+      });
+      tx.paymentIntent.findUnique.mockResolvedValue({
+        ...intent,
+        status: "UNDER_REVIEW",
+      });
+      prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+      await expect(
+        service.reviewEvidence({
+          evidenceId: "ev-1",
+          expectedSubmittedAt: submittedAt,
+          reviewedBy: "op1",
+          status: "PAYMENT_CONFIRMED",
+          amountConfirmed,
+        }),
+      ).rejects.toMatchObject({ status: 409 });
+      expect(tx.paymentIntent.updateMany).not.toHaveBeenCalled();
+      expect(tx.paymentVerification.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["PAYMENT_CONFIRMED", "REJECTED"] as const)(
+    "rolls back %s when the intent transition cannot be claimed",
+    async (status) => {
+      const submittedAt = new Date("2026-01-01T00:00:00Z");
+      const tx = makeRecordingTx();
+      prisma.paymentEvidence.findUnique.mockResolvedValue({
+        id: "ev-1",
+        paymentIntentId: "int-1",
+        reviewStatus: "SUBMITTED",
+        submittedAt,
+      });
+      tx.paymentEvidence.findUnique.mockResolvedValue({
+        id: "ev-1",
+        reviewStatus: status,
+      });
+      tx.paymentIntent.findUnique.mockResolvedValue({
+        ...intent,
+        status: "UNDER_REVIEW",
+      });
+      tx.paymentIntent.updateMany.mockResolvedValue({ count: 0 });
+      prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+      await expect(
+        service.reviewEvidence({
+          evidenceId: "ev-1",
+          expectedSubmittedAt: submittedAt,
+          reviewedBy: "op1",
+          status,
+        }),
+      ).rejects.toMatchObject({ status: 409 });
+      expect(tx.paymentVerification.create).not.toHaveBeenCalled();
+    },
+  );
 
   it.each(["DRIVER_SUBSCRIPTION", "ADVERTISER_CAMPAIGN"])(
     "keeps %s referral writes inside payment confirmation transaction",

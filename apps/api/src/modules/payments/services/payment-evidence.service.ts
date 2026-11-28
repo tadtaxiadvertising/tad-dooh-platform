@@ -302,11 +302,16 @@ export class PaymentEvidenceService {
             input.amountConfirmed,
           );
         } else {
-          // Rechazado
-          await tx.paymentIntent.update({
-            where: { id: evidence.paymentIntentId },
+          // Do not overwrite a concurrent external terminal decision.
+          const rejected = await tx.paymentIntent.updateMany({
+            where: { id: evidence.paymentIntentId, status: "UNDER_REVIEW" },
             data: { status: "REJECTED" },
           });
+          if (rejected.count !== 1) {
+            throw new ConflictException(
+              "Payment intent requires reconciliation",
+            );
+          }
         }
 
         return updatedEvidence;
@@ -319,8 +324,8 @@ export class PaymentEvidenceService {
 
   /**
    * Confirma el pago tras revisión humana exitosa.
-   * Es idempotente: si el intento ya estaba PAID no vuelve a crear la
-   * verificación ni a re-actualizar el proceso de pago.
+   * A fresh decision requires an unresolved UNDER_REVIEW intent.
+   * Replays of the same evidence decision are handled by reviewEvidence.
    * @internal
    */
   private async confirmPayment(
@@ -337,16 +342,38 @@ export class PaymentEvidenceService {
       throw new NotFoundException(`PaymentIntent ${paymentIntentId} not found`);
     }
 
-    // Idempotente: ya estaba pagado, no crear verificación duplicada ni
-    // re-ejecutar los flujos de confirmación.
-    if (paymentIntent.status === "PAID") {
-      this.logger.log(
-        `Payment ${paymentIntentId} already PAID, skipping re-confirm`,
-      );
-      return;
+    if (paymentIntent.status !== "UNDER_REVIEW") {
+      throw new ConflictException("Payment intent requires reconciliation");
     }
 
-    const confirmedAmount = amountConfirmed || paymentIntent.amount;
+    // This flow represents a full payment in integer minor units.
+    const confirmedAmount = amountConfirmed ?? paymentIntent.amount;
+    if (
+      !Number.isSafeInteger(confirmedAmount) ||
+      confirmedAmount <= 0 ||
+      confirmedAmount !== paymentIntent.amount
+    ) {
+      throw new ConflictException("Confirmed amount must match payment intent");
+    }
+
+    const paid = await tx.paymentIntent.updateMany({
+      where: {
+        id: paymentIntentId,
+        status: "UNDER_REVIEW",
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        type: paymentIntent.type,
+        leadId: paymentIntent.leadId,
+      },
+      data: {
+        status: "PAID",
+        paidAt: new Date(),
+        providerRef: `MANUAL-${verifiedBy}-${Date.now()}`,
+      },
+    });
+    if (paid.count !== 1) {
+      throw new ConflictException("Payment intent changed during confirmation");
+    }
 
     // Crear PaymentVerification
     await tx.paymentVerification.create({
@@ -356,16 +383,6 @@ export class PaymentEvidenceService {
         status: "PAYMENT_CONFIRMED",
         amountConfirmed: confirmedAmount,
         note: `Confirmed by human operator ${verifiedBy}`,
-      },
-    });
-
-    // Actualizar PaymentIntent
-    await tx.paymentIntent.update({
-      where: { id: paymentIntentId },
-      data: {
-        status: "PAID",
-        paidAt: new Date(),
-        providerRef: `MANUAL-${verifiedBy}-${Date.now()}`,
       },
     });
 

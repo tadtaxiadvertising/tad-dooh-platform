@@ -81,7 +81,7 @@ const ReviewEvidenceSchema = z.object({
   expectedSubmittedAt: z.string().datetime({ precision: 3 }),
   status: z.enum(["PAYMENT_CONFIRMED", "REJECTED"]),
   reviewNote: z.string().max(1000).optional(),
-  amountConfirmed: z.number().positive().optional(),
+  amountConfirmed: z.number().int().positive().optional(),
 });
 
 // ─── Controller ────────────────────────────────────────────────────

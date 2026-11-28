@@ -5,11 +5,7 @@ import { EmailService } from "../notifications/email.service";
 import { SupabaseService } from "../supabase/supabase.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { format } from "date-fns";
-import type {
-  AdvertiserSubscription,
-  Invoice,
-  Prisma,
-} from "@prisma/client";
+import type { AdvertiserSubscription, Invoice, Prisma } from "@prisma/client";
 
 const billingAdvertiserSelect = {
   companyName: true,

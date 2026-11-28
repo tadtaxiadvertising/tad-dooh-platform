@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   BadRequestException,
+  ForbiddenException,
   UnauthorizedException,
   Headers,
   Req,
@@ -115,16 +116,29 @@ export class AdvertisersController {
   }
 
   /**
-   * Registro de nuevo anunciante — Rate limited: 3 registros/min
-   *
-   * R9 — RBAC ESTRICTO: el rol ADVERTISER es implícito para toda cuenta creada
-   * aquí (resuelto por tabla en login). Cualquier intento de inyectar campos
-   * privilegiados (role, status, referredBy, metadata) se RECHAZA con 400.
+   * Assisted commercial registration, not the public onboarding flow.
+   * A driver may submit contact details but must not choose another person's
+   * portal password or override referral ownership.
    */
-  @Public()
+  @Roles(UserRole.ADMIN, UserRole.DRIVER)
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post()
-  async create(@Body() body: Record<string, unknown>) {
+  async create(
+    @Body() body: Record<string, unknown>,
+    @Req() request: { user?: { role?: string } },
+  ) {
+    const role = request.user?.role;
+    if (role !== UserRole.ADMIN && role !== UserRole.DRIVER) {
+      throw new ForbiddenException("Registro asistido no autorizado.");
+    }
+    if (
+      role === UserRole.DRIVER &&
+      (body?.password !== undefined || body?.referralCode !== undefined)
+    ) {
+      throw new ForbiddenException(
+        "Un conductor no puede establecer credenciales ni atribuciones de terceros.",
+      );
+    }
     const FORBIDDEN_FIELDS = [
       "role",
       "isAdmin",
@@ -151,16 +165,25 @@ export class AdvertisersController {
       );
     }
 
-    // Whitelist explícita — nunca se reenvía el payload crudo
-    return this.advertisersService.create({
+    // Whitelist both request and response; never return a stored password hash.
+    const advertiser = await this.advertisersService.create({
       companyName: String(companyName),
       contactName: String(contactName),
-      email: String(email),
+      email: String(email).trim().toLowerCase(),
       phone: body?.phone !== undefined ? String(body.phone) : undefined,
       password: typeof body?.password === "string" ? body.password : undefined,
       referralCode:
         typeof body?.referralCode === "string" ? body.referralCode : undefined,
     });
+    return {
+      id: advertiser.id,
+      companyName: advertiser.companyName,
+      contactName: advertiser.contactName,
+      email: advertiser.email,
+      phone: advertiser.phone,
+      status: advertiser.status,
+      referredBy: advertiser.referredBy,
+    };
   }
 
   /**

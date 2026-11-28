@@ -1,3 +1,4 @@
+import { advertiserSafeSelect } from "../advertisers/advertiser-safe-select";
 import {
   BadRequestException,
   UnauthorizedException,
@@ -83,6 +84,7 @@ function loadMethod(
     Buffer,
     BUSINESS_RULES,
     BCRYPT_ROUNDS,
+    advertiserSafeSelect,
     BadRequestException,
     UnauthorizedException,
     ...globals,
@@ -150,11 +152,12 @@ describe("existing Prisma profile and receipt contracts", () => {
       campaigns: [],
     };
     const findUnique = jest.fn(
-      async (args: { include: Record<string, unknown> }) => {
-        expect(args.include).toHaveProperty("referrer", {
+      async (args: { select: Record<string, unknown> }) => {
+        expect(args.select).toHaveProperty("referrer", {
           select: { id: true, fullName: true, phone: true },
         });
-        expect(args.include).not.toHaveProperty("referredBy");
+        expect(args.select).toHaveProperty("referredBy", true);
+        expect(args.select).not.toHaveProperty("password");
         return advertiser;
       },
     );

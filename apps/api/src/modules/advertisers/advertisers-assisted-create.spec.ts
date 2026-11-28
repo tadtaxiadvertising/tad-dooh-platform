@@ -65,15 +65,18 @@ describe("Assisted advertiser creation boundary", () => {
     { referralCode: "THIRD_PARTY" },
     { password: null },
     { referralCode: "" },
-  ])("rejects driver-controlled credentials or referral overrides (%p)", async (fields) => {
-    await expect(
-      controller.create(
-        { ...payload, ...fields },
-        { user: { role: "DRIVER" } },
-      ),
-    ).rejects.toMatchObject({ status: 403 });
-    expect(create).not.toHaveBeenCalled();
-  });
+  ])(
+    "rejects driver-controlled credentials or referral overrides (%p)",
+    async (fields) => {
+      await expect(
+        controller.create(
+          { ...payload, ...fields },
+          { user: { role: "DRIVER" } },
+        ),
+      ).rejects.toMatchObject({ status: 403 });
+      expect(create).not.toHaveBeenCalled();
+    },
+  );
 
   it("preserves authorized driver contact registration without credentials", async () => {
     const result = await controller.create(payload, {

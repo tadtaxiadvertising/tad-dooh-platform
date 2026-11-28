@@ -151,9 +151,9 @@ export class PortalRequestsService {
         where: { id },
         data: { adminNotes: updateData.adminNotes },
         include: {
-        advertiser: { select: advertiserSafeSelect },
-        driver: true,
-      },
+          advertiser: { select: advertiserSafeSelect },
+          driver: true,
+        },
       });
     }
 

@@ -297,11 +297,12 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     }),
   };
 
+  let correlatedTokenSequence = 0;
   function correlatedToken(signingKey = secret) {
     return jwt.sign(correlatedClaims, signingKey, {
       audience: "authenticated",
       expiresIn: "1h",
-      jwtid: Math.random().toString(36).slice(2),
+      jwtid: `correlation-fixture-${++correlatedTokenSequence}`,
     });
   }
 

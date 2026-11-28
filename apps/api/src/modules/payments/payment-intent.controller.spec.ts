@@ -1,5 +1,6 @@
 import { ConfigModule } from "@nestjs/config";
-import { ForbiddenException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException } from "@nestjs/common";
+import { PaymentEvidenceService } from "./services/payment-evidence.service";
 import type { AuthenticatedRequest } from "../auth/auth.types";
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
@@ -167,6 +168,42 @@ describe("PaymentIntentController", () => {
         },
       );
       expect(result).toMatchObject({ id: "pi-1", idempotencyReplay: true });
+    });
+
+    it.each([undefined, "not-a-date", "2026-01-01T00:00:00Z"])(
+      "rejects missing or noncanonical review version %s",
+      async (expectedSubmittedAt) => {
+        const service = module.get(PaymentEvidenceService);
+        const review = jest.spyOn(service, "reviewEvidence");
+        await expect(
+          controller.reviewEvidence("ev-1", requestFor("admin", "ADMIN"), {
+            status: "PAYMENT_CONFIRMED",
+            expectedSubmittedAt,
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(review).not.toHaveBeenCalled();
+      },
+    );
+
+    it("forwards the exact displayed version and authenticated reviewer", async () => {
+      const service = module.get(PaymentEvidenceService);
+      const review = jest
+        .spyOn(service, "reviewEvidence")
+        .mockRejectedValue(new Error("fixture stop"));
+      await expect(
+        controller.reviewEvidence("ev-1", requestFor("admin", "ADMIN"), {
+          status: "PAYMENT_CONFIRMED",
+          expectedSubmittedAt: "2026-01-01T00:00:00.123Z",
+        }),
+      ).rejects.toThrow("fixture stop");
+      expect(review).toHaveBeenCalledWith({
+        evidenceId: "ev-1",
+        expectedSubmittedAt: new Date("2026-01-01T00:00:00.123Z"),
+        reviewedBy: "admin",
+        status: "PAYMENT_CONFIRMED",
+        reviewNote: undefined,
+        amountConfirmed: undefined,
+      });
     });
 
     it("allows an ADMIN to attach evidence on any intent", async () => {

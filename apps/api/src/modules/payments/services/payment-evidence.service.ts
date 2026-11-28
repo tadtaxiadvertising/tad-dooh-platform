@@ -29,6 +29,7 @@ export interface CreatePaymentEvidenceInput {
 
 export interface ReviewPaymentEvidenceInput {
   evidenceId: string;
+  expectedSubmittedAt: Date;
   reviewedBy: string;
   status: "PAYMENT_CONFIRMED" | "REJECTED";
   reviewNote?: string;
@@ -184,6 +185,18 @@ export class PaymentEvidenceService {
       throw new NotFoundException(
         `PaymentEvidence ${input.evidenceId} not found`,
       );
+    }
+
+    // Bind the decision to the exact evidence version displayed to the operator.
+    // Check before the terminal-state replay as well as the transaction claim.
+    if (
+      !(input.expectedSubmittedAt instanceof Date) ||
+      input.expectedSubmittedAt.getTime() !== evidence.submittedAt.getTime()
+    ) {
+      throw new ConflictException({
+        code: "PAYMENT_EVIDENCE_VERSION_CONFLICT",
+        message: "Reload the payment evidence before reviewing it.",
+      });
     }
 
     if (evidence.reviewStatus === input.status) return evidence;

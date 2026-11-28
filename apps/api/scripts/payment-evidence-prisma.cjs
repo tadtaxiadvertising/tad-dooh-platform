@@ -147,7 +147,7 @@ async function verify() {
       return { intent, evidence };
     }
     const decision = (payment, status, reviewer) => ({
-      evidenceId: payment.evidence.id, status, reviewedBy: reviewer,
+      evidenceId: payment.evidence.id, expectedSubmittedAt: payment.evidence.submittedAt, status, reviewedBy: reviewer,
     });
     async function verifyPayment(payment, status) {
       const row = await first.paymentIntent.findUniqueOrThrow({
@@ -294,6 +294,7 @@ async function verify() {
     await first.paymentEvidence.update({
       where: { id: stale.evidence.id }, data: { submittedAt: future },
     });
+    stale.evidence.submittedAt = future;
     const reviewGate = readGate();
     const pausedReviewer = new PaymentEvidenceService({
       paymentEvidence: {
@@ -312,7 +313,18 @@ async function verify() {
       assert.equal(replacement.fileUrl, resubmit(stale).fileUrl);
       // A different reviewer can confirm the replacement before the old
       // transaction resumes; identical status alone is not an idempotent replay.
-      await service.reviewEvidence(decision(stale, "PAYMENT_CONFIRMED", "fixture-b"));
+      // Simulate an old browser submitting after the replacement committed.
+      await assert.rejects(
+        service.reviewEvidence(decision(stale, "PAYMENT_CONFIRMED", "fixture-old-browser")),
+        error => error.getStatus() === 409 &&
+          error.getResponse().code === "PAYMENT_EVIDENCE_VERSION_CONFLICT",
+      );
+      const fresh = { ...stale, evidence: replacement };
+      await service.reviewEvidence(decision(fresh, "PAYMENT_CONFIRMED", "fixture-b"));
+      await assert.rejects(
+        service.reviewEvidence(decision(stale, "PAYMENT_CONFIRMED", "fixture-old-browser")),
+        error => error.getStatus() === 409,
+      );
     } finally {
       reviewGate.release();
     }

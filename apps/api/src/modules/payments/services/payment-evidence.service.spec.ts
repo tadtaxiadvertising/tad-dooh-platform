@@ -218,6 +218,7 @@ describe("PaymentEvidenceService", () => {
     await expect(
       service.reviewEvidence({
         evidenceId: "ev-1",
+        expectedSubmittedAt: new Date("2026-01-01T00:00:00Z"),
         reviewedBy: "op1",
         status: "PAYMENT_CONFIRMED",
       }),
@@ -274,11 +275,35 @@ describe("PaymentEvidenceService", () => {
     expect(tx.paymentIntent.updateMany).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["SUBMITTED", "PAYMENT_CONFIRMED", "REJECTED"])(
+    "rejects an operator's stale version before any transaction (%s)",
+    async (reviewStatus) => {
+      prisma.paymentEvidence.findUnique.mockResolvedValue({
+        id: "ev-1",
+        reviewStatus,
+        submittedAt: new Date("2026-01-01T00:00:00.001Z"),
+      });
+      await expect(
+        service.reviewEvidence({
+          evidenceId: "ev-1",
+          expectedSubmittedAt: new Date("2026-01-01T00:00:00.000Z"),
+          reviewedBy: "op1",
+          status: "PAYMENT_CONFIRMED",
+        }),
+      ).rejects.toMatchObject({
+        status: 409,
+        response: { code: "PAYMENT_EVIDENCE_VERSION_CONFLICT" },
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    },
+  );
+
   it("es idempotente en reviewEvidence al confirmar ya confirmada", async () => {
     const evidence = {
       id: "ev-1",
       paymentIntentId: "int-1",
       reviewStatus: "PAYMENT_CONFIRMED",
+      submittedAt: new Date("2026-01-01T00:00:00Z"),
       paymentIntent: { id: "int-1", status: "PAID" },
     };
     (prisma.paymentEvidence.findUnique as jest.Mock).mockResolvedValue(
@@ -287,6 +312,7 @@ describe("PaymentEvidenceService", () => {
 
     const result = await service.reviewEvidence({
       evidenceId: "ev-1",
+      expectedSubmittedAt: new Date("2026-01-01T00:00:00Z"),
       reviewedBy: "op1",
       status: "PAYMENT_CONFIRMED",
       amountConfirmed: 1000,
@@ -304,6 +330,7 @@ describe("PaymentEvidenceService", () => {
       id: "ev-1",
       paymentIntentId: "int-1",
       reviewStatus: "REJECTED",
+      submittedAt: new Date("2026-01-01T00:00:00Z"),
     };
     (prisma.paymentEvidence.findUnique as jest.Mock).mockResolvedValue(
       evidence,
@@ -311,6 +338,7 @@ describe("PaymentEvidenceService", () => {
 
     const result = await service.reviewEvidence({
       evidenceId: "ev-1",
+      expectedSubmittedAt: new Date("2026-01-01T00:00:00Z"),
       reviewedBy: "op1",
       status: "REJECTED",
       amountConfirmed: 1000,
@@ -343,6 +371,7 @@ describe("PaymentEvidenceService", () => {
       await expect(
         service.reviewEvidence({
           evidenceId: "ev-1",
+          expectedSubmittedAt: new Date("2026-01-01T00:00:00Z"),
           reviewedBy: "op1",
           status,
         }),
@@ -355,6 +384,7 @@ describe("PaymentEvidenceService", () => {
       await expect(
         service.reviewEvidence({
           evidenceId: "ev-1",
+          expectedSubmittedAt: new Date("2026-01-01T00:00:00Z"),
           reviewedBy: "op2",
           status: status === "REJECTED" ? "PAYMENT_CONFIRMED" : "REJECTED",
         }),
@@ -370,6 +400,7 @@ describe("PaymentEvidenceService", () => {
       id: "ev-1",
       paymentIntentId: "int-1",
       reviewStatus: "SUBMITTED",
+      submittedAt: new Date("2026-01-01T00:00:00Z"),
       paymentIntent: {
         id: "int-1",
         status: "UNDER_REVIEW",
@@ -401,6 +432,7 @@ describe("PaymentEvidenceService", () => {
 
     const result = await service.reviewEvidence({
       evidenceId: "ev-1",
+      expectedSubmittedAt: new Date("2026-01-01T00:00:00Z"),
       reviewedBy: "op1",
       status: "PAYMENT_CONFIRMED",
       amountConfirmed: 1000,
@@ -438,6 +470,7 @@ describe("PaymentEvidenceService", () => {
         id: "ev-1",
         paymentIntentId: "int-1",
         reviewStatus: "SUBMITTED",
+        submittedAt: new Date("2026-01-01T00:00:00Z"),
       });
       tx.paymentIntent.findUnique.mockResolvedValue({
         ...intent,
@@ -452,6 +485,7 @@ describe("PaymentEvidenceService", () => {
 
       const review = {
         evidenceId: "ev-1",
+        expectedSubmittedAt: new Date("2026-01-01T00:00:00Z"),
         reviewedBy: "op1",
         status: "PAYMENT_CONFIRMED" as const,
       };

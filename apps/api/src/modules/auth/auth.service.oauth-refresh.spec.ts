@@ -171,16 +171,19 @@ describe("OAuth exchange claims refresh", () => {
         advertiserId: "another-advertiser",
       }),
     },
-  ])("denies unconfirmed or mismatched correlated exchange (%p)", async (row) => {
-    correlatedIdentity();
-    prisma.idempotencyKey.findUnique.mockResolvedValue(row);
-    await expect(service().exchangeOAuth(dto)).rejects.toMatchObject({
-      status: 403,
-    });
-    expect(prisma.advertiser.create).not.toHaveBeenCalled();
-    expect(updateUserById).not.toHaveBeenCalled();
-    expect(refreshSession).not.toHaveBeenCalled();
-  });
+  ])(
+    "denies unconfirmed or mismatched correlated exchange (%p)",
+    async (row) => {
+      correlatedIdentity();
+      prisma.idempotencyKey.findUnique.mockResolvedValue(row);
+      await expect(service().exchangeOAuth(dto)).rejects.toMatchObject({
+        status: 403,
+      });
+      expect(prisma.advertiser.create).not.toHaveBeenCalled();
+      expect(updateUserById).not.toHaveBeenCalled();
+      expect(refreshSession).not.toHaveBeenCalled();
+    },
+  );
 
   it("allows the matching committed correlated advertiser", async () => {
     correlatedIdentity();

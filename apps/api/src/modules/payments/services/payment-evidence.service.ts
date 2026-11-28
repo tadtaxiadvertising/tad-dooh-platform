@@ -403,10 +403,9 @@ export class PaymentEvidenceService {
 
     if (!lead || !lead.referrerId) return;
 
-    const existingAttribution =
-      await tx.referralAttribution.findUnique({
-        where: { leadId: paymentIntent.leadId },
-      });
+    const existingAttribution = await tx.referralAttribution.findUnique({
+      where: { leadId: paymentIntent.leadId },
+    });
 
     if (existingAttribution?.commissionCreated) return;
 

@@ -45,6 +45,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Temporary formatter diagnostic for auth regression tests
+        run: |
+          set -euo pipefail
+          formatted="$(mktemp)"
+          trap 'rm -f "$formatted"' EXIT
+          for file in apps/api/src/modules/auth/auth.service.oauth-refresh.spec.ts apps/api/src/modules/auth/auth.service.refresh.spec.ts; do
+            pnpm dlx prettier@3.9.10 "$file" > "$formatted"
+            diff -u "$file" "$formatted" || test "$?" -eq 1
+          done
+
       - name: Format check (prettier)
         run: |
           set -euo pipefail

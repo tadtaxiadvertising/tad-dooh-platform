@@ -126,13 +126,6 @@ describe("DeviceTokenGuard device ownership", () => {
     [{ query: { device_id: "TAD-B" } }, "GET /assets/manifest"],
     [{ headers: { "x-device-id": "TAD-B" } }, "conflicting device header"],
     [{ params: { deviceId: "TAD-B" } }, "path-scoped device"],
-  ])("rejects cross-device access (%s, %s)", async (override, description) => {
-    const { context } = contextFor(override);
-    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
-    expect(findUnique).not.toHaveBeenCalled();
-  });
   ];
 
   it.each(crossDeviceCases)(

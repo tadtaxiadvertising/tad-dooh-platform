@@ -364,37 +364,6 @@ export class WalletService {
     );
   }
 
-      // ── IDEMPOTENCIA ATÓMICA: solo reembolsar si la transacción sigue en
-      // PENDING (mismo patrón que withdraw). Dos solicitudes concurrentes no
-      // reembolsan dos veces: la segunda ve count=0 y retorna inmediatamente.
-      const transitioned = await tx.financialTransaction.updateMany({
-        where: {
-          id: transactionId,
-          type: "WITHDRAWAL",
-          status: "PENDING",
-        },
-        data: {
-          status: "FAILED",
-          note: reason
-            ? `Rejected: ${reason}`
-            : `Rejected by bank webhook at ${new Date().toISOString()}`,
-        },
-      });
-      if (transitioned.count === 0) {
-        return {
-          success: true,
-          idempotent: true,
-          status: "FAILED",
-          transactionId,
-        };
-      }
-
-      // REEMBOLSO ATÓMICO (dentro de la misma transacción que el candado)
-      await tx.$executeRaw`
-        UPDATE wallets
-        SET available_balance = available_balance + ${txRow.amount}
-        WHERE driver_id = ${txRow.entityId}
-      `;
   /**
    * Compare-and-set the decision on the canonical transaction row. PostgreSQL
    * READ COMMITTED rechecks the predicate after a competing update commits.

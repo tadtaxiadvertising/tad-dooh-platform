@@ -1264,7 +1264,7 @@ export class FinanceService {
             <div class="client-block" style="text-align: right">
                 <h3>Receptor</h3>
                 <p>${data.client}</p>
-                <p class="small">${data.email || "contacto@cliente.com"}<br>Periodo: ${data.period}</p>
+                <p class="small">contacto@cliente.com<br>Periodo: ${data.period}</p>
             </div>
         </div>
 

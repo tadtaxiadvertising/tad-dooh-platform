@@ -42,7 +42,7 @@ function selectFixtureDDL(full) {
   const statements = full.split(";").map(part =>
     part.split("\n").filter(line => !line.trim().startsWith("--")).join("\n").trim()
   ).filter(Boolean);
-  const tables = ["drivers", "leads", "payment_intents", "payment_evidence",
+  const tables = ["drivers", "advertisers", "leads", "payment_intents", "payment_evidence",
     "payment_verifications", "referral_attributions", "commissions", "human_review_tasks"];
   const selected = [];
   const enumDDL = statements.filter(s => s.startsWith('CREATE TYPE "SystemStatus" AS ENUM'));
@@ -121,6 +121,9 @@ async function verify() {
       { cwd: api, env: { ...process.env, DATABASE_URL: url.href }, timeout: 60000,
         maxBuffer: 4 * 1024 * 1024 });
     await sql(selectFixtureDDL(diff.stdout));
+    await sql("CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;");
+    await sql(fs.readFileSync(path.join(api,
+      "prisma/migrations/20261128_payment_intent_ownership_expand/migration.sql"), "utf8"));
     require("ts-node").register({ transpileOnly: true, project: path.join(api, "tsconfig.json") });
     const { PaymentEvidenceService } = require("../src/modules/payments/services/payment-evidence.service.ts");
     const service = new PaymentEvidenceService(first, {});
@@ -178,6 +181,48 @@ async function verify() {
         assert.equal(attribution, null);
       }
     }
+
+    // EXPAND migration uses the real SQL, not merely Prisma-generated DDL.
+    const ownerLead = await lead("DRIVER");
+    const ownerPayment = await payment(ownerLead, "DRIVER_SUBSCRIPTION");
+    const advertiser = await first.advertiser.create({ data: {
+      companyName: "Synthetic Owner", contactName: "Fixture",
+      email: "owner@example.invalid",
+    } });
+    const ownerId = ownerPayment.intent.id;
+    assert.equal(await first.paymentIntentOwner.count(), 0);
+    const assignment = { paymentIntentId: ownerId, assignedBy: "fixture-operator" };
+    await assert.rejects(first.paymentIntentOwner.create({ data: assignment }));
+    await assert.rejects(first.paymentIntentOwner.create({ data: {
+      ...assignment, driverId: driver.id, advertiserId: advertiser.id,
+    } }));
+    await assert.rejects(first.paymentIntentOwner.create({ data: {
+      ...assignment, driverId: randomUUID(),
+    } }));
+    await assert.rejects(first.paymentIntentOwner.create({ data: {
+      ...assignment, driverId: driver.id, assignedBy: " ",
+    } }));
+    await first.paymentIntentOwner.create({ data: { ...assignment, driverId: driver.id } });
+    await assert.rejects(first.paymentIntentOwner.create({ data: {
+      ...assignment, advertiserId: advertiser.id,
+    } }));
+    assert.equal(await first.paymentIntentOwner.count(), 1);
+    const storedOwner = await second.paymentIntentOwner.findUniqueOrThrow({
+      where: { paymentIntentId: ownerId },
+    });
+    assert.equal(storedOwner.driverId, driver.id);
+    assert.equal(storedOwner.advertiserId, null);
+    const advertiserLead = await lead();
+    const advertiserPayment = await payment(advertiserLead);
+    await first.paymentIntentOwner.create({ data: {
+      paymentIntentId: advertiserPayment.intent.id, advertiserId: advertiser.id,
+      assignedBy: "fixture-operator",
+    } });
+    assert.equal(await first.paymentIntentOwner.count(), 2);
+    assert.equal(await sql("SELECT relrowsecurity FROM pg_class WHERE oid = 'payment_intent_owners'::regclass"), "t");
+    assert.equal(await sql("SELECT has_table_privilege('anon', 'payment_intent_owners', 'SELECT')"), "f");
+    assert.equal(await sql("SELECT has_table_privilege('authenticated', 'payment_intent_owners', 'INSERT')"), "f");
+    console.log("PASS additive ownership registry: one explicit owner, foreign keys, actor and RLS");
 
     const sameLead = await lead();
     const same = await payment(sameLead);

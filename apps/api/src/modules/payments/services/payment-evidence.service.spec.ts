@@ -1,5 +1,6 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
+import { Prisma } from "@prisma/client";
 import { PrismaModule } from "../../prisma/prisma.module";
 import { PrismaService } from "../../prisma/prisma.service";
 import { PaymentEvidenceService } from "./payment-evidence.service";
@@ -173,6 +174,39 @@ describe("PaymentEvidenceService", () => {
         submittedAt: existing.submittedAt,
       },
       data: expect.objectContaining({ reviewStatus: "SUBMITTED" }),
+    });
+  });
+
+  it("clears descriptors omitted by the replacement rather than retaining the old file metadata", async () => {
+    const tx = makeRecordingTx();
+    tx.paymentIntent.findUnique.mockResolvedValue(intent);
+    tx.paymentEvidence.findFirst.mockResolvedValue({
+      id: "ev-1",
+      reviewStatus: "SUBMITTED",
+      submittedAt: new Date("2026-01-01T00:00:00Z"),
+      fileHash: "old-hash",
+      fileSize: 123n,
+      mimeType: "image/png",
+      metadata: { source: "old-file" },
+    });
+    tx.paymentEvidence.findUniqueOrThrow.mockResolvedValue({ id: "ev-1" });
+    prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+    await service.submitEvidence({
+      paymentIntentId: "int-1",
+      fileUrl: "https://f/replacement.pdf",
+      submittedBy: "op1",
+    });
+
+    expect(tx.paymentEvidence.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({ id: "ev-1" }),
+      data: expect.objectContaining({
+        fileUrl: "https://f/replacement.pdf",
+        fileHash: null,
+        fileSize: null,
+        mimeType: null,
+        metadata: Prisma.DbNull,
+      }),
     });
   });
 

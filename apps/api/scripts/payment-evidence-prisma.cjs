@@ -290,6 +290,36 @@ async function verify() {
       submittedBy: "fixture-submitter",
     });
 
+    const descriptorLead = await lead();
+    const descriptorPayment = await payment(descriptorLead);
+    const described = await service.submitEvidence({
+      ...resubmit(descriptorPayment),
+      fileHash: "a".repeat(64),
+      fileSize: 123,
+      mimeType: "application/pdf",
+      metadata: { source: "synthetic-previous-file" },
+    });
+    assert.equal(described.fileSize, 123n);
+    assert.equal(described.fileHash, "a".repeat(64));
+    const cleared = await service.submitEvidence({
+      ...resubmit(descriptorPayment),
+      fileUrl: "https://fixture.invalid/without-descriptors",
+    });
+    const persisted = await second.paymentEvidence.findUniqueOrThrow({
+      where: { id: descriptorPayment.evidence.id },
+    });
+    assert.equal(persisted.fileUrl, cleared.fileUrl);
+    assert.equal(persisted.fileHash, null);
+    assert.equal(persisted.fileSize, null);
+    assert.equal(persisted.mimeType, null);
+    assert.equal(persisted.metadata, null);
+    const descriptorTask = await second.humanReviewTask.findFirstOrThrow({
+      where: { entityId: descriptorPayment.evidence.id, entityType: "PaymentEvidence" },
+    });
+    assert.equal(descriptorTask.payload.fileUrl, persisted.fileUrl);
+    assert.equal(descriptorTask.payload.submittedAt, persisted.submittedAt.toISOString());
+    console.log("PASS replacement clears previous file descriptors and preserves matching review snapshot");
+
     const staleLead = await lead();
     const stale = await payment(staleLead);
     const future = new Date(Date.now() + 60000);

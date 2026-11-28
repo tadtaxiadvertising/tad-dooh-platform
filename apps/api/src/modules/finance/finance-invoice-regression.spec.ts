@@ -1,3 +1,4 @@
+import { driverProfileSelect } from "../drivers/driver-profile-select";
 import { advertiserSafeSelect } from "../advertisers/advertiser-safe-select";
 import {
   BadRequestException,
@@ -85,6 +86,7 @@ function loadMethod(
     BUSINESS_RULES,
     BCRYPT_ROUNDS,
     advertiserSafeSelect,
+    driverProfileSelect,
     BadRequestException,
     UnauthorizedException,
     ...globals,
@@ -179,18 +181,19 @@ describe("existing Prisma profile and receipt contracts", () => {
   it("sorts contract acceptance history using the persisted timestamp column", async () => {
     const findUnique = jest.fn(
       async (args: {
-        include: {
+        select: {
           contractAcceptances: { orderBy: object; take: number };
           referrals?: object;
           referencedDrivers?: object;
         };
       }) => {
-        expect(args.include.contractAcceptances).toEqual({
+        expect(args.select.contractAcceptances).toEqual({
           orderBy: { timestamp: "desc" },
           take: 1,
         });
-        expect(args.include).toHaveProperty("referrals");
-        expect(args.include).not.toHaveProperty("referencedDrivers");
+        expect(args.select).not.toHaveProperty("password");
+        expect(args.select).toHaveProperty("referrals");
+        expect(args.select).not.toHaveProperty("referencedDrivers");
         return {
           id: "driver-1",
           onboardingStatus: "COMPLETED",

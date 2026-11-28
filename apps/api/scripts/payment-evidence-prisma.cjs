@@ -438,6 +438,57 @@ async function verify() {
     })).status, "PENDING");
     console.log("PASS social review routes cannot decide payment tasks");
 
+    const amountLead = await lead();
+    const amountPayment = await payment(amountLead);
+    for (const amountConfirmed of [999, 1001, 0, 1000.5]) {
+      await assert.rejects(service.reviewEvidence({
+        ...decision(amountPayment, "PAYMENT_CONFIRMED", "fixture-a"), amountConfirmed,
+      }), error => error.getStatus() === 409);
+    }
+    const amountPending = await second.paymentIntent.findUniqueOrThrow({
+      where: { id: amountPayment.intent.id },
+      include: { paymentEvidence: true, paymentVerification: true },
+    });
+    assert.equal(amountPending.status, "UNDER_REVIEW");
+    assert.equal(amountPending.paymentEvidence.reviewStatus, "SUBMITTED");
+    assert.equal(amountPending.paymentVerification, null);
+    assert.equal((await second.humanReviewTask.findFirstOrThrow({
+      where: { entityId: amountPayment.evidence.id },
+    })).status, "PENDING");
+    await verifyCommission(amountLead, 0);
+    await service.reviewEvidence({
+      ...decision(amountPayment, "PAYMENT_CONFIRMED", "fixture-b"), amountConfirmed: 1000,
+    });
+    await verifyPayment(amountPayment, "PAYMENT_CONFIRMED");
+    await verifyCommission(amountLead, 1);
+    console.log("PASS inconsistent full payment amounts roll back before confirmation");
+
+    for (const terminal of ["PAID", "REFUNDED", "FAILED", "EXPIRED", "REJECTED"]) {
+      for (const status of ["PAYMENT_CONFIRMED", "REJECTED"]) {
+        const terminalLead = await lead();
+        const terminalPayment = await payment(terminalLead);
+        await second.paymentIntent.update({
+          where: { id: terminalPayment.intent.id }, data: { status: terminal },
+        });
+        await assert.rejects(
+          service.reviewEvidence(decision(terminalPayment, status, "fixture-a")),
+          error => error.getStatus() === 409,
+        );
+        const untouched = await first.paymentIntent.findUniqueOrThrow({
+          where: { id: terminalPayment.intent.id },
+          include: { paymentEvidence: true, paymentVerification: true },
+        });
+        assert.equal(untouched.status, terminal);
+        assert.equal(untouched.paymentEvidence.reviewStatus, "SUBMITTED");
+        assert.equal(untouched.paymentVerification, null);
+        assert.equal((await first.humanReviewTask.findFirstOrThrow({
+          where: { entityId: terminalPayment.evidence.id },
+        })).status, "PENDING");
+        await verifyCommission(terminalLead, 0);
+      }
+    }
+    console.log("PASS fresh evidence decisions cannot overwrite terminal payment intents");
+
     const rollbackLead = await lead();
     const rollbackPayment = await payment(rollbackLead);
     // A real SQL constraint fails AFTER the payment, verification, commission

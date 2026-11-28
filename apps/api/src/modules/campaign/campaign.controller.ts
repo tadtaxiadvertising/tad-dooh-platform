@@ -599,7 +599,6 @@ export class CampaignController {
       select: {
         id: true,
         name: true,
-        advertiser: true,
         media: {
           select: {
             id: true,
@@ -622,7 +621,6 @@ export class CampaignController {
 
     return {
       deviceId: device.deviceId,
-      driverName: device.driver?.fullName || "Sin chofer",
       totalCampaigns: campaigns.length,
       campaigns,
     };

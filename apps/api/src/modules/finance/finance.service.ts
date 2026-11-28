@@ -689,7 +689,6 @@ export class FinanceService {
       invoiceNumber: `INV-${campaign.id.substring(0, 8).toUpperCase()}`,
       date: new Date().toLocaleDateString("es-DO"),
       client: campaign.advertiserRef?.companyName || campaign.advertiser,
-      email: campaign.advertiserRef?.email || "N/A",
       campaign: campaign.name,
       period: `${campaign.startDate.toLocaleDateString("es-DO")} - ${campaign.endDate.toLocaleDateString("es-DO")}`,
       impressions,
@@ -1174,7 +1173,6 @@ export class FinanceService {
     invoiceNumber: string;
     date: string;
     client: string;
-    email: string;
     campaign: string;
     period: string;
     impressions: number;

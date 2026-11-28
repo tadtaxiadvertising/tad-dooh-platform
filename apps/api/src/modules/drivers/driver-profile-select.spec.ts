@@ -1,5 +1,8 @@
 import { DriversService } from "./drivers.service";
-import { deviceProfileSelect, driverProfileSelect } from "./driver-profile-select";
+import {
+  deviceProfileSelect,
+  driverProfileSelect,
+} from "./driver-profile-select";
 
 describe("Driver and linked device profile projections", () => {
   const device = {

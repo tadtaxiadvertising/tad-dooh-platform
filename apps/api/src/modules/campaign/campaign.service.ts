@@ -244,12 +244,14 @@ export class CampaignService {
       // We can optionally fetch the company name to sync the 'advertiser' field (v1 fallback)
       const advertiser = await this.prisma.advertiser.findUnique({
         where: { id: user.entityId },
+        select: { companyName: true },
       });
       assignedAdvertiser = advertiser?.companyName || assignedAdvertiser;
       initialStatus = "PENDING_REVIEW";
     } else if (!isAdmin && user?.email && !assignedAdvertiserId) {
       const advertiser = await this.prisma.advertiser.findUnique({
         where: { email: user.email },
+        select: { id: true, companyName: true },
       });
       if (advertiser) {
         assignedAdvertiserId = advertiser.id;
@@ -545,6 +547,7 @@ export class CampaignService {
       else if (user?.email && dto.brandId) {
         const advertiser = await this.prisma.advertiser.findUnique({
           where: { email: user.email },
+          select: { id: true },
         });
         if (!advertiser || advertiser.id !== dto.brandId) {
           this.logger.warn(
@@ -879,7 +882,7 @@ export class CampaignService {
         mediaAssets: { select: typeof mediaAssetSafeSelect };
         media: { select: typeof mediaSafeSelect };
         videos: true;
-        advertiserRef: true;
+        advertiserRef: { select: { id: true; companyName: true } };
       };
     }>[] = [];
 
@@ -912,7 +915,7 @@ export class CampaignService {
             mediaAssets: { select: mediaAssetSafeSelect },
             media: { select: mediaSafeSelect },
             videos: true,
-            advertiserRef: true,
+            advertiserRef: { select: { id: true, companyName: true } },
           },
           orderBy: { updatedAt: "desc" },
         });
@@ -945,7 +948,7 @@ export class CampaignService {
           mediaAssets: { select: mediaAssetSafeSelect },
           media: { select: mediaSafeSelect },
           videos: true,
-          advertiserRef: true,
+          advertiserRef: { select: { id: true, companyName: true } },
         },
         orderBy: { updatedAt: "desc" },
       });

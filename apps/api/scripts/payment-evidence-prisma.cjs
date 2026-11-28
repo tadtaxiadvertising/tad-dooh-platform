@@ -438,6 +438,48 @@ async function verify() {
     })).status, "PENDING");
     console.log("PASS social review routes cannot decide payment tasks");
 
+    for (const mismatch of ["fileUrl", "submittedAt", "amount", "duplicate"]) {
+      const snapshotLead = await lead();
+      const snapshotPayment = await payment(snapshotLead);
+      const snapshotTask = await first.humanReviewTask.findFirstOrThrow({
+        where: { entityId: snapshotPayment.evidence.id },
+      });
+      if (mismatch === "amount") {
+        await second.paymentIntent.update({
+          where: { id: snapshotPayment.intent.id }, data: { amount: 1001 },
+        });
+      } else if (mismatch === "duplicate") {
+        await second.humanReviewTask.create({ data: {
+          type: snapshotTask.type, entityId: snapshotTask.entityId,
+          entityType: snapshotTask.entityType, status: "PENDING",
+          payload: { ...snapshotTask.payload, fileUrl: "https://fixture.invalid/duplicate" },
+        } });
+      } else {
+        await second.humanReviewTask.update({
+          where: { id: snapshotTask.id },
+          data: { payload: { ...snapshotTask.payload, [mismatch]: "stale" } },
+        });
+      }
+      for (const status of ["PAYMENT_CONFIRMED", "REJECTED"]) {
+        await assert.rejects(
+          service.reviewEvidence(decision(snapshotPayment, status, "fixture-a")),
+          error => error.getStatus() === 409,
+        );
+        const untouched = await second.paymentIntent.findUniqueOrThrow({
+          where: { id: snapshotPayment.intent.id },
+          include: { paymentEvidence: true, paymentVerification: true },
+        });
+        assert.equal(untouched.status, "UNDER_REVIEW");
+        assert.equal(untouched.paymentEvidence.reviewStatus, "SUBMITTED");
+        assert.equal(untouched.paymentVerification, null);
+        assert.equal(await second.humanReviewTask.count({
+          where: { entityId: snapshotPayment.evidence.id, status: "PENDING" },
+        }), mismatch === "duplicate" ? 2 : 1);
+        await verifyCommission(snapshotLead, 0);
+      }
+    }
+    console.log("PASS stale financial snapshots and duplicate pending tasks roll back decisions");
+
     const amountLead = await lead();
     const amountPayment = await payment(amountLead);
     for (const amountConfirmed of [999, 1001, 0, 1000.5]) {

@@ -91,10 +91,59 @@ describe("PortalRequestsService approval containment (#299)", () => {
       data: { adminNotes: "Revisión manual" },
       include: {
         advertiser: { select: advertiserSafeSelect },
-        driver: true,
+        driver: { select: { id: true, fullName: true, phone: true } },
       },
     });
     expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it("limits driver relations in detail, notes and status responses", async () => {
+    const select = { id: true, fullName: true, phone: true };
+    const driver = {
+      id: "driver-fixture",
+      fullName: "Fixture driver",
+      phone: "8095550101",
+      password: "fixture-credential",
+      bankAccount: { account: "fixture-bank-data" },
+    };
+    const project = (args: {
+      include?: { driver: { select: Record<string, boolean> } };
+    }) => {
+      if (!args.include) return general;
+      expect(args.include.driver.select).toEqual(select);
+      return {
+        ...general,
+        driver: Object.fromEntries(
+          Object.entries(driver).filter(
+            ([key]) => args.include?.driver.select[key],
+          ),
+        ),
+      };
+    };
+    findUnique.mockImplementation(async (args) => project(args));
+    update.mockImplementation(async (args) => project(args));
+
+    const responses = [
+      await service.findOne("req-1"),
+      await service.update("req-1", { adminNotes: "Fixture note" }),
+      await service.update("req-1", { status: "APPROVED" }),
+    ];
+    for (const response of responses) {
+      expect(response).toMatchObject({
+        driver: {
+          id: driver.id,
+          fullName: driver.fullName,
+          phone: driver.phone,
+        },
+      });
+      expect(response).not.toHaveProperty("driver.password");
+      expect(response).not.toHaveProperty("driver.bankAccount");
+    }
+    expect(updateMany).toHaveBeenCalledTimes(1);
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: "req-1", status: "PENDING" },
+      data: { status: "APPROVED" },
+    });
   });
 
   it("rejects unknown state transitions and empty updates", async () => {

@@ -12,7 +12,8 @@ describe("OAuth exchange claims refresh", () => {
   };
   const prisma = {
     user: { findUnique: jest.fn() },
-    advertiser: { findUnique: jest.fn() },
+    advertiser: { findUnique: jest.fn(), create: jest.fn() },
+    idempotencyKey: { findUnique: jest.fn() },
   };
   const service = () => {
     const instance = Object.create(AuthService.prototype) as AuthService;
@@ -104,6 +105,110 @@ describe("OAuth exchange claims refresh", () => {
     expect(updateUserById).not.toHaveBeenCalled();
     expect(refreshSession).not.toHaveBeenCalled();
   });
+  const correlation = "a".repeat(64);
+  const committed = {
+    driverId: "public-advertiser-onboarding:single-use:v1",
+    path: "/onboarding/advertiser",
+    method: "POST",
+    isLocked: false,
+    response: JSON.stringify({
+      state: "COMMITTED",
+      authUserId: "auth-1",
+      advertiserId: "adv-1",
+      campaignId: "camp-1",
+    }),
+  };
+
+  function correlatedIdentity() {
+    getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: "auth-1",
+          email: "adv@example.com",
+          app_metadata: {
+            role: "ADVERTISER",
+            entityId: "adv-1",
+            tad_onboarding_reservation: correlation,
+          },
+        },
+      },
+      error: null,
+    });
+  }
+
+  it("does not auto-create an advertiser when a correlated registration lacks a profile", async () => {
+    correlatedIdentity();
+    prisma.advertiser.findUnique.mockResolvedValue(null);
+    await expect(service().exchangeOAuth(dto)).rejects.toMatchObject({
+      status: 403,
+      response: {
+        code: "ADVERTISER_REGISTRATION_RECONCILIATION_REQUIRED",
+      },
+    });
+    expect(prisma.advertiser.create).not.toHaveBeenCalled();
+    expect(updateUserById).not.toHaveBeenCalled();
+    expect(refreshSession).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    null,
+    { ...committed, isLocked: true },
+    { ...committed, driverId: "other-namespace" },
+    { ...committed, response: "{broken" },
+    {
+      ...committed,
+      response: JSON.stringify({
+        state: "COMMITTED",
+        authUserId: "another-auth",
+        advertiserId: "adv-1",
+      }),
+    },
+    {
+      ...committed,
+      response: JSON.stringify({
+        state: "COMMITTED",
+        authUserId: "auth-1",
+        advertiserId: "another-advertiser",
+      }),
+    },
+  ])(
+    "denies unconfirmed or mismatched correlated exchange (%p)",
+    async (row) => {
+      correlatedIdentity();
+      prisma.idempotencyKey.findUnique.mockResolvedValue(row);
+      await expect(service().exchangeOAuth(dto)).rejects.toMatchObject({
+        status: 403,
+      });
+      expect(prisma.advertiser.create).not.toHaveBeenCalled();
+      expect(updateUserById).not.toHaveBeenCalled();
+      expect(refreshSession).not.toHaveBeenCalled();
+    },
+  );
+
+  it("allows the matching committed correlated advertiser", async () => {
+    correlatedIdentity();
+    prisma.idempotencyKey.findUnique.mockResolvedValue(committed);
+    const result = await service().exchangeOAuth(dto);
+    expect(result.user.entityId).toBe("adv-1");
+    expect(result.access_token).toBe(dto.access_token);
+    expect(prisma.idempotencyKey.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { key: correlation } }),
+    );
+    expect(updateUserById).not.toHaveBeenCalled();
+  });
+
+  it("does not exchange a correlated advertiser identity into an admin session", async () => {
+    correlatedIdentity();
+    await expect(
+      service().exchangeOAuth({
+        ...dto,
+        intended_role: OAuthPortalRole.ADMIN,
+      }),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(updateUserById).not.toHaveBeenCalled();
+  });
+
   it("denies admin portal access to a Prisma user without ADMIN role", async () => {
     getUser.mockResolvedValue({
       data: {

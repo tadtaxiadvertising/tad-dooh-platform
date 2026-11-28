@@ -385,6 +385,7 @@ model Driver {
   telemetryLogs         Telemetry[]            @relation("DriverTelemetry")
   activeAds             ActiveAd[]
   reconciliationReports ReconciliationReport[]
+  paymentOwnerships PaymentIntentOwner[]
 
   @@index([status])
   @@index([phone])
@@ -490,6 +491,7 @@ model Advertiser {
   portalRequests PortalRequest[]
   subscriptions  AdvertiserSubscription[]
   invoices       Invoice[]
+  paymentOwnerships PaymentIntentOwner[]
 
   @@index([status])
   @@index([category])
@@ -1013,6 +1015,7 @@ model PaymentIntent {
   // Relations
   paymentEvidence PaymentEvidence?
   paymentVerification PaymentVerification?
+  ownership PaymentIntentOwner?
   lead Lead? @relation(fields: [leadId], references: [id])
 
   @@index([status])
@@ -1022,6 +1025,23 @@ model PaymentIntent {
 }
 
 /// Payment Evidence - Comprobante recibido
+/// Explicit operator-assigned payment ownership; legacy intents remain unbound.
+model PaymentIntentOwner {
+  paymentIntentId String @id @map("payment_intent_id")
+  driverId String? @map("driver_id")
+  advertiserId String? @db.Uuid @map("advertiser_id")
+  assignedBy String @map("assigned_by")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  paymentIntent PaymentIntent @relation(fields: [paymentIntentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  driver Driver? @relation(fields: [driverId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  advertiser Advertiser? @relation(fields: [advertiserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([driverId])
+  @@index([advertiserId])
+  @@map("payment_intent_owners")
+}
+
 model PaymentEvidence {
   id              String   @id @default(uuid())
   paymentIntentId String   @unique @map("payment_intent_id") // One-to-one with PaymentIntent

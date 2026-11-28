@@ -8,6 +8,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { RegisterDeviceDto } from "./dto/register-device.dto";
 import { assertNoDeviceHardwareUuidAlias } from "./device-identity-collision.guard";
+import { deviceAdminSelect } from "./device-admin-select";
 import { HeartbeatDto } from "./dto/heartbeat.dto";
 import { PlaybackConfirmationDto } from "./dto/playback-confirmation.dto";
 import { SyncDeviceDto } from "./dto/sync-device.dto";
@@ -119,13 +120,17 @@ export class DeviceService {
     return this.prisma.device.update({
       where: { deviceId },
       data: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
+      select: deviceAdminSelect,
     });
   }
 
   /** Admin rejects/deletes a phantom device. */
   async rejectDevice(deviceId: string) {
     this.logger.warn(`🗑️ Admin rejected device: ${deviceId}`);
-    return this.prisma.device.delete({ where: { deviceId } });
+    return this.prisma.device.delete({
+      where: { deviceId },
+      select: deviceAdminSelect,
+    });
   }
 
   async getFleetStatusSummary() {

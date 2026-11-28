@@ -655,7 +655,10 @@ export class FinanceService {
   async generateInvoiceHtml(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
-      include: { advertiserRef: true, media: { select: mediaSafeSelect } },
+      include: {
+        advertiserRef: { select: { companyName: true, email: true } },
+        media: { select: mediaSafeSelect },
+      },
     });
 
     if (!campaign) return null;
@@ -689,7 +692,6 @@ export class FinanceService {
       invoiceNumber: `INV-${campaign.id.substring(0, 8).toUpperCase()}`,
       date: new Date().toLocaleDateString("es-DO"),
       client: campaign.advertiserRef?.companyName || campaign.advertiser,
-      email: campaign.advertiserRef?.email || "N/A",
       campaign: campaign.name,
       period: `${campaign.startDate.toLocaleDateString("es-DO")} - ${campaign.endDate.toLocaleDateString("es-DO")}`,
       impressions,
@@ -891,7 +893,7 @@ export class FinanceService {
     // Facturas emitidas a anunciantes (fuente primaria de ventas)
     const invoices = await this.prisma.invoice.findMany({
       where: { issueDate: { gte: start, lt: end } },
-      include: { advertiser: true },
+      include: { advertiser: { select: { companyName: true } } },
       orderBy: { issueDate: "asc" },
     });
 
@@ -1174,7 +1176,6 @@ export class FinanceService {
     invoiceNumber: string;
     date: string;
     client: string;
-    email: string;
     campaign: string;
     period: string;
     impressions: number;
@@ -1263,7 +1264,7 @@ export class FinanceService {
             <div class="client-block" style="text-align: right">
                 <h3>Receptor</h3>
                 <p>${data.client}</p>
-                <p class="small">${data.email || "contacto@cliente.com"}<br>Periodo: ${data.period}</p>
+                <p class="small">contacto@cliente.com<br>Periodo: ${data.period}</p>
             </div>
         </div>
 

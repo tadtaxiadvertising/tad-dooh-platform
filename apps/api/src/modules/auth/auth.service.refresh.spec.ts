@@ -106,7 +106,11 @@ describe("AuthService login token refresh security", () => {
     }),
   };
 
-  it.each([null, { ...receipt, isLocked: true }, { ...receipt, response: "{}" }])(
+  it.each([
+    null,
+    { ...receipt, isLocked: true },
+    { ...receipt, response: "{}" },
+  ])(
     "rejects unresolved correlated login before issuing claims (%p)",
     async (row) => {
       correlatedLogin();

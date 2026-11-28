@@ -117,12 +117,10 @@ describe("PaymentIntentController", () => {
       });
       prisma.lead.findUnique.mockReturnValue({ id: "lead-99", type: "DRIVER" });
 
+      const request = requestFor("user-a", "ADVERTISER");
+      const payload = { fileUrl: "https://x.test/a.pdf" };
       await expect(
-        controller.submitEvidence(
-          "pi-1",
-          requestFor("user-a", "ADVERTISER"),
-          { fileUrl: "https://x.test/a.pdf" },
-        ),
+        controller.submitEvidence("pi-1", request, payload),
       ).rejects.toThrow(ForbiddenException);
 
       expect(prisma.paymentIntent.findUnique).toHaveBeenCalledWith({
@@ -144,12 +142,10 @@ describe("PaymentIntentController", () => {
         leadId: null,
       });
 
+      const request = requestFor("user-b", "ADVERTISER");
+      const payload = { fileUrl: "https://x.test/b.pdf" };
       await expect(
-        controller.submitEvidence(
-          "pi-2",
-          requestFor("user-b", "ADVERTISER"),
-          { fileUrl: "https://x.test/b.pdf" },
-        ),
+        controller.submitEvidence("pi-2", request, payload),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -183,11 +179,9 @@ describe("PaymentIntentController", () => {
         leadId: "lead-1",
       });
 
-      const result = await controller.submitEvidence(
-        "pi-3",
-        requestFor("user-x", "ADVERTISER"),
-        { fileUrl: "https://x.test/c.pdf" },
-      );
+      const request = requestFor("user-x", "ADVERTISER");
+      const payload = { fileUrl: "https://x.test/c.pdf" };
+      const result = await controller.submitEvidence("pi-3", request, payload);
       expect(result).toHaveProperty("id", "ev-3");
     });
 
@@ -205,11 +199,9 @@ describe("PaymentIntentController", () => {
       prisma.paymentEvidence.findFirst.mockReturnValue(null);
       prisma.paymentEvidence.create.mockReturnValue({ id: "ev-4" });
 
-      const result = await controller.submitEvidence(
-        "pi-4",
-        requestFor("admin", "ADMIN"),
-        { fileUrl: "https://x.test/d.pdf" },
-      );
+      const request = requestFor("admin", "ADMIN");
+      const payload = { fileUrl: "https://x.test/d.pdf" };
+      const result = await controller.submitEvidence("pi-4", request, payload);
       expect(result).toHaveProperty("id", "ev-4");
     });
   });

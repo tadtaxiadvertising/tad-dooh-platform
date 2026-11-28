@@ -173,6 +173,59 @@ describe("PaymentEvidenceService", () => {
     });
   });
 
+  it("advances the submitted version even if the previous timestamp is ahead", async () => {
+    const previous = new Date(Date.now() + 60000);
+    const tx = makeRecordingTx();
+    tx.paymentIntent.findUnique.mockResolvedValue(intent);
+    tx.paymentEvidence.findFirst.mockResolvedValue({
+      id: "ev-1",
+      reviewStatus: "SUBMITTED",
+      submittedAt: previous,
+    });
+    tx.paymentEvidence.findUniqueOrThrow.mockResolvedValue({ id: "ev-1" });
+    prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+    await service.submitEvidence(input);
+    expect(tx.paymentEvidence.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "ev-1",
+        reviewStatus: "SUBMITTED",
+        submittedAt: previous,
+      },
+      data: expect.objectContaining({
+        submittedAt: new Date(previous.getTime() + 1),
+      }),
+    });
+  });
+
+  it("rejects a same-status winner on a different evidence version", async () => {
+    const submittedAt = new Date("2026-01-01T00:00:00Z");
+    const tx = makeRecordingTx();
+    prisma.paymentEvidence.findUnique.mockResolvedValue({
+      id: "ev-1",
+      paymentIntentId: "int-1",
+      reviewStatus: "SUBMITTED",
+      submittedAt,
+    });
+    tx.paymentEvidence.updateMany.mockResolvedValue({ count: 0 });
+    tx.paymentEvidence.findUnique.mockResolvedValue({
+      id: "ev-1",
+      reviewStatus: "PAYMENT_CONFIRMED",
+      submittedAt: new Date(submittedAt.getTime() + 1),
+    });
+    prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+    await expect(
+      service.reviewEvidence({
+        evidenceId: "ev-1",
+        reviewedBy: "op1",
+        status: "PAYMENT_CONFIRMED",
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(tx.paymentVerification.create).not.toHaveBeenCalled();
+    expect(tx.humanReviewTask.updateMany).not.toHaveBeenCalled();
+  });
+
   it("rejects a stale resubmission after review wins the evidence claim", async () => {
     const tx = makeRecordingTx();
     tx.paymentIntent.findUnique.mockResolvedValue(intent);
@@ -283,6 +336,7 @@ describe("PaymentEvidenceService", () => {
       tx.paymentEvidence.findUnique.mockResolvedValue({
         id: "ev-1",
         reviewStatus: status,
+        submittedAt,
       });
       prisma.$transaction.mockImplementation(async (cb) => cb(tx));
 

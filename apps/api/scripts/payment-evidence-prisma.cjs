@@ -275,6 +275,86 @@ async function verify() {
     }
     console.log("PASS distinct intents on one lead create one commission, with or without prior attribution");
 
+    // Pause after the actual database read, before allowing its writer to proceed.
+    function readGate() {
+      let entered, release;
+      const arrived = new Promise(resolve => { entered = resolve; });
+      const resume = new Promise(resolve => { release = resolve; });
+      return { arrived, release, async pause(row) { entered(); await resume; return row; } };
+    }
+    const resubmit = payment => ({
+      paymentIntentId: payment.intent.id,
+      fileUrl: "https://fixture.invalid/replacement",
+      submittedBy: "fixture-submitter",
+    });
+
+    const staleLead = await lead();
+    const stale = await payment(staleLead);
+    const future = new Date(Date.now() + 60000);
+    await first.paymentEvidence.update({
+      where: { id: stale.evidence.id }, data: { submittedAt: future },
+    });
+    const reviewGate = readGate();
+    const pausedReviewer = new PaymentEvidenceService({
+      paymentEvidence: {
+        async findUnique(args) {
+          return reviewGate.pause(await second.paymentEvidence.findUnique(args));
+        },
+      },
+      $transaction: second.$transaction.bind(second),
+    }, {});
+    const oldReview = pausedReviewer.reviewEvidence(decision(stale, "PAYMENT_CONFIRMED", "fixture-a"));
+    const rejectedOldReview = assert.rejects(oldReview, error => error.getStatus() === 409);
+    await reviewGate.arrived;
+    try {
+      const replacement = await service.submitEvidence(resubmit(stale));
+      assert.equal(replacement.submittedAt.getTime(), future.getTime() + 1);
+      assert.equal(replacement.fileUrl, resubmit(stale).fileUrl);
+      // A different reviewer can confirm the replacement before the old
+      // transaction resumes; identical status alone is not an idempotent replay.
+      await service.reviewEvidence(decision(stale, "PAYMENT_CONFIRMED", "fixture-b"));
+    } finally {
+      reviewGate.release();
+    }
+    await rejectedOldReview;
+    await verifyPayment(stale, "PAYMENT_CONFIRMED");
+    await verifyCommission(staleLead, 1);
+    console.log("PASS replacement advances version; stale review cannot replay a newer decision");
+
+    const winningLead = await lead();
+    const winning = await payment(winningLead);
+    const submitGate = readGate();
+    const pausedSubmitter = new PaymentEvidenceService({
+      $transaction(callback) {
+        return second.$transaction(tx => callback({
+          paymentIntent: tx.paymentIntent,
+          paymentEvidence: {
+            async findFirst(args) {
+              return submitGate.pause(await tx.paymentEvidence.findFirst(args));
+            },
+            updateMany: tx.paymentEvidence.updateMany.bind(tx.paymentEvidence),
+            findUniqueOrThrow: tx.paymentEvidence.findUniqueOrThrow.bind(tx.paymentEvidence),
+          },
+        }));
+      },
+    }, {});
+    const oldSubmit = pausedSubmitter.submitEvidence(resubmit(winning));
+    const rejectedOldSubmit = assert.rejects(oldSubmit, error => error.getStatus() === 409);
+    await submitGate.arrived;
+    try {
+      await service.reviewEvidence(decision(winning, "PAYMENT_CONFIRMED", "fixture-a"));
+    } finally {
+      submitGate.release();
+    }
+    await rejectedOldSubmit;
+    await verifyPayment(winning, "PAYMENT_CONFIRMED");
+    await verifyCommission(winningLead, 1);
+    const finalEvidence = await first.paymentEvidence.findUniqueOrThrow({
+      where: { id: winning.evidence.id },
+    });
+    assert.equal(finalEvidence.fileUrl, winning.evidence.fileUrl);
+    console.log("PASS stale resubmission cannot reopen confirmed evidence");
+
     const rollbackLead = await lead();
     const rollbackPayment = await payment(rollbackLead);
     // A real SQL constraint fails AFTER the payment, verification, commission

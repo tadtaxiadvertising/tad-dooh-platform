@@ -51,7 +51,11 @@ describe("PaymentIntentController", () => {
     let controller: PaymentIntentController;
     let prisma: {
       $transaction: jest.Mock;
-      paymentIntent: { findUnique: jest.Mock; update: jest.Mock };
+      paymentIntent: {
+        findUnique: jest.Mock;
+        update: jest.Mock;
+        updateMany: jest.Mock;
+      };
       lead: { findUnique: jest.Mock };
       paymentEvidence: {
         findFirst: jest.Mock;
@@ -64,7 +68,11 @@ describe("PaymentIntentController", () => {
     beforeEach(async () => {
       prisma = {
         $transaction: jest.fn(),
-        paymentIntent: { findUnique: jest.fn(), update: jest.fn() },
+        paymentIntent: {
+          findUnique: jest.fn(),
+          update: jest.fn(),
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
         lead: { findUnique: jest.fn() },
         paymentEvidence: {
           findFirst: jest.fn(),
@@ -82,6 +90,7 @@ describe("PaymentIntentController", () => {
           paymentIntent: {
             findUnique: prisma.paymentIntent.findUnique,
             update: prisma.paymentIntent.update,
+            updateMany: prisma.paymentIntent.updateMany,
           },
           paymentEvidence: {
             findFirst: prisma.paymentEvidence.findFirst,

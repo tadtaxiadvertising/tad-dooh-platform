@@ -11,10 +11,12 @@ interface RecordingTx {
   paymentIntent: {
     findUnique: jest.Mock;
     update: jest.Mock;
+    updateMany: jest.Mock;
   };
   paymentEvidence: {
     findFirst: jest.Mock;
     findUnique: jest.Mock;
+    findUniqueOrThrow: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     updateMany: jest.Mock;
@@ -30,10 +32,15 @@ interface RecordingTx {
 
 function makeRecordingTx(): RecordingTx {
   return {
-    paymentIntent: { findUnique: jest.fn(), update: jest.fn() },
+    paymentIntent: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
     paymentEvidence: {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -133,7 +140,10 @@ describe("PaymentEvidenceService", () => {
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(tx.paymentEvidence.create).toHaveBeenCalledTimes(1);
     expect(tx.humanReviewTask.create).toHaveBeenCalledTimes(1);
-    expect(tx.paymentIntent.update).toHaveBeenCalledTimes(1);
+    expect(tx.paymentIntent.updateMany).toHaveBeenCalledWith({
+      where: { id: "int-1", status: "PENDING" },
+      data: { status: "UNDER_REVIEW" },
+    });
   });
 
   it("es idempotente en submitEvidence al encontrar evidencia pendiente", async () => {
@@ -141,18 +151,74 @@ describe("PaymentEvidenceService", () => {
       id: "ev-1",
       paymentIntentId: "int-1",
       reviewStatus: "SUBMITTED",
+      submittedAt: new Date("2026-01-01T00:00:00Z"),
     };
     const tx = makeRecordingTx();
     (tx.paymentIntent.findUnique as jest.Mock).mockResolvedValue(intent);
     (tx.paymentEvidence.findFirst as jest.Mock).mockResolvedValue(existing);
-    (tx.paymentEvidence.update as jest.Mock).mockResolvedValue(existing);
+    tx.paymentEvidence.findUniqueOrThrow.mockResolvedValue(existing);
     prisma.$transaction.mockImplementation(async (cb) => cb(tx));
 
     const result = await service.submitEvidence(input);
 
     expect(result.id).toBe("ev-1");
     expect(tx.paymentEvidence.create).not.toHaveBeenCalled();
-    expect(tx.paymentEvidence.update).toHaveBeenCalledTimes(1);
+    expect(tx.paymentEvidence.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: existing.id,
+        reviewStatus: existing.reviewStatus,
+        submittedAt: existing.submittedAt,
+      },
+      data: expect.objectContaining({ reviewStatus: "SUBMITTED" }),
+    });
+  });
+
+  it("rejects a stale resubmission after review wins the evidence claim", async () => {
+    const tx = makeRecordingTx();
+    tx.paymentIntent.findUnique.mockResolvedValue(intent);
+    tx.paymentEvidence.findFirst.mockResolvedValue({
+      id: "ev-1",
+      reviewStatus: "SUBMITTED",
+      submittedAt: new Date("2026-01-01T00:00:00Z"),
+    });
+    tx.paymentEvidence.updateMany.mockResolvedValue({ count: 0 });
+    prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+    await expect(service.submitEvidence(input)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(tx.paymentEvidence.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(tx.paymentEvidence.create).not.toHaveBeenCalled();
+    expect(tx.paymentIntent.updateMany).not.toHaveBeenCalled();
+  });
+
+  it.each(["PAID", "REJECTED", "REFUNDED", "FAILED", "EXPIRED"])(
+    "rejects submission on a resolved %s intent",
+    async (status) => {
+      const tx = makeRecordingTx();
+      tx.paymentIntent.findUnique.mockResolvedValue({ ...intent, status });
+      prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+      await expect(service.submitEvidence(input)).rejects.toMatchObject({
+        status: 409,
+      });
+      expect(tx.paymentEvidence.create).not.toHaveBeenCalled();
+      expect(tx.paymentEvidence.updateMany).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects the transaction if the intent changes during submission", async () => {
+    const tx = makeRecordingTx();
+    tx.paymentIntent.findUnique.mockResolvedValue(intent);
+    tx.paymentEvidence.findFirst.mockResolvedValue(null);
+    tx.paymentEvidence.create.mockResolvedValue({ id: "ev-1" });
+    tx.paymentIntent.updateMany.mockResolvedValue({ count: 0 });
+    prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+    await expect(service.submitEvidence(input)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(tx.paymentIntent.updateMany).toHaveBeenCalledTimes(1);
   });
 
   it("es idempotente en reviewEvidence al confirmar ya confirmada", async () => {
@@ -411,7 +477,7 @@ describe("PaymentEvidenceService", () => {
     expect(tx.paymentEvidence.create).toHaveBeenCalledTimes(1);
     expect(tx.humanReviewTask.create).toHaveBeenCalledTimes(1);
     expect(tx.paymentEvidence.findFirst).toHaveBeenCalledTimes(1);
-    expect(tx.paymentIntent.update).toHaveBeenCalledTimes(1);
+    expect(tx.paymentIntent.updateMany).toHaveBeenCalledTimes(1);
   });
 
   it("rechaza la operación en la misma transacción al fallar la revisión", async () => {
@@ -428,6 +494,6 @@ describe("PaymentEvidenceService", () => {
       "rollback gate",
     );
     expect(tx.humanReviewTask.create).toHaveBeenCalledTimes(1);
-    expect(tx.paymentIntent.update).toHaveBeenCalledTimes(0);
+    expect(tx.paymentIntent.updateMany).not.toHaveBeenCalled();
   });
 });

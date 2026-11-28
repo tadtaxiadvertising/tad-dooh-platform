@@ -65,6 +65,14 @@ export class PaymentEvidenceService {
         );
       }
 
+      if (
+        ["PAID", "REJECTED", "REFUNDED", "FAILED", "EXPIRED"].includes(
+          paymentIntent.status,
+        )
+      ) {
+        throw new ConflictException("Payment intent is already resolved");
+      }
+
       // Idempotente: si ya hay una evidencia pendiente, la actualizamos en
       // lugar de crear una duplicada dentro de la misma transacción.
       const existing = await tx.paymentEvidence.findFirst({
@@ -77,8 +85,13 @@ export class PaymentEvidenceService {
         this.logger.warn(
           `Evidence already exists for ${input.paymentIntentId}, updating`,
         );
-        return tx.paymentEvidence.update({
-          where: { id: existing.id },
+        // A stale submission must never reopen a reviewed evidence row.
+        const updated = await tx.paymentEvidence.updateMany({
+          where: {
+            id: existing.id,
+            reviewStatus: existing.reviewStatus,
+            submittedAt: existing.submittedAt,
+          },
           data: {
             fileUrl: input.fileUrl,
             fileHash: input.fileHash,
@@ -89,6 +102,12 @@ export class PaymentEvidenceService {
             reviewStatus: "SUBMITTED",
             metadata: input.metadata,
           },
+        });
+        if (updated.count !== 1) {
+          throw new ConflictException("Payment evidence changed during submit");
+        }
+        return tx.paymentEvidence.findUniqueOrThrow({
+          where: { id: existing.id },
         });
       }
 
@@ -125,10 +144,13 @@ export class PaymentEvidenceService {
       });
 
       // Actualizar PaymentIntent status a UNDER_REVIEW
-      await tx.paymentIntent.update({
-        where: { id: input.paymentIntentId },
+      const claimed = await tx.paymentIntent.updateMany({
+        where: { id: input.paymentIntentId, status: paymentIntent.status },
         data: { status: "UNDER_REVIEW" },
       });
+      if (claimed.count !== 1) {
+        throw new ConflictException("Payment intent changed during submit");
+      }
 
       this.logger.log(
         `Payment evidence ${evidence.id} submitted, HumanReviewTask created`,
@@ -188,7 +210,9 @@ export class PaymentEvidenceService {
         }
         if (claimed.count === 0) return updatedEvidence;
         if (claimed.count !== 1) {
-          throw new ConflictException("Unexpected payment evidence claim count");
+          throw new ConflictException(
+            "Unexpected payment evidence claim count",
+          );
         }
 
         // Actualizar HumanReviewTask

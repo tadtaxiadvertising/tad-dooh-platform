@@ -180,6 +180,58 @@ async function verify() {
     }, failedAttempt), error => error.getStatus() === 409);
     assert.equal(provisioned.length, 2);
     console.log("PASS real Prisma rollback preserves reservation and compensates only newly provisioned fixture identity");
+
+    // Test the exact operator report against real receipts and a minimal
+    // synthetic auth.users table. Do not connect to Supabase or inspect PII.
+    await sql("CREATE SCHEMA auth; CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, raw_app_meta_data jsonb);");
+    const reportSQL = fs.readFileSync(path.join(api,
+      "../../docs/security/sql/advertiser-onboarding-reconciliation-readonly.sql"), "utf8");
+    const report = async () => JSON.parse(await sql(reportSQL));
+    let snapshot = await report();
+    assert.deepEqual(snapshot, {
+      sample_limit: 1000, sampled: 2, truncated: false,
+      categories: { AUTH_LINK_MISSING: 1, RECENT_LOCK_OUTCOME_UNKNOWN: 1 },
+    });
+    await first.$executeRaw`INSERT INTO auth.users (id, email, raw_app_meta_data)
+      SELECT ${provisioned[0]}::uuid, email, '{"role":"ADVERTISER"}'::jsonb
+      FROM public.advertisers WHERE id = ${success[0].value.advertiserId}::uuid`;
+    await first.$executeRaw`UPDATE public.idempotency_keys SET created_at = (now() AT TIME ZONE 'UTC') - interval '2 hours'
+      WHERE key = ${storageKey(failedAttempt)}`;
+    const reservationData = {
+      driverId: namespace, path: "/onboarding/advertiser", method: "POST",
+      requestHash: "fixture-sentinel", expiresAt: new Date(Date.now() + 86400000),
+    };
+    await first.idempotencyKey.createMany({ data: [
+      { ...reservationData, key: storageKey(randomUUID()), isLocked: false, response: "{broken" },
+      { ...reservationData, key: storageKey(randomUUID()), isLocked: false, response: JSON.stringify({
+        state: "COMMITTED", authUserId: randomUUID(), advertiserId: randomUUID(), campaignId: randomUUID(),
+      }) },
+      { ...reservationData, key: storageKey(randomUUID()), isLocked: true, response: "unexpected" },
+      { ...reservationData, key: storageKey(randomUUID()), path: "/unexpected", isLocked: true },
+      { ...reservationData, key: storageKey(randomUUID()), driverId: "unrelated-actor", isLocked: true },
+    ] });
+    snapshot = await report();
+    assert.deepEqual(snapshot, {
+      sample_limit: 1000, sampled: 6, truncated: false, categories: {
+        LINKS_CONSISTENT: 1, AGED_LOCK_OUTCOME_UNKNOWN: 1, INVALID_COMMITTED_RECEIPT: 1,
+        BUSINESS_LINK_MISSING: 1, LOCKED_WITH_UNEXPECTED_RECEIPT: 1, INVALID_PROTOCOL: 1,
+      },
+    });
+    await first.$executeRaw`UPDATE auth.users SET raw_app_meta_data = '{"role":"DRIVER"}'::jsonb`;
+    snapshot = await report();
+    assert.equal(snapshot.categories.AUTH_LINK_MISMATCH, 1);
+    assert.equal(snapshot.categories.LINKS_CONSISTENT, undefined);
+    // Bulk fixture rows prove the cap is not a claim of full coverage.
+    await first.idempotencyKey.createMany({ data: Array.from({ length: 1001 }, () => ({
+      ...reservationData, key: storageKey(randomUUID()), isLocked: true,
+    })) });
+    snapshot = await report();
+    assert.equal(snapshot.sampled, 1000);
+    assert.equal(snapshot.truncated, true);
+    assert.equal(Object.values(snapshot.categories).reduce((sum, n) => sum + n, 0), 1000);
+    assert.equal(await first.idempotencyKey.count(), 1008);
+    console.log("PASS bounded read-only reconciliation report: missing links, malformed receipts, aged locks, scope and overflow");
+
   } finally {
     const disconnected = await Promise.allSettled(clients.map(client => client.$disconnect()));
     // PostgreSQL must shut down cleanly to unlink its own Unix socket and lock

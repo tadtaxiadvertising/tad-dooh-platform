@@ -114,84 +114,59 @@ describe("PaymentIntentController", () => {
       controller = module.get(PaymentIntentController);
     });
 
-    it("denies a cross-entity submission (advertiser → driver-owned intent)", async () => {
-      prisma.paymentIntent.findUnique.mockReturnValue({
+    it.each(["ADVERTISER", "DRIVER", "GUEST", "ADMIN"])(
+      "denies %s without an authorized operator identity before database access",
+      async (role) => {
+        const request = requestFor(role === "ADMIN" ? "" : "user-a", role);
+        const payload = { fileUrl: "https://x.test/a.pdf" };
+        await expect(
+          controller.submitEvidence("pi-1", request, payload),
+        ).rejects.toThrow(ForbiddenException);
+        await expect(
+          controller.getIntentByReference("REF-0001", request),
+        ).rejects.toThrow(ForbiddenException);
+        await expect(
+          controller.createIntent(request, {
+            type: "ADVERTISER_CAMPAIGN",
+            amount: 1000,
+            reference: "REF-0001",
+          }),
+        ).rejects.toThrow(ForbiddenException);
+        expect(prisma.paymentIntent.findUnique).not.toHaveBeenCalled();
+        expect(prisma.lead.findUnique).not.toHaveBeenCalled();
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+      },
+    );
+
+    it("allows an ADMIN to look up a payment reference", async () => {
+      prisma.paymentIntent.findUnique.mockResolvedValue({
         id: "pi-1",
-        type: "ADVERTISER_CAMPAIGN",
-        amount: 1000,
-        currency: "DOP",
         reference: "REF-0001",
         status: "PENDING",
-        leadId: "lead-99",
       });
-      prisma.lead.findUnique.mockReturnValue({ id: "lead-99", type: "DRIVER" });
-
-      const request = requestFor("user-a", "ADVERTISER");
-      const payload = { fileUrl: "https://x.test/a.pdf" };
-      await expect(
-        controller.submitEvidence("pi-1", request, payload),
-      ).rejects.toThrow(ForbiddenException);
-
-      expect(prisma.paymentIntent.findUnique).toHaveBeenCalledWith({
-        where: { id: "pi-1" },
-      });
-      expect(prisma.lead.findUnique).toHaveBeenCalledWith({
-        where: { id: "lead-99" },
-      });
+      const result = await controller.getIntentByReference(
+        "REF-0001",
+        requestFor("admin", "ADMIN"),
+      );
+      expect(result).toHaveProperty("id", "pi-1");
     });
 
-    it("denies a non-admin ownership-less intent (deny by default)", async () => {
-      prisma.paymentIntent.findUnique.mockReturnValue({
-        id: "pi-2",
-        type: "DRIVER_SUBSCRIPTION",
-        amount: 500,
-        currency: "DOP",
-        reference: "REF-0002",
+    it("allows an ADMIN to replay an existing payment intent", async () => {
+      prisma.paymentIntent.findUnique.mockResolvedValue({
+        id: "pi-1",
+        reference: "REF-0001",
         status: "PENDING",
         leadId: null,
       });
-
-      const request = requestFor("user-b", "ADVERTISER");
-      const payload = { fileUrl: "https://x.test/b.pdf" };
-      await expect(
-        controller.submitEvidence("pi-2", request, payload),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it("allows an advertiser to submit on their own advertiser-owned intent", async () => {
-      prisma.paymentIntent.findUnique.mockReturnValue({
-        id: "pi-3",
-        type: "ADVERTISER_CAMPAIGN",
-        amount: 1000,
-        currency: "DOP",
-        reference: "REF-0003",
-        status: "PENDING",
-        leadId: "lead-1",
-      });
-      prisma.lead.findUnique.mockReturnValue({
-        id: "lead-1",
-        type: "ADVERTISER",
-      });
-      prisma.paymentEvidence.findFirst.mockReturnValue(null);
-      prisma.paymentEvidence.create.mockReturnValue({ id: "ev-3" });
-      prisma.paymentIntent.update.mockReturnValue({
-        id: "pi-3",
-        status: "UNDER_REVIEW",
-      });
-      prisma.paymentIntent.findUnique.mockReturnValueOnce({
-        id: "pi-3",
-        type: "ADVERTISER_CAMPAIGN",
-        amount: 1000,
-        currency: "DOP",
-        reference: "REF-0003",
-        status: "UNDER_REVIEW",
-        leadId: "lead-1",
-      });
-
-      const request = requestFor("user-x", "ADVERTISER");
-      const payload = { fileUrl: "https://x.test/c.pdf" };
-      const result = await controller.submitEvidence("pi-3", request, payload);
-      expect(result).toHaveProperty("id", "ev-3");
+      const result = await controller.createIntent(
+        requestFor("admin", "ADMIN"),
+        {
+          type: "ADVERTISER_CAMPAIGN",
+          amount: 1000,
+          reference: "REF-0001",
+        },
+      );
+      expect(result).toMatchObject({ id: "pi-1", idempotencyReplay: true });
     });
 
     it("allows an ADMIN to attach evidence on any intent", async () => {

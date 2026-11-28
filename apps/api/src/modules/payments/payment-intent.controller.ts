@@ -102,11 +102,13 @@ export class PaymentIntentController {
    * Idempotente por reference: si ya existe, retorna el intent existente sin duplicar.
    */
   @Post("intents")
+  @Roles(UserRole.ADMIN)
   @UseInterceptors(IdempotencyInterceptor)
   async createIntent(
     @Req() req: AuthenticatedRequest,
     @Body() payload: unknown,
   ) {
+    this.requirePaymentOperator(req);
     const parsed = CreateIntentSchema.safeParse(payload);
     if (!parsed.success) {
       throw new BadRequestException({
@@ -121,20 +123,7 @@ export class PaymentIntentController {
       where: { reference: input.reference },
     });
     if (existing) {
-      // Replay limitado al mismo DTO de salida del alta (sin proveedorData ni metadatos).
-      // El owner solicitante puede reutilizar la intención; nadie más puede leer su estado.
-      if (existing.leadId) {
-        const lead = await this.prisma.lead.findUnique({
-          where: { id: existing.leadId },
-        });
-        const sameEntity =
-          req.user?.role === "ADMIN" || lead?.type === req.user?.role;
-        if (!sameEntity) {
-          throw new ForbiddenException(
-            "No puedes reutilizar una intención de pago que no te pertenece.",
-          );
-        }
-      }
+      // Only an authenticated payment operator can reach this replay.
       return {
         id: existing.id,
         type: existing.type,
@@ -212,11 +201,15 @@ export class PaymentIntentController {
 
   /**
    * GET /payments/intents/reference/:reference
-   * Consulta por referencia pública (la que el usuario coloca en la transferencia).
-   * No expone datos sensibles — solo estado y montos.
+   * Consulta administrativa por referencia. Una referencia no acredita ownership.
    */
   @Get("intents/reference/:reference")
-  async getIntentByReference(@Param("reference") reference: string) {
+  @Roles(UserRole.ADMIN)
+  async getIntentByReference(
+    @Param("reference") reference: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    this.requirePaymentOperator(req);
     const intent = await this.prisma.paymentIntent.findUnique({
       where: { reference },
       select: {
@@ -249,12 +242,14 @@ export class PaymentIntentController {
    * Idempotente a nivel service (un solo evidence pendiente por intent).
    */
   @Post("intents/:id/evidence")
+  @Roles(UserRole.ADMIN)
   @UseInterceptors(IdempotencyInterceptor)
   async submitEvidence(
     @Param("id") intentId: string,
     @Req() req: AuthenticatedRequest,
     @Body() payload: unknown,
   ) {
+    this.requirePaymentOperator(req);
     const parsed = SubmitEvidenceSchema.safeParse(payload);
     if (!parsed.success) {
       throw new BadRequestException({
@@ -275,22 +270,7 @@ export class PaymentIntentController {
       );
     }
 
-    const submittedBy = req?.user?.id ?? req?.user?.sub ?? "anonymous";
-
-    // F2: la evidencia solo puede adjuntarse a una intención propia del actor.
-    // El vínculo es el lead de la intención: su tipo (ADVERTISER/DRIVER) debe
-    // coincidir con el rol del usuario autenticado. Los ADMIN pueden actuar
-    // sobre cualquier intención porque son el propietario de la auditoría.
-    const intentLead = intent.leadId
-      ? await this.prisma.lead.findUnique({ where: { id: intent.leadId } })
-      : null;
-    const ownedByActor =
-      req.user?.role === "ADMIN" || intentLead?.type === req.user?.role;
-    if (!ownedByActor) {
-      throw new ForbiddenException(
-        "No tienes permiso para adjuntar evidencia a esta intención de pago.",
-      );
-    }
+    const submittedBy = req.user.id;
 
     return this.evidenceService.submitEvidence({
       paymentIntentId: intentId,
@@ -301,6 +281,14 @@ export class PaymentIntentController {
       submittedBy,
       metadata: parsed.data.metadata,
     });
+  }
+
+  // Lead.type and a payment reference are not ownership proofs. Until an
+  // authoritative identity binding exists, keep these operations admin-only.
+  private requirePaymentOperator(req: AuthenticatedRequest): void {
+    if (req?.user?.role !== UserRole.ADMIN || !req.user.id) {
+      throw new ForbiddenException("Payment operator authorization required");
+    }
   }
 
   /**

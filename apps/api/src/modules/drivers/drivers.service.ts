@@ -21,6 +21,7 @@ import {
 import { PayrollAuditService } from "./payroll-audit.service";
 import { ReferralService } from "../referral/referral.service";
 import { deviceIdentityWhere } from "../campaign/device-identity-lookup";
+import { driverProfileSelect, deviceProfileSelect } from "./driver-profile-select";
 
 export interface AuthUser {
   id: string;
@@ -39,10 +40,10 @@ function generateTemporaryPassword(): string {
   return out;
 }
 
-function toPublicDriver<T extends { password?: unknown }>(
-  driver: T,
-): Omit<T, "password"> {
-  const { password: passwordHash, ...publicDriver } = driver;
+function toPublicDriver<T extends object>(driver: T): Omit<T, "password"> {
+  const { password: passwordHash, ...publicDriver } = driver as T & {
+    password?: unknown;
+  };
   void passwordHash;
   return publicDriver;
 }
@@ -247,7 +248,8 @@ export class DriversService {
   async findAll() {
     const [drivers, activeAdsCount] = await Promise.all([
       this.prisma.driver.findMany({
-        include: {
+        select: {
+          ...driverProfileSelect,
           devices: {
             select: {
               id: true,
@@ -307,8 +309,9 @@ export class DriversService {
   async findOne(id: string) {
     const driver = await this.prisma.driver.findUnique({
       where: { id },
-      include: {
-        devices: true,
+      select: {
+        ...driverProfileSelect,
+        devices: { select: deviceProfileSelect },
         subscriptions: { orderBy: { startDate: "desc" } },
       },
     });
@@ -623,7 +626,8 @@ export class DriversService {
   async getAdminProfile(id: string) {
     const driver = await this.prisma.driver.findUnique({
       where: { id },
-      include: {
+      select: {
+        ...driverProfileSelect,
         devices: {
           select: { id: true, deviceId: true, status: true, lastSeen: true },
         },
@@ -660,13 +664,13 @@ export class DriversService {
       })
       .catch(() => null);
 
-    return {
+    return toPublicDriver({
       ...driver,
       referencedDrivers: driver.referrals,
       bankAccountConfigured: bankReady,
       onboardingStatus: driver.onboardingStatus || "UNKNOWN",
       lastPayment,
-    };
+    });
   }
 
   /**

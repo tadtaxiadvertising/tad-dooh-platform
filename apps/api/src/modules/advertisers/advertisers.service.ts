@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   Logger,
   BadRequestException,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
@@ -877,78 +878,23 @@ export class AdvertisersService {
     };
   }
 
-  // RECOVER PASSWORD
-  async recoverPassword(email: string) {
-    const user = await this.prisma.advertiser.findUnique({ where: { email } });
-    if (!user) {
-      // Return success to avoid email enumeration
-      return { success: true, message: "If email exists, recovery sent." };
-    }
-
-    const jwtSecret =
-      this.configService.get<string>("SUPABASE_JWT_SECRET") ||
-      this.configService.get<string>("JWT_SECRET");
-    if (!jwtSecret) {
-      this.logger.error(
-        `[ADVERTISER_AUTH][RECOVER_PASSWORD] JWT secret no configurado para email=${email}.`,
-      );
-      return {
-        success: false,
-        message: "Error de configuración del servidor.",
-      };
-    }
-
-    jwt.sign({ sub: user.id, email: user.email, purpose: "reset" }, jwtSecret, {
-      expiresIn: "15m",
+  // Legacy password recovery has no delivery or single-use token contract.
+  // Keep both endpoints uniformly unavailable until that contract is verified.
+  // Supabase Auth recovery is a separate credential system.
+  async recoverPassword(_email: string): Promise<never> {
+    throw new ServiceUnavailableException({
+      code: "ADVERTISER_PASSWORD_RECOVERY_UNAVAILABLE",
+      message:
+        "La recuperación automática no está disponible. Contacta a soporte de TAD.",
     });
-
-    // FIX B-1: Usar NestJS Logger en lugar de console.log
-    this.logger.log(
-      `[AUTH] Recovery token generado para ${email} — integrar con Resend/SendGrid`,
-    );
-
-    return { success: true, message: "Recovery instructions sent." };
   }
 
-  // RESET PASSWORD (POST-RECOVERY)
-  async resetPassword(token: string, newPass: string) {
-    const jwtSecret =
-      this.configService.get<string>("SUPABASE_JWT_SECRET") ||
-      this.configService.get<string>("JWT_SECRET");
-    if (!jwtSecret) {
-      this.logger.error(
-        "[ADVERTISER_AUTH][RESET_PASSWORD] JWT secret no configurado.",
-      );
-      throw new Error("Error de configuración del servidor.");
-    }
-
-    try {
-      const payload = jwt.verify(token, jwtSecret);
-      if (
-        typeof payload === "string" ||
-        payload.purpose !== "reset" ||
-        typeof payload.sub !== "string"
-      ) {
-        throw new BadRequestException("Token inválido para esta operación");
-      }
-
-      const hashedPassword = await bcrypt.hash(newPass, BCRYPT_ROUNDS);
-
-      await this.prisma.advertiser.update({
-        where: { id: payload.sub },
-        data: { password: hashedPassword },
-      });
-
-      return {
-        success: true,
-        message: "Contraseña actualizada correctamente.",
-      };
-    } catch (err) {
-      this.logger.error(
-        `[ADVERTISER_AUTH][RESET_PASSWORD] Token inválido o expirado: ${err.message}`,
-      );
-      throw new UnauthorizedException("El enlace ha expirado o es inválido.");
-    }
+  async resetPassword(_token: string, _newPass: string): Promise<never> {
+    throw new ServiceUnavailableException({
+      code: "ADVERTISER_PASSWORD_RECOVERY_UNAVAILABLE",
+      message:
+        "La recuperación automática no está disponible. Contacta a soporte de TAD.",
+    });
   }
   /**
    * Endpoint dedicado para obtener facturas del anunciante.

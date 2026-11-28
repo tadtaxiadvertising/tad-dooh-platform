@@ -6,11 +6,20 @@ import { SupabaseService } from "../supabase/supabase.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { format } from "date-fns";
 import type {
-  Advertiser,
   AdvertiserSubscription,
   Invoice,
   Prisma,
 } from "@prisma/client";
+
+const billingAdvertiserSelect = {
+  companyName: true,
+  contactName: true,
+  email: true,
+} as const satisfies Prisma.AdvertiserSelect;
+
+type BillingAdvertiser = Prisma.AdvertiserGetPayload<{
+  select: typeof billingAdvertiserSelect;
+}>;
 
 @Injectable()
 export class AdvertiserBillingService {
@@ -41,7 +50,7 @@ export class AdvertiserBillingService {
         status: "ACTIVE",
         nextBillingDate: { lte: now },
       },
-      include: { advertiser: true },
+      include: { advertiser: { select: billingAdvertiserSelect } },
     });
 
     this.logger.log(
@@ -91,7 +100,7 @@ export class AdvertiserBillingService {
    */
   async processSubscriptionBilling(
     sub: Prisma.AdvertiserSubscriptionGetPayload<{
-      include: { advertiser: true };
+      include: { advertiser: { select: typeof billingAdvertiserSelect } };
     }>,
   ) {
     const advertiser = sub.advertiser;
@@ -220,7 +229,7 @@ export class AdvertiserBillingService {
   private async generateSubscriptionInvoicePDF(data: {
     invoice: Invoice;
     subscription: AdvertiserSubscription;
-    advertiser: Advertiser & { rnc?: string };
+    advertiser: BillingAdvertiser & { rnc?: string };
     subtotal: number;
     taxAmount: number;
     totalAmount: number;
@@ -389,7 +398,7 @@ export class AdvertiserBillingService {
   }
 
   private buildSubscriptionEmailHtml(
-    advertiser: Advertiser,
+    advertiser: BillingAdvertiser,
     invoice: Invoice,
     subtotal: number,
     taxAmount: number,
@@ -448,7 +457,7 @@ export class AdvertiserBillingService {
   async billSubscriptionNow(subscriptionId: string) {
     const sub = await this.prisma.advertiserSubscription.findUnique({
       where: { id: subscriptionId },
-      include: { advertiser: true },
+      include: { advertiser: { select: billingAdvertiserSelect } },
     });
     if (!sub) throw new Error("Suscripción no encontrada");
     await this.processSubscriptionBilling(sub);
@@ -509,6 +518,7 @@ export class AdvertiserBillingService {
 
     const advertiser = await this.prisma.advertiser.findUnique({
       where: { id: advertiserId },
+      select: { companyName: true },
     });
     if (!advertiser) throw new Error("Anunciante no encontrado");
 

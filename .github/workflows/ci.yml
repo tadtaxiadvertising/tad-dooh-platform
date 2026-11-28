@@ -46,12 +46,22 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Format check (prettier)
+        id: prettier_check
         run: |
           set -euo pipefail
           if [ -d packages/ui/src ]; then
             pnpm dlx prettier@3.9.10 --check "packages/ui/src/**/*.{ts,tsx}"
           fi
           pnpm dlx prettier@3.9.10 --check "apps/**/*.{ts,tsx}"
+
+      # Temporary diagnostic for #638; format failure remains a required failure.
+      - name: Show exact manual-transfer fixture formatting diff
+        if: ${{ failure() && steps.prettier_check.outcome == 'failure' }}
+        run: |
+          set -euo pipefail
+          fixture=apps/api/src/modules/payments/providers/manual-transfer.provider.spec.ts
+          pnpm dlx prettier@3.9.10 --write "$fixture"
+          git --no-pager diff -- "$fixture"
 
       - name: Lint (ESLint)
         run: |

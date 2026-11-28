@@ -14,30 +14,29 @@ const input = {
 };
 
 function provider(account: string) {
-  return new ManualTransferProvider(
-    new ConfigService({
-      TAD_BANK_ACCOUNT: account,
-      TAD_BANK_ACCOUNT_NAME: "Synthetic account holder",
-    }),
-  );
+  const config = new ConfigService({
+    TAD_BANK_ACCOUNT: account,
+    TAD_BANK_ACCOUNT_NAME: "Synthetic account holder",
+  });
+  return new ManualTransferProvider(config);
 }
 
 describe("ManualTransferProvider", () => {
   it.each(["", "   ", "XXXXXXXXXX", "000000", "123abc"])(
-    "refuses unavailable or placeholder account configuration (%j)",
+    "rejects invalid account configuration (%j)",
     async (account) => {
       const adapter = provider(account);
-      await expect(adapter.createPaymentIntent(input)).rejects.toThrow(
-        ServiceUnavailableException,
-      );
-      await expect(adapter.healthCheck()).resolves.toEqual({
+      const creation = adapter.createPaymentIntent(input);
+      await expect(creation).rejects.toThrow(ServiceUnavailableException);
+      const health = await adapter.healthCheck();
+      expect(health).toEqual({
         healthy: false,
         error: "Manual transfer account configuration is unavailable",
       });
     },
   );
 
-  it("uses configured account without requiring initialize", async () => {
+  it("uses the configured account without initialize", async () => {
     const adapter = provider("123456789");
     const result = await adapter.createPaymentIntent(input);
     expect(result.status).toBe("CREATED");
@@ -45,34 +44,29 @@ describe("ManualTransferProvider", () => {
     expect(result.paymentInstructions).toContain("123456789");
     expect(result.paymentInstructions).toContain("Synthetic account holder");
     expect(result.paymentInstructions).not.toContain("XXXXXXXXXX");
-    await expect(adapter.healthCheck()).resolves.toMatchObject({
-      healthy: true,
-    });
+    const health = await adapter.healthCheck();
+    expect(health).toMatchObject({ healthy: true });
   });
 
-  it("rejects currency mismatched to the manual bank account", async () => {
-    await expect(
-      provider("123456789").createPaymentIntent({ ...input, currency: "USD" }),
-    ).rejects.toThrow(ConflictException);
+  it("rejects a mismatched currency", async () => {
+    const adapter = provider("123456789");
+    const usd = { ...input, currency: "USD" };
+    const creation = adapter.createPaymentIntent(usd);
+    await expect(creation).rejects.toThrow(ConflictException);
   });
 
   it("refuses unsupported financial operations", async () => {
     const adapter = provider("123456789");
     const reference = input.reference;
-    await expect(adapter.getPaymentIntentStatus(reference)).rejects.toThrow(
-      ConflictException,
-    );
-    await expect(adapter.verifyPayment(input.reference)).rejects.toThrow(
-      ConflictException,
-    );
-    await expect(
-      adapter.processWebhook({ reference: input.reference, amount: 1000 }),
-    ).rejects.toThrow(ConflictException);
-    await expect(adapter.refundPayment(reference, 1000)).rejects.toThrow(
-      ConflictException,
-    );
-    await expect(adapter.reconcileDaily(new Date())).rejects.toThrow(
-      ConflictException,
-    );
+    const status = adapter.getPaymentIntentStatus(reference);
+    await expect(status).rejects.toThrow(ConflictException);
+    const verification = adapter.verifyPayment(reference);
+    await expect(verification).rejects.toThrow(ConflictException);
+    const webhook = adapter.processWebhook({ reference, amount: 1000 });
+    await expect(webhook).rejects.toThrow(ConflictException);
+    const refund = adapter.refundPayment(reference, 1000);
+    await expect(refund).rejects.toThrow(ConflictException);
+    const reconciliation = adapter.reconcileDaily(new Date());
+    await expect(reconciliation).rejects.toThrow(ConflictException);
   });
 });

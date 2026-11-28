@@ -21,7 +21,10 @@ import {
 import { PayrollAuditService } from "./payroll-audit.service";
 import { ReferralService } from "../referral/referral.service";
 import { deviceIdentityWhere } from "../campaign/device-identity-lookup";
-import { driverProfileSelect, deviceProfileSelect } from "./driver-profile-select";
+import {
+  driverProfileSelect,
+  deviceProfileSelect,
+} from "./driver-profile-select";
 
 export interface AuthUser {
   id: string;
@@ -664,13 +667,13 @@ export class DriversService {
       })
       .catch(() => null);
 
-    return toPublicDriver({
+    return {
       ...driver,
       referencedDrivers: driver.referrals,
       bankAccountConfigured: bankReady,
       onboardingStatus: driver.onboardingStatus || "UNKNOWN",
       lastPayment,
-    });
+    };
   }
 
   /**

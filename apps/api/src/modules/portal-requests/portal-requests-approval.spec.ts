@@ -1,3 +1,4 @@
+import { advertiserSafeSelect } from "../advertisers/advertiser-safe-select";
 import {
   BadRequestException,
   ConflictException,
@@ -88,7 +89,10 @@ describe("PortalRequestsService approval containment (#299)", () => {
     expect(update).toHaveBeenCalledWith({
       where: { id: "req-1" },
       data: { adminNotes: "Revisión manual" },
-      include: { advertiser: true, driver: true },
+      include: {
+        advertiser: { select: advertiserSafeSelect },
+        driver: true,
+      },
     });
     expect(updateMany).not.toHaveBeenCalled();
   });

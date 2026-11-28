@@ -1,4 +1,8 @@
-import { BadRequestException, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  UnauthorizedException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import {
   BUSINESS_RULES,
   BCRYPT_ROUNDS,
@@ -214,63 +218,43 @@ describe("existing Prisma profile and receipt contracts", () => {
   });
 });
 
-describe("advertiser reset verified JWT subject contract", () => {
+describe("legacy advertiser reset containment contract", () => {
   it.each([
     "unstructured-verified-value",
     { purpose: "reset" },
     { purpose: "reset", sub: 42 },
+    { purpose: "reset", sub: "adv-1" },
   ])(
-    "rejects a malformed verified payload before password hashing or persistence: %p",
+    "rejects every legacy reset claim before verification, hashing or persistence: %p",
     async (payload) => {
       const update = jest.fn();
       const hash = jest.fn();
       const verify = jest.fn(() => payload);
+      const get = jest.fn(() => "isolated-secret");
       const method = loadMethod(
         path.join(__dirname, "../advertisers/advertisers.service.ts"),
         "AdvertisersService",
         "resetPassword",
-        { jwt: { verify }, bcrypt: { hash } },
+        { jwt: { verify }, bcrypt: { hash }, ServiceUnavailableException },
       );
       await expect(
         method.call(
           {
-            configService: { get: jest.fn(() => "isolated-secret") },
+            configService: { get },
             logger: { error: jest.fn() },
             prisma: { advertiser: { update } },
           },
           "isolated-token",
           "new-password",
         ),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toMatchObject({
+        status: 503,
+        response: { code: "ADVERTISER_PASSWORD_RECOVERY_UNAVAILABLE" },
+      });
+      expect(get).not.toHaveBeenCalled();
+      expect(verify).not.toHaveBeenCalled();
       expect(update).not.toHaveBeenCalled();
       expect(hash).not.toHaveBeenCalled();
     },
   );
-  it("updates the exact subject with a password hash for a valid reset claim", async () => {
-    const update = jest.fn(async () => ({ id: "adv-1" }));
-    const hash = jest.fn(async () => "isolated-password-hash");
-    const verify = jest.fn(() => ({ purpose: "reset", sub: "adv-1" }));
-    const method = loadMethod(
-      path.join(__dirname, "../advertisers/advertisers.service.ts"),
-      "AdvertisersService",
-      "resetPassword",
-      { jwt: { verify }, bcrypt: { hash } },
-    );
-    await expect(
-      method.call(
-        {
-          configService: { get: jest.fn(() => "isolated-secret") },
-          logger: { error: jest.fn() },
-          prisma: { advertiser: { update } },
-        },
-        "isolated-token",
-        "new-password",
-      ),
-    ).resolves.toMatchObject({ success: true });
-    expect(hash).toHaveBeenCalledWith("new-password", BCRYPT_ROUNDS);
-    expect(update).toHaveBeenCalledWith({
-      where: { id: "adv-1" },
-      data: { password: "isolated-password-hash" },
-    });
-  });
 });

@@ -239,10 +239,7 @@ export default function AdvertiserLoginPage() {
                 </button>
 
                 {/* ─── OAuth Divider + Google Sign-In ─── */}
-                <div
-                  className="flex items-center gap-3 pt-1"
-                  aria-hidden="true"
-                >
+                <div className="flex items-center gap-3 pt-1" aria-hidden="true">
                   <div className="flex-1 h-px bg-white/10" />
                   <span className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">
                     o
@@ -256,8 +253,8 @@ export default function AdvertiserLoginPage() {
                 />
 
                 <p className="mt-4 text-center text-[11px] text-[#AAAAAA] leading-relaxed">
-                  Cada día sin presencia en la calle es alcance que captura
-                  tu competencia.
+                  Cada día sin presencia en la calle es alcance que captura tu
+                  competencia.
                 </p>
                 <button
                   type="button"
@@ -270,7 +267,6 @@ export default function AdvertiserLoginPage() {
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
-
               </form>
             </div>
           ) : (

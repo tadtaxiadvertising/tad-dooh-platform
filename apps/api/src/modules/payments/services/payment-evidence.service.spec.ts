@@ -145,7 +145,14 @@ describe("PaymentEvidenceService", () => {
     expect(tx.paymentEvidence.create).toHaveBeenCalledTimes(1);
     expect(tx.humanReviewTask.create).toHaveBeenCalledTimes(1);
     expect(tx.paymentIntent.updateMany).toHaveBeenCalledWith({
-      where: { id: "int-1", status: "PENDING" },
+      where: {
+        id: "int-1",
+        status: "PENDING",
+        amount: intent.amount,
+        currency: intent.currency,
+        type: intent.type,
+        leadId: intent.leadId,
+      },
       data: { status: "UNDER_REVIEW" },
     });
   });
@@ -158,7 +165,10 @@ describe("PaymentEvidenceService", () => {
       submittedAt: new Date("2026-01-01T00:00:00Z"),
     };
     const tx = makeRecordingTx();
-    (tx.paymentIntent.findUnique as jest.Mock).mockResolvedValue(intent);
+    (tx.paymentIntent.findUnique as jest.Mock).mockResolvedValue({
+      ...intent,
+      status: "UNDER_REVIEW",
+    });
     (tx.paymentEvidence.findFirst as jest.Mock).mockResolvedValue(existing);
     tx.paymentEvidence.findUniqueOrThrow.mockResolvedValue(existing);
     prisma.$transaction.mockImplementation(async (cb) => cb(tx));
@@ -179,7 +189,10 @@ describe("PaymentEvidenceService", () => {
 
   it("clears descriptors omitted by the replacement rather than retaining the old file metadata", async () => {
     const tx = makeRecordingTx();
-    tx.paymentIntent.findUnique.mockResolvedValue(intent);
+    tx.paymentIntent.findUnique.mockResolvedValue({
+      ...intent,
+      status: "UNDER_REVIEW",
+    });
     tx.paymentEvidence.findFirst.mockResolvedValue({
       id: "ev-1",
       reviewStatus: "SUBMITTED",
@@ -214,7 +227,10 @@ describe("PaymentEvidenceService", () => {
     "rejects replacement when %s pending payment tasks match",
     async (count) => {
       const tx = makeRecordingTx();
-      tx.paymentIntent.findUnique.mockResolvedValue(intent);
+      tx.paymentIntent.findUnique.mockResolvedValue({
+        ...intent,
+        status: "UNDER_REVIEW",
+      });
       tx.paymentEvidence.findFirst.mockResolvedValue({
         id: "ev-1",
         reviewStatus: "SUBMITTED",
@@ -233,7 +249,10 @@ describe("PaymentEvidenceService", () => {
   it("advances the submitted version even if the previous timestamp is ahead", async () => {
     const previous = new Date(Date.now() + 60000);
     const tx = makeRecordingTx();
-    tx.paymentIntent.findUnique.mockResolvedValue(intent);
+    tx.paymentIntent.findUnique.mockResolvedValue({
+      ...intent,
+      status: "UNDER_REVIEW",
+    });
     tx.paymentEvidence.findFirst.mockResolvedValue({
       id: "ev-1",
       reviewStatus: "SUBMITTED",
@@ -300,7 +319,10 @@ describe("PaymentEvidenceService", () => {
 
   it("rejects a stale resubmission after review wins the evidence claim", async () => {
     const tx = makeRecordingTx();
-    tx.paymentIntent.findUnique.mockResolvedValue(intent);
+    tx.paymentIntent.findUnique.mockResolvedValue({
+      ...intent,
+      status: "UNDER_REVIEW",
+    });
     tx.paymentEvidence.findFirst.mockResolvedValue({
       id: "ev-1",
       reviewStatus: "SUBMITTED",
@@ -317,20 +339,62 @@ describe("PaymentEvidenceService", () => {
     expect(tx.paymentIntent.updateMany).not.toHaveBeenCalled();
   });
 
-  it.each(["PAID", "REJECTED", "REFUNDED", "FAILED", "EXPIRED"])(
-    "rejects submission on a resolved %s intent",
-    async (status) => {
-      const tx = makeRecordingTx();
-      tx.paymentIntent.findUnique.mockResolvedValue({ ...intent, status });
-      prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+  it.each([
+    "PAID",
+    "REJECTED",
+    "REFUNDED",
+    "FAILED",
+    "EXPIRED",
+    "CANCELLED",
+    "REDIRECTED",
+    "UNKNOWN",
+  ])("rejects submission on a resolved %s intent", async (status) => {
+    const tx = makeRecordingTx();
+    tx.paymentIntent.findUnique.mockResolvedValue({ ...intent, status });
+    prisma.$transaction.mockImplementation(async (cb) => cb(tx));
 
-      await expect(service.submitEvidence(input)).rejects.toMatchObject({
-        status: 409,
-      });
-      expect(tx.paymentEvidence.create).not.toHaveBeenCalled();
-      expect(tx.paymentEvidence.updateMany).not.toHaveBeenCalled();
-    },
-  );
+    await expect(service.submitEvidence(input)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(tx.paymentEvidence.create).not.toHaveBeenCalled();
+    expect(tx.paymentEvidence.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects an under-review intent without pending evidence", async () => {
+    const tx = makeRecordingTx();
+    tx.paymentIntent.findUnique.mockResolvedValue({
+      ...intent,
+      status: "UNDER_REVIEW",
+    });
+    tx.paymentEvidence.findFirst.mockResolvedValue(null);
+    prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+    await expect(service.submitEvidence(input)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(tx.paymentEvidence.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects replacement if its parent changes after the initial read", async () => {
+    const tx = makeRecordingTx();
+    tx.paymentIntent.findUnique.mockResolvedValue({
+      ...intent,
+      status: "UNDER_REVIEW",
+    });
+    tx.paymentEvidence.findFirst.mockResolvedValue({
+      id: "ev-1",
+      reviewStatus: "SUBMITTED",
+      submittedAt: new Date("2026-01-01T00:00:00Z"),
+    });
+    tx.paymentIntent.updateMany.mockResolvedValue({ count: 0 });
+    prisma.$transaction.mockImplementation(async (cb) => cb(tx));
+
+    await expect(service.submitEvidence(input)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(tx.humanReviewTask.updateMany).toHaveBeenCalledTimes(1);
+    expect(tx.paymentEvidence.findUniqueOrThrow).not.toHaveBeenCalled();
+  });
 
   it("rejects the transaction if the intent changes during submission", async () => {
     const tx = makeRecordingTx();

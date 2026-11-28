@@ -13,6 +13,10 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { DeviceService } from "./device.service";
+import {
+  deviceAdminSelect,
+  deviceAdminDriverSelect,
+} from "./device-admin-select";
 import { assertNoDeviceHardwareUuidAlias } from "./device-identity-collision.guard";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import {
@@ -191,6 +195,7 @@ export class DeviceAdminController {
     // Check if hardware ID already exists
     const existing = await this.prisma.device.findUnique({
       where: { deviceId: data.deviceId },
+      select: { id: true },
     });
     if (existing)
       throw new BadRequestException(
@@ -204,6 +209,7 @@ export class DeviceAdminController {
         city: data.city || "Santo Domingo",
         status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
       },
+      select: deviceAdminSelect,
     });
   }
 
@@ -227,7 +233,10 @@ export class DeviceAdminController {
         status: data.status,
         ...(data.driverId !== undefined && { driverId: data.driverId }),
       },
-      include: { driver: true },
+      select: {
+        ...deviceAdminSelect,
+        driver: { select: deviceAdminDriverSelect },
+      },
     });
   }
 
@@ -298,8 +307,9 @@ export class DeviceAdminController {
       const device = resolved
         ? await this.prisma.device.findUnique({
             where: { id: resolved.id },
-            include: {
-              driver: true,
+            select: {
+              ...deviceAdminSelect,
+              driver: { select: deviceAdminDriverSelect },
               campaigns: {
                 include: {
                   campaign: {
@@ -384,7 +394,12 @@ export class DeviceAdminController {
     const device = resolved
       ? await this.prisma.device.findUnique({
           where: { id: resolved.id },
-          include: { driver: true },
+          select: {
+            id: true,
+            driver: {
+              select: { fullName: true, phone: true, subscriptionPaid: true },
+            },
+          },
         })
       : null;
 
@@ -439,6 +454,7 @@ export class DeviceAdminController {
     const updated = await this.prisma.device.update({
       where: { id: device.id },
       data: updateData,
+      select: deviceAdminSelect,
     });
 
     return { success: true, message: "Perfil actualizado", device: updated };

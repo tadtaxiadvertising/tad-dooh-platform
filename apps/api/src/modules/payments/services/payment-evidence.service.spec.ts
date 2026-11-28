@@ -160,7 +160,9 @@ describe("PaymentEvidenceService", () => {
       reviewStatus: "PAYMENT_CONFIRMED",
       paymentIntent: { id: "int-1", status: "PAID" },
     } as any;
-    (prisma.paymentEvidence.findUnique as jest.Mock).mockResolvedValue(evidence);
+    (prisma.paymentEvidence.findUnique as jest.Mock).mockResolvedValue(
+      evidence,
+    );
 
     const result = await service.reviewEvidence({
       evidenceId: "ev-1",
@@ -182,7 +184,9 @@ describe("PaymentEvidenceService", () => {
       paymentIntentId: "int-1",
       reviewStatus: "REJECTED",
     } as any;
-    (prisma.paymentEvidence.findUnique as jest.Mock).mockResolvedValue(evidence);
+    (prisma.paymentEvidence.findUnique as jest.Mock).mockResolvedValue(
+      evidence,
+    );
 
     const result = await service.reviewEvidence({
       evidenceId: "ev-1",
@@ -209,7 +213,9 @@ describe("PaymentEvidenceService", () => {
       } as any,
     } as any;
     const tx = makeRecordingTx();
-    (prisma.paymentEvidence.findUnique as jest.Mock).mockResolvedValue(evidence);
+    (prisma.paymentEvidence.findUnique as jest.Mock).mockResolvedValue(
+      evidence,
+    );
     (tx.paymentIntent.findUnique as jest.Mock).mockResolvedValue({
       id: "int-1",
       status: "UNDER_REVIEW",
@@ -221,7 +227,9 @@ describe("PaymentEvidenceService", () => {
       reviewStatus: "PAYMENT_CONFIRMED",
       reviewedBy: "op1",
     } as any);
-    (tx.humanReviewTask.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+    (tx.humanReviewTask.updateMany as jest.Mock).mockResolvedValue({
+      count: 1,
+    });
     (tx.paymentVerification.create as jest.Mock).mockResolvedValue({
       id: "pv-1",
     } as any);

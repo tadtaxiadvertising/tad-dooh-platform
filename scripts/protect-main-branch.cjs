@@ -58,7 +58,6 @@ function ghApi(method, route, payload) {
   }
 }
 
-function assertUnprotected(branch, rules) {
 function branchSha(branch) {
   if (branch?.name !== "main" ||
       !/^[a-f0-9]{40}$/.test(branch?.commit?.sha || "")) {
@@ -76,7 +75,6 @@ function assertUnprotected(branch, rules) {
   if (!Array.isArray(rules) || rules.length !== 0) {
     throw new Error("EXISTING_RULESETS_REQUIRE_ADMIN_REVIEW");
   }
-  return branch.commit.sha;
   return sha;
 }
 
@@ -94,20 +92,6 @@ function assertExecutedSummary(checks) {
   }
 }
 
-function assertInstalled(config) {
-  const checks = config?.required_status_checks;
-  const approvals = config?.required_pull_request_reviews;
-  if (checks?.strict !== true ||
-      !Array.isArray(checks.checks) ||
-      !checks.checks.some(c => c.context === CHECK_NAME && c.app_id === GITHUB_ACTIONS_APP_ID) ||
-      config?.enforce_admins?.enabled !== true ||
-      !Number.isInteger(approvals?.required_approving_review_count) ||
-      approvals.required_approving_review_count < 1 ||
-      approvals?.dismiss_stale_reviews !== true ||
-      approvals?.require_last_push_approval !== true ||
-      config?.required_conversation_resolution?.enabled !== true ||
-      config?.allow_force_pushes?.enabled !== false ||
-      config?.allow_deletions?.enabled !== false) {
 function installedProtectionIssues(config, solo = false) {
   const checks = config?.required_status_checks;
   const approvals = config?.required_pull_request_reviews;
@@ -136,7 +120,6 @@ function assertInstalled(config) {
 }
 
 function run({ mode = "--plan", env = process.env, api = ghApi, log = console.log } = {}) {
-  if (!["--plan", "--apply"].includes(mode)) throw new Error("UNKNOWN_MODE");
   if (!["--plan", "--apply", "--verify", "--verify-solo"].includes(mode)) throw new Error("UNKNOWN_MODE");
   if (mode === "--apply" && env.TAD_APPROVE_MAIN_PROTECTION !== "YES") {
     throw new Error("EXPLICIT_ADMIN_APPROVAL_REQUIRED");

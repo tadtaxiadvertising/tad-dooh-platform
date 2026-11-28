@@ -221,6 +221,48 @@ async function verify() {
     snapshot = await report();
     assert.equal(snapshot.categories.AUTH_LINK_MISMATCH, 1);
     assert.equal(snapshot.categories.LINKS_CONSISTENT, undefined);
+    // Emulate Auth persisting a new identity and losing its response.
+    // The actual service supplies the correlation to the synthetic provider.
+    const lostAuthAttempt = randomUUID();
+    const lostAuthId = randomUUID();
+    let lostAuthCalls = 0;
+    const lostAuth = new OnboardingService(second, { getClient: () => ({
+      auth: { admin: {
+        async createUser(input) {
+          lostAuthCalls++;
+          assert.equal(input.app_metadata.tad_onboarding_reservation, storageKey(lostAuthAttempt));
+          await first.$executeRaw`INSERT INTO auth.users (id, email, raw_app_meta_data)
+            VALUES (${lostAuthId}::uuid, ${input.email}, ${JSON.stringify(input.app_metadata)}::jsonb)`;
+          throw new Error("fixture Auth response lost");
+        },
+        async deleteUser() {
+          throw new Error("Unexpected compensation for unknown Auth outcome");
+        },
+      } },
+    }) });
+    const lostAuthRequest = { ...request, email: "lost-auth@example.invalid" };
+    await assert.rejects(lostAuth.onboardAdvertiser(lostAuthRequest, lostAuthAttempt), /fixture Auth response lost/);
+    await assert.rejects(lostAuth.onboardAdvertiser(lostAuthRequest, lostAuthAttempt), error => error.getStatus() === 409);
+    assert.equal(lostAuthCalls, 1);
+    assert.equal(await first.advertiser.count(), 1);
+    assert.equal(await first.campaign.count(), 1);
+    const lostAuthReservation = await first.idempotencyKey.findUniqueOrThrow({ where: { key: storageKey(lostAuthAttempt) } });
+    assert.equal(lostAuthReservation.isLocked, true);
+    assert.equal(lostAuthReservation.response, null);
+    snapshot = await report();
+    assert.equal(snapshot.categories.RECENT_LOCK_AUTH_LINK_FOUND, 1);
+    await first.$executeRaw`UPDATE public.idempotency_keys SET created_at = (now() AT TIME ZONE 'UTC') - interval '2 hours'
+      WHERE key = ${storageKey(lostAuthAttempt)}`;
+    snapshot = await report();
+    assert.equal(snapshot.categories.AGED_LOCK_AUTH_LINK_FOUND, 1);
+    await first.$executeRaw`INSERT INTO auth.users (id, email, raw_app_meta_data)
+      SELECT ${randomUUID()}::uuid, 'duplicate-auth@example.invalid', raw_app_meta_data
+      FROM auth.users WHERE id = ${lostAuthId}::uuid`;
+    snapshot = await report();
+    assert.equal(snapshot.categories.LOCKED_AUTH_LINK_AMBIGUOUS, 1);
+    assert.equal(snapshot.sampled, 7);
+    console.log("PASS Auth acknowledgement-loss correlation and ambiguous matches remain locked");
+
     // Bulk fixture rows prove the cap is not a claim of full coverage.
     await first.idempotencyKey.createMany({ data: Array.from({ length: 1001 }, () => ({
       ...reservationData, key: storageKey(randomUUID()), isLocked: true,
@@ -229,7 +271,7 @@ async function verify() {
     assert.equal(snapshot.sampled, 1000);
     assert.equal(snapshot.truncated, true);
     assert.equal(Object.values(snapshot.categories).reduce((sum, n) => sum + n, 0), 1000);
-    assert.equal(await first.idempotencyKey.count(), 1008);
+    assert.equal(await first.idempotencyKey.count(), 1009);
     console.log("PASS bounded read-only reconciliation report: missing links, malformed receipts, aged locks, scope and overflow");
 
   } finally {

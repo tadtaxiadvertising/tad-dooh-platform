@@ -85,6 +85,11 @@ export class PaymentEvidenceService {
         this.logger.warn(
           `Evidence already exists for ${input.paymentIntentId}, updating`,
         );
+        // Preserve a strictly increasing version even on same-ms retries
+        // or when a previous writer's clock is ahead of this process.
+        const nextSubmittedAt = new Date(
+          Math.max(Date.now(), existing.submittedAt.getTime() + 1),
+        );
         // A stale submission must never reopen a reviewed evidence row.
         const updated = await tx.paymentEvidence.updateMany({
           where: {
@@ -98,7 +103,7 @@ export class PaymentEvidenceService {
             fileSize: input.fileSize,
             mimeType: input.mimeType,
             submittedBy: input.submittedBy,
-            submittedAt: new Date(),
+            submittedAt: nextSubmittedAt,
             reviewStatus: "SUBMITTED",
             metadata: input.metadata,
           },
@@ -208,7 +213,15 @@ export class PaymentEvidenceService {
         if (!updatedEvidence || updatedEvidence.reviewStatus !== input.status) {
           throw new ConflictException("Payment evidence changed during review");
         }
-        if (claimed.count === 0) return updatedEvidence;
+        if (claimed.count === 0) {
+          if (
+            updatedEvidence.submittedAt.getTime() !==
+            evidence.submittedAt.getTime()
+          ) {
+            throw new ConflictException("Payment evidence version changed");
+          }
+          return updatedEvidence;
+        }
         if (claimed.count !== 1) {
           throw new ConflictException(
             "Unexpected payment evidence claim count",

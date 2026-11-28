@@ -7,13 +7,7 @@
  *
  * Estados: SUBMITTED → UNDER_REVIEW → PAYMENT_CONFIRMED | REJECTED
  */
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-  NotFoundException,
-} from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import type { PaymentIntent, Prisma } from "@prisma/client";
@@ -226,7 +220,7 @@ export class PaymentEvidenceService {
    * @internal
    */
   private async confirmPayment(
-    tx: any,
+    tx: Prisma.TransactionClient,
     paymentIntentId: string,
     verifiedBy: string,
     amountConfirmed?: number,

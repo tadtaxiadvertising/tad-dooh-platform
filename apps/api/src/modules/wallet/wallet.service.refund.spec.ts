@@ -3,7 +3,14 @@ import { WalletService } from "./wallet.service";
 
 describe("WalletService - idempotencia de reembolso de retiro (F3)", () => {
   let service: WalletService;
-  let currentTransactions: any[];
+  let currentTransactions: {
+    financialTransaction: {
+      findUnique: jest.Mock;
+      updateMany: jest.Mock;
+      update: jest.Mock;
+    };
+    $executeRaw: jest.Mock;
+  }[];
 
   beforeEach(() => {
     currentTransactions = [];
@@ -32,11 +39,11 @@ describe("WalletService - idempotencia de reembolso de retiro (F3)", () => {
   beforeEach(async () => {
     currentTransactions = [];
     const prismaService = createPrismaService();
-    service = new WalletService(prismaService as any);
+    service = new WalletService(prismaService);
   });
 
   it("solo reembolsa una sola vez sobre dos solicitudes concurrentes", async () => {
-    const pending: any = {
+    const pending = {
       id: "tx-1",
       type: "WITHDRAWAL",
       category: "DRIVER_PAYOUT",

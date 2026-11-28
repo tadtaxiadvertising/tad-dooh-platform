@@ -1,9 +1,6 @@
 import { ConfigModule } from "@nestjs/config";
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from "@nestjs/common";
+import { ForbiddenException } from "@nestjs/common";
+import type { AuthenticatedRequest } from "../auth/auth.types";
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { PrismaModule } from "../prisma/prisma.module";
@@ -14,6 +11,10 @@ import {
   PAYMENT_PROVIDER_FACTORY,
 } from "./payment-provider.tokens";
 import { PaymentsModule } from "./payments.module";
+
+function requestFor(id: string, role: string): AuthenticatedRequest {
+  return { user: { id, role, email: "" } } as AuthenticatedRequest;
+}
 
 describe("PaymentIntentController", () => {
   let module: TestingModule;
@@ -119,7 +120,7 @@ describe("PaymentIntentController", () => {
       await expect(
         controller.submitEvidence(
           "pi-1",
-          { user: { id: "user-a", role: "ADVERTISER", email: "" } } as any,
+          requestFor("user-a", "ADVERTISER"),
           { fileUrl: "https://x.test/a.pdf" },
         ),
       ).rejects.toThrow(ForbiddenException);
@@ -146,7 +147,7 @@ describe("PaymentIntentController", () => {
       await expect(
         controller.submitEvidence(
           "pi-2",
-          { user: { id: "user-b", role: "ADVERTISER", email: "" } } as any,
+          requestFor("user-b", "ADVERTISER"),
           { fileUrl: "https://x.test/b.pdf" },
         ),
       ).rejects.toThrow(ForbiddenException);
@@ -184,7 +185,7 @@ describe("PaymentIntentController", () => {
 
       const result = await controller.submitEvidence(
         "pi-3",
-        { user: { id: "user-x", role: "ADVERTISER", email: "" } } as any,
+        requestFor("user-x", "ADVERTISER"),
         { fileUrl: "https://x.test/c.pdf" },
       );
       expect(result).toHaveProperty("id", "ev-3");
@@ -206,7 +207,7 @@ describe("PaymentIntentController", () => {
 
       const result = await controller.submitEvidence(
         "pi-4",
-        { user: { id: "admin", role: "ADMIN", email: "" } } as any,
+        requestFor("admin", "ADMIN"),
         { fileUrl: "https://x.test/d.pdf" },
       );
       expect(result).toHaveProperty("id", "ev-4");

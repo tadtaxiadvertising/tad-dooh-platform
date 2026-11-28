@@ -499,6 +499,14 @@ describe("Public advertiser single-use attempt reservation", () => {
     expect(ctx.update).toHaveBeenCalledTimes(1);
     const reservation = ctx.create.mock.calls[0][0].data;
     expect(reservation.key).toMatch(/^[a-f0-9]{64}$/);
+    expect(ctx.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        app_metadata: {
+          role: "ADVERTISER",
+          tad_onboarding_reservation: reservation.key,
+        },
+      }),
+    );
     expect(JSON.stringify(reservation)).not.toContain(attempt);
     expect(JSON.stringify(reservation)).not.toContain(request.email);
     expect(JSON.stringify(reservation)).not.toContain(request.password);
@@ -516,6 +524,29 @@ describe("Public advertiser single-use attempt reservation", () => {
     });
     await expect(
       ctx.service.onboardAdvertiser(request, attempt),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(ctx.createUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains the reservation when Auth creation acknowledgement is lost", async () => {
+    const ctx = fixture();
+    ctx.createUser.mockRejectedValueOnce(new Error("Auth response lost"));
+    await expect(
+      ctx.service.onboardAdvertiser(request, attempt),
+    ).rejects.toThrow("Auth response lost");
+    const reservation = ctx.create.mock.calls[0][0].data;
+    expect(ctx.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        app_metadata: {
+          role: "ADVERTISER",
+          tad_onboarding_reservation: reservation.key,
+        },
+      }),
+    );
+    expect(ctx.prisma.$transaction).not.toHaveBeenCalled();
+    expect(ctx.deleteUser).not.toHaveBeenCalled();
+    await expect(
+      ctx.otherService.onboardAdvertiser(request, attempt),
     ).rejects.toMatchObject({ status: 409 });
     expect(ctx.createUser).toHaveBeenCalledTimes(1);
   });

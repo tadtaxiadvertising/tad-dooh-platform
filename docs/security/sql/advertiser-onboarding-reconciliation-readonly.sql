@@ -6,7 +6,7 @@ SET LOCAL statement_timeout = '5s';
 SET LOCAL lock_timeout = '1s';
 
 WITH candidates AS MATERIALIZED (
-  SELECT id, "isLocked", created_at, path, method, response
+  SELECT id, key, "isLocked", created_at, path, method, response
   FROM public.idempotency_keys
   WHERE "driverId" = 'public-advertiser-onboarding:single-use:v1'
   ORDER BY created_at DESC, id DESC
@@ -33,11 +33,22 @@ WITH candidates AS MATERIALIZED (
       AND pg_input_is_valid(receipt->>'campaignId', 'uuid')
       THEN (receipt->>'campaignId')::uuid END AS campaign_id
   FROM decoded
+), locked_auth_matches AS MATERIALIZED (
+  SELECT s.key, count(*) AS matches
+  FROM sample s
+  JOIN auth.users u ON u.raw_app_meta_data->>'tad_onboarding_reservation' = s.key
+  WHERE s."isLocked" AND s.response IS NULL
+  GROUP BY s.key
 ), classified AS (
   SELECT CASE
     WHEN i.path IS DISTINCT FROM '/onboarding/advertiser'
       OR i.method IS DISTINCT FROM 'POST' THEN 'INVALID_PROTOCOL'
     WHEN i."isLocked" AND i.response IS NOT NULL THEN 'LOCKED_WITH_UNEXPECTED_RECEIPT'
+    WHEN i."isLocked" AND m.matches > 1 THEN 'LOCKED_AUTH_LINK_AMBIGUOUS'
+    WHEN i."isLocked" AND m.matches = 1
+      AND i.created_at <= (now() AT TIME ZONE 'UTC') - interval '1 hour'
+      THEN 'AGED_LOCK_AUTH_LINK_FOUND'
+    WHEN i."isLocked" AND m.matches = 1 THEN 'RECENT_LOCK_AUTH_LINK_FOUND'
     WHEN i."isLocked" AND i.created_at <= (now() AT TIME ZONE 'UTC') - interval '1 hour'
       THEN 'AGED_LOCK_OUTCOME_UNKNOWN'
     WHEN i."isLocked" THEN 'RECENT_LOCK_OUTCOME_UNKNOWN'
@@ -53,6 +64,7 @@ WITH candidates AS MATERIALIZED (
     ELSE 'LINKS_CONSISTENT'
   END AS category
   FROM identifiers i
+  LEFT JOIN locked_auth_matches m ON m.key = i.key
   LEFT JOIN public.advertisers a ON a.id = i.advertiser_id
   LEFT JOIN public.campaigns c ON c.id = i.campaign_id
   LEFT JOIN auth.users u ON u.id = i.auth_id

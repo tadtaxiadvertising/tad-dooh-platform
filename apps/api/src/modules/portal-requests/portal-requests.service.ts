@@ -7,6 +7,13 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
+// Request handling needs contact identification, not credentials or banking.
+const requestDriverSelect = {
+  id: true,
+  fullName: true,
+  phone: true,
+} as const;
+
 @Injectable()
 export class PortalRequestsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -89,7 +96,7 @@ export class PortalRequestsService {
       where: { id },
       include: {
         advertiser: { select: advertiserSafeSelect },
-        driver: true,
+        driver: { select: requestDriverSelect },
       },
     });
   }
@@ -152,7 +159,7 @@ export class PortalRequestsService {
         data: { adminNotes: updateData.adminNotes },
         include: {
           advertiser: { select: advertiserSafeSelect },
-          driver: true,
+          driver: { select: requestDriverSelect },
         },
       });
     }
@@ -176,7 +183,10 @@ export class PortalRequestsService {
 
     return this.prisma.portalRequest.findUnique({
       where: { id },
-      include: { advertiser: { select: advertiserSafeSelect }, driver: true },
+      include: {
+        advertiser: { select: advertiserSafeSelect },
+        driver: { select: requestDriverSelect },
+      },
     });
   }
 

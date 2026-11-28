@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   Logger,
   NotFoundException,
 } from "@nestjs/common";
@@ -195,9 +196,10 @@ export class LeadService {
   }
 
   /**
-   * Register payment evidence (receipt from WhatsApp or bank transfer)
+   * Legacy writer: keep the contract fail-closed until ledger reconciliation.
+   * The canonical PaymentEvidenceService is the supported review path.
    */
-  async registerPaymentEvidence(dto: {
+  async registerPaymentEvidence(_dto: {
     paymentIntentId: string;
     leadId: string;
     type: "WHATSAPP_RECEIPT" | "BANK_TRANSFER" | "CARD_PAYMENT" | "OTHER";
@@ -208,157 +210,24 @@ export class LeadService {
     reviewerId?: string;
     reviewNotes?: string;
   }) {
-    const evidence = await this.prisma.paymentEvidence.create({
-      data: {
-        paymentIntentId: dto.paymentIntentId,
-        fileUrl: dto.fileUrl,
-        fileHash: dto.hash,
-        fileSize: dto.fileSize ? BigInt(dto.fileSize) : undefined,
-        mimeType: dto.mimeType,
-        reviewStatus: "SUBMITTED",
-        reviewedBy: dto.reviewerId,
-        reviewNote: dto.reviewNotes,
-        metadata: {
-          type: dto.type,
-          leadId: dto.leadId,
-        },
-      },
-    });
-
-    return evidence;
+    throw new ConflictException(
+      "Legacy payment evidence disabled; use the canonical payment workflow",
+    );
   }
 
   /**
-   * Verify a payment (human review result)
+   * Legacy verification cannot guarantee atomicity or consistent ledger state.
    */
   async verifyPayment(
-    paymentIntentId: string,
-    status: "CONFIRMED" | "REJECTED" | "REFUNDED",
-    reviewerNotes?: string,
-    verificationMethod:
+    _paymentIntentId: string,
+    _status: "CONFIRMED" | "REJECTED" | "REFUNDED",
+    _reviewerNotes?: string,
+    _verificationMethod:
       "MANUAL_REVIEW" | "WEBHOOK" | "AUTOMATED" = "MANUAL_REVIEW",
   ) {
-    const paymentIntent = await this.prisma.paymentIntent.findUnique({
-      where: { id: paymentIntentId },
-      include: {
-        lead: true,
-      },
-    });
-
-    if (!paymentIntent) {
-      throw new NotFoundException(
-        `PaymentIntent with id ${paymentIntentId} not found`,
-      );
-    }
-
-    const intentStatus =
-      status === "CONFIRMED"
-        ? "PAID"
-        : status === "REJECTED"
-          ? "FAILED"
-          : "REFUNDED";
-
-    // Update payment intent status
-    const updatedIntent = await this.prisma.paymentIntent.update({
-      where: { id: paymentIntentId },
-      data: {
-        status: intentStatus,
-        paidAt: status === "CONFIRMED" ? new Date() : undefined,
-        updatedAt: new Date(),
-      },
-    });
-
-    // Create payment verification record
-    await this.prisma.paymentVerification.create({
-      data: {
-        paymentIntentId,
-        verifiedBy: "ADMIN",
-        status: intentStatus,
-        note: reviewerNotes,
-        metadata: { verificationMethod },
-      },
-    });
-
-    // If confirmed, process accordingly
-    if (status === "CONFIRMED" && paymentIntent.leadId) {
-      if (paymentIntent.type === "DRIVER_SUBSCRIPTION") {
-        await this.processDriverSubscriptionConfirmed(paymentIntent.leadId);
-      } else if (paymentIntent.type === "ADVERTISER_CAMPAIGN") {
-        await this.processAdvertiserCampaignConfirmed(paymentIntent.leadId);
-      }
-    }
-
-    return { paymentIntent: updatedIntent, status };
-  }
-
-  /**
-   * Process driver subscription confirmation
-   */
-  private async processDriverSubscriptionConfirmed(leadId: string) {
-    // Update lead status
-    const lead = await this.prisma.lead.update({
-      where: { id: leadId },
-      data: { status: "CONFIRMED" },
-    });
-
-    if (lead.referrerId) {
-      const now = new Date();
-      const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      const ref = `COMM-DRV-${leadId}`;
-
-      // Create commission ledger entry for driver referral
-      await this.prisma.commissionLedger.create({
-        data: {
-          driverId: lead.referrerId,
-          amount: 500.0,
-          sourceType: "DRIVER_REFERRAL",
-          reference: ref,
-          status: "PENDING",
-          period,
-        },
-      });
-    }
-  }
-
-  /**
-   * Process advertiser campaign confirmation
-   */
-  private async processAdvertiserCampaignConfirmed(leadId: string) {
-    // Update lead status
-    const lead = await this.prisma.lead.update({
-      where: { id: leadId },
-      data: { status: "CONFIRMED" },
-    });
-
-    const key = `CONV-ADV-${leadId}-${Date.now()}`;
-    // Create conversion event
-    await this.prisma.conversionEvent.create({
-      data: {
-        type: "CAMPAIGN_ACTIVATION",
-        entityId: leadId,
-        entityType: "LEAD",
-        referrerId: lead.referrerId,
-        referrerCode: lead.referrerCode,
-        idempotencyKey: key,
-      },
-    });
-
-    if (lead.referrerId) {
-      const now = new Date();
-      const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      const ref = `COMM-ADV-${leadId}`;
-
-      await this.prisma.commissionLedger.create({
-        data: {
-          driverId: lead.referrerId,
-          amount: 500.0,
-          sourceType: "ADVERTISER_REFERRAL",
-          reference: ref,
-          status: "PENDING",
-          period,
-        },
-      });
-    }
+    throw new ConflictException(
+      "Legacy payment verification disabled; financial reconciliation required",
+    );
   }
 
   /**

@@ -100,7 +100,10 @@ export default function RequestsPage() {
         `${process.env.NEXT_PUBLIC_API_URL || ""}/api/proxy/portal-requests`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({
             advertiserId: entityId,
             type: newType,

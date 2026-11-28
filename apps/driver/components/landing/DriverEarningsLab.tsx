@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
   BadgeCheck,
@@ -22,15 +21,23 @@ export default function DriverEarningsLab({
   const [ads, setAds] = useState(8);
   const [sales, setSales] = useState(1);
   const [referrals, setReferrals] = useState(1);
-  const reduceMotion = useReducedMotion();
   const result = previewDriverEarnings(ads, sales, referrals);
   const earningsOutputRef = useRef<HTMLOutputElement>(null);
   const previousEarningsTotal = useRef(result.illustrativeTotalRD);
   useEffect(() => {
     if (previousEarningsTotal.current === result.illustrativeTotalRD) return;
     previousEarningsTotal.current = result.illustrativeTotalRD;
-    if (reduceMotion !== false || !earningsOutputRef.current) return;
-    const animation = earningsOutputRef.current.animate(
+    const output = earningsOutputRef.current;
+    // Animate only on a user-triggered value change and when the browser supports it.
+    if (
+      !output ||
+      typeof output.animate !== "function" ||
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    const animation = output.animate(
       [
         { transform: "translateY(3px)", opacity: 0.94 },
         { transform: "translateY(0px)", opacity: 1 },
@@ -38,7 +45,7 @@ export default function DriverEarningsLab({
       { duration: 180, easing: "ease-out" },
     );
     return () => animation.cancel();
-  }, [result.illustrativeTotalRD, reduceMotion]);
+  }, [result.illustrativeTotalRD]);
 
   const controls = [
     {
@@ -91,18 +98,8 @@ export default function DriverEarningsLab({
       <div className={styles.layout}>
         <div className={styles.controls}>
           {controls.map(
-            (
-              { id, title, subtitle, icon: Icon, value, setter, max },
-              index,
-            ) => (
-              <motion.div
-                key={id}
-                className={styles.control}
-                initial={false}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.3, delay: index * 0.06 }}
-              >
+            ({ id, title, subtitle, icon: Icon, value, setter, max }) => (
+              <div key={id} className={styles.control}>
                 <div className={styles.controlHeader}>
                   <span className={styles.icon}>
                     <Icon size={20} aria-hidden="true" />
@@ -150,7 +147,7 @@ export default function DriverEarningsLab({
                     ))}
                   </div>
                 )}
-              </motion.div>
+              </div>
             ),
           )}
           <p className={styles.rangeNote}>
@@ -168,7 +165,7 @@ export default function DriverEarningsLab({
             <span>SIMULACIÓN EDUCATIVA</span>
           </div>
           <p className={styles.resultEyebrow}>
-            Total bruto del ejemplo, en un mismo período
+            Ejemplo combinado: un mes de anuncios y bonos por eventos
           </p>
           <output
             ref={earningsOutputRef}
@@ -192,6 +189,11 @@ export default function DriverEarningsLab({
             </div>
           </div>
           <div className={styles.explainer}>
+            <p>
+              Los ingresos de pantalla se ilustran por mes; las ventas y los
+              referidos son bonos por eventos aprobados y no se repiten
+              automáticamente en meses siguientes.
+            </p>
             <p>
               <strong>Mensual por anuncios:</strong>{" "}
               {money(result.recurringMonthlyExampleRD)}

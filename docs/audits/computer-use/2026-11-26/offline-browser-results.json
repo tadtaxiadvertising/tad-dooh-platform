@@ -1,0 +1,39 @@
+{
+  "runId": "TAD-CUA-20261126-01",
+  "sourceCommit": "01fb2e0f",
+  "method": "Real browser IndexedDB and Player queue source; local synthetic ACK server; page restart, not OS restart",
+  "productionApiTested": false,
+  "financialReconciliationTested": false,
+  "requests": 8,
+  "syntheticUniqueEvents": 2,
+  "results": [
+    {
+      "id": "online-durable-enqueue",
+      "status": "PASS"
+    },
+    {
+      "id": "offline-durable-enqueue",
+      "status": "PASS"
+    },
+    {
+      "id": "offline-delivery-failure-retains-two-proofs",
+      "status": "PASS"
+    },
+    {
+      "id": "offline-page-restart-retains-two-proofs",
+      "status": "PASS"
+    },
+    {
+      "id": "reconnect-http-401-retains-two-proofs",
+      "status": "PASS"
+    },
+    {
+      "id": "lost-ack-retains-queue-after-server-acceptance",
+      "status": "PASS"
+    },
+    {
+      "id": "retry-full-ack-drains-queue-synthetic-server-deduplicates",
+      "status": "PASS"
+    }
+  ]
+}

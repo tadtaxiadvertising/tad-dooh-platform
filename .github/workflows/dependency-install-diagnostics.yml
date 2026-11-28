@@ -1,0 +1,45 @@
+name: Dependency Install Diagnostics
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'Dockerfile.*'
+      - '.github/workflows/dependency-install-diagnostics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-install:
+    name: API frozen install diagnostic
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate lockfile snapshot references (no install required)
+        run: |
+          node --test scripts/check-pnpm-lockfile-snapshots.test.cjs
+          node scripts/check-pnpm-lockfile-snapshots.cjs
+      - name: Print package-manager and workspace metadata
+        run: |
+          node --version
+          node -p "require('./package.json').packageManager"
+          head -n 1 pnpm-lock.yaml
+      - name: Install exact pnpm version without pnpm/action-setup
+        run: |
+          npm install --global pnpm@10.34.9
+          pnpm --version
+      - name: Verify frozen API dependency graph without lifecycle scripts
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts --filter api... --filter @tad/impact-calculator... --reporter append-only
+      - name: Verify complete workspace lockfile without lifecycle scripts
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts --reporter append-only

@@ -136,7 +136,7 @@ export class WalletService {
         >`
         SELECT id, available_balance, bank_info
         FROM wallets
-        WHERE driver_id = ${driverId}
+        WHERE driver_id_text_217 = ${driverId}
         FOR UPDATE
       `;
 
@@ -187,7 +187,7 @@ export class WalletService {
         await tx.$executeRaw`
         UPDATE wallets
         SET available_balance = available_balance - ${amount}
-        WHERE driver_id = ${driverId}
+        WHERE driver_id_text_217 = ${driverId}
       `;
 
         // ── STEP 4: Safety net — verify post-deduction balance ──
@@ -195,7 +195,7 @@ export class WalletService {
         // But we check anyway as a belt-and-suspenders defense against
         // DB corruption, negative amount bypass, or application bugs.
         const [verify] = await tx.$queryRaw<[{ available_balance: number }]>`
-        SELECT available_balance FROM wallets WHERE driver_id = ${driverId}
+        SELECT available_balance FROM wallets WHERE driver_id_text_217 = ${driverId}
       `;
 
         const newBalance = Number(verify.available_balance);
@@ -206,7 +206,7 @@ export class WalletService {
           await tx.$executeRaw`
           UPDATE wallets
           SET available_balance = available_balance + ${amount}
-          WHERE driver_id = ${driverId}
+          WHERE driver_id_text_217 = ${driverId}
         `;
 
           this.logFinancialAnomaly(
@@ -279,94 +279,90 @@ export class WalletService {
    * - Si está FAILED/otro → BadRequest (flujo inválido, no se reabre).
    */
   async confirmWithdrawal(transactionId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const txRow = await tx.financialTransaction.findUnique({
-        where: { id: transactionId },
-      });
+    return this.prisma.$transaction(
+      async (tx) => {
+        const { row, idempotent } = await this.claimWithdrawalDecision(
+          tx,
+          transactionId,
+          "COMPLETED",
+          `Confirmed by bank webhook at ${new Date().toISOString()}`,
+        );
 
-      if (!txRow) {
-        throw new BadRequestException(
-          `Withdrawal transaction ${transactionId} not found`,
-        );
-      }
-      if (txRow.type !== "WITHDRAWAL") {
-        throw new BadRequestException(
-          `Transaction ${transactionId} is not a withdrawal (type=${txRow.type})`,
-        );
-      }
-      if (txRow.status === "COMPLETED") {
+        if (!idempotent) {
+          this.logger.log(
+            `✅ Retiro confirmado: Tx ${transactionId} → COMPLETED (RD$ ${row.amount})`,
+          );
+        }
         return {
           success: true,
-          idempotent: true,
+          idempotent,
           status: "COMPLETED",
           transactionId,
         };
-      }
-      if (txRow.status !== "PENDING") {
-        throw new BadRequestException(
-          `Withdrawal ${transactionId} is not confirmable from status '${txRow.status}'`,
-        );
-      }
-
-      await tx.financialTransaction.update({
-        where: { id: transactionId },
-        data: {
-          status: "COMPLETED",
-          note: `Confirmed by bank webhook at ${new Date().toISOString()}`,
-        },
-      });
-
-      this.logger.log(
-        `✅ Retiro confirmado: Tx ${transactionId} → COMPLETED (RD$ ${txRow.amount})`,
-      );
-      return {
-        success: true,
-        idempotent: false,
-        status: "COMPLETED",
-        transactionId,
-      };
-    });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
   }
 
   /**
-   * RECHAZO DE RETIRO (v12.4) — cierra el flujo en caso de fallo bancario.
-   * Reembolsa el monto retenido de vuelta al balance del conductor y marca la
-   * transacción como FAILED. Idempotente y atómico (mismo lock que withdraw).
+   * A failed withdrawal can be refunded exactly once, in the transaction
+   * that claims the terminal decision. A missing wallet rolls back the claim.
    */
   async refundFailedWithdrawal(transactionId: string, reason?: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const txRow = await tx.financialTransaction.findUnique({
-        where: { id: transactionId },
-      });
+    return this.prisma.$transaction(
+      async (tx) => {
+        const { row, idempotent } = await this.claimWithdrawalDecision(
+          tx,
+          transactionId,
+          "FAILED",
+          reason
+            ? `Rejected: ${reason}`
+            : `Rejected by bank webhook at ${new Date().toISOString()}`,
+        );
 
-      if (!txRow) {
-        throw new BadRequestException(
-          `Withdrawal transaction ${transactionId} not found`,
+        if (idempotent) {
+          return {
+            success: true,
+            idempotent: true,
+            status: "FAILED",
+            transactionId,
+          };
+        }
+
+        if (!row.entityId) {
+          throw new BadRequestException(
+            `Withdrawal ${transactionId} has no entityId to refund`,
+          );
+        }
+        if (!Number.isFinite(row.amount) || row.amount <= 0) {
+          throw new BadRequestException("Invalid stored withdrawal amount");
+        }
+
+        const credited = await tx.$executeRaw`
+          UPDATE wallets
+          SET available_balance = available_balance + ${row.amount}
+          WHERE driver_id_text_217 = ${row.entityId}
+        `;
+        if (credited !== 1) {
+          throw new BadRequestException(
+            `Withdrawal ${transactionId} could not credit exactly one wallet`,
+          );
+        }
+
+        this.logger.log(
+          `🔁 Retiro reembolsado: Tx ${transactionId} → FAILED (RD$ ${row.amount} devueltos a driver ${row.entityId})`,
         );
-      }
-      if (txRow.type !== "WITHDRAWAL") {
-        throw new BadRequestException(
-          `Transaction ${transactionId} is not a withdrawal`,
-        );
-      }
-      if (txRow.status === "FAILED") {
         return {
           success: true,
-          idempotent: true,
+          idempotent: false,
           status: "FAILED",
           transactionId,
+          refundedAmount: row.amount,
         };
-      }
-      if (txRow.status !== "PENDING") {
-        throw new BadRequestException(
-          `Withdrawal ${transactionId} cannot be failed from status '${txRow.status}'`,
-        );
-      }
-      if (!txRow.entityId) {
-        throw new BadRequestException(
-          `Withdrawal ${transactionId} has no entityId to refund`,
-        );
-      }
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
+  }
 
       // ── IDEMPOTENCIA ATÓMICA: solo reembolsar si la transacción sigue en
       // PENDING (mismo patrón que withdraw). Dos solicitudes concurrentes no
@@ -399,28 +395,72 @@ export class WalletService {
         SET available_balance = available_balance + ${txRow.amount}
         WHERE driver_id = ${txRow.entityId}
       `;
-
-      await tx.financialTransaction.update({
-        where: { id: transactionId },
-        data: {
-          status: "FAILED",
-          note: reason
-            ? `Rejected: ${reason}`
-            : `Rejected by bank webhook at ${new Date().toISOString()}`,
-        },
-      });
-
-      this.logger.log(
-        `🔁 Retiro reembolsado: Tx ${transactionId} → FAILED (RD$ ${txRow.amount} devueltos a driver ${txRow.entityId})`,
-      );
-      return {
-        success: true,
-        idempotent: false,
-        status: "FAILED",
-        transactionId,
-        refundedAmount: txRow.amount,
-      };
+  /**
+   * Compare-and-set the decision on the canonical transaction row. PostgreSQL
+   * READ COMMITTED rechecks the predicate after a competing update commits.
+   * Never credit a wallet unless this transaction won that claim.
+   */
+  private async claimWithdrawalDecision(
+    tx: Prisma.TransactionClient,
+    transactionId: string,
+    status: "COMPLETED" | "FAILED",
+    note: string,
+  ) {
+    const row = await tx.financialTransaction.findUnique({
+      where: { id: transactionId },
     });
+    if (!row) {
+      throw new BadRequestException(
+        `Withdrawal transaction ${transactionId} not found`,
+      );
+    }
+    if (row.type !== "WITHDRAWAL") {
+      throw new BadRequestException(
+        `Transaction ${transactionId} is not a withdrawal`,
+      );
+    }
+    if (row.status === status) {
+      return { row, idempotent: true };
+    }
+    if (row.status !== "PENDING") {
+      throw new BadRequestException(
+        `Withdrawal ${transactionId} cannot transition from '${row.status}' to '${status}'`,
+      );
+    }
+
+    const claimed = await tx.financialTransaction.updateMany({
+      where: {
+        id: transactionId,
+        type: "WITHDRAWAL",
+        status: "PENDING",
+        category: row.category,
+        entityId: row.entityId,
+        amount: row.amount,
+      },
+      data: { status, note },
+    });
+    if (claimed.count === 1) {
+      return { row, idempotent: false };
+    }
+    if (claimed.count !== 0) {
+      throw new BadRequestException("Unexpected withdrawal claim count");
+    }
+
+    const current = await tx.financialTransaction.findUnique({
+      where: { id: transactionId },
+    });
+    if (
+      current?.type === "WITHDRAWAL" &&
+      current.status === status &&
+      current.category === row.category &&
+      current.entityId === row.entityId &&
+      current.amount === row.amount
+    ) {
+      return { row: current, idempotent: true };
+    }
+    throw new BadRequestException(
+      `Withdrawal ${transactionId} changed before the decision could be applied`,
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────

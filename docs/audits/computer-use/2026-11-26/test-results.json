@@ -1,0 +1,104 @@
+{
+  "runId": "TAD-CUA-20261126-01",
+  "definition": "Casos de esta ejecución; se cuentan una vez las regresiones finales. RED intencional, reintentos, build/typecheck/lint y follow-up local de navegador se reportan aparte.",
+  "groups": [
+    {
+      "id": "player-unit",
+      "cases": 56,
+      "pass": 56,
+      "fail": 0,
+      "blocked": 0,
+      "evidence": "player-unit-results.tap"
+    },
+    {
+      "id": "api-focused",
+      "cases": 60,
+      "pass": 60,
+      "fail": 0,
+      "blocked": 0,
+      "evidence": "verification-receipts.json"
+    },
+    {
+      "id": "offline-real-browser-local-queue",
+      "cases": 7,
+      "pass": 7,
+      "fail": 0,
+      "blocked": 0,
+      "evidence": "offline-browser-results.json"
+    },
+    {
+      "id": "admin-regression",
+      "cases": 8,
+      "pass": 8,
+      "fail": 0,
+      "blocked": 0,
+      "evidence": "admin-recovery-green.tap"
+    },
+    {
+      "id": "ci-isolation-regression",
+      "cases": 5,
+      "pass": 5,
+      "fail": 0,
+      "blocked": 0,
+      "evidence": "ci-isolation-results.tap"
+    },
+    {
+      "id": "public-responsive",
+      "cases": 24,
+      "pass": 18,
+      "fail": 0,
+      "blocked": 6,
+      "evidence": "public-runtime-results.json"
+    },
+    {
+      "id": "anonymous-private-navigation",
+      "cases": 3,
+      "pass": 3,
+      "fail": 0,
+      "blocked": 0,
+      "evidence": "public-runtime-results.json"
+    },
+    {
+      "id": "https-availability",
+      "cases": 7,
+      "pass": 6,
+      "fail": 0,
+      "blocked": 1,
+      "evidence": "availability-results.json"
+    },
+    {
+      "id": "production-admin-recovery-reproduction",
+      "cases": 1,
+      "pass": 0,
+      "fail": 1,
+      "blocked": 0,
+      "evidence": "admin-recovery-browser-results.json"
+    },
+    {
+      "id": "supplemental-service-discovery",
+      "cases": 2,
+      "pass": 0,
+      "fail": 0,
+      "blocked": 2,
+      "evidence": "supplemental-service-discovery.json"
+    }
+  ],
+  "totals": {
+    "cases": 173,
+    "pass": 163,
+    "fail": 1,
+    "blocked": 9
+  },
+  "notTestedFlows": [
+    "registro y onboarding autenticado",
+    "aprobación admin",
+    "vehículo/tablet pairing",
+    "campaña y uploads",
+    "pago sandbox",
+    "distribución/reproducción real",
+    "QR y conversión atribuida",
+    "wallet/payout y conciliación PostgreSQL",
+    "carga 10x",
+    "RLS desplegada"
+  ]
+}

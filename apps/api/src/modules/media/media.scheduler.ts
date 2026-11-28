@@ -18,6 +18,15 @@ export class MediaScheduler {
    */
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async handleOrphanCleanup() {
+    // Fail closed until an independently restored media catalog and
+    // Storage object-byte backup have been verified by the operator.
+    if (
+      process.env.TAD_STORAGE_GC_OPERATOR_APPROVAL !==
+      "AUTHORIZED_AFTER_VERIFIED_RESTORE"
+    ) {
+      this.logger.warn("STORAGE_GC_DISABLED_PENDING_RECOVERY");
+      return;
+    }
     this.logger.log(
       "🧹 Iniciando limpieza de archivos huérfanos en Storage...",
     );
@@ -43,6 +52,23 @@ export class MediaScheduler {
           continue;
         }
 
+        // Supabase list("") is root-scoped and limited to one page.
+        // A full page, folder entry or malformed file means this snapshot cannot
+        // prove any absence. Never delete from an incomplete inventory.
+        if (
+          files.length >= 1000 ||
+          files.some(
+            (file) =>
+              !file.id ||
+              !file.metadata ||
+              !file.name ||
+              file.name.includes("/"),
+          )
+        ) {
+          this.logger.warn("STORAGE_GC_SKIPPED_INCOMPLETE_BUCKET_INVENTORY");
+          continue;
+        }
+
         // 2. Obtener todas las llaves de almacenamiento en uso en la DB
         const mediaKeys = await this.prisma.media.findMany({
           where: { storageKey: { not: null } },
@@ -53,17 +79,70 @@ export class MediaScheduler {
           select: { url: true },
         });
 
-        const activeKeys = new Set([
-          ...mediaKeys.map((m) => m.storageKey),
-          ...assetUrls
-            .map((a) => {
-              // Extraer el path del storage desde la URL si es posible
-              // Formato esperado: .../bucket/path/to/file
-              const parts = a.url.split(`/${bucket}/`);
-              return parts.length > 1 ? parts[1] : null;
-            })
-            .filter(Boolean),
-        ]);
+        // Empty catalogs cannot prove an object is unreferenced; the
+        // current production catalog contains zero media/media_assets rows.
+        if (mediaKeys.length === 0 && assetUrls.length === 0) {
+          this.logger.warn("STORAGE_GC_SKIPPED_EMPTY_REFERENCE_CATALOG");
+          continue;
+        }
+
+        const activeKeys = new Set<string>();
+        let ambiguousReference = false;
+
+        // storageKey has no bucket field in the current Prisma contract.
+        // Preserve its exact path in either bucket rather than guessing.
+        for (const media of mediaKeys) {
+          const key = media.storageKey;
+          if (
+            typeof key !== "string" ||
+            !key.trim() ||
+            key.startsWith("/") ||
+            key.includes("..") ||
+            key.includes("\\")
+          ) {
+            ambiguousReference = true;
+            break;
+          }
+          activeKeys.add(key);
+        }
+
+        // Parse the URL pathname, never split the entire URL: queries/fragments,
+        // encoded names and unrelated CDN paths must not result in deletion.
+        if (!ambiguousReference) {
+          for (const asset of assetUrls) {
+            try {
+              const url = new URL(asset.url);
+              if (url.protocol !== "https:" && url.protocol !== "http:") {
+                throw new Error("INVALID_STORAGE_ASSET_PROTOCOL");
+              }
+              const match = url.pathname.match(
+                /\/storage\/v1\/object\/(?:public|sign|authenticated)\/([^/]+)\/(.+)$/,
+              );
+              if (!match) throw new Error("UNKNOWN_STORAGE_ASSET_PATH");
+
+              const refBucket = decodeURIComponent(match[1]);
+              const refKey = decodeURIComponent(match[2]);
+              if (
+                !buckets.includes(refBucket) ||
+                !refKey ||
+                refKey.startsWith("/") ||
+                refKey.includes("..") ||
+                refKey.includes("\\")
+              ) {
+                throw new Error("INVALID_STORAGE_ASSET_REFERENCE");
+              }
+              if (refBucket === bucket) activeKeys.add(refKey);
+            } catch {
+              ambiguousReference = true;
+              break;
+            }
+          }
+        }
+
+        if (ambiguousReference) {
+          this.logger.warn("STORAGE_GC_SKIPPED_AMBIGUOUS_MEDIA_REFERENCE");
+          continue;
+        }
 
         // 3. Identificar y borrar huérfanos con más de 24h de antigüedad
         const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);

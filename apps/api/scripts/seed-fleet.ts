@@ -23,6 +23,11 @@
  */
 import { PrismaClient } from "@prisma/client";
 
+const { assertLocalSeedAllowed } = require("./assert-local-seed.cjs") as {
+  assertLocalSeedAllowed: (env: NodeJS.ProcessEnv) => void;
+};
+assertLocalSeedAllowed(process.env);
+
 const prisma = new PrismaClient();
 
 const DEVICES = [

@@ -1,0 +1,117 @@
+[
+  {
+    "date": "2026-11-26",
+    "runId": "TAD-CUA-20261126-01",
+    "commit": "01fb2e0f9507e1c0e3a696c11e76960fa9b56f9a",
+    "environment": "Producción: solo lectura; corrección y pruebas: aislamiento local",
+    "frequency": "Reproducible en esta ejecución; no se midió frecuencia histórica",
+    "consoleErrors": [],
+    "networkErrors": [
+      "ERR_CERT_AUTHORITY_INVALID",
+      "DEPTH_ZERO_SELF_SIGNED_CERT"
+    ],
+    "securityImpact": "No se probó explotación ni se alteraron controles",
+    "financialImpact": "No se midieron pérdidas ni se movió dinero",
+    "dependencies": [
+      "Acceso autorizado al proxy y certificado del origen correcto"
+    ],
+    "githubIssue": "https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/560",
+    "id": "CUA-20261126-001",
+    "title": "El dominio público documentado del Player presenta certificado no confiable",
+    "role": [
+      "TABLET",
+      "PASSENGER"
+    ],
+    "url": "https://tad.player.ibusiness.com.do/",
+    "module": "Player / infraestructura TLS",
+    "category": "availability",
+    "severity": "P1",
+    "priority": 1,
+    "description": "TLS impide abrir el Player desde clientes con validación estricta.",
+    "preconditions": [
+      "Cliente nuevo sin excepciones TLS"
+    ],
+    "steps": [
+      "Abrir el origen en Chromium con validación TLS normal",
+      "Repetir GET con Node HTTPS sin desactivar rejectUnauthorized"
+    ],
+    "expected": "Certificado de confianza y acceso a la aplicación",
+    "observed": "Chromium ERR_CERT_AUTHORITY_INVALID en seis tamaños; Node DEPTH_ZERO_SELF_SIGNED_CERT",
+    "evidence": [
+      "public-runtime-results.json",
+      "availability-results.json"
+    ],
+    "technicalImpact": "Navegación bloqueada antes de ejecutar la aplicación",
+    "businessImpact": "Acceso por este hostname no disponible para un navegador estándar; impacto en tablets instaladas desconocido",
+    "rootCause": {
+      "confirmed": "Se presenta una cadena no confiable/autofirmada a ambos clientes",
+      "hypothesis": "Selección de certificado, proxy o dominio no provisionado; configuración no inspeccionada"
+    },
+    "affectedFiles": [
+      "02_reglas_negocio_stack.md (dominio documentado; sin cambio)"
+    ],
+    "proposedFix": "Confirmar origen canónico y provisionar certificado/cadena válidos; no omitir TLS",
+    "regression": "Chromium y Node con TLS estricto deben abrir el origen; luego Player autenticado/offline en sandbox",
+    "status": "BLOCKED"
+  },
+  {
+    "date": "2026-11-26",
+    "runId": "TAD-CUA-20261126-01",
+    "commit": "01fb2e0f9507e1c0e3a696c11e76960fa9b56f9a",
+    "environment": "Producción: solo lectura; corrección y pruebas: aislamiento local",
+    "frequency": "Reproducible en esta ejecución; no se midió frecuencia histórica",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "securityImpact": "No se probó explotación ni se alteraron controles",
+    "financialImpact": "No se midieron pérdidas ni se movió dinero",
+    "dependencies": [
+      "Verificación de proveedor/callback y correo en sandbox autorizado",
+      "CI contra dependencias fijadas en lockfile"
+    ],
+    "githubIssue": "https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/561",
+    "id": "CUA-20261126-002",
+    "title": "El enlace de recuperación Admin es un placeholder",
+    "role": [
+      "ADMIN"
+    ],
+    "url": "https://tad.adm.ibusiness.com.do/admin/login",
+    "module": "Admin / recuperación",
+    "category": "functional",
+    "severity": "P2",
+    "priority": 2,
+    "description": "El enlace visible no abre el formulario de recuperación.",
+    "preconditions": [
+      "Sesión anónima"
+    ],
+    "steps": [
+      "Abrir /admin/login",
+      "Pulsar ¿Olvidaste tu contraseña?"
+    ],
+    "expected": "Formulario de recuperación accesible sin sesión",
+    "observed": "href=\"#\"; termina en /admin/login# sin formulario",
+    "evidence": [
+      "admin-recovery-browser-results.json",
+      "evidence/screenshots/admin-recovery-before.png",
+      "admin-recovery-green.tap",
+      "admin-recovery-middleware-red.tap",
+      "admin-recovery-client-red.tap"
+    ],
+    "technicalImpact": "Falta el punto de entrada; middleware, proveedor de sesión y layout deben reconocer la ruta pública",
+    "businessImpact": "Usuarios que olvidan su contraseña carecen de recuperación desde ese login",
+    "rootCause": {
+      "confirmed": "Anchor placeholder y ausencia de ruta de recuperación Admin; listas públicas independientes en middleware, AuthProvider y _app",
+      "hypothesis": null
+    },
+    "affectedFiles": [
+      "apps/admin/pages/admin/login.tsx",
+      "apps/admin/pages/admin/forgot-password.tsx",
+      "apps/admin/middleware.ts",
+      "apps/admin/pages/_app.tsx",
+      "packages/ui/components/PortalAuth.tsx",
+      "packages/ui/components/AuthProvider.tsx"
+    ],
+    "proposedFix": "Reutilizar recuperación PortalAuth con initialView opcional; ruta pública concreta, sin relajar rutas privadas",
+    "regression": "Ocho contratos prueban rendering, middleware, client/layout y regreso al login; navegador local y proveedor real se registran aparte",
+    "status": "PENDING_VERIFICATION"
+  }
+]

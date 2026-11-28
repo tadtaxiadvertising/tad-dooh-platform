@@ -1,0 +1,163 @@
+{
+  "at": "2026-11-25T21:35:52.669Z",
+  "engine": "Prisma 5.22 offline migrate diff",
+  "sourceConnections": 0,
+  "sourceLfSha256": "eaee945edceaf7d8699ba3c813427d623887706fa3512194f9526e9ce91b04c7",
+  "columns": [
+    {
+      "table": "campaign_expirations",
+      "column": "advertiser_id",
+      "definition": "\"advertiser_id\" TEXT NOT NULL"
+    },
+    {
+      "table": "campaign_expirations",
+      "column": "notification_sent",
+      "definition": "\"notification_sent\" BOOLEAN NOT NULL DEFAULT false"
+    },
+    {
+      "table": "campaign_expirations",
+      "column": "notified_at",
+      "definition": "\"notified_at\" TIMESTAMP(3)"
+    },
+    {
+      "table": "campaign_expirations",
+      "column": "remaining_days",
+      "definition": "\"remaining_days\" INTEGER NOT NULL"
+    },
+    {
+      "table": "campaign_expirations",
+      "column": "scheduled_for",
+      "definition": "\"scheduled_for\" TIMESTAMP(3) NOT NULL"
+    },
+    {
+      "table": "devices",
+      "column": "is_simulated",
+      "definition": "\"is_simulated\" BOOLEAN NOT NULL DEFAULT false"
+    },
+    {
+      "table": "driver_locations",
+      "column": "is_simulated",
+      "definition": "\"is_simulated\" BOOLEAN NOT NULL DEFAULT false"
+    },
+    {
+      "table": "driver_locations",
+      "column": "speed",
+      "definition": "\"speed\" DOUBLE PRECISION NOT NULL DEFAULT 0"
+    },
+    {
+      "table": "drivers",
+      "column": "agreement_version",
+      "definition": "\"agreement_version\" TEXT"
+    },
+    {
+      "table": "drivers",
+      "column": "bank_account",
+      "definition": "\"bank_account\" JSONB"
+    },
+    {
+      "table": "drivers",
+      "column": "cedula",
+      "definition": "\"cedula\" TEXT"
+    },
+    {
+      "table": "drivers",
+      "column": "consecutive_months_under_goal",
+      "definition": "\"consecutive_months_under_goal\" INTEGER NOT NULL DEFAULT 0"
+    },
+    {
+      "table": "drivers",
+      "column": "contract_accepted",
+      "definition": "\"contract_accepted\" BOOLEAN NOT NULL DEFAULT false"
+    },
+    {
+      "table": "drivers",
+      "column": "contract_accepted_at",
+      "definition": "\"contract_accepted_at\" TIMESTAMP(3)"
+    },
+    {
+      "table": "drivers",
+      "column": "hardware_config",
+      "definition": "\"hardware_config\" JSONB"
+    },
+    {
+      "table": "drivers",
+      "column": "identidad_vehicular",
+      "definition": "\"identidad_vehicular\" JSONB"
+    },
+    {
+      "table": "drivers",
+      "column": "insurance_accepted",
+      "definition": "\"insurance_accepted\" BOOLEAN NOT NULL DEFAULT false"
+    },
+    {
+      "table": "drivers",
+      "column": "insurance_accepted_at",
+      "definition": "\"insurance_accepted_at\" TIMESTAMP(3)"
+    },
+    {
+      "table": "drivers",
+      "column": "is_simulated",
+      "definition": "\"is_simulated\" BOOLEAN NOT NULL DEFAULT false"
+    },
+    {
+      "table": "drivers",
+      "column": "level",
+      "definition": "\"level\" TEXT NOT NULL DEFAULT 'BASE'"
+    },
+    {
+      "table": "drivers",
+      "column": "onboarding_status",
+      "definition": "\"onboarding_status\" TEXT NOT NULL DEFAULT 'PENDING_AGREEMENT'"
+    },
+    {
+      "table": "drivers",
+      "column": "password",
+      "definition": "\"password\" TEXT"
+    },
+    {
+      "table": "drivers",
+      "column": "referral_code",
+      "definition": "\"referral_code\" TEXT"
+    },
+    {
+      "table": "drivers",
+      "column": "referred_by",
+      "definition": "\"referred_by\" TEXT"
+    },
+    {
+      "table": "drivers",
+      "column": "subscription_end",
+      "definition": "\"subscription_end\" TIMESTAMP(3)"
+    },
+    {
+      "table": "drivers",
+      "column": "subscription_paid",
+      "definition": "\"subscription_paid\" BOOLEAN NOT NULL DEFAULT false"
+    },
+    {
+      "table": "drivers",
+      "column": "taxi_plate",
+      "definition": "\"taxi_plate\" TEXT"
+    },
+    {
+      "table": "subscriptions",
+      "column": "device_id",
+      "definition": "\"device_id\" TEXT"
+    },
+    {
+      "table": "subscriptions",
+      "column": "is_simulated",
+      "definition": "\"is_simulated\" BOOLEAN NOT NULL DEFAULT false"
+    },
+    {
+      "table": "subscriptions",
+      "column": "paid_at",
+      "definition": "\"paid_at\" TIMESTAMP(3)"
+    },
+    {
+      "table": "subscriptions",
+      "column": "valid_until",
+      "definition": "\"valid_until\" TIMESTAMP(3) NOT NULL"
+    }
+  ]
+}

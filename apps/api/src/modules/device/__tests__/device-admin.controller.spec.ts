@@ -11,6 +11,7 @@ describe("DeviceAdminController", () => {
   const mockPrismaService = {
     device: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -41,10 +42,9 @@ describe("DeviceAdminController", () => {
 
   describe("deleteDevice", () => {
     it("should throw InternalServerErrorException without leaking internal error details on failure", async () => {
-      mockPrismaService.device.findFirst.mockResolvedValue({
-        id: "uuid-123",
-        deviceId: "HW-123",
-      });
+      mockPrismaService.device.findMany.mockResolvedValue([
+        { id: "uuid-123", deviceId: "HW-123" },
+      ]);
       const internalDbError = new Error(
         "FATAL DB ERROR: pg_stat_activity deadlock in table devices_rel",
       );
@@ -69,7 +69,7 @@ describe("DeviceAdminController", () => {
       const internalDbError = new Error(
         "PrismaClientKnownRequestError: Table missing in catalog",
       );
-      mockPrismaService.device.findFirst.mockRejectedValue(internalDbError);
+      mockPrismaService.device.findMany.mockRejectedValue(internalDbError);
 
       await expect(controller.getDeviceProfile("HW-123")).rejects.toThrow(
         InternalServerErrorException,

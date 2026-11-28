@@ -11,6 +11,7 @@ import { FullyKioskBridge } from "./fullykiosk-bridge";
 import type {
   MediaAsset,
   DeviceCommand,
+  DeviceCommandResult,
   PlayerStatus,
   CampaignSchedule,
 } from "./types";
@@ -134,23 +135,38 @@ async function initPlayer(): Promise<void> {
       killSwitch.activate(reason);
       kioskBridge.lockKiosk().catch(() => {});
     },
-    onCommands: (commands: DeviceCommand[]) => {
-      console.log(`[TAD Player] Commands received: ${commands.length}`);
+    onCommands: async (
+      commands: DeviceCommand[],
+    ): Promise<DeviceCommandResult[]> => {
+      const outcomes: DeviceCommandResult[] = [];
       for (const cmd of commands) {
+        // We are already inside an active full-sync request: launching a
+        // recursive sync is unnecessary and can race the command state.
         if (cmd.type === "FORCE_SYNC") {
-          syncManager.executeFullSync();
-        } else {
-          // Delegate all other commands to FullyKiosk Bridge
-          kioskBridge
-            .handleCommand(cmd.type, cmd.params)
-            .then((success) => {
-              console.log(
-                `[TAD Player] Command ${cmd.type} executed: ${success}`,
-              );
-            })
-            .catch(() => {});
+          outcomes.push({ id: cmd.id, success: true });
+          continue;
+        }
+        try {
+          const success = await kioskBridge.handleCommand(cmd.type, cmd.params);
+          // REBOOT / RESTART_APP may terminate the process before any
+          // confirmation can be persisted. Do not falsely mark EXECUTED;
+          // their unknown outcomes require a durable receipt protocol (#234).
+          const irreversible =
+            cmd.type === "REBOOT" || cmd.type === "RESTART_APP";
+          outcomes.push({
+            id: cmd.id,
+            success: success && !irreversible,
+          });
+          if (irreversible) {
+            console.warn(
+              "[TAD Player] Restart outcome requires reconciliation; execution ACK withheld.",
+            );
+          }
+        } catch {
+          outcomes.push({ id: cmd.id, success: false });
         }
       }
+      return outcomes;
     },
   });
   syncManager.init(deviceId);

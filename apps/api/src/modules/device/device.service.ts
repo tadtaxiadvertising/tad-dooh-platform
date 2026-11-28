@@ -1,7 +1,13 @@
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { RegisterDeviceDto } from "./dto/register-device.dto";
+import { assertNoDeviceHardwareUuidAlias } from "./device-identity-collision.guard";
 import { HeartbeatDto } from "./dto/heartbeat.dto";
 import { PlaybackConfirmationDto } from "./dto/playback-confirmation.dto";
 import { SyncDeviceDto } from "./dto/sync-device.dto";
@@ -62,6 +68,7 @@ export class DeviceService {
   }
 
   async registerDevice(dto: RegisterDeviceDto) {
+    await assertNoDeviceHardwareUuidAlias(this.prisma, dto.device_id);
     const existingDevice = await this.prisma.device.findUnique({
       where: { deviceId: dto.device_id },
     });
@@ -76,7 +83,8 @@ export class DeviceService {
           isOnline: true,
           appVersion: dto.app_version,
           lastSeen: new Date(),
-          driverId: dto.driver_id ?? undefined,
+          // Public re-registration can refresh liveness, never ownership.
+          // Driver pairing is reserved for authenticated admin workflows.
         },
       });
     }
@@ -90,7 +98,7 @@ export class DeviceService {
         appVersion: dto.app_version,
         status: BUSINESS_RULES.STATUS.DEVICE.INITIAL, // 🔒 Requires admin approval before joining fleet
         lastSeen: new Date(),
-        driverId: dto.driver_id,
+        // New hardware stays unassigned until an ADMIN pairs it.
       },
     });
   }
@@ -106,6 +114,7 @@ export class DeviceService {
 
   /** Admin approves a device — sets it ACTIVE so it can join the fleet. */
   async approveDevice(deviceId: string) {
+    await assertNoDeviceHardwareUuidAlias(this.prisma, deviceId);
     this.logger.log(`✅ Admin approved device: ${deviceId}`);
     return this.prisma.device.update({
       where: { deviceId },
@@ -209,6 +218,8 @@ export class DeviceService {
     });
 
     if (!device) {
+      // Reject a new hardware alias before creating a pending device.
+      await assertNoDeviceHardwareUuidAlias(this.prisma, dto.device_id);
       // 🔒 Unknown device: register as PENDING (not ACTIVE) and block content
       this.logger.warn(
         `Heartbeat from unknown device: ${dto.device_id}. Registering as PENDING — awaiting admin approval.`,
@@ -541,17 +552,49 @@ export class DeviceService {
   }
 
   async acknowledgeCommand(commandId: string, result: unknown) {
-    this.logger.log(
-      `📥 Command ${commandId} acknowledged with result: ${JSON.stringify(result)}`,
-    );
-    return this.prisma.deviceCommand.update({
-      where: { id: commandId },
+    // A delivery attempt is not execution. Never accept the legacy
+    // {result:{acknowledged:true}} placeholder or any unsuccessful outcome.
+    if (
+      result === null ||
+      typeof result !== "object" ||
+      Array.isArray(result) ||
+      !("success" in result) ||
+      result.success !== true
+    ) {
+      throw new BadRequestException(
+        "A successful command execution result is required",
+      );
+    }
+
+    // Transition once only, and store a canonical minimal receipt without
+    // arbitrary untrusted client payloads/identifiers in logs.
+    const receipt = JSON.stringify({ success: true });
+    const updated = await this.prisma.deviceCommand.updateMany({
+      where: { id: commandId, status: "PROCESSING" },
       data: {
         status: "EXECUTED",
         executedAt: new Date(),
-        result: JSON.stringify(result),
+        result: receipt,
       },
     });
+
+    if (updated.count === 1) {
+      return { acknowledged: true };
+    }
+
+    // Duplicate HTTP ACKs after a lost response must be idempotent, but
+    // must never overwrite an existing result or revive PENDING commands.
+    const current = await this.prisma.deviceCommand.findUnique({
+      where: { id: commandId },
+      select: { status: true, result: true },
+    });
+    if (current?.status === "EXECUTED" && current.result === receipt) {
+      return { acknowledged: true, alreadyRecorded: true };
+    }
+
+    throw new ConflictException(
+      "Command is not awaiting an execution acknowledgment",
+    );
   }
 
   // M9: verifica que el comando (referenciado por su UUID) pertenezca al dispositivo
@@ -585,6 +628,12 @@ export class DeviceService {
 
     if (device.status === BUSINESS_RULES.STATUS.DEVICE.INITIAL) {
       return { success: false, reason: "awaiting_approval" };
+    }
+
+    // Never acknowledge queued GPS points that cannot be attributed to
+    // an ADMIN-approved driver. A successful ACK would drop offline events.
+    if (dto.locations?.length && !device.driverId) {
+      return { success: false, reason: "device_unassigned" };
     }
 
     // 2. Update Heartbeat / Telemetry
@@ -631,7 +680,8 @@ export class DeviceService {
         `   -> Inserting ${dto.locations.length} location events`,
       );
       const locationData = dto.locations.map((l) => ({
-        deviceId: dto.device_id,
+        // driver_locations.device_id is physically UUID, not hardware TEXT.
+        deviceId: device.id,
         driverId: device.driverId ?? "",
         latitude: l.lat,
         longitude: l.lng,

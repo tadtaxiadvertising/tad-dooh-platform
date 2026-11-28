@@ -9,8 +9,14 @@ import { Reflector } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { SupabaseService } from "../../supabase/supabase.service";
+import { AdvertisersService } from "../../advertisers/advertisers.service";
 import * as jwt from "jsonwebtoken";
+import { createHash } from "node:crypto";
 import { AuthUser } from "../auth.types";
+import { PrismaService } from "../../prisma/prisma.service";
+import { assertCommittedAdvertiserRegistration } from "../committed-advertiser-registration";
+
+type VerifiedSession = { user: AuthUser; correlation?: unknown };
 
 /**
  * SUPABASE AUTH GUARD — Política "Deny-by-Default".
@@ -31,17 +37,68 @@ export class SupabaseAuthGuard implements CanActivate {
   private readonly isDev: boolean;
   private readonly allowDevBypass: boolean;
 
-  // In-memory cache to avoid repeated network calls for the same token in a short window
+  // Cache only opaque SHA-256 token digests, never raw bearer credentials.
+  // The bounded LRU avoids indefinite process-memory growth with new sessions.
   private static sessionCache = new Map<
     string,
-    { user: AuthUser; expiry: number }
+    VerifiedSession & { expiry: number }
   >();
+  private static readonly MAX_CACHED_SESSIONS = 2_048;
+  private static nextSessionCacheSweepAt = 0;
   private readonly CACHE_TTL_MS = 10000; // 10 seconds cache for same token
+
+  private static cacheKey(token: string): string {
+    return createHash("sha256").update(token).digest("hex");
+  }
+
+  private static getCachedSession(token: string): VerifiedSession | undefined {
+    const key = SupabaseAuthGuard.cacheKey(token);
+    const cache = SupabaseAuthGuard.sessionCache;
+    const stored = cache.get(key);
+    if (!stored) return undefined;
+    if (stored.expiry <= Date.now()) {
+      cache.delete(key);
+      return undefined;
+    }
+    // Refresh LRU recency without extending the session validation TTL.
+    cache.delete(key);
+    cache.set(key, stored);
+    return stored;
+  }
+
+  private cacheVerifiedSession(
+    token: string,
+    user: AuthUser,
+    correlation?: unknown,
+  ): void {
+    const cache = SupabaseAuthGuard.sessionCache;
+    const now = Date.now();
+    // Bounded sweep only when full: avoid a linear scan per request at 10x.
+    if (
+      cache.size >= SupabaseAuthGuard.MAX_CACHED_SESSIONS &&
+      now >= SupabaseAuthGuard.nextSessionCacheSweepAt
+    ) {
+      for (const [key, entry] of cache) {
+        if (entry.expiry <= now) cache.delete(key);
+      }
+      SupabaseAuthGuard.nextSessionCacheSweepAt = now + this.CACHE_TTL_MS;
+    }
+
+    const key = SupabaseAuthGuard.cacheKey(token);
+    cache.delete(key);
+    cache.set(key, { user, correlation, expiry: now + this.CACHE_TTL_MS });
+    if (cache.size > SupabaseAuthGuard.MAX_CACHED_SESSIONS) {
+      const oldest = cache.keys().next().value;
+      if (oldest !== undefined) cache.delete(oldest);
+    }
+  }
 
   constructor(
     private reflector: Reflector,
     private supabaseService: SupabaseService,
     private configService: ConfigService,
+    private advertisersService: AdvertisersService,
+    private prisma: PrismaService,
   ) {
     this.isDev = process.env.NODE_ENV === "development";
     this.allowDevBypass = this.isDev && process.env.ALLOW_DEV_BYPASS === "true";
@@ -54,14 +111,6 @@ export class SupabaseAuthGuard implements CanActivate {
       this.logger.warn(
         "⚠️ [SECURITY] No hay JWT_SECRET configurado. Solo funcionará Estrategia 2 (Red).",
       );
-    }
-
-    // Cleanup stale cache occasionally
-    if (Math.random() > 0.95) {
-      const now = Date.now();
-      for (const [token, data] of SupabaseAuthGuard.sessionCache.entries()) {
-        if (data.expiry < now) SupabaseAuthGuard.sessionCache.delete(token);
-      }
     }
   }
 
@@ -79,6 +128,36 @@ export class SupabaseAuthGuard implements CanActivate {
 
     await this.resolveRequestUser(context, true);
     return true;
+  }
+
+  // Identity verification may be cached, but registration authorization
+  // must consult the current durable receipt on every correlated request.
+  private async acceptVerifiedSession(
+    request: { user?: AuthUser },
+    strict: boolean,
+    session: VerifiedSession,
+    token?: string,
+  ): Promise<void> {
+    const { user, correlation } = session;
+    try {
+      await assertCommittedAdvertiserRegistration(
+        this.prisma,
+        correlation,
+        user.id,
+        user.role === "ADVERTISER" ? (user.entityId ?? null) : null,
+      );
+    } catch {
+      delete request.user;
+      this.logger.warn("ADVERTISER_REGISTRATION_AUTHORIZATION_DENIED");
+      if (strict) {
+        throw new UnauthorizedException("Sesión de anunciante inválida.");
+      }
+      return;
+    }
+    request.user = user;
+    if (token !== undefined) {
+      this.cacheVerifiedSession(token, user, correlation);
+    }
   }
 
   /**
@@ -119,11 +198,41 @@ export class SupabaseAuthGuard implements CanActivate {
       return;
     }
 
+    // Legacy password login intentionally issues an API-signed advertiser JWT
+    // with no Supabase session_id / "authenticated" audience. Route only this
+    // exact untrusted SHAPE to the independently signed+DB-backed verifier.
+    // Decoding claims here is solely a dispatch hint, NEVER authorization.
+    // Invalid/expired tokens fail closed without falling back to Supabase.
+    const looksLikeLegacyAdvertiser =
+      tokenClaims?.role === "ADVERTISER" &&
+      tokenClaims?.app_metadata?.role === "ADVERTISER" &&
+      tokenClaims.session_id === undefined;
+    if (looksLikeLegacyAdvertiser) {
+      // Public endpoints perform their own optional/business validation.
+      // Avoid double DB reads on /advertisers/session, which verifies itself.
+      if (!strict) return;
+      try {
+        const verified =
+          await this.advertisersService.verifyAdvertiserSession(token);
+        if (typeof tokenClaims.email !== "string" || !tokenClaims.email) {
+          throw new UnauthorizedException("Sesión de anunciante inválida.");
+        }
+        request.user = {
+          id: verified.advertiserId,
+          email: tokenClaims.email, // signature and DB email already verified
+          role: verified.role,
+          entityId: verified.advertiserId,
+        };
+        return;
+      } catch {
+        throw new UnauthorizedException("Sesión de anunciante inválida.");
+      }
+    }
+
     // --- CACHE LOOKUP ---
-    const cached = SupabaseAuthGuard.sessionCache.get(token);
-    if (cached && cached.expiry > Date.now()) {
-      request.user = cached.user;
-      return;
+    const cachedSession = SupabaseAuthGuard.getCachedSession(token);
+    if (cachedSession) {
+      return this.acceptVerifiedSession(request, strict, cachedSession);
     }
 
     const jwtSecret =
@@ -169,23 +278,22 @@ export class SupabaseAuthGuard implements CanActivate {
           }
 
           if (payload) {
-            request.user = {
-              id: payload.sub,
-              email: payload.email,
-              role: payload.app_metadata?.role || payload.role || "GUEST",
-              entityId: payload.app_metadata?.entityId || null,
-            };
-
-            // Cache sucessful validation
-            SupabaseAuthGuard.sessionCache.set(token, {
-              user: request.user,
-              expiry: Date.now() + this.CACHE_TTL_MS,
-            });
-
-            this.logger.verbose(
-              `✅ [AUTH] ESTRATEGIA 1 OK (Local JWT): ${request.user.email}`,
+            // Return the authorization promise without awaiting inside the
+            // signature-verification catch: denial must not trigger fallback.
+            return this.acceptVerifiedSession(
+              request,
+              strict,
+              {
+                user: {
+                  id: payload.sub,
+                  email: payload.email,
+                  role: payload.app_metadata?.role || payload.role || "GUEST",
+                  entityId: payload.app_metadata?.entityId || null,
+                },
+                correlation: payload.app_metadata?.tad_onboarding_reservation,
+              },
+              token,
             );
-            return;
           }
         }
       } catch (err: unknown) {
@@ -230,31 +338,21 @@ export class SupabaseAuthGuard implements CanActivate {
         const roleFromMeta = data.user.app_metadata?.role || "GUEST";
         const entityId = data.user.app_metadata?.entityId || null;
 
-        request.user = {
-          id: data.user.id,
-          email: data.user.email,
-          role: roleFromMeta,
-          entityId,
-        };
-
-        // Cache sucessful validation
-        SupabaseAuthGuard.sessionCache.set(token, {
-          user: request.user,
-          expiry: Date.now() + this.CACHE_TTL_MS,
-        });
-
-        if (roleFromMeta === "GUEST") {
-          this.logger.warn(
-            `⚠️ [AUTH_GUARD] Usuario autenticado pero sin rol en metadata: ${data.user.email}. ` +
-              `Verifica si las claims están correctas en Supabase.`,
-          );
-        } else {
-          // Log a nivel verbose para que no inunde la consola en producción por cada request
-          this.logger.verbose(
-            `✅ [AUTH] ESTRATEGIA 2 OK (Red): ${data.user.email} [${roleFromMeta}]`,
-          );
-        }
-        return;
+        // As above, authorization denial is terminal, not a network failure.
+        return this.acceptVerifiedSession(
+          request,
+          strict,
+          {
+            user: {
+              id: data.user.id,
+              email: data.user.email ?? "",
+              role: roleFromMeta,
+              entityId,
+            },
+            correlation: data.user.app_metadata?.tad_onboarding_reservation,
+          },
+          token,
+        );
       }
 
       if (error) {
@@ -272,7 +370,10 @@ export class SupabaseAuthGuard implements CanActivate {
     // --- ESTRATEGIA 3: DEV BYPASS ---
     if (this.allowDevBypass) {
       const decoded = jwt.decode(token) as jwt.JwtPayload;
-      if (decoded) {
+      if (
+        decoded &&
+        decoded.app_metadata?.tad_onboarding_reservation === undefined
+      ) {
         this.logger.warn(`🚩 [AUTH] DEV BYPASS UTILIZADO: ${decoded.email}`);
         request.user = {
           id: decoded.sub || "dev-user",

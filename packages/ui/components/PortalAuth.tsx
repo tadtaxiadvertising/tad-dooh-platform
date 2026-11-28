@@ -42,13 +42,15 @@ export interface PortalRegistration {
 
 interface PortalAuthProps {
   config: PortalConfig;
+  /** Public recovery routes can open the existing recovery form directly. */
+  initialView?: 'login' | 'forgot';
   apiLogin?: PortalApiLogin;
   registration?: PortalRegistration;
   /** Capa ambiental del portal (p.ej. malla urbana TAD). Sustituye al glow por defecto. */
   background?: React.ReactNode;
 }
 
-export function PortalAuth({ config, apiLogin, registration, background }: PortalAuthProps) {
+export function PortalAuth({ config, apiLogin, registration, background, initialView = 'login' }: PortalAuthProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -57,7 +59,7 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
-  const [view, setView] = useState<AuthView>('login');
+  const [view, setView] = useState<AuthView>(initialView);
 
   // Registration fields
   const [companyName, setCompanyName] = useState('');
@@ -82,6 +84,13 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
 
   const resetForm = () => { setError(''); setPassword(''); };
   const switchView = (v: AuthView) => { resetForm(); setView(v); };
+  const returnToLogin = () => {
+    if (initialView === 'forgot') {
+      void router.push(config.loginPath);
+      return;
+    }
+    switchView('login');
+  };
 
   const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.getModifierState('CapsLock')) {
@@ -750,7 +759,7 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
               <div className="text-center pt-1">
                 <button
                   type="button"
-                  onClick={() => switchView('login')}
+                  onClick={returnToLogin}
                   className="text-[12px] text-[#8a8f98] hover:text-[#f7f8f8] transition-colors"
                 >
                   ← Volver
@@ -772,7 +781,7 @@ export function PortalAuth({ config, apiLogin, registration, background }: Porta
                 </p>
               </div>
               <button
-                onClick={() => switchView('login')}
+                onClick={returnToLogin}
                 className="inline-flex items-center gap-1 text-[12px] text-[#8a8f98] hover:text-[#f7f8f8] transition-colors"
               >
                 <ArrowRight className="w-3 h-3" />

@@ -9,6 +9,13 @@ const nextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../../'),
   async redirects() {
     return [
+      // Preserve already-shared driver QR links (/register?ref=...).
+      // Next forwards the original ref query string to the real onboarding route.
+      {
+        source: '/register',
+        destination: '/advertiser/onboarding',
+        permanent: false,
+      },
       {
         source: '/p/advertiser/:path*',
         destination: '/advertiser/login',

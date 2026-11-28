@@ -1,59 +1,13 @@
-const { Client } = require('pg');
-const client = new Client({ connectionString: process.env.DATABASE_URL });
+#!/usr/bin/env node
+"use strict";
 
-async function applyMigration() {
-  try {
-    await client.connect();
-
-    // First run the dedupe
-    console.log('Running dedupe...');
-    await client.query(`
-      WITH ranked AS (
-        SELECT
-          id,
-          ROW_NUMBER() OVER (
-            PARTITION BY device_id, "timestamp"
-            ORDER BY id ASC
-          ) AS rn
-        FROM driver_locations
-      )
-      DELETE FROM driver_locations
-      WHERE id IN (SELECT id FROM ranked WHERE rn > 1);
-    `);
-    console.log('Dedupe done');
-
-    // Now check if unique constraint exists
-    const checkRes = await client.query(`
-      SELECT 1 FROM pg_constraint 
-      WHERE conname = 'driver_locations_device_timestamp_unique'
-    `);
-    console.log('Unique constraint exists:', checkRes.rowCount > 0);
-
-    if (checkRes.rowCount === 0) {
-      console.log('Creating unique constraint...');
-      await client.query(`
-        DO $$
-        BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint
-            WHERE conname = 'driver_locations_device_timestamp_unique'
-          ) THEN
-            ALTER TABLE driver_locations
-              ADD CONSTRAINT driver_locations_device_timestamp_unique
-              UNIQUE (device_id, "timestamp");
-          END IF;
-        END $$;
-      `);
-      console.log('Unique constraint created');
-    } else {
-      console.log('Unique constraint already exists');
-    }
-
-    await client.end();
-  } catch (err) {
-    console.error('Error:', err.message);
-    process.exit(1);
-  }
-}
-
-applyMigration();
+// RETIRED — historical one-off script (destructive GPS deduplication and constraint changes).
+// These operations bypass the verified schema/migration review gate.
+// Preserve the original source in Git history for P0 incident forensics.
+// Any future fix must be a reviewed, forward-only Prisma migration rehearsed
+// against an isolated restorable backup of the canonical Supabase project.
+console.error(
+  "[migration] REFUSED: legacy database mutation command retired (apply-migration.js). " +
+    "Do not run ad-hoc SQL against TAD; follow incident #217 recovery gates.",
+);
+process.exitCode = 1;

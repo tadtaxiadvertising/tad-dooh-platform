@@ -41,6 +41,8 @@ export interface PortalRequestRecord {
   id: string;
   advertiserId?: string;
   driverId?: string;
+  campaignId?: string | null;
+  adminNotes?: string | null;
   title: string;
   status: string;
   description?: string;
@@ -48,7 +50,7 @@ export interface PortalRequestRecord {
   createdAt?: string;
   advertiser?: { companyName?: string; email?: string };
   driver?: { fullName?: string };
-  data?: { filename?: string; url?: string };
+  data?: unknown;
 }
 
 export interface LedgerRecord {

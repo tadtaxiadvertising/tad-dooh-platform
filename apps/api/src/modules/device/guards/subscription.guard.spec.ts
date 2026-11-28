@@ -30,9 +30,9 @@ describe("SubscriptionGuard authenticated scope and payment status", () => {
       driver: { subscriptionPaid: false, subscriptionEnd: null },
     });
 
-    await expect(
-      guard.canActivate(contextFor("TAD-A")),
-    ).rejects.toBeInstanceOf(HttpException);
+    await expect(guard.canActivate(contextFor("TAD-A"))).rejects.toBeInstanceOf(
+      HttpException,
+    );
     expect(findUnique).toHaveBeenCalledWith({
       where: { deviceId: "TAD-A" },
       select: expect.any(Object),

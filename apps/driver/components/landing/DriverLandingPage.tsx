@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
+import driverTaxi from "../../public/tad-driver-taxi-headrest.png";
 import {
   ArrowDown,
   ArrowRight,
@@ -23,8 +24,8 @@ const signupEnabled = process.env.NEXT_PUBLIC_LANDING_SIGNUP_ENABLED === "true";
 const benefits = [
   {
     icon: CarFront,
-    title: "Publicidad que va contigo",
-    text: "Conoce una forma de incorporar publicidad digital a bordo de tu taxi, sujeta a evaluación del vehículo y disponibilidad.",
+    title: "Tu taxi, conectado a nuevas oportunidades",
+    text: "Una pantalla TAD detrás del reposacabezas del copiloto, orientada hacia tus pasajeros, muestra campañas elegibles según disponibilidad, revisión y condiciones del programa.",
   },
   {
     icon: MonitorPlay,
@@ -33,8 +34,8 @@ const benefits = [
   },
   {
     icon: ShieldCheck,
-    title: "Las condiciones, por delante",
-    text: "Revisa los requisitos, el proceso de aprobación y las condiciones económicas antes de decidir si quieres participar.",
+    title: "Todo claro, desde el inicio",
+    text: "Revisa las condiciones, simula escenarios y solicita tu incorporación cuando el registro esté habilitado. Sin letras pequeñas.",
   },
 ];
 
@@ -93,164 +94,74 @@ const CHANNELS = [
   {
     id: "screen",
     label: "Pantalla",
-    statement: "Pantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.",
+    statement:
+      "Pantalla: campañas elegibles en el vehículo, sujetas a validación y condiciones de operación.",
     cardEyebrow: "PUBLICIDAD A BORDO",
     cardTitle: "Tu taxi, conectado.",
     cardNote: "Una pantalla para mensajes aprobados.",
+    journey: [
+      "Pantalla en el taxi",
+      "Campañas elegibles",
+      "Actividad validada",
+    ],
   },
   {
     id: "sales",
     label: "Ventas",
-    statement: "Ventas: las comisiones corresponden a publicidad efectivamente aprobada, no a simples solicitudes.",
+    statement:
+      "Ventas: las comisiones corresponden a publicidad efectivamente aprobada, no a simples solicitudes.",
     cardEyebrow: "CONEXIONES COMERCIALES",
     cardTitle: "Conecta marcas con rutas.",
     cardNote: "Las ventas requieren revisión y aprobación.",
+    journey: ["Contactas una marca", "Venta aprobada", "Comisión validada"],
   },
   {
     id: "referrals",
     label: "Referidos",
-    statement: "Referidos: el bono es único y depende de la activación y aprobación del conductor referido.",
+    statement:
+      "Referidos: el bono es único y depende de la activación y aprobación del conductor referido.",
     cardEyebrow: "RED DE CONDUCTORES",
     cardTitle: "Comparte el recorrido.",
     cardNote: "El registro por sí solo no genera un bono.",
+    journey: ["Invitas a un taxista", "Conductor activado", "Bono validado"],
   },
 ] as const;
 
 type DriverChannel = (typeof CHANNELS)[number]["id"];
 
-function TaxiIllustration({ channel }: { channel: DriverChannel }) {
+function DriverChannelJourney({ channel }: { channel: DriverChannel }) {
   const selected = CHANNELS.find((item) => item.id === channel) ?? CHANNELS[0];
-  const ChannelIcon =
-    channel === "sales" ? BadgeCheck : channel === "referrals" ? UserRound : MonitorPlay;
   return (
-    <div className={styles.scene} data-channel={channel}>
-      <div className={styles.sceneGrid} aria-hidden="true" />
-      <div className={styles.sceneLabel}>
-        <span aria-hidden="true" /> PUBLICIDAD DIGITAL A BORDO
+    <ol
+      className={styles.heroVisualSteps}
+      data-channel={channel}
+      aria-label={`Recorrido ilustrativo: ${selected.label.toLowerCase()}`}
+    >
+      {selected.journey.map((step, index) => (
+        <li key={step}>
+          <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+          <span>{step}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function DriverHeroVisual() {
+  return (
+    <figure className={styles.heroVisual}>
+      <div className={styles.heroVisualFrame}>
+        <Image
+          src={driverTaxi}
+          alt="Taxi gris TAD con ampliación de la pantalla publicitaria detrás del reposacabezas del copiloto, orientada hacia los pasajeros"
+          width={1536}
+          height={1024}
+          priority
+          sizes="(max-width: 580px) calc(100vw - 36px), (max-width: 800px) 600px, (max-width: 1100px) 45vw, 600px"
+        />
       </div>
-      <svg
-        className={styles.taxi}
-        viewBox="0 0 600 410"
-        role="img"
-        aria-label="Ilustración de un taxi amarillo con una pantalla de publicidad digital a bordo; imagen conceptual"
-      >
-        <defs>
-          <linearGradient id="driver-taxi-body" x1="0" y1="0" x2="0.7" y2="1">
-            <stop stopColor="#FFE86D" />
-            <stop offset="0.55" stopColor="#FFD400" />
-            <stop offset="1" stopColor="#BA8700" />
-          </linearGradient>
-          <linearGradient id="driver-taxi-window" x1="0" y1="0" x2="1" y2="1">
-            <stop stopColor="#3D4853" />
-            <stop offset="1" stopColor="#111A23" />
-          </linearGradient>
-        </defs>
-        <g aria-hidden="true">
-          <ellipse
-            cx="300"
-            cy="344"
-            rx="233"
-            ry="24"
-            fill="#000"
-            opacity=".45"
-          />
-          <path d="M50 359h500" stroke="#FFD400" strokeOpacity=".2" />
-          <path
-            d="M70 378h74m34 0h80m34 0h90m34 0h82"
-            stroke="#fff"
-            strokeOpacity=".12"
-            strokeWidth="3"
-          />
-          <path
-            d="m122 246 50-91c8-14 22-23 38-23h160c20 0 35 8 46 22l57 72 50 12c15 4 25 16 25 31v36H79v-35c0-12 6-19 17-21Z"
-            fill="url(#driver-taxi-body)"
-          />
-          <path
-            d="m174 226 37-70h77v70Zm129 0v-70h60c15 0 25 5 33 16l41 54Z"
-            fill="url(#driver-taxi-window)"
-          />
-          <path
-            d="m222 158-33 65m125-65v65"
-            stroke="#B1C5D4"
-            strokeOpacity=".25"
-            strokeWidth="4"
-          />
-          <path d="M295 239v66m151-63 10 63" stroke="#9A7600" strokeWidth="2" />
-          <path
-            d="M83 277h460"
-            stroke="#FFE86D"
-            strokeOpacity=".75"
-            strokeWidth="3"
-          />
-          <path d="M83 303h460" stroke="#201F17" strokeWidth="15" />
-          <path
-            d="M108 266h28m355-11h32"
-            stroke="#FFF5C5"
-            strokeWidth="12"
-            strokeLinecap="round"
-          />
-          <rect x="263" y="251" width="19" height="5" rx="2.5" fill="#262718" />
-          <rect x="406" y="251" width="19" height="5" rx="2.5" fill="#262718" />
-          <rect x="257" y="111" width="73" height="22" rx="5" fill="#FFE57C" />
-          <text
-            x="293"
-            y="127"
-            textAnchor="middle"
-            fill="#161816"
-            fontFamily="Arial, sans-serif"
-            fontWeight="800"
-            fontSize="14"
-            letterSpacing="3"
-          >
-            TAXI
-          </text>
-          <circle cx="173" cy="309" r="42" fill="#101213" />
-          <circle cx="173" cy="309" r="25" fill="#62696C" />
-          <circle cx="173" cy="309" r="13" fill="#A1A8A8" />
-          <circle cx="447" cy="309" r="42" fill="#101213" />
-          <circle cx="447" cy="309" r="25" fill="#62696C" />
-          <circle cx="447" cy="309" r="13" fill="#A1A8A8" />
-          <rect
-            x="345"
-            y="179"
-            width="53"
-            height="34"
-            rx="5"
-            fill="#050607"
-            stroke="#71818C"
-            strokeWidth="3"
-          />
-          <rect x="351" y="185" width="41" height="22" rx="2" fill="#FFD400" />
-          <path d="m367 189 11 7-11 7Z" fill="#121416" />
-          <path
-            d="m372 176 41-61h57"
-            fill="none"
-            stroke="#FFD400"
-            strokeWidth="1.5"
-            strokeDasharray="5 5"
-          />
-          <circle cx="372" cy="176" r="4" fill="#FFD400" />
-        </g>
-      </svg>
-      <div className={styles.screenCard} aria-hidden="true">
-        <div className={styles.screenCardTop}>
-          <ChannelIcon size={15} /> {selected.cardEyebrow}
-        </div>
-        <div className={styles.screenCardContent} key={channel}>
-          <span className={styles.screenPlay}>
-            <ChannelIcon size={30} />
-          </span>
-          <span>
-            <strong>{selected.cardTitle}</strong>
-            <small>{selected.cardNote}</small>
-          </span>
-        </div>
-      </div>
-      <div className={styles.sceneFooter}>
-        <span>HECHO PARA EL RECORRIDO</span>
-        <span>Ilustración conceptual</span>
-      </div>
-    </div>
+      <figcaption>PUBLICIDAD DIGITAL A BORDO · TAD</figcaption>
+    </figure>
   );
 }
 
@@ -262,10 +173,12 @@ export default function DriverLandingPage() {
   return (
     <>
       <Head>
-        <title>TAD para taxistas | Conoce cómo participar</title>
+        <title>
+          TAD Driver | Convierte tus viajes en oportunidades de ingresos
+        </title>
         <meta
           name="description"
-          content="Conoce TAD para taxistas: publicidad digital a bordo, requisitos de incorporación, proceso de revisión y acceso al portal de conductor. Consulta las condiciones antes de participar."
+          content="Conoce TAD Driver: publicidad en una pantalla detrás del reposacabezas del copiloto y oportunidades por campañas elegibles, ventas aprobadas y referidos activados. Participación sujeta a aprobación y condiciones."
         />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href="https://tad.driver.ibusiness.com.do/" />
@@ -352,18 +265,20 @@ export default function DriverLandingPage() {
                 <span aria-hidden="true" /> TAD · PUBLICIDAD EN MOVIMIENTO
               </p>
               <h1 id="hero-title">
-                La ciudad no se detiene.
+                Convierte tus viajes
                 <br />
-                <span>Tu taxi tampoco.</span>
+                <span>en oportunidades de ingresos con TAD.</span>
               </h1>
               <p className={styles.heroDescription}>
-                Tu recorrido puede conectar marcas con personas. Descubre tres
-                formas de generar ingresos elegibles, simula un escenario y
-                decide con las condiciones claras.
+                La pantalla TAD se instala detrás del reposacabezas del
+                copiloto, frente a los pasajeros. Explora tres formas de obtener
+                compensaciones: campañas elegibles, ventas publicitarias
+                aprobadas y conductores referidos activados. Aplican condiciones
+                y revisión.
               </p>
               <div className={styles.actions}>
                 <a className={styles.primaryButton} href="#calculadora">
-                  Simular mis oportunidades
+                  Calcula tus ingresos potenciales
                   <ArrowRight size={18} aria-hidden="true" />
                 </a>
                 <a
@@ -377,9 +292,13 @@ export default function DriverLandingPage() {
                 </a>
               </div>
               <p className={styles.heroNote}>
-                <ShieldCheck size={15} aria-hidden="true" /> Incorporación
-                sujeta a revisión y disponibilidad.
+                <ShieldCheck size={15} aria-hidden="true" /> Incorporación e
+                instalación sujetas a revisión, disponibilidad y condiciones del
+                programa.
               </p>
+            </div>
+            <DriverHeroVisual />
+            <div className={styles.heroExperience}>
               <ul
                 className={styles.heroChannels}
                 aria-label="Explora las tres oportunidades para conductores"
@@ -407,8 +326,8 @@ export default function DriverLandingPage() {
               >
                 {selectedChannel.statement}
               </p>
+              <DriverChannelJourney channel={channel} />
             </div>
-            <TaxiIllustration channel={channel} />
           </section>
 
           <div className={styles.promiseBar}>
@@ -435,13 +354,13 @@ export default function DriverLandingPage() {
             <div className={styles.sectionHeading}>
               <p className={styles.eyebrow}>UNA FORMA DE CONECTAR</p>
               <h2 id="benefits-title">
-                Tu taxi puede ser parte
+                Tu taxi ya se mueve.
                 <br />
-                de algo más.
+                <span>Haz que cada ruta cuente.</span>
               </h2>
               <p>
-                Una propuesta de publicidad pensada para el espacio a bordo. Tú
-                decides con información, antes de dar el siguiente paso.
+                Conoce la propuesta, revisa los requisitos y decide si TAD
+                encaja con la forma en que trabajas.
               </p>
             </div>
             <div className={styles.benefitGrid}>

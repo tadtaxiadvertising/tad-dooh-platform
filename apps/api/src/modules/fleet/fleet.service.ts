@@ -2,8 +2,10 @@ import { Injectable, HttpException, HttpStatus, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { DeviceService } from "../device/device.service";
 import { SupabaseService } from "../supabase/supabase.service";
-import { TrackBatchDto } from "./dto/track-batch.dto";
+import { TrackBatchDto, GPS_TRACK_BATCH_LIMIT } from "./dto/track-batch.dto";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
+import { deviceIdentityWhere } from "../campaign/device-identity-lookup";
+import { assertNoDeviceHardwareUuidAlias } from "../device/device-identity-collision.guard";
 
 @Injectable()
 export class FleetService {
@@ -383,6 +385,8 @@ export class FleetService {
     if (!deviceId) {
       deviceId = "TAD-" + crypto.randomUUID().split("-")[0].toUpperCase();
     }
+
+    await assertNoDeviceHardwareUuidAlias(this.prisma, deviceId);
 
     // 1. Verificar simultáneamente Dispositivo y Driver (por ID o por Teléfono generado)
     const phone = "PH-" + deviceId;
@@ -777,8 +781,20 @@ export class FleetService {
    * Obtiene la ruta reciente (trail) de un dispositivo específico.
    */
   async getDeviceRecentPath(deviceId: string) {
-    const locations = await this.prisma.driverLocation.findMany({
-      where: { deviceId },
+    // The route accepts a hardware ID or a canonical device UUID.
+    // driver_locations.device_id is physically UUID, not hardware TEXT.
+    const devices = await this.prisma.device.findMany({
+      where: deviceIdentityWhere(deviceId),
+      select: { id: true },
+      take: 2,
+    });
+    if (devices.length === 0) return [];
+    if (devices.length > 1) {
+      throw new HttpException("DEVICE_IDENTITY_AMBIGUOUS", HttpStatus.CONFLICT);
+    }
+
+    return this.prisma.driverLocation.findMany({
+      where: { deviceId: devices[0].id },
       orderBy: { timestamp: "desc" },
       take: 60,
       select: {
@@ -788,7 +804,6 @@ export class FleetService {
         timestamp: true,
       },
     });
-    return locations;
   }
 
   /**
@@ -808,11 +823,15 @@ export class FleetService {
 
     // Defensa: payload vacío no debería llegar aquí (DTO valida IsArray),
     // pero protegemos contra puntos vacíos para no desperdiciar round-trip.
-    if (!data?.points || data.points.length === 0) {
-      logger.warn(
-        `⚠️ Telemetry batch with 0 points from driver [${data?.driverId ?? "unknown"}]`,
-      );
-      return { count: 0 };
+    if (!Array.isArray(data?.points)) {
+      throw new HttpException("GPS_POINTS_INVALID", HttpStatus.BAD_REQUEST);
+    }
+    if (data.points.length > GPS_TRACK_BATCH_LIMIT) {
+      // Never silently truncate genuine offline GPS or accept unbounded uploads.
+      throw new HttpException("GPS_BATCH_TOO_LARGE", HttpStatus.BAD_REQUEST);
+    }
+    if (data.points.length === 0) {
+      return { count: 0, input: 0 };
     }
 
     // 1. Validar que el dispositivo exista y esté OPERATIVO.
@@ -838,9 +857,11 @@ export class FleetService {
       );
     }
 
-    // 2. Derivar conductor: priorizar el driver vinculado al hardware
-    //    para limitar el uso del driverId que envía el cliente.
-    const driverLookupId = device.driverId || data.driverId;
+    // Only an ADMIN-approved device-driver binding can attribute GPS.
+    if (!device.driverId || data.driverId !== device.driverId) {
+      throw new HttpException("DEVICE_DRIVER_MISMATCH", HttpStatus.FORBIDDEN);
+    }
+    const driverLookupId = device.driverId;
 
     const driver = await this.prisma.driver.findUnique({
       where: { id: driverLookupId },
@@ -874,8 +895,9 @@ export class FleetService {
     //    `skipDuplicates: true` ahora es funcional gracias al UNIQUE constraint
     //    y previene que el mismo (deviceId, timestamp) duplique filas.
     const telemetryData = data.points.map((p) => ({
-      driverId: data.driverId,
-      deviceId: data.deviceId,
+      driverId: driverLookupId,
+      // driver_locations.device_id is UUID; data.deviceId is hardware TEXT.
+      deviceId: device.id,
       latitude: p.lat,
       longitude: p.lng,
       speed: p.speed,

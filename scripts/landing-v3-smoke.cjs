@@ -212,6 +212,47 @@ async function main() {
         /TAD Taxi Advertising/i, 'The accessible brand name must include its visible desktop tagline.');
     });
 
+    await check('Crawler metadata is public, canonical and excludes private routes', async () => {
+      const canonicalHref = await page.locator('link[rel="canonical"]').getAttribute('href');
+      assert.ok(canonicalHref, 'Canonical URL must be present');
+      // Next may omit the trailing slash when serializing the origin.
+      // URL normalization preserves strict protocol, host, path and query checks.
+      const canonical = new URL(canonicalHref).href;
+      assert.equal(canonical, 'https://tad.anunciante.ibusiness.com.do/');
+      const robots = await page.request.get(new URL('/robots.txt', base).href, { maxRedirects: 0 });
+      assert.equal(robots.status(), 200);
+      assert.match(robots.headers()['content-type'] || '', /^text\/plain\b/i);
+      const directives = (await robots.text()).trim().split(/\r?\n/);
+      assert.ok(directives.includes('User-agent: *'));
+      for (const prefix of ['/advertiser/', '/api/', '/login', '/register', '/check-in']) {
+        assert.ok(directives.includes('Disallow: ' + prefix));
+      }
+      assert.ok(directives.includes('Sitemap: ' + canonical + 'sitemap.xml'));
+      assert.ok(!directives.includes('Disallow: /'));
+      const sitemap = await page.request.get(new URL('/sitemap.xml', base).href, { maxRedirects: 0 });
+      assert.equal(sitemap.status(), 200);
+      assert.match(sitemap.headers()['content-type'] || '', /^(application|text)\/xml\b/i);
+      const locations = await page.evaluate(xml => {
+        const document = new DOMParser().parseFromString(xml, 'application/xml');
+        if (document.querySelector('parsererror')) throw new Error('Invalid sitemap XML');
+        return [...document.getElementsByTagNameNS('http://www.sitemaps.org/schemas/sitemap/0.9', 'loc')]
+          .map(node => node.textContent);
+      }, await sitemap.text());
+      assert.deepEqual(locations, [canonical], 'Only the canonical public landing belongs in this acquisition sitemap');
+    });
+
+    await check('Advertiser white motion narrative has accessible reduced-motion chapters', async () => {
+      const story = page.locator('#motion-story');
+      assert.equal(await story.count(), 1, 'The scroll story must have one anchor.');
+      assert.equal(await story.evaluate(element => getComputedStyle(element).backgroundColor),
+        'rgb(255, 255, 255)', 'The narrative should sit on the white page canvas.');
+      assert.equal(await story.locator('article').count(), 3, 'All three chapters must remain in the DOM.');
+      assert.equal(await story.locator('article').first().isVisible(), true,
+        'Reduced-motion visitors must receive a readable static sequence.');
+      assert.equal(await story.locator('a[href="#creative-preview-title"]').last().isVisible(), true,
+        'The static sequence must retain its CTA.');
+    });
+
     await check('Fresh visitor may reject optional cookies', async () => {
       const policy = page.getByRole('link', { name: 'Ver política e inventario', exact: true });
       assert.match(await policy.evaluate(element => getComputedStyle(element).textDecorationLine),
@@ -245,15 +286,178 @@ async function main() {
       assert.equal(await page.locator('#campaign-city').inputValue(), 'sd');
     });
 
+    await check('Illustrative brand preview updates locally without changing the campaign price', async () => {
+      const brand = page.locator('#hero-brand-name');
+      const screen = page.locator('.landing-screen-content > strong');
+      const scene = page.locator('.landing-scene');
+      const objective = page.locator('#hero-campaign-objective');
+      const totalBefore = await panel.locator('#budget-total').innerText();
+      assert.equal(await brand.inputValue(), '');
+      assert.equal(await brand.getAttribute('maxlength'), '24');
+      assert.equal(await scene.locator('[data-cabin-illustration]').count(), 1);
+      assert.match(await scene.getAttribute('aria-label'), /reposacabezas del copiloto/);
+      const mounted = await scene.evaluate(element => {
+        const display = element.querySelector('.landing-screen');
+        const outer = element.getBoundingClientRect();
+        const inner = display.getBoundingClientRect();
+        return {
+          contained: inner.left >= outer.left && inner.right <= outer.right &&
+            inner.top >= outer.top && inner.bottom <= outer.bottom,
+          animation: getComputedStyle(display).animationName,
+        };
+      });
+      assert.ok(mounted.contained, 'Mounted screen remains inside the cabin');
+      assert.equal(mounted.animation, 'none', 'Mounted screen must not float');
+      await brand.fill('Café TAD');
+      assert.ok((await screen.innerText()).includes('Café TAD'));
+      assert.match(await scene.getAttribute('aria-label'), /marca de ejemplo Café TAD/);
+      assert.equal(await panel.locator('#budget-total').innerText(), totalBefore);
+      await objective.selectOption('launch');
+      assert.equal(await panel.locator('#campaign-objective').inputValue(), 'launch');
+      assert.ok((await screen.innerText()).includes('Café TAD'));
+      await brand.fill('<img src=x onerror=1>');
+      assert.ok((await screen.innerText()).includes('<img src=x onerror=1>'));
+      assert.equal(await scene.locator('img').count(), 0, 'Brand text must not become markup.');
+      await brand.fill('M'.repeat(24));
+      await brand.press('End');
+      await brand.press('N');
+      assert.equal(await brand.inputValue(), 'M'.repeat(24), 'Typing past the limit must be blocked.');
+      await brand.fill('');
+      assert.equal(await scene.getAttribute('data-brand-custom'), null);
+      await objective.selectOption('awareness');
+      assert.equal(await panel.locator('#budget-total').innerText(), totalBefore);
+    });
+
+    await check('Passenger QR simulation opens and resets the local offer by keyboard', async () => {
+      const story = page.locator('#interaccion-qr');
+      const controls = story.getByRole('group', { name: 'Tipo de promoción ilustrativa' });
+      const restaurant = controls.getByRole('button', { name: 'Restaurante' });
+      const commerce = controls.getByRole('button', { name: 'Comercio' });
+      const event = controls.getByRole('button', { name: 'Evento' });
+      assert.equal(await story.count(), 1);
+      assert.equal(await controls.getByRole('button').count(), 6);
+      assert.equal(await restaurant.getAttribute('aria-pressed'), 'true');
+      assert.equal(await story.locator('[data-promotion]').getAttribute('data-promotion'), 'restaurante');
+      assert.match(await story.innerText(), /Tu próxima parada tiene mucho sabor/);
+      const illustration = story.locator('img[src="/qr-passenger-journey.svg"]');
+      assert.equal(await illustration.count(), 1, 'The storyboard must use a local illustrated asset.');
+      assert.ok((await illustration.getAttribute('alt')).includes('copiloto'));
+      const illustrationResponse = await page.request.get(new URL('/qr-passenger-journey.svg', base).href, {
+        maxRedirects: 0,
+      });
+      assert.equal(illustrationResponse.status(), 200, 'Public image must not redirect to login');
+      assert.equal((illustrationResponse.headers()['content-type'] || '').split(';')[0].trim().toLowerCase(), 'image/svg+xml');
+      await illustration.scrollIntoViewIfNeeded();
+      await page.waitForFunction(() => {
+        const image = document.querySelector('#interaccion-qr img[src="/qr-passenger-journey.svg"]');
+        return image && image.complete && image.naturalWidth > 0;
+      });
+
+      // Measure rendered text against its actual solid background, not token names.
+      const contrast = await story.evaluate(section => {
+        const luminance = color => {
+          const channels = color.match(/[\d.]+/g).slice(0, 3).map(value => Number(value) / 255);
+          return channels.map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+            .reduce((total, value, i) => total + value * [0.2126, 0.7152, 0.0722][i], 0);
+        };
+        const selectors = ['h2', 'h2 span', 'figure figcaption', 'figure + p', 'h3', '[aria-live="polite"]', 'ol h3', 'ol p'];
+        const nodes = selectors.flatMap(selector => [...section.querySelectorAll(selector)]);
+        // Include lead, eyebrow, scan instructions and disclaimer without CSS-module hashes.
+        nodes.push(...section.querySelectorAll(':scope > p, :scope > div:first-child p, button + p'));
+        return [...new Set(nodes)].map(node => {
+          let background = node;
+          while (background && getComputedStyle(background).backgroundColor === 'rgba(0, 0, 0, 0)') {
+            background = background.parentElement;
+          }
+          const fg = luminance(getComputedStyle(node).color);
+          const bg = luminance(getComputedStyle(background || section).backgroundColor);
+          return { label: node.textContent.trim().slice(0, 70), ratio: (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05) };
+        });
+      });
+      assert.ok(contrast.length >= 10, 'Measure actual QR section text');
+      for (const entry of contrast) assert.ok(entry.ratio >= 4.5, 'QR contrast: ' + JSON.stringify(entry));
+
+      const brand = page.locator('#hero-brand-name');
+      await brand.fill('Café TAD');
+      assert.ok((await story.innerText()).includes('Café TAD'),
+        'Brand customization must be shared between hero and QR preview.');
+      await commerce.focus();
+      await commerce.press('Enter');
+      assert.equal(await commerce.getAttribute('aria-pressed'), 'true');
+      assert.equal(await restaurant.getAttribute('aria-pressed'), 'false');
+      assert.equal(await story.locator('[data-promotion]').getAttribute('data-promotion'), 'comercio');
+      const visual = story.locator('[data-promotion]');
+      const destination = story.locator('#qr-demo-destination');
+      const scan = story.getByRole('button', { name: 'Simular escaneo del QR', exact: true });
+      assert.equal(await visual.getAttribute('data-scanned'), 'false');
+      assert.match(await destination.innerText(), /Tu oferta, a un escaneo/);
+      assert.ok((await scan.boundingBox()).height >= 44);
+      await scan.focus();
+      await scan.press('Enter');
+      assert.equal(await visual.getAttribute('data-scanned'), 'true');
+      assert.match(await destination.innerText(), /Explora el catálogo/);
+      assert.match(await story.locator('[aria-live="polite"]').innerText(), /Escaneo simulado/);
+      const reset = story.getByRole('button', { name: 'Reiniciar demostración', exact: true });
+      assert.equal(await reset.evaluate(el => document.activeElement === el), true);
+      await reset.press('Enter');
+      assert.equal(await visual.getAttribute('data-scanned'), 'false');
+      await scan.click();
+      await event.click();
+      assert.equal(await event.getAttribute('aria-pressed'), 'true');
+      assert.equal(await visual.getAttribute('data-scanned'), 'false', 'Changing promotion resets scan');
+      await scan.click();
+      assert.match(await destination.innerText(), /Conoce la programación/);
+      for (const [label, key, copy] of [
+        ['Inmobiliaria', 'inmobiliaria', /Explora propiedades/],
+        ['Hotel', 'hotel', /Descubre tu estancia/],
+        ['Servicios', 'servicios', /Conoce nuestros servicios/],
+      ]) {
+        const previousColor = await visual.locator('[data-qr-creative]').evaluate(el => getComputedStyle(el).backgroundColor);
+        const choice = controls.getByRole('button', { name: label, exact: true });
+        await choice.focus();
+        await choice.press('Enter');
+        assert.equal(await choice.getAttribute('aria-pressed'), 'true');
+        assert.equal(await visual.getAttribute('data-promotion'), key);
+        assert.equal(await visual.getAttribute('data-scanned'), 'false');
+        const nextColor = await visual.locator('[data-qr-creative]').evaluate(el => getComputedStyle(el).backgroundColor);
+        assert.notEqual(previousColor, nextColor, 'Sector has a distinct creative palette');
+        await scan.click();
+        assert.match(await destination.innerText(), copy);
+      }
+      assert.equal(await story.locator('a[href^="http"]').count(), 0,
+        'The QR demo must not redirect to a fabricated advertiser URL.');
+      assert.match(await story.innerText(), /no son escaneables/i);
+      await brand.fill('');
+      await restaurant.click();
+      assert.equal(await story.locator('[data-promotion]').getAttribute('data-promotion'), 'restaurante');
+      assert.equal(await visual.getAttribute('data-scanned'), 'false');
+    });
+
     await check('Campaign story has four controllable keyboard steps', async () => {
       const story = page.locator('#recorrido-campana');
       const steps = story.locator('button[aria-pressed]');
       assert.equal(await steps.count(), 4);
+      const assertJourneyFocus = async control => {
+        const focus = await control.evaluate(element => {
+          const style = getComputedStyle(element);
+          return {
+            visible: element.matches(':focus-visible'),
+            color: style.outlineColor,
+            style: style.outlineStyle,
+            width: Number.parseFloat(style.outlineWidth),
+          };
+        });
+        assert.equal(focus.visible, true, 'Keyboard navigation must show a focus indicator');
+        assert.equal(focus.color, 'rgb(23, 23, 23)', 'Light journey requires a dark focus ring');
+        assert.equal(focus.style, 'solid');
+        assert.ok(focus.width >= 3, 'Focus indicator must remain clearly visible');
+      };
       const stageTitles = new Set();
       for (let index = 0; index < 4; index += 1) {
         const step = steps.nth(index);
         await step.focus();
         await step.press('Enter');
+        await assertJourneyFocus(step);
         assert.equal(await step.getAttribute('aria-pressed'), 'true');
         assert.equal(await story.locator('button[aria-pressed="true"]').count(), 1);
         stageTitles.add(await story.getByRole('heading', { level: 3 }).innerText());
@@ -264,6 +468,45 @@ async function main() {
       await steps.nth(0).press('ArrowRight');
       assert.equal(await steps.nth(1).evaluate(element => element === document.activeElement), true);
       assert.equal(await steps.nth(1).getAttribute('aria-pressed'), 'true');
+      await assertJourneyFocus(steps.nth(1));
+      const next = story.getByRole('button', { name: 'Siguiente', exact: true });
+      await next.focus();
+      await assertJourneyFocus(next);
+      await next.press('Enter');
+      assert.equal(await steps.nth(2).getAttribute('aria-pressed'), 'true');
+      await assertJourneyFocus(steps.nth(2));
+    });
+
+    await check('Creative Studio keeps keyboard focus and previews a local image', async () => {
+      const input = page.locator('#creative-preview-file');
+      const studio = page.locator('section[aria-labelledby="creative-preview-title"]');
+      const preview = studio.getByAltText('Vista previa de la creatividad seleccionada');
+      const status = studio.getByRole('status');
+      await input.scrollIntoViewIfNeeded();
+      await input.setInputFiles({
+        name: 'fixture.png',
+        mimeType: 'image/png',
+        buffer: Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c63f87f95e13f00077f02d4680bdf0b0000000049454e44ae426082', 'hex'),
+      });
+      await page.waitForFunction(() => {
+        const image = document.querySelector('img[alt="Vista previa de la creatividad seleccionada"]');
+        return image && image.complete && image.naturalWidth > 0;
+      });
+      assert.match(await status.innerText(), /Archivo seleccionado/);
+      const fill = studio.getByRole('button', { name: 'Llenar pantalla' });
+      await fill.focus();
+      await fill.press('Enter');
+      assert.equal(await fill.getAttribute('aria-pressed'), 'true');
+      assert.equal(await preview.evaluate(image => getComputedStyle(image).objectFit), 'cover');
+      const remove = studio.getByRole('button', { name: 'Quitar', exact: true });
+      assert.ok((await remove.boundingBox()).height >= 44, 'Remove control touch target');
+      await remove.focus();
+      await remove.press('Enter');
+      await preview.waitFor({ state: 'detached' });
+      assert.equal(await input.evaluate(element => element === document.activeElement), true, 'Return focus to the file picker');
+      assert.equal(await input.inputValue(), '');
+      assert.match(await status.innerText(), /Ningún archivo seleccionado/);
+      await assertNoHorizontalOverflow(page, 'Advertiser after creative removal');
     });
 
     await check('Advertiser campaign calculator shares screen/month pricing and optional production', async () => {
@@ -351,10 +594,22 @@ async function main() {
       assert.equal((await readBudgetEvents()).length, afterMonth, 'Month blur must not duplicate its key event.');
       const ctaBefore = await page.evaluate(() => window.__landingEvents.filter(event => event.name === 'cta_clicked').length);
       await hero.locator('a[href="#experiencia"]').click();
-      const events = await page.evaluate(() => window.__landingEvents);
-      const ctas = events.filter(event => event.name === 'cta_clicked');
+      const heroEvents = await page.evaluate(() => window.__landingEvents);
+      const ctas = heroEvents.filter(event => event.name === 'cta_clicked');
       assert.equal(ctas.length, ctaBefore + 1);
-      assert.deepEqual(ctas.at(-1).data, { role: 'advertiser', destination: 'advertiser_lab' });
+      assert.deepEqual(ctas.at(-1).data, { role: 'advertiser', destination: 'advertiser_lab', placement: 'hero' });
+      const next = panel.locator('#campaign-next');
+      assert.equal(await next.getAttribute('href'), '/advertiser/login');
+      await next.scrollIntoViewIfNeeded();
+      assert.ok((await next.boundingBox()).height >= 44, 'Budget action must have a usable touch target');
+      // Observe the real handler without navigating into an authenticated flow.
+      await next.evaluate(element => element.addEventListener('click', event => event.preventDefault(), { once: true }));
+      await next.focus();
+      await next.press('Enter');
+      const events = await page.evaluate(() => window.__landingEvents);
+      const budgetCtas = events.filter(event => event.name === 'cta_clicked');
+      assert.equal(budgetCtas.length, ctaBefore + 2, 'Each CTA emits exactly one event');
+      assert.deepEqual(budgetCtas.at(-1).data, { role: 'advertiser', destination: 'advertiser_login', placement: 'simulator_result' });
       assert.equal(events.some(event => /onboarding_(started|completed)/.test(event.name || '')), false);
       for (const event of events) {
         assert.equal(event.url, '/');
@@ -374,7 +629,10 @@ async function main() {
       await pressRange(screens, 'End', 15);
       await screens.press('Tab');
       await hero.locator('a[href="#experiencia"]').click();
-      assert.equal(await page.evaluate(() => window.__landingEvents.length), previousCount);
+      await next.evaluate(element => element.addEventListener('click', event => event.preventDefault(), { once: true }));
+      await next.focus();
+      await next.press('Enter');
+      assert.equal(await page.evaluate(() => window.__landingEvents.length), previousCount, 'Both CTA placements remain silent after revocation');
       await setRangeWithKeyboard(screens, 3);
       await setRangeWithKeyboard(months, 2);
       await objective.selectOption('awareness');
@@ -389,6 +647,16 @@ async function main() {
       const menu = page.locator('header details.landing-mobile-menu');
       assert.equal(await menu.count(), 1, 'Mobile sections navigation must be present.');
       const summary = menu.locator('summary');
+      await summary.focus();
+      await summary.press('Enter');
+      assert.equal(await menu.evaluate(element => element.open), true);
+      const qrTarget = menu.locator('a[href="#interaccion-qr"]');
+      assert.ok(await qrTarget.count(), 'Mobile navigation must expose the passenger QR section.');
+      const qrHeight = await qrTarget.evaluate(element => element.getBoundingClientRect().height);
+      assert.ok(qrHeight >= 44, 'QR navigation link touch target must be >=44px.');
+      await qrTarget.click();
+      assert.equal(new URL(page.url()).hash, '#interaccion-qr');
+      assert.equal(await menu.evaluate(element => element.open), false);
       await summary.focus();
       await summary.press('Enter');
       assert.equal(await menu.evaluate(element => element.open), true);
@@ -521,6 +789,35 @@ async function main() {
         await rejectCookies(normalPage);
         await assertAmountFeedback(normalPage, { outputSelector: '#budget-total',
           inputSelector: '#campaign-screens', nextValue: 4, nextAmount: 20000 });
+
+        // Real scroll in both directions, not just source-level assertions.
+        const motionStory = normalPage.locator('#motion-story');
+        assert.equal(await motionStory.count(), 1);
+        await normalPage.waitForFunction(() =>
+          document.querySelector('#motion-story')?.getAttribute('data-motion-ready') === 'true');
+        const motionOpacityAt = async (fraction, stage) => {
+          await normalPage.evaluate(async ratio => {
+            const element = document.querySelector('#motion-story');
+            if (!element) throw new Error('Missing public scroll story.');
+            document.documentElement.style.scrollBehavior = 'auto';
+            const start = scrollY + element.getBoundingClientRect().top;
+            const span = element.getBoundingClientRect().height - innerHeight;
+            window.scrollTo(0, start + Math.max(1, span) * ratio);
+            await new Promise(resolve => requestAnimationFrame(() =>
+              requestAnimationFrame(resolve)));
+          }, fraction);
+          return normalPage.locator('[data-tad-stage="' + stage + '"]').evaluate(
+            element => Number.parseFloat(getComputedStyle(element).opacity));
+        };
+        for (const [fraction, dominant] of [[0.07, 'taxi'], [0.52, 'tablet'], [0.92, 'report'], [0.07, 'taxi']]) {
+          const opacity = await motionOpacityAt(fraction, dominant);
+          assert.ok(opacity >= 0.7, dominant + ' should be the visible stage at progress ' + fraction + ': ' + opacity);
+        }
+        const stickyTop = await normalPage.locator('#motion-story > div:first-child')
+          .evaluate(element => Number.parseFloat(getComputedStyle(element).top));
+        assert.ok(stickyTop >= 88 && stickyTop <= 92,
+          'Pinned narrative must respect the 90px sticky navigation.');
+
         await assertNoSideEffects(normal, normalEvidence);
       } finally { await normal.close(); }
     });
@@ -541,6 +838,19 @@ async function main() {
             await assertOpaque(staticPage.locator(selector), `Advertiser no-JS ${width}px ${selector}`);
           }
           await assertAdvertiserLinks(staticPage);
+          const chapters = staticPage.locator('#motion-story article');
+          const art = chapters.locator('[data-static-art] svg');
+          assert.equal(await art.count(), 3, 'Each static chapter must retain its editorial illustration');
+          for (const illustration of await art.all()) {
+            assert.equal(await illustration.getAttribute('aria-hidden'), 'true');
+            const box = await illustration.boundingBox();
+            assert.ok(box && box.width > 0 && box.height > 0, 'Static illustration is visible without JavaScript');
+            assert.ok(Math.abs(box.width / box.height - 2) < 0.05, 'Static art keeps its intrinsic aspect ratio');
+          }
+          assert.equal(await chapters.count(), 3,
+            'No-JS browser must retain all narrative chapters.');
+          assert.equal(await chapters.first().isVisible(), true,
+            'No-JS narrative may not disappear on any supported viewport.');
           await assertNoHorizontalOverflow(staticPage, `Advertiser no-JS ${width}px`);
           if (screenshots) await staticPage.screenshot({
             path: path.join(screenshots, `landing-v5-${width}-advertiser-no-js.png`), fullPage: true });
@@ -568,6 +878,37 @@ async function main() {
       assert.equal(await slowPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
       await assertNoSideEffects(slow, slowEvidence);
       await slow.close();
+    });
+
+    await check('Referral receipt is conditional and does not discount the public budget', async () => {
+      const referralContext = await browser.newContext({ viewport: { width: 390, height: 844 },
+        reducedMotion: 'reduce', serviceWorkers: 'block' });
+      const referralEvidence = evidenceCollector();
+      await guardContext(referralContext, base, referralEvidence);
+      const referralPage = await referralContext.newPage();
+      recordErrors(referralPage, referralEvidence);
+      try {
+        for (const [search, received] of [['?ref=DRIVER_FIXTURE', true], ['?ref=one&ref=two', false], ['', false]]) {
+          const url = new URL(base.href);
+          url.search = search;
+          const response = await referralPage.goto(url.href, { waitUntil: 'networkidle' });
+          assert.equal(response.status(), 200);
+          const status = referralPage.locator('#campaign-referral-status');
+          const text = await status.innerText();
+          if (received) {
+            assert.match(text, /40 %.*validación del servidor/);
+            assert.match(text, /Este subtotal no incluye el descuento/);
+            assert.doesNotMatch(text, /DRIVER_FIXTURE/);
+          } else {
+            assert.equal(text.trim(), '');
+          }
+          assert.equal(amount(await referralPage.locator('#budget-total').innerText()), 15000);
+          const href = await referralPage.locator('#campaign-next').getAttribute('href');
+          assert.equal(new URL(href, base).searchParams.get('ref'), received ? 'DRIVER_FIXTURE' : null);
+          await assertNoHorizontalOverflow(referralPage, 'Referral receipt at 390px');
+        }
+        await assertNoSideEffects(referralContext, referralEvidence);
+      } finally { await referralContext.close(); }
     });
 
     await check('No private, remote or service worker side effects occurred', async () => {

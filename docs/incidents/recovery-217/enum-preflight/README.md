@@ -1,0 +1,11 @@
+# #217 — preflight de enums PostgreSQL
+
+El comparador anterior omitía campos kind=enum. Una consulta Prisma real de solo lectura filtrando Device.status falló con 42704: el cliente espera public.SystemStatus, que no existe. Las columnas status de Device/Driver son TEXT. FinancialTransaction.currency también es TEXT aunque Prisma usa el enum Currency existente.
+
+El preflight lee tipos y labels en la misma transacción RepeatableRead READ ONLY verificada que tablas y columnas. Compara el nombre/namespace del tipo, su binding a cada columna y sus valores ordenados, usando los nombres y labels mapeados del DMMF generado. Enum o metadatos ausentes y valores incompatibles generan enumSqlContractIssueCount/enumSqlContractIssues; la CLI termina con error aunque tablas, columnas e IDs estén presentes. No infiere enums a partir de campos String ni duplica las columnas ausentes que ya informa el núcleo.
+
+Las pruebas verifican mappings, namespace, labels ausentes/adicionales/reordenados, catálogo/definiciones no disponibles, error de consulta sin resultados parciales y salida real del proceso CLI con un catálogo sintético completo. RED observado: el helper no informaba errores y la CLI aceptaba un esquema con drift solo de enums. GREEN: 65 contratos Node, incluida comprobación de destino; nueve casos nuevos de enum/CLI y el control de fallo del catálogo. Ninguna prueba CLI abre una conexión real.
+
+Verificación real de catálogo del 25-nov-2026: destino fijado, READ ONLY efectivo, cero filas de aplicación leídas y cero escrituras. Se detectan cuatro problemas: SystemStatus ausente y tres columnas con binding TEXT incompatible (dos status y currency). El cliente candidato de PR550 todavía encuentra 23 tablas y 36 columnas ausentes en producción: cinco son sus referencias canónicas, que solo se han ensayado en el clon. La ausencia de extremos puede evitar comparar una relación; no acredita su reparación.
+
+Esta tarjeta añade detección; no crea tipos, convierte monedas, cambia estados o aplica DDL. La siguiente transición debe alinear almacenamiento y cliente conservando columnas/datos originales, validar los códigos monetarios existentes sin inferir valores y cubrir las 31 columnas y GPS/PostGIS restantes. Revertir el detector retiraría una protección y no recuperaría la API. Véase verification.json.

@@ -1,0 +1,166 @@
+name: Publish audited TAD API image (GHCR)
+
+# Manual-only promotion. Never inject TAD runtime credentials into a Docker build.
+# EasyPanel must pull an immutable digest rather than rebuilding a source App
+# with production environment variables forwarded as --build-arg (#244).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  packages: write
+
+concurrency:
+  group: publish-audited-tad-api-main
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish API image from verified main
+    if: github.repository == 'tadtaxiadvertising/tad-dooh-platform' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact main SHA without persistent credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require same-SHA executed green CI and Docker checks
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.sha;
+            const current = await github.rest.repos.getBranch({ owner, repo, branch: 'main' });
+            if (current.data.commit.sha !== sha) {
+              throw new Error('REFUSED: main changed; rerun for the new SHA.');
+            }
+
+            // Green post-merge CI is not proof that branch rules were enforced.
+            // Refuse image publication while the public branch endpoint reports
+            // no effective required Summary check (#313). Only `everyone` is
+            // acceptable here: `on` is not a GitHub enum, and `non_admins`
+            // leaves administrative bypass possible. This public endpoint
+            // still cannot verify required reviews or an isolated restore.
+            if (current.data.protected !== true) {
+              throw new Error('REFUSED: main branch protection is not active (#313).');
+            }
+            const enforcedChecks = current.data.protection?.required_status_checks;
+            if (enforcedChecks?.enforcement_level !== 'everyone' ||
+                !Array.isArray(enforcedChecks.checks) ||
+                !enforcedChecks.checks.some(check => check.context === 'Summary' &&
+                  check.app_id === 15368)) {
+              throw new Error('REFUSED: app-pinned Summary is not enforced on main.');
+            }
+
+            const requiredWorkflows = {
+              'CI Quality Gates': {
+                'Format & Lint': ['Format check (prettier)', 'Lint (ESLint)'],
+                'TypeScript Check': ['TypeScript check (all workspaces)'],
+                'Tests': [
+                  'Run API tests',
+                  'Advertiser registration PostgreSQL isolation contract',
+                  'Advertiser onboarding Prisma integration',
+                  'Driver offline queue retry safety (Node 22)',
+                  'Run safe cross-portal integration contracts',
+                ],
+                'Prisma Validation': ['Prisma validate schema', 'Prisma generate clients'],
+                'Security Audit': ['npm audit (high severity only)', 'TruffleHog secret scan'],
+                'Build Docker Image (api)': ['Build Docker image'],
+                'Build Docker Image (admin)': ['Build Docker image'],
+                'Build Docker Image (advertiser)': ['Build Docker image'],
+                'Build Docker Image (driver)': ['Build Docker image'],
+                'Build Docker Image (player)': ['Build Docker image'],
+                'Summary': ['Report results'],
+              },
+              'Docker Image CI': {
+                'Build Docker Image (api)': ['Build canonical Docker image'],
+                'Build Docker Image (admin)': ['Build canonical Docker image'],
+                'Build Docker Image (driver)': ['Build canonical Docker image'],
+                'Build Docker Image (player)': ['Build canonical Docker image'],
+              },
+            };
+
+            // Refuse a different workflow merely impersonating a display name.
+            const trustedPaths = {
+              'CI Quality Gates': '.github/workflows/ci.yml',
+              'Docker Image CI': '.github/workflows/docker-image.yml',
+            };
+            const { data } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner, repo, head_sha: sha, event: 'push', per_page: 100,
+            });
+            for (const [name, requiredJobs] of Object.entries(requiredWorkflows)) {
+              const matching = data.workflow_runs
+                .filter(run => run.name === name && run.path === trustedPaths[name] &&
+                  run.head_sha === sha && run.head_branch === 'main' &&
+                  run.event === 'push')
+                .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+              const latest = matching[0];
+              if (!latest || latest.status !== 'completed' || latest.conclusion !== 'success') {
+                throw new Error('REFUSED: latest ' + name + ' did not pass for this exact main SHA.');
+              }
+
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                owner, repo, run_id: latest.id, per_page: 100,
+              });
+              for (const [jobName, requiredSteps] of Object.entries(requiredJobs)) {
+                const job = jobs.find(j => j.name === jobName);
+                if (!job || job.conclusion !== 'success' ||
+                    !Number.isInteger(job.runner_id) || job.runner_id <= 0 ||
+                    !Array.isArray(job.steps) || job.steps.length === 0) {
+                  throw new Error('REFUSED: ' + name + ' / ' + jobName +
+                    ' has no executed passing runner job.');
+                }
+                for (const stepName of requiredSteps) {
+                  const step = job.steps.find(s => s.name === stepName);
+                  if (!step || step.status !== 'completed' ||
+                      step.conclusion !== 'success' || !step.started_at) {
+                    throw new Error('REFUSED: ' + name + ' / ' + jobName +
+                      ' did not execute required step ' + stepName);
+                  }
+                }
+              }
+            }
+            core.info('All required executed checks passed for this exact main SHA.');
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate to GHCR (registry only, never Docker build args)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish credential-free API image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.api
+          push: true
+          tags: ghcr.io/tadtaxiadvertising/tad-dooh-platform-api:sha-${{ github.sha }}
+          provenance: mode=min
+          sbom: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/tadtaxiadvertising/tad-dooh-platform
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Report immutable image digest for reviewed EasyPanel cutover
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+            echo "::error::Missing immutable digest; do not promote this image."
+            exit 1
+          }
+          echo "Reviewed image: ghcr.io/tadtaxiadvertising/tad-dooh-platform-api@${DIGEST}"
+          echo "Commit: ${SHA}"
+          printf 'Image digest: `ghcr.io/tadtaxiadvertising/tad-dooh-platform-api@%s`\n' "$DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Manual security review, runtime secret rotation and staging readiness remain required before EasyPanel cutover.' >> "$GITHUB_STEP_SUMMARY"

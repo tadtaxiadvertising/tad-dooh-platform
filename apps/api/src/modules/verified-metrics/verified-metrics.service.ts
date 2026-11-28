@@ -1,5 +1,15 @@
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { UserRole } from "../auth/decorators/roles.decorator";
+
+export type CampaignMetricsAccess =
+  | { role: UserRole.ADMIN }
+  | { role: UserRole.ADVERTISER; advertiserId: string };
 
 export interface VerifiedPlaybackStats {
   campaignId: string;
@@ -62,13 +72,28 @@ export class VerifiedMetricsService {
     campaignId: string,
     dateFrom: Date,
     dateTo: Date,
+    access: CampaignMetricsAccess,
   ): Promise<CampaignVerifiedReport> {
+    const advertiserId =
+      access?.role === UserRole.ADVERTISER
+        ? access.advertiserId?.trim()
+        : undefined;
+    if (
+      access?.role !== UserRole.ADMIN &&
+      (access?.role !== UserRole.ADVERTISER || !advertiserId)
+    ) {
+      throw new ForbiddenException("CAMPAIGN_METRICS_ACCESS_DENIED");
+    }
+
     this.logger.log(
       `[VERIFIED_METRICS] Campaign ${campaignId} verified stats ${dateFrom.toISOString()} - ${dateTo.toISOString()}`,
     );
 
     const campaign = await this.prisma.campaign.findUnique({
-      where: { id: campaignId },
+      // Enforce ownership in the same DB query (no check/read race).
+      where: advertiserId
+        ? { id: campaignId, advertiserId }
+        : { id: campaignId },
       include: {
         mediaAssets: true,
         devices: {
@@ -85,8 +110,9 @@ export class VerifiedMetricsService {
       },
     });
 
-    if (!campaign) {
-      throw new Error(`Campaign ${campaignId} not found`);
+    if (!campaign || (advertiserId && campaign.advertiserId !== advertiserId)) {
+      // Unknown and other-tenant campaign must produce the same response.
+      throw new NotFoundException(`Campaign ${campaignId} not found`);
     }
 
     // Reproducciones VERIFICADAS (play_confirm + verified=true)
@@ -136,7 +162,10 @@ export class VerifiedMetricsService {
     // Agrupar por dispositivo
     const byDevice = campaign.devices.map((dc) => {
       const d = dc.device;
-      const verified = verifiedEvents.filter((e) => e.deviceId === d.id).length;
+      // Event deviceId is the hardware identifier, not the Device.id UUID.
+      const verified = verifiedEvents.filter(
+        (e) => e.deviceId === d.deviceId,
+      ).length;
       return {
         deviceId: d.id,
         taxiNumber: d.taxiNumber ?? "",
@@ -183,7 +212,8 @@ export class VerifiedMetricsService {
         id: true,
         fullName: true,
         taxiNumber: true,
-        devices: { select: { id: true } },
+        // PlaybackEvent.deviceId references Device.deviceId (hardware ID), not Device.id (UUID).
+        devices: { select: { deviceId: true } },
       },
     });
 
@@ -191,7 +221,7 @@ export class VerifiedMetricsService {
       throw new Error(`Driver ${driverId} not found`);
     }
 
-    const deviceIds = driver.devices.map((d) => d.id);
+    const deviceIds = driver.devices.map((d) => d.deviceId);
 
     const verifiedEvents = await this.prisma.playbackEvent.findMany({
       where: {

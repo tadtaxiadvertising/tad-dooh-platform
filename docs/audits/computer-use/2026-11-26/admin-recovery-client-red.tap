@@ -1,0 +1,95 @@
+TAP version 13
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# React expects the `children` prop of <title> tags to be a string, number, bigint, or object with a novel `toString` method but found an Array with length 2 instead. Browsers treat all child Nodes of <title> tags as Text content and React expects to be able to convert `children` of <title> tags to a single string value which is why Arrays of length greater than 1 are not supported. When using JSX it can be commong to combine text nodes and value nodes. For example: <title>hello {nameOfUser}</title>. While not immediately apparent, `children` in this case is an Array with length 2. If your `children` prop is using this form try rewriting it using a template string: <title>{`hello ${nameOfUser}`}</title>.
+# Subtest: Admin recovery link resolves to its public recovery route
+ok 1 - Admin recovery link resolves to its public recovery route
+  ---
+  duration_ms: 1164.1381
+  type: 'test'
+  ...
+# Subtest: shared auth opens the recovery form when explicitly requested
+ok 2 - shared auth opens the recovery form when explicitly requested
+  ---
+  duration_ms: 898.5261
+  type: 'test'
+  ...
+# Subtest: shared auth keeps the existing default login form
+ok 3 - shared auth keeps the existing default login form
+  ---
+  duration_ms: 607.8223
+  type: 'test'
+  ...
+# Subtest: Admin recovery page renders the shared recovery entry
+ok 4 - Admin recovery page renders the shared recovery entry
+  ---
+  duration_ms: 343.3659
+  type: 'test'
+  ...
+# Subtest: anonymous recovery is public while the Admin dashboard stays protected
+ok 5 - anonymous recovery is public while the Admin dashboard stays protected
+  ---
+  duration_ms: 121.7786
+  type: 'test'
+  ...
+# Subtest: client session restoration does not redirect anonymous recovery to login
+not ok 6 - client session restoration does not redirect anonymous recovery to login
+  ---
+  duration_ms: 173.3445
+  type: 'test'
+  location: 'C:\\tad-audit-current-20261126\\scripts\\admin-recovery-entry.test.cjs:62:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+
+      assert.ok(paths.includes('/admin/forgot-password'))
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (C:\tad-audit-current-20261126\scripts\admin-recovery-entry.test.cjs:67:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Admin recovery renders without the private dashboard layout
+not ok 7 - Admin recovery renders without the private dashboard layout
+  ---
+  duration_ms: 99.5723
+  type: 'test'
+  location: 'C:\\tad-audit-current-20261126\\scripts\\admin-recovery-entry.test.cjs:70:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /data-private-layout/. Input:
+
+    '<div data-private-layout="true"><main>recovery-content</main></div>'
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<div data-private-layout="true"><main>recovery-content</main></div>'
+  operator: 'doesNotMatch'
+  stack: |-
+    TestContext.<anonymous> (C:\tad-audit-current-20261126\scripts\admin-recovery-entry.test.cjs:80:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 5
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6655.19

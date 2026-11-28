@@ -1,0 +1,45 @@
+{
+  "projectRef": "ltdcdhqixvbpdcitthqf",
+  "observedAtUTC": "2026-11-27T00:49:15Z",
+  "projectStatus": "ACTIVE_HEALTHY",
+  "deploymentBinding": "Matches documented project; actual public API deployment binding not independently established in this continuation",
+  "method": "Supabase security advisor plus aggregate pg_catalog query in BEGIN READ ONLY; statement_timeout 5s; no customer rows or function bodies",
+  "advisors": [
+    {
+      "rule": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 32,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    },
+    {
+      "rule": "function_search_path_mutable",
+      "level": "WARN",
+      "count": 2,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable"
+    },
+    {
+      "rule": "auth_leaked_password_protection",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+    }
+  ],
+  "catalog": {
+    "applicationTablesExcludingExtensions": 56,
+    "rlsEnabled": 32,
+    "rlsForced": 23,
+    "rlsWithoutPolicy": 32,
+    "anonOrAuthenticatedGrantsWithoutRls": 0,
+    "noPolicyTablesWithAnonGrants": 0,
+    "noPolicyTablesWithAuthenticatedGrants": 0
+  },
+  "interpretation": "32 INFO alerts do not establish public exposure: observed tables have no end-user DML/SELECT grants. Two mutable-search-path warnings and one breached-password warning remain existing issue 507; no exploit or privilege escalation proven.",
+  "existingIssue": "https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/507",
+  "persistentChanges": 0,
+  "notTested": [
+    "two-tenant authenticated access",
+    "Storage object policies and bytes",
+    "service-role application ownership",
+    "actual password-recovery email"
+  ]
+}

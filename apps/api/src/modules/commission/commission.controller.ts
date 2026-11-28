@@ -31,6 +31,23 @@ export class CommissionController {
    * TenantGuard validates :id, not :driverId. Fail closed here for
    * commission history/pending endpoints that use a named driverId.
    */
+  /**
+   * The authenticated principal is the only valid audit actor.
+   * A body-supplied approvedBy/revokedBy/paidBy/generatedBy is untrusted,
+   * even when @Roles allows the request.
+   */
+  private requireAdminActor(req: { user?: AuthUser }): string {
+    const user = req?.user;
+    if (
+      user?.role !== UserRole.ADMIN ||
+      typeof user.id !== "string" ||
+      !user.id.trim()
+    ) {
+      throw new ForbiddenException("Administrador autenticado requerido.");
+    }
+    return user.id;
+  }
+
   private assertDriverAccess(driverId: string, user?: AuthUser) {
     if (user?.role === UserRole.ADMIN) return;
     if (
@@ -111,15 +128,12 @@ export class CommissionController {
   @UseInterceptors(IdempotencyInterceptor)
   async approveCommission(
     @Param("id") id: string,
-    @Body() body: { approvedBy: string },
+    @Req() req: { user?: AuthUser },
   ) {
-    if (!body.approvedBy) {
-      throw new BadRequestException("approvedBy es requerido");
-    }
-
+    const actorId = this.requireAdminActor(req);
     const commission = await this.commissionService.approveCommission(
       id,
-      body.approvedBy,
+      actorId,
     );
     return { success: true, commission };
   }
@@ -133,39 +147,54 @@ export class CommissionController {
   @UseInterceptors(IdempotencyInterceptor)
   async revokeCommission(
     @Param("id") id: string,
-    @Body() body: { reason: string; revokedBy: string },
+    @Body() body: { reason?: string },
+    @Req() req: { user?: AuthUser },
   ) {
-    if (!body.reason || !body.revokedBy) {
-      throw new BadRequestException("reason y revokedBy son requeridos");
+    const actorId = this.requireAdminActor(req);
+    if (typeof body?.reason !== "string" || !body.reason.trim()) {
+      throw new BadRequestException("reason es requerido");
     }
 
     const result = await this.commissionService.revokeCommission(
       id,
-      body.reason,
-      body.revokedBy,
+      body.reason.trim(),
+      actorId,
     );
     return { ...result };
   }
 
   /**
    * POST /api/commissions/settlement/generate — Generar lote de liquidación mensual
-   * Body: { month, year, generatedBy }
+   * Body: { month, year } — operator ID comes from verified session
    * Solo ADMIN
    * Idempotente: si ya existe lote para el periodo, devuelve el existente
    */
   @Post("settlement/generate")
   @Roles(UserRole.ADMIN)
   @UseInterceptors(IdempotencyInterceptor)
-  async generateSettlement(@Body() body: MonthlySettlementInput) {
-    if (!body.month || !body.year || !body.generatedBy) {
-      throw new BadRequestException("month, year, generatedBy son requeridos");
+  async generateSettlement(
+    @Body() body: Pick<MonthlySettlementInput, "month" | "year">,
+    @Req() req: { user?: AuthUser },
+  ) {
+    const actorId = this.requireAdminActor(req);
+    if (
+      !Number.isInteger(body?.month) ||
+      body.month < 1 ||
+      body.month > 12 ||
+      !Number.isInteger(body?.year) ||
+      body.year < 2020 ||
+      body.year > 2100
+    ) {
+      throw new BadRequestException(
+        "month/year deben representar un período válido",
+      );
     }
 
-    if (body.month < 1 || body.month > 12) {
-      throw new BadRequestException("month debe estar entre 1 y 12");
-    }
-
-    const batch = await this.commissionService.generateMonthlySettlement(body);
+    const batch = await this.commissionService.generateMonthlySettlement({
+      month: body.month,
+      year: body.year,
+      generatedBy: actorId,
+    });
     return { success: true, batch };
   }
 
@@ -201,15 +230,12 @@ export class CommissionController {
   @UseInterceptors(IdempotencyInterceptor)
   async approveSettlement(
     @Param("id") id: string,
-    @Body() body: { approvedBy: string },
+    @Req() req: { user?: AuthUser },
   ) {
-    if (!body.approvedBy) {
-      throw new BadRequestException("approvedBy es requerido");
-    }
-
+    const actorId = this.requireAdminActor(req);
     const batch = await this.commissionService.approveSettlementBatch(
       id,
-      body.approvedBy,
+      actorId,
     );
     return { success: true, batch };
   }
@@ -223,16 +249,14 @@ export class CommissionController {
   @UseInterceptors(IdempotencyInterceptor)
   async paySettlement(
     @Param("id") id: string,
-    @Body() body: { paidBy: string; referenceNum?: string },
+    @Body() body: { referenceNum?: string } | undefined,
+    @Req() req: { user?: AuthUser },
   ) {
-    if (!body.paidBy) {
-      throw new BadRequestException("paidBy es requerido");
-    }
-
+    const actorId = this.requireAdminActor(req);
     const batch = await this.commissionService.paySettlementBatch(
       id,
-      body.paidBy,
-      body.referenceNum,
+      actorId,
+      body?.referenceNum,
     );
     return { success: true, batch };
   }

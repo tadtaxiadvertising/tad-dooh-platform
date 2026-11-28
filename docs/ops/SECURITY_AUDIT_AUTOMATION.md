@@ -1,152 +1,55 @@
-# Security Audit Automation
+# Weekly Supabase Security Audit — operator runbook
 
-## GitHub Actions Workflow (Automatic)
+**Workflow:** `.github/workflows/security-audit-weekly.yml`  
+**Schedule:** Monday at 06:00 UTC, plus explicit `workflow_dispatch`.  
+**Production database:** use the project reference already established in the protected deployment configuration; verify identity privately before any access. The scheduled workflow presently pins the independently confirmed EasyPanel API project reference `ltdcdhqixvbpdcitthqf` (#217); it refuses any other value, even if syntactically valid. This reference is not a credential. Changing production projects requires an independently verified infrastructure change and a reviewed workflow update. This runbook authorizes **read-only diagnosis**, not DDL, migrations, payments, credential rotation, or production releases.
 
-**File**: `.github/workflows/security-audit-weekly.yml`
+## Current status and evidence (2026-11-23)
 
-Runs every **Monday 06:00 UTC** and on manual trigger.
+- [GitHub Actions run #45222770481](https://github.com/tadtaxiadvertising/tad-dooh-platform/actions/runs/45222770481) failed **before running security checks**. Its `Run Security Audit` job preflight recorded an invalid project reference (placeholder) and an empty management access token. The step exited 1. This is a **configuration failure**, not a security assessment with zero findings.
+- [Issue #516](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/516) tracks restoration and verification of the scheduled workflow.
+- A separate **read-only** Supabase Security Advisor query on 2026-11-23 reported two `function_search_path_mutable` WARN findings, one `auth_leaked_password_protection` WARN finding and nine `rls_enabled_no_policy` INFO findings; no ERROR findings were returned by that advisor query. These findings **do not prove full platform security**. The function and Auth warnings are tracked in [#507](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/507); RLS/grants in [#318](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/318).
+- Production backup/restore remains blocked under [#217](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/217). Production credentials/history incidents remain open at [#244](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/244) and [#489](https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/489).
 
-### What it checks (11 categories):
+## Required GitHub Actions configuration
 
-| # | Check | Free Plan Limit | Alert Threshold |
-|---|-------|-----------------|-----------------|
-| 1 | **Security Advisories** | - | New ERROR/WARN (excl. known) |
-| 2 | **Database Size** | 500 MB | >400MB warn, >450MB critical |
-| 3 | **Storage Usage** | 1 GB | Reports usage |
-| 4 | **Auth Config** | - | Leaked password, MFA, JWT expiry |
-| 5 | **Edge Functions** | 500K invocations/mo | Lists functions + 24h invocations |
-| 6 | **Realtime** | 200 concurrent | Reports usage |
-| 7 | **RLS Deny-by-Default** | - | 0 grants to anon/authenticated |
-| 8 | **Function search_path** | - | 0 mutable functions |
-| 9 | **st_estimatedextent** | - | Monitors PostGIS function grants |
-| 10 | **Long-running Queries** | - | >30s active queries |
-| 11 | **Idle in Transaction** | - | >5min idle transactions |
+The job reads these names **only in its audit step**, via GitHub Actions secrets (never via tracked files, public issues, Docker build arguments, or command-line URLs):
 
-### On Failure:
-- Creates GitHub Issue with details
-- Sends Slack notification (if `SLACK_WEBHOOK_URL` secret configured)
-- Uploads advisories JSON as artifact (30 days retention)
+| Secret | Required | Purpose |
+| --- | --- | --- |
+| `SUPABASE_PROJECT_REF` | Yes | Exact intended Supabase project reference (format validated by workflow) |
+| `SUPABASE_ACCESS_TOKEN` | Yes | Authorized Supabase Management API token with sufficient *read* access |
+| `DB_PASSWORD` | Yes | Database password for authorized read-only monitoring; currently the workflow connects as `postgres`, so treat this as privileged and plan least-privilege replacement |
+| `SLACK_WEBHOOK_URL` | No | Failure/success notifications; handle as a credential |
 
----
+**Administrator-only recovery:**
+1. In the repository's GitHub **Settings → Secrets and variables → Actions**, verify that the names above exist in the correct scope and are available to the scheduled workflow. GitHub does not display stored secret values. The placeholder `REPLACE_WITH_SECRET` is never an acceptable reference.
+2. Privately confirm the expected Supabase project and token read permissions. Use new/rotated credentials as coordinated in #244/#489; do not reuse or expose compromised credentials. Avoid sending passwords/tokens in PRs, logs, chats, support tickets or issues.
+3. Verify the connectivity and authorization path without logging token contents. The workflow is configured to fail closed on missing configuration. Do not add `continue-on-error`, blanket exclusions or skip audits.
+4. Trigger **Actions → Weekly Supabase Security Audit → Run workflow** using authorized repository access, then review the *actual* steps and exit code. If advisories are returned, triage them independently of configuration recovery.
+5. Capture the workflow run URL, commit SHA, step outcomes, aggregate advisory counts, sanitized failure reason, and any post-remediation advisor comparison in issue #516. Close only with evidence that audit steps executed, not merely that job setup succeeded.
 
-## Local Manual Script
+## What the workflow monitors
 
-**File**: `scripts/security-audit.sh`
+It queries security lints; database size/connection counts; Storage usage and buckets; Auth configuration; Edge Functions; Realtime; PostgreSQL table grants to `anon`/`authenticated`; functions lacking configured `search_path`; PostGIS `st_estimatedextent` privileges; idle transactions; and long-running queries.
 
-```bash
-# Set credentials
-export SUPABASE_ACCESS_TOKEN="your_pat_token"
-export DB_PASSWORD="your_db_password"
+The workflow's current thresholds are 400 MB warning and 450 MB critical on its assumed 500 MB free-plan database limit. **Check current project limits independently** before acting on threshold alerts. Success is conditional on all required queries, controls and checks completing; an early error cannot certify any results.
 
-# Run
-./scripts/security-audit.sh
-```
+The current workflow contains narrowly scoped legacy exceptions. Never broaden them based solely on a lint name: assess **object identity, ownership, privileges and reachability** first. See the workflow source for the current exact exception logic.
 
-### Requirements:
-- `jq` (JSON parser)
-- `psql` (PostgreSQL client)
-- `curl`
+## Safe diagnosis without credential exposure
 
-### Exit codes:
-- `0` = Pass (no new regressions)
-- `1` = Fail (new ERRORs, grants, mutable functions, or DB critical)
+Prefer the connected Supabase **Security Advisor** for a read-only assessment, preserving advisory title, severity, affected object and [official remediation guidance](https://supabase.com/docs/guides/database/database-linter). Validate the database/project identity separately. Do **not** print raw SQL results containing customer data.
 
----
+For an operator-run local check, use an approved ephemeral environment and pass secrets through a protected secret store/environment or libpq's secured password file. Do not interpolate database passwords into PostgreSQL URLs (shell history, process arguments and error output may expose them). Do not embed Supabase bearer tokens in command-line arguments or public action logs. When testing locally, make sure monitoring SQL is read-only and the database role is appropriately restricted.
 
-## Required GitHub Secrets
+## Status checklist (not yet completed)
 
-| Secret | Description | How to get |
-|--------|-------------|------------|
-| `SUPABASE_ACCESS_TOKEN` | Personal Access Token | Dashboard → Settings → Access Tokens → Generate |
-| `DB_PASSWORD` | Database password | Dashboard → Settings → Database → Connection string |
-| `SLACK_WEBHOOK_URL` | Optional Slack webhook | Slack App → Incoming Webhooks |
+- [ ] Authorized secrets are supplied to GitHub Actions without exposing their values.
+- [ ] Scheduled workflow accesses the correct approved project and runs real security checks.
+- [ ] GitHub job and each required step have successful execution evidence, or findings are explicitly triaged.
+- [ ] Known advisories have documented disposition; no security check was weakened to make CI green.
+- [ ] Incident #516 contains sanitized run evidence and a reviewer verifies closure.
+- [ ] Production release gates #217, #244, #489 and #313 are handled independently.
 
----
-
-## Known Blocked Items (Accepted Risk)
-
-| Advisory | Reason | Resolution |
-|----------|--------|------------|
-| `rls_disabled_in_public` (spatial_ref_sys) | Owned by `supabase_admin`, no superuser since 2024 | **Ticket Supabase Support** |
-| `extension_in_public` (postgis) | Owned by `supabase_admin` | **Ticket Supabase Support** |
-| `st_estimatedextent` (6 functions) | PostGIS system C functions, grant from `supabase_admin` | Accepted - read-only geo extent |
-
-These are **excluded from failure** in the workflow but still reported.
-
----
-
-## Free Plan Limits Monitoring
-
-The audit tracks proximity to Free Plan limits:
-
-| Resource | Limit | Warning | Critical |
-|----------|-------|---------|----------|
-| Database | 500 MB | 400 MB (80%) | 450 MB (90%) |
-| Storage | 1 GB | 800 MB (80%) | 900 MB (90%) |
-| Edge Functions | 500K/mo | 400K (80%) | 450K (90%) |
-| Realtime | 200 concurrent | 160 (80%) | 180 (90%) |
-
----
-
-## Adding New Exclusions
-
-Edit `.github/workflows/security-audit-weekly.yml`:
-
-```yaml
-KNOWN_BLOCKED_ERRORS='["rls_disabled_in_public", "new_error_name"]'
-KNOWN_WARNS='["extension_in_public", "anon_security_definer_function_executable", "authenticated_security_definer_function_executable", "new_warn_name"]'
-```
-
----
-
-## Verification Commands
-
-```bash
-# Quick advisories check
-curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-  "https://api.supabase.com/v1/projects/ltdcdhqixvbpdcitthqf/database/lints" | \
-  jq '.[] | select(.level=="ERROR" or .level=="WARN") | {name, level, detail}'
-
-# Quick RLS grants check
-PGPASSWORD="$DB_PASSWORD" psql "postgresql://postgres:$DB_PASSWORD@db.ltdcdhqixvbpdcitthqf.supabase.co:5432/postgres" -c "
-  SELECT table_name, grantee, privilege_type 
-  FROM information_schema.table_privileges 
-  WHERE grantee IN ('anon','authenticated') AND table_schema='public';"
-
-# Quick DB size
-PGPASSWORD="$DB_PASSWORD" psql "postgresql://postgres:$DB_PASSWORD@db.ltdcdhqixvbpdcitthqf.supabase.co:5432/postgres" -c "
-  SELECT pg_size_pretty(pg_database_size('postgres'));"
-
-# Edge Functions
-curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-  "https://api.supabase.com/v1/projects/ltdcdhqixvbpdcitthqf/functions" | \
-  jq '.[] | {name: .slug, version, status}'
-
-# Auth config
-curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-  "https://api.supabase.com/v1/projects/ltdcdhqixvbpdcitthqf/config/auth" | \
-  jq '{leaked_password_protection_enabled, mfa_enabled, jwt_expiry}'
-```
-
----
-
-## Next Steps
-
-1. ✅ Add `SUPABASE_ACCESS_TOKEN` and `DB_PASSWORD` to GitHub Secrets
-2. ✅ (Optional) Add `SLACK_WEBHOOK_URL` for notifications
-3. ✅ Trigger manually first: Actions → Weekly Supabase Security Audit → Run workflow
-4. ✅ Verify first run passes
-5. ✅ Let it run automatically every Monday
-
----
-
-## Extending the Audit
-
-To add custom checks, edit the `Run Security Audit` step in `.github/workflows/security-audit-weekly.yml` or `scripts/security-audit.sh`.
-
-Examples of additional checks you could add:
-- **Backup status**: Check last backup timestamp
-- **PITR status**: Point-in-time recovery enabled
-- **SSL/TLS**: Certificate expiry
-- **Custom metrics**: Your app-specific health checks
-- **Cost estimation**: Projected usage vs limits
+**State:** configuration root cause identified; scheduled job remediation and verification **pending**.

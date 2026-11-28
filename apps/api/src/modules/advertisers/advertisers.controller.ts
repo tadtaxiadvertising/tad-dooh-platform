@@ -7,6 +7,10 @@ import {
   Param,
   Body,
   BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+  Headers,
+  Req,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -15,6 +19,7 @@ import { AdvertisersService } from "./advertisers.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 import { TenantGuard } from "../auth/guards/tenant.guard";
+import { AllowAdvertiserStatuses } from "../auth/decorators/advertiser-status.decorator";
 import { Throttle } from "@nestjs/throttler";
 
 @Controller("advertisers")
@@ -63,6 +68,42 @@ export class AdvertisersController {
   }
 
   /**
+   * Validate legacy advertiser login tokens for the server-side web gateway.
+   * Public to allow token verification, but NEVER honors a client-supplied role.
+   * Auth data comes only from a verified JWT + current advertiser DB row.
+   */
+  @Public()
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
+  @Get("session")
+  async verifySession(@Headers("authorization") authorization?: string) {
+    const match = /^Bearer ([^\s]+)$/.exec(authorization || "");
+    if (!match) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+    return this.advertisersService.verifyAdvertiserSession(match[1]);
+  }
+
+  /**
+   * OAuth-only, trusted-identity account status. The global SupabaseAuthGuard
+   * verifies the bearer session; advertiserId and role are never accepted in
+   * route params or request body. Must appear BEFORE dynamic /:id routes.
+   */
+  @Get("session/status")
+  @Roles(UserRole.ADVERTISER)
+  @AllowAdvertiserStatuses("ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING")
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
+  async verifyOAuthStatus(
+    @Req()
+    request: {
+      user?: { role?: string; entityId?: string | null; email?: string };
+    },
+  ) {
+    return this.advertisersService.verifyOAuthAdvertiserStatus(
+      request.user || {},
+    );
+  }
+
+  /**
    * SHELTER C-A1: TenantGuard asegura que solo el dueño o un ADMIN puede ver el registro.
    */
   @Get(":id")
@@ -75,16 +116,29 @@ export class AdvertisersController {
   }
 
   /**
-   * Registro de nuevo anunciante — Rate limited: 3 registros/min
-   *
-   * R9 — RBAC ESTRICTO: el rol ADVERTISER es implícito para toda cuenta creada
-   * aquí (resuelto por tabla en login). Cualquier intento de inyectar campos
-   * privilegiados (role, status, referredBy, metadata) se RECHAZA con 400.
+   * Assisted commercial registration, not the public onboarding flow.
+   * A driver may submit contact details but must not choose another person's
+   * portal password or override referral ownership.
    */
-  @Public()
+  @Roles(UserRole.ADMIN, UserRole.DRIVER)
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post()
-  async create(@Body() body: Record<string, unknown>) {
+  async create(
+    @Body() body: Record<string, unknown>,
+    @Req() request: { user?: { role?: string } },
+  ) {
+    const role = request.user?.role;
+    if (role !== UserRole.ADMIN && role !== UserRole.DRIVER) {
+      throw new ForbiddenException("Registro asistido no autorizado.");
+    }
+    if (
+      role === UserRole.DRIVER &&
+      (body?.password !== undefined || body?.referralCode !== undefined)
+    ) {
+      throw new ForbiddenException(
+        "Un conductor no puede establecer credenciales ni atribuciones de terceros.",
+      );
+    }
     const FORBIDDEN_FIELDS = [
       "role",
       "isAdmin",
@@ -111,16 +165,25 @@ export class AdvertisersController {
       );
     }
 
-    // Whitelist explícita — nunca se reenvía el payload crudo
-    return this.advertisersService.create({
+    // Whitelist both request and response; never return a stored password hash.
+    const advertiser = await this.advertisersService.create({
       companyName: String(companyName),
       contactName: String(contactName),
-      email: String(email),
+      email: String(email).trim().toLowerCase(),
       phone: body?.phone !== undefined ? String(body.phone) : undefined,
       password: typeof body?.password === "string" ? body.password : undefined,
       referralCode:
         typeof body?.referralCode === "string" ? body.referralCode : undefined,
     });
+    return {
+      id: advertiser.id,
+      companyName: advertiser.companyName,
+      contactName: advertiser.contactName,
+      email: advertiser.email,
+      phone: advertiser.phone,
+      status: advertiser.status,
+      referredBy: advertiser.referredBy,
+    };
   }
 
   /**

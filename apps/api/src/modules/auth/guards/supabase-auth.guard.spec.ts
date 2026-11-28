@@ -1,6 +1,7 @@
 import { ExecutionContext, UnauthorizedException } from "@nestjs/common";
 import * as jwt from "jsonwebtoken";
 import { SupabaseAuthGuard } from "./supabase-auth.guard";
+import { TenantGuard } from "./tenant.guard";
 
 describe("SupabaseAuthGuard token purpose isolation", () => {
   const secret = "unit-test-only-secret-with-at-least-32-chars";
@@ -17,11 +18,19 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
     ),
   };
   const reflector = { getAllAndOverride: jest.fn() };
+  const verifyAdvertiserSession = jest.fn();
+  const advertisersService = { verifyAdvertiserSession };
+  const prisma = { idempotencyKey: { findUnique: jest.fn() } };
 
   let guard: SupabaseAuthGuard;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    verifyAdvertiserSession.mockResolvedValue({
+      role: "ADVERTISER",
+      advertiserId: "advertiser-1",
+      status: "ACTIVE",
+    });
     getUser.mockResolvedValue({
       data: { user: null },
       error: { message: "invalid session" },
@@ -31,6 +40,8 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
       reflector as never,
       supabase as never,
       config as never,
+      advertisersService as never,
+      prisma as never,
     );
   });
 
@@ -261,5 +272,254 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
       entityId: null,
     });
     expect(getUser).toHaveBeenCalledWith(token);
+  });
+  const correlation = "c".repeat(64);
+  const correlatedClaims = {
+    sub: "correlated-auth",
+    session_id: "correlated-session",
+    role: "authenticated",
+    email: "correlated@example.invalid",
+    app_metadata: {
+      role: "ADVERTISER",
+      entityId: "correlated-advertiser",
+      tad_onboarding_reservation: correlation,
+    },
+  };
+  const committedReceipt = {
+    driverId: "public-advertiser-onboarding:single-use:v1",
+    path: "/onboarding/advertiser",
+    method: "POST",
+    isLocked: false,
+    response: JSON.stringify({
+      state: "COMMITTED",
+      authUserId: correlatedClaims.sub,
+      advertiserId: correlatedClaims.app_metadata.entityId,
+    }),
+  };
+
+  let correlatedTokenSequence = 0;
+  function correlatedToken(signingKey = secret) {
+    return jwt.sign(correlatedClaims, signingKey, {
+      audience: "authenticated",
+      expiresIn: "1h",
+      jwtid: `correlation-fixture-${++correlatedTokenSequence}`,
+    });
+  }
+
+  it("denies a locally verified correlated identity without falling back to Auth", async () => {
+    prisma.idempotencyKey.findUnique.mockResolvedValueOnce({
+      ...committedReceipt,
+      isLocked: true,
+    });
+    const { context, request } = contextFor(correlatedToken());
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("does not populate optional public auth when a receipt is missing", async () => {
+    prisma.idempotencyKey.findUnique.mockResolvedValueOnce(null);
+    const { context, request } = contextFor(correlatedToken(), true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.user).toBeUndefined();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("rechecks the durable receipt on cache hits without renewing the session", async () => {
+    prisma.idempotencyKey.findUnique
+      .mockResolvedValueOnce(committedReceipt)
+      .mockResolvedValueOnce({ ...committedReceipt, isLocked: true });
+    const token = correlatedToken();
+    const first = contextFor(token);
+    await expect(guard.canActivate(first.context)).resolves.toBe(true);
+    expect(first.request.user).toMatchObject({
+      id: correlatedClaims.sub,
+      entityId: correlatedClaims.app_metadata.entityId,
+    });
+    expect(first.request.user).not.toHaveProperty("correlation");
+    const second = contextFor(token);
+    await expect(guard.canActivate(second.context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(second.request.user).toBeUndefined();
+    expect(prisma.idempotencyKey.findUnique).toHaveBeenCalledTimes(2);
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects a network-verified correlated identity with mismatched ownership", async () => {
+    getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: "different-auth-user",
+          email: correlatedClaims.email,
+          app_metadata: correlatedClaims.app_metadata,
+        },
+      },
+      error: null,
+    });
+    prisma.idempotencyKey.findUnique.mockResolvedValueOnce(committedReceipt);
+    const { context, request } = contextFor(
+      correlatedToken("network-test-signing-key"),
+    );
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps network verification cached while rechecking the receipt", async () => {
+    getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: correlatedClaims.sub,
+          email: correlatedClaims.email,
+          app_metadata: correlatedClaims.app_metadata,
+        },
+      },
+      error: null,
+    });
+    prisma.idempotencyKey.findUnique.mockResolvedValue(committedReceipt);
+    const token = correlatedToken("network-test-signing-key");
+    await expect(guard.canActivate(contextFor(token).context)).resolves.toBe(
+      true,
+    );
+    await expect(guard.canActivate(contextFor(token).context)).resolves.toBe(
+      true,
+    );
+    expect(getUser).toHaveBeenCalledTimes(1);
+    expect(prisma.idempotencyKey.findUnique).toHaveBeenCalledTimes(2);
+  });
+
+  it("fails closed on receipt database errors without trying a fallback", async () => {
+    prisma.idempotencyKey.findUnique.mockRejectedValueOnce(
+      new Error("fixture database unavailable"),
+    );
+    const { context, request } = contextFor(correlatedToken());
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  const legacyPayload = {
+    sub: "advertiser-1",
+    email: "advertiser@example.test",
+    role: "ADVERTISER",
+    app_metadata: { role: "ADVERTISER", entityId: "advertiser-1" },
+  };
+
+  it("accepts signed legacy advertiser sessions via the existing DB-backed verifier", async () => {
+    const token = jwt.sign(legacyPayload, secret, { expiresIn: "1h" });
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(verifyAdvertiserSession).toHaveBeenCalledWith(token);
+    expect(request.user).toEqual({
+      id: "advertiser-1",
+      email: "advertiser@example.test",
+      role: "ADVERTISER",
+      entityId: "advertiser-1",
+    });
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects forged legacy advertiser JWTs even if unsigned claims say ADVERTISER", async () => {
+    const token = jwt.sign(legacyPayload, "different-secret", {
+      expiresIn: "1h",
+    });
+    verifyAdvertiserSession.mockRejectedValueOnce(
+      new UnauthorizedException("Session invalid"),
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(verifyAdvertiserSession).toHaveBeenCalledWith(token);
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects revoked and suspended legacy sessions before tenant checks", async () => {
+    const token = jwt.sign(legacyPayload, secret, { expiresIn: "1h" });
+    verifyAdvertiserSession.mockRejectedValueOnce(
+      new UnauthorizedException("Advertiser suspended"),
+    );
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(request.user).toBeUndefined();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("preserves TenantGuard ownership: same advertiser allowed, other advertiser denied", async () => {
+    const token = jwt.sign(legacyPayload, secret, { expiresIn: "1h" });
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    const tenantGuard = new TenantGuard();
+
+    // Set only the route parameter, exactly as Nest does after authentication.
+    const tenantContext = {
+      getHandler: () => function getPortal() {},
+      getClass: () => class AdvertiserPortalController {},
+      switchToHttp: () => ({
+        getRequest: () => ({
+          ...request,
+          params: { id: "advertiser-1" },
+        }),
+      }),
+    } as unknown as ExecutionContext;
+    expect(tenantGuard.canActivate(tenantContext)).toBe(true);
+
+    const otherTenantContext = {
+      getHandler: () => function getOtherPortal() {},
+      getClass: () => class AdvertiserPortalController {},
+      switchToHttp: () => ({
+        getRequest: () => ({
+          ...request,
+          params: { id: "another-advertiser" },
+        }),
+      }),
+    } as unknown as ExecutionContext;
+    expect(() => tenantGuard.canActivate(otherTenantContext)).toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it("rejects otherwise trusted legacy claims without an email", async () => {
+    const withoutEmail = Object.fromEntries(
+      Object.entries(legacyPayload).filter(([claim]) => claim !== "email"),
+    );
+    const token = jwt.sign(withoutEmail, secret, { expiresIn: "1h" });
+    const { context, request } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(verifyAdvertiserSession).toHaveBeenCalledWith(token);
+    expect(request.user).toBeUndefined();
+  });
+
+  it("does not double-verify legacy sessions on public routes", async () => {
+    const token = jwt.sign(legacyPayload, secret, { expiresIn: "1h" });
+    const { context, request } = contextFor(token, true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(verifyAdvertiserSession).not.toHaveBeenCalled();
+    expect(request.user).toBeUndefined();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("never routes hardware pairing tokens with fabricated advertiser fields through legacy auth", async () => {
+    const token = jwt.sign({ ...legacyPayload, type: "pairing" }, secret, {
+      expiresIn: "5m",
+    });
+    const { context } = contextFor(token);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(verifyAdvertiserSession).not.toHaveBeenCalled();
+    expect(getUser).not.toHaveBeenCalled();
   });
 });

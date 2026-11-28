@@ -37,7 +37,6 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
     contactName: initialData?.contactName || "",
     email: initialData?.email || "",
     phone: initialData?.phone || "",
-    password: "",
     whatsapp: initialData?.whatsapp || "",
     instagram: initialData?.instagram || "",
     facebook: initialData?.facebook || "",
@@ -117,7 +116,6 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
       contactName: "",
       email: "",
       phone: "",
-      password: "",
       whatsapp: "",
       instagram: "",
       facebook: "",
@@ -142,7 +140,12 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
       if (initialData?.id) {
         await updateAdvertiser(initialData.id, payload);
       } else {
-        await createAdvertiser(payload);
+        await createAdvertiser({
+          companyName: formData.companyName,
+          contactName: formData.contactName,
+          email: formData.email,
+          phone: formData.phone,
+        });
       }
 
       setSuccess(true);
@@ -280,25 +283,6 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
                       className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all"
                     />
                   </div>
-                </div>
-                <div className="space-y-1">
-                  <label
-                    htmlFor="password"
-                    className="text-[10px] font-black text-zinc-500 uppercase tracking-widest"
-                  >
-                    Contraseña (Acceso Portal)
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    name="password"
-                    placeholder={
-                      initialData ? "Dejar vacío para no cambiar" : "Contraseña"
-                    }
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all"
-                  />
                 </div>
                 <div className="space-y-1">
                   <label

@@ -7,10 +7,18 @@ import {
   Headers,
   Logger,
   BadRequestException,
+  ForbiddenException,
+  Req,
 } from "@nestjs/common";
-import { TelemetryService } from "./telemetry.service";
+import {
+  TelemetryService,
+  TELEMETRY_GPS_BATCH_LIMIT,
+  PLAYBACK_MAX_BATCH_SIZE,
+} from "./telemetry.service";
 
 import { PrismaService } from "../prisma/prisma.service";
+import type { AuthUser } from "../auth/auth.types";
+import { Roles, UserRole } from "../auth/decorators/roles.decorator";
 
 @Controller("telemetry")
 export class TelemetryController {
@@ -22,23 +30,19 @@ export class TelemetryController {
   ) {}
 
   /**
-   * POST /telemetry/sync — Ingesta masiva de telemetría GPS.
+   * POST /telemetry/sync — Legacy JWT-protected GPS batch ingestion.
    *
-   * B9 PATCH (v12.1.3): endurecimiento mínimo.
-   * Antes: @Public() sin validación → cualquiera podía inyectar filas en
-   * `telemetry` para cualquier driverId. Ahora valida:
-   *   1. Payload no vacío.
-   *   2. Primer `driverId` presente.
-   *   3. Driver existe (1 query pre-flight, O(1) por el index del PK).
+   * This route is NOT @Public; the global SupabaseAuthGuard requires a user
+   * session. It is not the official driver PWA upload path (PostgREST RPC).
    *
-   * El tamaño del batch ya está capeado aguas abajo por `MAX_BATCH_SIZE`
-   * en `TelemetryService.sync()` → no se duplica aquí deliberadamente.
-   *
-   * NOTA: Este endpoint NO es la ruta oficial de la PWA (la oficial va por
-   * PostgREST RPC `bulk_insert_telemetry`, ver regla #4). Se conserva público
-   * (no requiere JWT) para mantener compatibilidad con gateways legados.
+   * Bounded, homogeneous batches are committed atomically and acknowledged
+   * only after PostgreSQL confirms the transaction. The first driver must
+   * exist. ADMIN may upload for an existing driver; DRIVER may upload only
+   * their own GPS points using the verified session entityId. Neither user
+   * roles nor the driver identity are trusted from the request body.
    */
   @Post("sync")
+  @Roles(UserRole.ADMIN, UserRole.DRIVER)
   @HttpCode(HttpStatus.CREATED)
   async sync(
     @Body()
@@ -49,16 +53,36 @@ export class TelemetryController {
       speed: number;
       timestamp?: string;
     }[],
+    @Req() req: { user?: AuthUser },
   ) {
     if (!Array.isArray(payload) || payload.length === 0) {
       throw new BadRequestException("EMPTY_PAYLOAD");
     }
 
-    // Pre-flight: validar que el primer driverId existe (asumimos batch homogéneo).
-    // El servicio ya capa `MAX_BATCH_SIZE` arriba, no duplicamos la verificación.
+    // Acknowledging an oversized batch while silently dropping its tail
+    // destroys offline GPS data. Require the client to keep/split the batch.
+    if (payload.length > TELEMETRY_GPS_BATCH_LIMIT) {
+      throw new BadRequestException("TELEMETRY_BATCH_TOO_LARGE");
+    }
+
     const headDriverId = payload[0]?.driverId;
     if (!headDriverId) {
       throw new BadRequestException("MISSING_DRIVER_ID");
+    }
+    // This route is JWT-protected by the global auth guard, but a caller
+    // must not smuggle another driver's GPS points behind the first ID.
+    if (payload.some((point) => !point || point.driverId !== headDriverId)) {
+      throw new BadRequestException("DRIVER_MISMATCH");
+    }
+
+    const actor = req?.user;
+    if (
+      !actor ||
+      (actor.role !== UserRole.ADMIN && actor.role !== UserRole.DRIVER) ||
+      (actor.role === UserRole.DRIVER &&
+        (!actor.entityId || actor.entityId !== headDriverId))
+    ) {
+      throw new ForbiddenException("TELEMETRY_DRIVER_FORBIDDEN");
     }
 
     const driver = await this.prisma.driver.findUnique({
@@ -69,11 +93,9 @@ export class TelemetryController {
       throw new BadRequestException("DRIVER_NOT_FOUND");
     }
 
-    this.telemetryService
-      .sync(payload)
-      .catch((err) =>
-        this.logger.error(`Telemetry sync error: ${err.message}`),
-      );
+    // The DB transaction must commit before a success receipt is returned.
+    // A rejected transaction propagates to Nest's failure response.
+    await this.telemetryService.sync(payload);
     return { success: true };
   }
 
@@ -98,6 +120,12 @@ export class TelemetryController {
     },
     @Headers("x-tablet-key") tabletKey: string,
   ) {
+    // TypeScript payload types are erased for HTTP JSON. A forged
+    // "play_confirm" must never be persisted with verified=true.
+    if (!payload || !["START", "END", "ERROR"].includes(payload.eventType)) {
+      return { success: false, reason: "EVENT_TYPE_INVALID" };
+    }
+
     // X-Tablet-Key is REQUIRED for playback events
     if (!tabletKey) {
       this.logger.warn(
@@ -111,7 +139,7 @@ export class TelemetryController {
     }
 
     // Rate limiting: check per-deviceId burst
-    const rateLimitOk = this.telemetryService.checkPlaybackRateLimit(
+    const rateLimitOk = await this.telemetryService.checkPlaybackRateLimit(
       payload.deviceId,
     );
     if (!rateLimitOk) {
@@ -176,9 +204,13 @@ export class TelemetryController {
     const now = new Date();
     const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000);
     const oneMinFuture = new Date(now.getTime() + 60 * 1000);
-    if (ts < fiveMinAgo || ts > oneMinFuture) {
+    if (
+      !Number.isFinite(ts.getTime()) ||
+      ts < fiveMinAgo ||
+      ts > oneMinFuture
+    ) {
       this.logger.warn(
-        `⚠️ Timestamp out of window for deviceId=${payload.deviceId}: ${ts.toISOString()}`,
+        `⚠️ Timestamp out of window for deviceId=${payload.deviceId}: ${Number.isFinite(ts.getTime()) ? ts.toISOString() : "INVALID_DATE"}`,
       );
       return {
         success: false,
@@ -213,8 +245,13 @@ export class TelemetryController {
     }[],
     @Headers("x-tablet-key") tabletKey: string,
   ) {
-    if (!payload || payload.length === 0) {
+    if (!Array.isArray(payload) || payload.length === 0) {
       return { success: false, reason: "EMPTY_PAYLOAD" };
+    }
+
+    // Never let a direct caller trigger partial batch persistence.
+    if (payload.length > PLAYBACK_MAX_BATCH_SIZE) {
+      throw new BadRequestException("PLAYBACK_BATCH_TOO_LARGE");
     }
 
     // X-Tablet-Key is REQUIRED for playback-batch events
@@ -231,6 +268,20 @@ export class TelemetryController {
     const deviceId = payload[0]?.deviceId;
     if (!deviceId) {
       return { success: false, reason: "MISSING_DEVICE_ID" };
+    }
+
+    // A tablet key is scoped to ONE device. An attacker with a valid key
+    // must not submit verified PoP for another device inside the same batch.
+    // Validate all events BEFORE rate limit, DB checks or any writes.
+    if (payload.some((event) => !event || event.deviceId !== deviceId)) {
+      return { success: false, reason: "DEVICE_MISMATCH" };
+    }
+    if (
+      payload.some(
+        (event) => !["START", "END", "ERROR"].includes(event.eventType),
+      )
+    ) {
+      return { success: false, reason: "EVENT_TYPE_INVALID" };
     }
 
     const deviceValid = await this.telemetryService.validateDevice(deviceId);
@@ -270,7 +321,7 @@ export class TelemetryController {
     }
 
     // Rate limit check for the batch
-    const rateLimitOk = this.telemetryService.checkPlaybackRateLimit(
+    const rateLimitOk = await this.telemetryService.checkPlaybackRateLimit(
       deviceId,
       payload.length,
     );
@@ -290,9 +341,13 @@ export class TelemetryController {
       const ts = event.clientTimestamp
         ? new Date(event.clientTimestamp)
         : new Date();
-      if (ts < fiveMinAgo || ts > oneMinFuture) {
+      if (
+        !Number.isFinite(ts.getTime()) ||
+        ts < fiveMinAgo ||
+        ts > oneMinFuture
+      ) {
         this.logger.warn(
-          `⚠️ Timestamp out of window for deviceId=${deviceId}: ${ts.toISOString()}`,
+          `⚠️ Timestamp out of window for deviceId=${deviceId}: ${Number.isFinite(ts.getTime()) ? ts.toISOString() : "INVALID_DATE"}`,
         );
         return {
           success: false,

@@ -100,4 +100,36 @@ describe("MediaService - Security & Validation", () => {
       );
     });
   });
+
+  describe("MIME column mapping compatibility (#217)", () => {
+    it.each(["video/mp4", "image/png", null])(
+      "returns both MIME names from canonical stored value %s",
+      async (mimeType) => {
+        mockPrismaService.media.findUnique.mockResolvedValue({
+          id: "media-synthetic",
+          mimeType,
+          fileSize: BigInt(5),
+          campaign: null,
+        });
+        const response = await service.getMediaById("media-synthetic");
+        expect(response.mimeType).toBe(mimeType);
+        expect(response.mime_type).toBe(mimeType);
+      },
+    );
+    it("keeps the legacy alias on metadata-update responses", async () => {
+      mockPrismaService.media.update.mockResolvedValue({
+        id: "media-synthetic",
+        mimeType: "image/jpeg",
+        fileSize: BigInt(5),
+      });
+      const response = await service.updateMedia("media-synthetic", {
+        qrUrl: "https://example.invalid/",
+      });
+      expect(response).toMatchObject({
+        mimeType: "image/jpeg",
+        mime_type: "image/jpeg",
+        fileSize: 5,
+      });
+    });
+  });
 });

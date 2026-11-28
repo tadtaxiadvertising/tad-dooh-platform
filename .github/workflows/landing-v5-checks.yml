@@ -1,23 +1,9 @@
 name: Landing V5 Focused Gates
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    paths:
-      - "apps/advertiser/**"
-      - "package.json"
-      - "pnpm-workspace.yaml"
-      - "pnpm-lock.yaml"
-      - "Dockerfile.advertiser"
-      - "scripts/pnpm-overrides*.cjs"
-      - "apps/driver/**"
-      - "scripts/landing*.cjs"
-      - "scripts/driver-landing*.cjs"
-      - "scripts/driver-preview-arithmetic.test.cjs"
-      - "scripts/advertiser-onboarding-presentation.test.cjs"
-      - "scripts/cookie-management.test.cjs"
-      - ".github/workflows/landing-v5-checks.yml"
+  # The main CI Summary now requires this workflow on the same checkout.
+  # Keep manual diagnostics available without duplicate automatic runs.
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -44,7 +30,16 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Landing and driver regression logic
-        run: node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/landing-cinematic.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
+        run: node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/landing-cinematic.test.cjs scripts/advertiser-motion-v6.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
+      - name: Release verification regression logic
+        run: node --test scripts/advertiser-release-drift.test.cjs scripts/advertiser-release-gate.test.cjs scripts/advertiser-deployment-check.test.cjs
+      - name: Performance measurement regression logic
+        run: node --test scripts/landing-v3-measure.test.cjs
+      - name: Advertiser referral attribution regression logic
+        run: node --test scripts/advertiser-referral-capture.test.cjs
+
+      - name: Advertiser proxy replay regression
+        run: node --test scripts/advertiser-proxy-replay.test.cjs
       - name: Consent regression logic
         run: node --test scripts/cookie-management.test.cjs
       - name: Type check advertiser landing
@@ -143,9 +138,13 @@ jobs:
           }
           ready 3003 "$ADV_PID"
           ready 3004 "$DRV_PID"
+          # Require the deployed feature markers in real server HTML before browser QA.
+          node scripts/advertiser-release-drift.cjs --require-v6-582 "$LANDING_BASE_URL"
           export NODE_PATH="$GITHUB_WORKSPACE/apps/driver/node_modules"
           node scripts/landing-v3-smoke.cjs
           node scripts/driver-landing-smoke.cjs
+          # Collect lab evidence after functional checks; no uncalibrated timing thresholds.
+          LANDING_MEASURE_SAMPLES=3 LANDING_MEASURE_REPORT=/tmp/tad-landing-performance/advertiser.json node scripts/landing-v3-measure.cjs
       - name: Preserve read-only browser QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -154,3 +153,11 @@ jobs:
           path: /tmp/tad-landing-screenshots
           if-no-files-found: warn
           retention-days: 5
+      - name: Preserve advertiser lab performance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tad-advertiser-performance-lab
+          path: /tmp/tad-landing-performance/advertiser.json
+          if-no-files-found: warn
+          retention-days: 14

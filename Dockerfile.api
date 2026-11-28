@@ -11,8 +11,8 @@ COPY apps/ ./apps/
 COPY packages/ ./packages/
 COPY tsconfig.base.json ./
 
-# Scope install to API + shared packages
-RUN pnpm install --filter api... --filter @tad/impact-calculator...
+# Scope install to API + shared packages (no transitive filter suffix to avoid pnpm 10 parse bug)
+RUN pnpm install --frozen-lockfile --filter api --filter @tad/impact-calculator
 
 # 2. Copy all source files
 COPY . .
@@ -32,12 +32,15 @@ ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=384 --expose-gc"
 ENV PORT=3000
 
-# Security: non-root user
+# Security: non-root user. Avoid recursively chowning large pnpm node_modules;
+# source/dependencies stay readable but root-owned. Only writable runtime dirs
+# (HOME=/app and relative ./kyc-files) need ownership by nestjs.
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --ingroup nodejs --home /app nestjs && \
     sed -i 's/\r$//' /app/apps/api/docker-entrypoint.sh && \
     chmod +x /app/apps/api/docker-entrypoint.sh && \
-    chown -R nestjs:nodejs /app
+    mkdir -p /app/apps/api/kyc-files && \
+    chown nestjs:nodejs /app /app/apps/api/kyc-files
 
 USER nestjs
 

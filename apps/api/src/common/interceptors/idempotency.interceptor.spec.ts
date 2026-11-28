@@ -48,10 +48,7 @@ describe("IdempotencyInterceptor — financial and offline retry safety", () => 
     const next = { handle: jest.fn(() => of({ transactionId: "t-1" })) };
     const { context } = makeContext();
 
-    const response$ = await interceptor.intercept(
-      context,
-      next as CallHandler,
-    );
+    const response$ = await interceptor.intercept(context, next as CallHandler);
     let wasDelivered = false;
     const responsePromise = firstValueFrom(response$).then((value) => {
       wasDelivered = true;
@@ -83,7 +80,9 @@ describe("IdempotencyInterceptor — financial and offline retry safety", () => 
     const { context } = makeContext();
     const next = { handle: jest.fn(() => of({ status: "APPROVED" })) };
 
-    await firstValueFrom(await interceptor.intercept(context, next as CallHandler));
+    await firstValueFrom(
+      await interceptor.intercept(context, next as CallHandler),
+    );
     const saved = prisma.idempotencyKey.create.mock.calls[0][0].data;
     prisma.idempotencyKey.findUnique.mockResolvedValue({
       ...saved,
@@ -106,7 +105,9 @@ describe("IdempotencyInterceptor — financial and offline retry safety", () => 
     const next = { handle: jest.fn(() => of({ success: true })) };
     const { context } = makeContext({ amount: 125 });
 
-    await firstValueFrom(await interceptor.intercept(context, next as CallHandler));
+    await firstValueFrom(
+      await interceptor.intercept(context, next as CallHandler),
+    );
     prisma.idempotencyKey.findUnique.mockResolvedValue({
       ...prisma.idempotencyKey.create.mock.calls[0][0].data,
       response: JSON.stringify({ success: true }),
@@ -130,7 +131,9 @@ describe("IdempotencyInterceptor — financial and offline retry safety", () => 
     const { context } = makeContext();
     const next = { handle: jest.fn(() => of({ confirmation: "pending" })) };
 
-    await firstValueFrom(await interceptor.intercept(context, next as CallHandler));
+    await firstValueFrom(
+      await interceptor.intercept(context, next as CallHandler),
+    );
     prisma.idempotencyKey.findUnique.mockResolvedValue({
       ...prisma.idempotencyKey.create.mock.calls[0][0].data,
       isLocked: true,
@@ -155,8 +158,12 @@ describe("IdempotencyInterceptor — financial and offline retry safety", () => 
     second.request.user.id = "another-auth-user";
     const next = { handle: jest.fn(() => of({ success: true })) };
 
-    await firstValueFrom(await interceptor.intercept(first.context, next as CallHandler));
-    await firstValueFrom(await interceptor.intercept(second.context, next as CallHandler));
+    await firstValueFrom(
+      await interceptor.intercept(first.context, next as CallHandler),
+    );
+    await firstValueFrom(
+      await interceptor.intercept(second.context, next as CallHandler),
+    );
 
     const [firstKey, secondKey] = prisma.idempotencyKey.create.mock.calls.map(
       ([operation]) => operation.data.key,
@@ -258,7 +265,9 @@ describe("IdempotencyInterceptor — financial and offline retry safety", () => 
     const { context } = makeContext();
     const next = { handle: jest.fn(() => of({ withdrawalId: "w-456" })) };
 
-    await firstValueFrom(await interceptor.intercept(context, next as CallHandler));
+    await firstValueFrom(
+      await interceptor.intercept(context, next as CallHandler),
+    );
     prisma.idempotencyKey.findUnique.mockResolvedValue({
       ...prisma.idempotencyKey.create.mock.calls[0][0].data,
       isLocked: false,

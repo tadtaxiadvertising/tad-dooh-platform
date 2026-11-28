@@ -318,9 +318,16 @@ export default function SettingsPage() {
                         </div>
                       </div>
 
-                      {!["slotPrice", "referralFee", "subscriptionPrice"].every((key) => persistedKeys.has(key)) && (
-                        <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
-                          Algunos importes aún no están configurados en la base de datos. Se muestran sin valor y no pueden modificarse hasta aprobar el contrato financiero.
+                      {!["slotPrice", "referralFee", "subscriptionPrice"].every(
+                        (key) => persistedKeys.has(key),
+                      ) && (
+                        <p
+                          role="status"
+                          className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200"
+                        >
+                          Algunos importes aún no están configurados en la base
+                          de datos. Se muestran sin valor y no pueden
+                          modificarse hasta aprobar el contrato financiero.
                         </p>
                       )}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -338,7 +345,11 @@ export default function SettingsPage() {
                               </span>
                               <input
                                 type="number"
-                                value={persistedKeys.has("slotPrice") ? config.slotPrice : ""}
+                                value={
+                                  persistedKeys.has("slotPrice")
+                                    ? config.slotPrice
+                                    : ""
+                                }
                                 disabled={!persistedKeys.has("slotPrice")}
                                 placeholder="Sin configurar"
                                 onChange={(e) =>
@@ -369,7 +380,11 @@ export default function SettingsPage() {
                               </span>
                               <input
                                 type="number"
-                                value={persistedKeys.has("referralFee") ? config.referralFee : ""}
+                                value={
+                                  persistedKeys.has("referralFee")
+                                    ? config.referralFee
+                                    : ""
+                                }
                                 disabled={!persistedKeys.has("referralFee")}
                                 placeholder="Sin configurar"
                                 onChange={(e) =>
@@ -402,8 +417,14 @@ export default function SettingsPage() {
                               </span>
                               <input
                                 type="number"
-                                value={persistedKeys.has("subscriptionPrice") ? config.subscriptionPrice : ""}
-                                disabled={!persistedKeys.has("subscriptionPrice")}
+                                value={
+                                  persistedKeys.has("subscriptionPrice")
+                                    ? config.subscriptionPrice
+                                    : ""
+                                }
+                                disabled={
+                                  !persistedKeys.has("subscriptionPrice")
+                                }
                                 placeholder="Sin configurar"
                                 onChange={(e) =>
                                   setConfig({

@@ -94,7 +94,7 @@ export default function AdvertiserCampaigns() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const entityId = session?.user?.app_metadata?.entityId || session?.user?.id;
-    if (!entityId) return;
+    if (!entityId || !session?.access_token) return;
 
     setSubmitting(true);
     try {
@@ -104,6 +104,7 @@ export default function AdvertiserCampaigns() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             advertiserId: entityId,

@@ -20,6 +20,7 @@ import { Public } from "../auth/decorators/public.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { UserRole } from "../auth/decorators/roles.decorator";
 import { MediaService } from "../media/media.service";
+import { withLegacyCampaignMedia } from "../media/media-mime-contract";
 import { PrismaService } from "../prisma/prisma.service";
 import { VideoGeneratorService } from "./video-generator.service";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
@@ -44,7 +45,6 @@ const mediaSafeSelect = {
   name: true,
   filename: true,
   originalFilename: true,
-  mime_type: true,
   mimeType: true,
   durationSeconds: true,
   width: true,
@@ -60,6 +60,48 @@ const mediaSafeSelect = {
   createdAt: true,
   qrUrl: true,
 };
+
+/**
+ * Only operational coverage data belongs in advertiser-facing API responses.
+ * Never query or serialize Device.authToken, GPS coordinates, or driver PII.
+ * Admin campaign screens use id, deviceId, taxiNumber, city and sync dates.
+ */
+const campaignCoverageDeviceSelect = {
+  id: true,
+  deviceId: true,
+  taxiNumber: true,
+  city: true,
+  status: true,
+  lastHeartbeat: true,
+  lastSeen: true,
+  lastSync: true,
+} as const;
+
+type CampaignCoverageDevice = Pick<
+  Device,
+  | "id"
+  | "deviceId"
+  | "taxiNumber"
+  | "city"
+  | "status"
+  | "lastHeartbeat"
+  | "lastSeen"
+  | "lastSync"
+>;
+
+/**
+ * Advertisers may keep their own QR / commerce links current, but must never
+ * change ownership, active status, pricing, targeting or device assignments.
+ * Admin campaign edits use the original full DTO and retain existing behavior.
+ */
+const ALLOWED_ADVERTISER_CAMPAIGN_PATCH_FIELDS = new Set([
+  "whatsapp",
+  "instagram",
+  "facebook",
+  "websiteUrl",
+  "pedidosYaUrl",
+  "uberEatsUrl",
+]);
 
 @Controller("campaigns")
 @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
@@ -99,7 +141,7 @@ export class CampaignController {
       select: {
         id: true,
         companyName: true,
-        contactName: true,
+        status: true,
         whatsapp: true,
         instagram: true,
         facebook: true,
@@ -110,26 +152,40 @@ export class CampaignController {
       },
     });
 
-    if (!advertiser) throw new NotFoundException("Anunciante no encontrado");
+    // The QR landing is public. Never expose inactive advertisers or
+    // internal contact names. Only published commerce details may be returned.
+    if (!advertiser || advertiser.status !== "ACTIVE") {
+      throw new NotFoundException("Anunciante no encontrado");
+    }
 
-    // Buscar si hay una campaña activa para este anunciante que tenga links personalizados
-    // (Buscamos la campaña más reciente por nombre o ID de anunciante si tuviéramos la relación fuerte)
+    // Public QR overrides must belong to this advertiser by immutable ID.
+    // Name-based matching can select an unrelated brand with the same name.
+    // Campaign.active defaults to true, so require published status as well.
+    const now = new Date();
     const activeCampaign = await this.prisma.campaign.findFirst({
       where: {
-        OR: [
-          { advertiserId: advertiser.id },
-          { advertiser: advertiser.companyName }, // Legacy fallback por nombre
-        ],
+        advertiserId: advertiser.id,
+        status: "ACTIVE",
         active: true,
-        startDate: { lte: new Date() },
-        endDate: { gte: new Date() },
+        startDate: { lte: now },
+        endDate: { gte: now },
+      },
+      select: {
+        whatsapp: true,
+        instagram: true,
+        facebook: true,
+        websiteUrl: true,
+        pedidosYaUrl: true,
+        uberEatsUrl: true,
       },
       orderBy: { updatedAt: "desc" },
     });
 
     // Si hay campaña, sobreescribimos los links del anunciante con los de la campaña (si existen en la campaña)
     const profile = {
-      ...advertiser,
+      id: advertiser.id,
+      companyName: advertiser.companyName,
+      productsData: advertiser.productsData,
       whatsapp: activeCampaign?.whatsapp || advertiser.whatsapp,
       instagram: activeCampaign?.instagram || advertiser.instagram,
       facebook: activeCampaign?.facebook || advertiser.facebook,
@@ -150,13 +206,41 @@ export class CampaignController {
   ) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
+    if (role !== UserRole.ADMIN && role !== UserRole.ADVERTISER) {
+      throw new ForbiddenException("Rol no autorizado para editar campañas.");
+    }
     const campaign = await this.campaignService.getCampaignById(id);
     if (!campaign) throw new NotFoundException("Campaña no encontrada");
 
-    if (role === "ADVERTISER" && campaign.advertiserId !== entityId) {
-      throw new ForbiddenException(
-        "No tienes permisos para editar esta campaña",
-      );
+    if (role === UserRole.ADVERTISER) {
+      if (!entityId || campaign.advertiserId !== entityId) {
+        throw new ForbiddenException(
+          "No tienes permisos para editar esta campaña",
+        );
+      }
+
+      // Fail closed on any unexpected/privileged property, even if the
+      // current CampaignService happens to ignore it. A client must not
+      // smuggle "active", "advertiser_id", "budget" or target_devices.
+      if (!dto || typeof dto !== "object" || Array.isArray(dto)) {
+        throw new ForbiddenException(
+          "Solo se permite editar enlaces comerciales de la campaña.",
+        );
+      }
+      const entries = Object.entries(dto);
+      if (
+        entries.length === 0 ||
+        entries.some(
+          ([field, value]) =>
+            !ALLOWED_ADVERTISER_CAMPAIGN_PATCH_FIELDS.has(field) ||
+            typeof value !== "string" ||
+            value.length > 2048,
+        )
+      ) {
+        throw new ForbiddenException(
+          "Solo se permite editar enlaces comerciales de la campaña.",
+        );
+      }
     }
 
     return this.campaignService.updateCampaign(id, dto);
@@ -243,8 +327,13 @@ export class CampaignController {
   async getAllCampaigns(@Req() req: AuthenticatedRequest) {
     const role = req.user?.role;
     const entityId = req.user?.entityId;
-    if (role === "ADVERTISER" && entityId) {
-      return this.prisma.campaign.findMany({
+    if (role === UserRole.ADVERTISER) {
+      // Never fall through to the admin-wide campaign listing if an
+      // advertiser's validated identity is incomplete or missing.
+      if (typeof entityId !== "string" || !entityId.trim()) {
+        throw new ForbiddenException("Perfil de anunciante inválido.");
+      }
+      const campaigns = await this.prisma.campaign.findMany({
         where: { advertiserId: entityId },
         include: {
           mediaAssets: { select: mediaAssetSafeSelect },
@@ -252,6 +341,12 @@ export class CampaignController {
         },
         orderBy: { createdAt: "desc" },
       });
+      return campaigns.map(withLegacyCampaignMedia);
+    }
+    if (role !== UserRole.ADMIN) {
+      throw new ForbiddenException(
+        "Rol no autorizado para consultar campañas.",
+      );
     }
     return this.campaignService.getAllCampaigns();
   }
@@ -268,14 +363,26 @@ export class CampaignController {
   // 1. Mapa de Calor / Distribución por Campaña
   @Get("stats/:id/distribution")
   @Roles(UserRole.ADMIN, UserRole.ADVERTISER)
-  async getCampaignDistribution(@Param("id") id: string) {
+  async getCampaignDistribution(
+    @Param("id") id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     try {
       const campaign = await this.prisma.campaign.findUnique({
         where: { id },
-        select: { name: true },
+        select: { name: true, advertiserId: true },
       });
 
       if (!campaign) throw new NotFoundException("Campaña no encontrada");
+      // Validate tenancy before fetching assignments or device information.
+      if (
+        req.user?.role === UserRole.ADVERTISER &&
+        campaign.advertiserId !== req.user.entityId
+      ) {
+        throw new ForbiddenException(
+          "No tienes permisos para ver esta distribución",
+        );
+      }
 
       const distributions = await this.prisma.deviceCampaign.findMany({
         where: { campaign_id: id },
@@ -290,6 +397,7 @@ export class CampaignController {
         const deviceIds = v1Dist.map((v) => v.deviceId);
         const devices = await this.prisma.device.findMany({
           where: { deviceId: { in: deviceIds } },
+          select: campaignCoverageDeviceSelect,
         });
 
         const assignedTaxis = devices.map((d) => ({
@@ -323,6 +431,7 @@ export class CampaignController {
         where: {
           id: { in: deviceUuids.filter((id): id is string => Boolean(id)) },
         },
+        select: campaignCoverageDeviceSelect,
       });
 
       const assignedTaxis = devices.map((d) => ({
@@ -393,6 +502,7 @@ export class CampaignController {
       const allDevices = await this.prisma.device.findMany({
         where: { status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE },
         orderBy: { lastSeen: "desc" },
+        select: campaignCoverageDeviceSelect,
       });
 
       return allDevices.map((d) => ({
@@ -406,7 +516,7 @@ export class CampaignController {
     const assignments = await this.prisma.deviceCampaign.findMany({
       where: { campaign_id: campaignId },
       include: {
-        device: true,
+        device: { select: campaignCoverageDeviceSelect },
       },
     });
     console.log(
@@ -420,6 +530,7 @@ export class CampaignController {
           campaigns: { some: { id: campaignId } },
         },
       },
+      select: campaignCoverageDeviceSelect,
     });
     console.log(
       `[CAMPAIGN_DEBUG] Driver targeted devices found: ${targetedDriverDevices.length}`,
@@ -428,7 +539,10 @@ export class CampaignController {
     // Merge both (avoid duplicates)
     const deviceMap = new Map<
       string,
-      Device & { assigned_at: Date | null; assignment_type: string }
+      CampaignCoverageDevice & {
+        assigned_at: Date | null;
+        assignment_type: string;
+      }
     >();
 
     for (const a of assignments) {

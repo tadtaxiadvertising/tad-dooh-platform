@@ -1,8 +1,8 @@
 # Dependabot Configuration
 # ----------------------------
 # Mantiene automáticamente las dependencias actualizadas.
-# Se ejecuta semanalmente el viernes a las 09:00 UTC.
-# Solo actualiza minor/patch versions. Los cambios se abren en PRs separados.
+# Calendario escalonado cada viernes: npm 09:00, Docker 10:00, Actions 11:00 UTC.
+# Minor/patch rutinarios agrupados por ecosistema; seguridad conserva PRs propios.
 # ULTRA-SEGURO: no actualiza versiones mayores sin revisión manual.
 
 version: 2
@@ -15,7 +15,21 @@ updates:
       day: "friday"
       time: "09:00"
       timezone: "UTC"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 4
+    # Group routine weekly version upgrades to avoid repeated main pushes
+    # (and potential EasyPanel GitHub auto-builds) in a short burst.
+    # Security advisories remain independent, not grouped or delayed here.
+    groups:
+      production-version-updates:
+        applies-to: version-updates
+        dependency-type: production
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      development-version-updates:
+        applies-to: version-updates
+        dependency-type: development
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
     reviewers:
       - "tad-team"
@@ -45,7 +59,12 @@ updates:
       day: "friday"
       time: "10:00"
       timezone: "UTC"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      docker-version-updates:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
     reviewers:
       - "tad-team"
@@ -66,7 +85,12 @@ updates:
       interval: "weekly"
       day: "friday"
       time: "11:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      github-actions-version-updates:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
     reviewers:
       - "tad-team"

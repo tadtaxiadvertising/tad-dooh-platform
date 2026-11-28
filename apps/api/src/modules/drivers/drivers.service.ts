@@ -20,6 +20,7 @@ import {
 } from "../../common/constants/business-rules";
 import { PayrollAuditService } from "./payroll-audit.service";
 import { ReferralService } from "../referral/referral.service";
+import { deviceIdentityWhere } from "../campaign/device-identity-lookup";
 
 export interface AuthUser {
   id: string;
@@ -182,6 +183,8 @@ export class DriversService {
     const playedRows = await this.prisma.playbackEvent
       .findMany({
         where: {
+          // Only a verified END is a billable Proof of Play; START/ERROR are not.
+          eventType: "play_confirm",
           verified: true,
           timestamp: { gte: monthStart, lte: monthEnd },
           device: { driverId },
@@ -322,7 +325,6 @@ export class DriversService {
     phone: string;
     taxiPlate?: string;
     licensePlate?: string;
-    deviceId?: string;
     subscriptionPaid?: boolean;
     subscriptionEnd?: Date;
     password?: string;
@@ -420,20 +422,6 @@ export class DriversService {
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       });
-
-    if (data.deviceId) {
-      // FIX M-5: Loguear errores silenciados en lugar de descartarlos
-      try {
-        await this.prisma.device.update({
-          where: { deviceId: data.deviceId },
-          data: { driverId: driver.id },
-        });
-      } catch (err) {
-        this.logger.warn(
-          `[DRIVER_CREATE] No se pudo vincular deviceId ${data.deviceId} al conductor ${driver.id}: ${err.message}`,
-        );
-      }
-    }
 
     return toPublicDriver(driver);
   }
@@ -690,38 +678,89 @@ export class DriversService {
     });
     if (!driver) throw new Error("Chofer no encontrado");
 
-    // Verificar onboarding completado (TOS + Pago + Banco)
-    const onboardingCompleteSteps: string[] = [
-      BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.COMPLETED,
-      BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING,
-    ];
-    const onboardingComplete = onboardingCompleteSteps.includes(
-      driver.onboardingStatus,
-    );
+    // A driver's eligibility can change while another admin is assigning
+    // hardware. Validate before the transaction AND again after acquiring
+    // the driver-row lock, using one consistent rule.
+    const assertEligibleForDevice = (candidate: {
+      status: string;
+      onboardingStatus: string;
+    }) => {
+      if (candidate.status === BUSINESS_RULES.STATUS.DRIVER.BLOCKED) {
+        throw new ForbiddenException(
+          "Conductor bloqueado: no se puede asignar una tablet.",
+        );
+      }
+      const onboardingCompleteSteps: string[] = [
+        BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.COMPLETED,
+        BUSINESS_RULES.STATUS.DRIVER.ONBOARDING.BANK_PENDING,
+      ];
+      if (
+        candidate.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE &&
+        !onboardingCompleteSteps.includes(candidate.onboardingStatus)
+      ) {
+        throw new ForbiddenException(
+          `Onboarding incompleto o suscripción no pagada. Estado actual: ${candidate.onboardingStatus}. Asegúrate de completar: TOS → Pago RD$${BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD.toLocaleString()} → Cuenta bancaria.`,
+        );
+      }
+    };
+    assertEligibleForDevice(driver);
 
-    if (
-      driver.status !== BUSINESS_RULES.STATUS.DRIVER.ACTIVE &&
-      !onboardingComplete
-    ) {
-      throw new ForbiddenException(
-        `Onboarding incompleto o suscripción no pagada. Estado actual: ${driver.onboardingStatus}. Asegúrate de completar: TOS → Pago RD$${BUSINESS_RULES.STARTER_KIT_ANNUAL_FEE_RD.toLocaleString()} → Cuenta bancaria.`,
+    // Do not send hardware identifiers through devices.id (PostgreSQL UUID).
+    // A UUID-looking hardware ID can also collide with a different device PK.
+    const devices = await this.prisma.device.findMany({
+      where: deviceIdentityWhere(deviceId),
+      take: 2,
+    });
+    if (devices.length === 0) {
+      throw new BadRequestException(
+        "Dispositivo no encontrado en el inventario",
       );
     }
+    if (devices.length > 1) {
+      throw new BadRequestException("Identificador de dispositivo ambiguo");
+    }
+    const device = devices[0];
 
-    const device = await this.prisma.device.findFirst({
-      where: { OR: [{ deviceId }, { id: deviceId }] },
-    });
-    if (!device) throw new Error("Dispositivo no encontrado en el inventario");
+    // Keep driver handoffs serialized, including concurrent assignments to
+    // different tablets. Updating the driver row takes a PostgreSQL row lock
+    // for this transaction; updatedAt reflects the administrative change.
+    // Compare-and-set on the target's observed owner prevents another admin
+    // from silently overwriting a device that changed hands after our read.
+    return this.prisma.$transaction(async (tx) => {
+      const lockedDriver = await tx.driver.update({
+        where: { id: driverId },
+        data: { updatedAt: new Date() },
+        select: { status: true, onboardingStatus: true },
+      });
+      // A suspension between the initial read and this lock must prevent
+      // device unlinking and binding; a rejected transaction rolls back.
+      assertEligibleForDevice(lockedDriver);
+      // Serialize handoffs for the same driver. A transaction alone cannot
+      // prevent concurrent admins from assigning two distinct tablets:
+      // both may unlink the old binding before either target is written.
+      // Lock the driver row first; NO KEY UPDATE avoids blocking FK key
+      // checks while keeping other handoffs for this driver ordered.
+      const lockedDrivers = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "drivers"
+        WHERE "id" = ${driverId}
+        FOR NO KEY UPDATE
+      `;
+      if (lockedDrivers.length !== 1) {
+        throw new BadRequestException("Chofer no encontrado");
+      }
 
-    // Remove any existing bindings this driver has
-    await this.prisma.device.updateMany({
-      where: { driverId },
-      data: { driverId: null },
-    });
+      await tx.device.updateMany({
+        where: { driverId, id: { not: device.id } },
+        data: { driverId: null },
+      });
 
-    return this.prisma.device.update({
-      where: { id: device.id },
-      data: { driverId },
+      // Prisma 5 allows non-unique predicates alongside a unique id in
+      // update.where. A lost race throws P2025 and rolls back the unlink.
+      // Keep the target attached when replaying the same assignment.
+      return tx.device.update({
+        where: { id: device.id, driverId: device.driverId },
+        data: { driverId },
+      });
     });
   }
 
@@ -729,9 +768,22 @@ export class DriversService {
    * Unlink a hardware device from a driver
    */
   async unlinkDevice(driverId: string) {
-    return this.prisma.device.updateMany({
-      where: { driverId },
-      data: { driverId: null },
+    // Pairing and unpairing must serialize on the SAME driver-row lock.
+    // Otherwise unlink can complete against the old tablet while a concurrent
+    // handoff binds a new tablet, leaving a supposed unlink ineffective.
+    return this.prisma.$transaction(async (tx) => {
+      const lockedDrivers = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "drivers"
+        WHERE "id" = ${driverId}
+        FOR NO KEY UPDATE
+      `;
+      // Preserve the previous no-op { count: 0 } response for unknown IDs.
+      if (lockedDrivers.length === 0) return { count: 0 };
+
+      return tx.device.updateMany({
+        where: { driverId },
+        data: { driverId: null },
+      });
     });
   }
 

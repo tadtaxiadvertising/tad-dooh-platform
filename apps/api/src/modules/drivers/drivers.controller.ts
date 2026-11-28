@@ -117,11 +117,9 @@ export class DriversController {
       phone: string;
       taxiPlate?: string;
       licensePlate?: string;
-      deviceId?: string;
       password?: string;
       contractAccepted?: boolean;
       agreementVersion?: string;
-      referredBy?: string;
       referralCode?: string;
     },
     @Req() req?: AuthenticatedRequest,
@@ -144,18 +142,22 @@ export class DriversController {
     const sanitize = (val?: string) =>
       val && val.trim() !== "" ? val : undefined;
 
+    // Public signup must not mass-assign driver/device/financial fields.
+    // Tablet pairing is reserved for the authenticated ADMIN endpoint
+    // POST /drivers/:id/assign-device, after onboarding verification.
     return this.driversService.create({
-      ...body,
-      contractAccepted: isContractAccepted,
+      fullName: body.fullName,
+      phone: body.phone,
       cedula: sanitize(body.cedula),
       taxiPlate: sanitize(body.taxiPlate),
       licensePlate: sanitize(body.licensePlate),
-      deviceId: sanitize(body.deviceId),
-      // C2 FIX: Forzar subscriptionPaid=false, subscriptionEnd=undefined para registros públicos
+      password: body.password,
+      contractAccepted: isContractAccepted,
+      agreementVersion: body.agreementVersion,
+      // Attribution from a validated referral code, never a raw driver ID.
+      referralCode: referralCode?.trim() || undefined,
       subscriptionPaid: false,
       subscriptionEnd: undefined,
-      password: body.password,
-      referralCode: referralCode?.trim() || undefined,
     });
   }
 

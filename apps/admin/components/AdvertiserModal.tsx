@@ -86,7 +86,12 @@ export const AdvertiserModal: React.FC<AdvertiserModalProps> = ({
       if (isEditing) {
         await updateAdvertiser(initialData.id, form);
       } else {
-        await createAdvertiser(form);
+        await createAdvertiser({
+          companyName: form.companyName,
+          contactName: form.contactName,
+          email: form.email,
+          phone: form.phone,
+        });
       }
       onSuccess();
       onClose();

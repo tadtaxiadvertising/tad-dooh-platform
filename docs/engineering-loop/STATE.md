@@ -148,3 +148,21 @@ Entrega: [PR #177](https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/
 - Skill motion-system-v2.md created
 - Merge conflicts in STATE.md cleaned
 - Next: responsive/mobile QA, then motion scenes
+
+## Driver hero #249 — 2026-11-11 (America/La_Paz)
+
+- Work isolated in `codex/driver-hero-249` from `origin/main` `4905b307`; the original checkout and its pending edits were preserved. PR #247 was already merged, followed by #248.
+- User confirmed that the PR #248 image is the approved asset. Extracted its exact bytes into a local WebP and restored the requested hero/SEO copy and copiloto description.
+- Scope and verification: [driver-hero-249-verification.md](../ux-landing/driver-hero-249-verification.md). No merge or deployment performed.
+
+## Imagen Driver actualizada — 2026-11-11
+
+- PR #250 ya estaba fusionado. Nueva intervención aislada: `codex/driver-hero-image-update-20261111`, base `3aef4a8c`.
+- Nueva imagen horizontal adjunta por el usuario, preservada sin alteraciones; marco 3:2, dimensiones y sizes actualizados.
+- Evidencia y límites: [driver-hero-image-update.md](../ux-landing/driver-hero-image-update.md).
+
+## Taxi sin fondo — 2026-11-11
+
+- PR #251 ya fusionado; intervención en `codex/driver-transparent-taxi-20261111`, base `c2b0272c`.
+- ImageGen integrado produjo PNG con transparencia real. Se quitó también el marco opaco del hero y se añadió verificación de alfa de la variante entregada por Next.
+- Evidencia: [driver-transparent-taxi.md](../ux-landing/driver-transparent-taxi.md).

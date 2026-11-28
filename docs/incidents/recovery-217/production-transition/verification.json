@@ -1,0 +1,228 @@
+{
+  "status": "READ_ONLY_PREFLIGHT_VERIFIED_PRODUCTION_TRANSITION_PENDING",
+  "checkedAt": "2026-11-26T02:15:15.605935+00:00",
+  "sourceMain": "48b777cad18194b22207cdcfad3dcdefe987bfe2",
+  "preflightSqlSha256": "22be47558bd691f8cec3d53e4ee23651aef92aa1e72a1dbc7268e863f7577e9b",
+  "schemaLfSha256": "eaee945edceaf7d8699ba3c813427d623887706fa3512194f9526e9ce91b04c7",
+  "targetIndependentlyPinned": true,
+  "authenticatedConnector": true,
+  "transactionReadOnlyVerified": true,
+  "transactionEnd": "ROLLBACK",
+  "applicationRowsReturned": false,
+  "productionDdlOrDmlExecuted": false,
+  "privateClientPreparationSourceHashMatches": true,
+  "sourceClientContractIssueCount": 0,
+  "publicTableCount": 33,
+  "expectedModels": 52,
+  "modelsPresent": 29,
+  "missingTableCount": 23,
+  "missingTables": [
+    "active_ads",
+    "advertiser_subscriptions",
+    "analytics_events",
+    "bi_dashboard_snapshots",
+    "campaign_metrics",
+    "commission_ledger",
+    "commissions",
+    "contract_acceptances",
+    "conversation_messages",
+    "conversations",
+    "conversion_events",
+    "fleets",
+    "leads",
+    "payment_evidence",
+    "payment_intents",
+    "payment_verifications",
+    "playlists",
+    "portal_requests",
+    "qr_scans",
+    "reconciliation_reports",
+    "referral_attributions",
+    "settlement_batches",
+    "users"
+  ],
+  "missingColumnCount": 39,
+  "missingColumns": [
+    "campaign_expirations.advertiser_id",
+    "campaign_expirations.notification_sent",
+    "campaign_expirations.notified_at",
+    "campaign_expirations.remaining_days",
+    "campaign_expirations.scheduled_for",
+    "device_campaigns.device_uuid_217",
+    "devices.driver_id_text_217",
+    "devices.is_simulated",
+    "devices.status_enum_217",
+    "driver_locations.driver_id_text_217",
+    "driver_locations.is_simulated",
+    "driver_locations.speed",
+    "drivers.agreement_version",
+    "drivers.bank_account",
+    "drivers.cedula",
+    "drivers.consecutive_months_under_goal",
+    "drivers.contract_accepted",
+    "drivers.contract_accepted_at",
+    "drivers.hardware_config",
+    "drivers.identidad_vehicular",
+    "drivers.insurance_accepted",
+    "drivers.insurance_accepted_at",
+    "drivers.is_simulated",
+    "drivers.level",
+    "drivers.onboarding_status",
+    "drivers.password",
+    "drivers.referral_code",
+    "drivers.referred_by",
+    "drivers.status_enum_217",
+    "drivers.subscription_end",
+    "drivers.subscription_paid",
+    "drivers.taxi_plate",
+    "financial_transactions.currency_enum_217",
+    "subscriptions.device_id",
+    "subscriptions.is_simulated",
+    "subscriptions.paid_at",
+    "subscriptions.valid_until",
+    "telemetry.driver_id_text_217",
+    "wallets.driver_id_text_217"
+  ],
+  "idTypeMismatchCount": 0,
+  "idTypeMismatches": [],
+  "scalarTypeMismatchCount": 0,
+  "scalarTypeMismatches": [],
+  "relationTypeMismatchCount": 0,
+  "relationTypeMismatches": [],
+  "gpsSqlContractIssueCount": 2,
+  "gpsSqlContractIssues": [
+    {
+      "code": "GPS_COORDS_COLUMN_MISSING",
+      "table": "telemetry",
+      "column": "coords"
+    },
+    {
+      "code": "POSTGIS_EXTENSION_MISSING"
+    }
+  ],
+  "enumSqlContractIssueCount": 1,
+  "enumSqlContractIssues": [
+    {
+      "code": "ENUM_TYPE_MISSING",
+      "enum": "SystemStatus",
+      "expected": "public.SystemStatus"
+    }
+  ],
+  "relationCounterOnlyCoversPresentEndpoints": true,
+  "emptyTargets": {
+    "devices": true,
+    "drivers": true,
+    "telemetry": true,
+    "subscriptions": true,
+    "driver_locations": true,
+    "campaign_expirations": true
+  },
+  "financialCurrencyCompatible": true,
+  "prismaMigrations": {
+    "finished": 23,
+    "rolledBack": 0,
+    "unresolved": 0
+  },
+  "postgisAvailable": [
+    {
+      "schema": null,
+      "trusted": false,
+      "version": "3.3.7",
+      "installed": false,
+      "superuser": true,
+      "relocatable": false
+    },
+    {
+      "schema": null,
+      "trusted": false,
+      "version": "3.3.7next",
+      "installed": false,
+      "superuser": true,
+      "relocatable": false
+    },
+    {
+      "schema": null,
+      "trusted": false,
+      "version": "unpackaged",
+      "installed": false,
+      "superuser": true,
+      "relocatable": false
+    }
+  ],
+  "sessionCapabilities": {
+    "canLogin": true,
+    "createDb": true,
+    "bypassRls": true,
+    "superuser": false,
+    "maySetSupabaseAdmin": false,
+    "maySetPrivilegedRole": true,
+    "sessionLoadsSupautils": true,
+    "inheritsPrivilegedRole": true,
+    "extensionSuperuserIsSupabaseAdmin": true,
+    "postgisListedInPrivilegedExtensions": true,
+    "inheritsReadAllSettings": true
+  },
+  "postgresLogWindow": {
+    "start": "2026-11-26T01:00:00Z",
+    "end": "2026-11-26T02:09:00Z",
+    "severitiesObserved": ["LOG"],
+    "sqlStatesObserved": ["00000"],
+    "doesNotVerifyNestOrEasyPanelLogs": true
+  },
+  "securityAdvisors": [
+    {
+      "name": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 9
+    },
+    {
+      "name": "function_search_path_mutable",
+      "level": "WARN",
+      "count": 2
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "level": "WARN",
+      "count": 1
+    }
+  ],
+  "productionAdapterImplemented": false,
+  "productionAdapterRehearsed": false,
+  "essentialEasyPanelConfigurationCaptured": false,
+  "independentRecoveryMasterCustodyVerified": false,
+  "secretRotationVerified": false,
+  "deployedShaVerified": false,
+  "productionReleaseReady": false,
+  "syntheticManagedPostgisProbe": {
+    "status": "PASS_SYNTHETIC_MANAGED_POSTGIS",
+    "completedAt": "2026-11-26T02:16:49.180744+00:00",
+    "scriptSha256": "4075c99bb7323ca631334417d01a038c8de0fe6df2d256c20d69e14684e9921f",
+    "image": "supabase/postgres@sha256:432d12926b09e10eb3317b0e2e9672c9ce8ea6bccb359857a31ff9f90683161d",
+    "caller": {
+      "superuser": false,
+      "maySetSupabaseAdmin": false,
+      "sessionLoadsSupautils": true,
+      "inheritsPrivilegedRole": true
+    },
+    "nativeResult": {
+      "srid": 4326,
+      "point": "Point",
+      "notNull": true,
+      "dimensions": 2,
+      "extensionOwner": "supabase_admin",
+      "extensionSchema": "extensions",
+      "extensionVersion": "3.3.7",
+      "insertedSyntheticRows": 1
+    },
+    "syntheticTableRolledBack": true,
+    "cleanupVerified": true,
+    "networkInternal": true,
+    "publishedPorts": 0,
+    "hostBindMounts": 0,
+    "containerLogsDisabled": true,
+    "productionConnections": 0,
+    "productionWrites": 0,
+    "fullProductionAdapterRehearsed": false,
+    "metadataFixtureCorrections": 2
+  }
+}

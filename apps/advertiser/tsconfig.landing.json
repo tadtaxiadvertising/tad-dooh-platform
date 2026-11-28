@@ -1,15 +1,24 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "strict": true, "incremental": false },
+  "compilerOptions": {
+    "strict": true,
+    "incremental": false
+  },
   "include": [
     "next-env.d.ts",
     "app/page.tsx",
     "app/layout.tsx",
+    "pages/advertiser/onboarding.tsx",
     "components/landing/**/*.tsx",
     "components/onboarding/BenefitsStep.tsx",
     "components/onboarding/SimulatorStep.tsx",
     "components/onboarding/OnboardingWizard.tsx",
-    "lib/landing/**/*.ts"
+    "lib/landing/**/*.ts",
+    "middleware.ts",
+    "pages/advertiser/oauth/complete-profile.tsx"
   ],
-  "exclude": ["node_modules", ".next"]
+  "exclude": [
+    "node_modules",
+    ".next"
+  ]
 }

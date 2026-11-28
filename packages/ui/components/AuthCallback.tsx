@@ -253,7 +253,12 @@ async function exchangeWithBackend(
     }
 
     // Redirect to onboarding if new advertiser, otherwise to dashboard
-    const redirectPath = needsOnboarding ? config.onboardingPath : nextPath;
+    // OAuth already created an advertiser record in PENDING_ONBOARDING.
+    // Its owner must finish THAT profile, never the public signup form which
+    // would try to create a duplicate identity/campaign.
+    const redirectPath = needsOnboarding && config.role === 'ADVERTISER'
+      ? '/advertiser/oauth/complete-profile'
+      : needsOnboarding ? config.onboardingPath : nextPath;
     router.replace(redirectPath);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Error desconocido.';

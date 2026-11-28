@@ -1,0 +1,87 @@
+{
+  "status": "IMPLEMENTADO, PENDIENTE DE VERIFICACIÓN",
+  "card": "H1 native enum storage/client",
+  "verifiedAt": "2026-11-25T21:38:09.244021+00:00",
+  "schemaLfSha256": "eaee945edceaf7d8699ba3c813427d623887706fa3512194f9526e9ce91b04c7",
+  "sqlSha256": "450e7e8362f1bbc06a449c1c1149d91887958e827a1708dc74bbcb5275c5b334",
+  "sourceAndClient": {
+    "prisma": "5.22.0",
+    "validateExit": 0,
+    "generateExit": 0,
+    "generatedPrivately": true,
+    "sharedClientRegenerated": false,
+    "nodeContractsPassed": 66,
+    "typecheckExit": 0,
+    "validRedMappingTest": true
+  },
+  "synthetic": {
+    "status": "PASS_SYNTHETIC_ENUM_ALIGNMENT",
+    "started": "2026-11-25T21:29:16.413387+00:00",
+    "finished": "2026-11-25T21:32:54.682003+00:00",
+    "atomicGuardRejections": 11,
+    "invalidWriteRejections": 10,
+    "permissionDenials": 42,
+    "financialProjectionsExact": true,
+    "dependentViewPreservedAndRefreshed": true,
+    "nativePrismaPredicatesDecodingCreateDefaultExplicitUpdateAndRollback": true,
+    "cleanupVerified": true
+  },
+  "restored": {
+    "status": "PASS_RESTORED_ENUM_ALIGNMENT",
+    "started": "2026-11-25T21:33:19.327827+00:00",
+    "finished": "2026-11-25T21:38:09.244021+00:00",
+    "strictOriginalRestoreTables": 70,
+    "precedingNewTables": 23,
+    "totalTables": 93,
+    "originalProjectedFingerprintsExact": true,
+    "legacyValuesAndTypesRetained": true,
+    "unrelatedSchemaExact": true,
+    "rolesAclRlsPoliciesOriginalIndexesConstraintsFunctionsViewsExact": true,
+    "canonicalEnumColumns": 3,
+    "newStatusTypes": 1,
+    "addedIndexes": 3,
+    "legacyDefaultsMovedToTriggers": 3,
+    "repeatRejectedAtomically": true,
+    "after": {
+      "missingTables": 0,
+      "missingColumns": 31,
+      "idTypeMismatches": 0,
+      "declaredNativeScalarTypeMismatches": 0,
+      "declaredRelationTypeMismatches": 0,
+      "enumContractIssues": 0,
+      "gpsContractIssues": 2
+    },
+    "nativePrismaEnumReadOnlyFiltersAndDecoding": true,
+    "valuesReadFromThreeAffectedTables": 0,
+    "cleanupVerified": true,
+    "temporaryEncryptedKeyRemoved": true
+  },
+  "isolation": {
+    "networkInternal": true,
+    "publishedPorts": 0,
+    "hostBindMounts": 0,
+    "readOnlyContainerRoots": true,
+    "realContainerLogsDisabled": true,
+    "nativeProbeClientInCredentialFreeReadOnlyImage": true,
+    "auxiliaryRuntimeNode": "26.13.1",
+    "postgres": "17.6",
+    "frozenRecoveryHelpersUnmodified": true
+  },
+  "limits": {
+    "productionDDL": false,
+    "productionReleaseReady": false,
+    "fullApiStartupVerified": false,
+    "productionApplicationPrivilegesVerified": false,
+    "deployedShaVerified": false,
+    "missingColumnsAndGpsPending": true,
+    "financialAuthorizationRulesChanged": false,
+    "productionImageRuntimeNotCertifiedByAuxiliaryProbe": true
+  },
+  "releaseGates": [
+    "independent key custody",
+    "essential production configuration",
+    "#244 secret/session controls",
+    "#313 release/provider controls",
+    "full API/Auth/player/RBAC/FK verification and 10x load"
+  ]
+}

@@ -1,46 +1,14 @@
-/**
- * TAD v12 Migration Script
- * Applies the v12_supabase_schema.sql to the database.
- * Usage: node apply-v12-migration.js
- */
-const { Client } = require('pg');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+#!/usr/bin/env node
+"use strict";
 
-async function migrate() {
-    const sqlPath = path.join(__dirname, '../v12_supabase_schema.sql');
-    if (!fs.existsSync(sqlPath)) {
-        console.error('❌ SQL file not found at:', sqlPath);
-        process.exit(1);
-    }
-
-    const sql = fs.readFileSync(sqlPath, 'utf8');
-    const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL;
-
-    if (!connectionString) {
-        console.error('❌ DATABASE_URL or DIRECT_URL not found in .env');
-        process.exit(1);
-    }
-
-    console.log('🚀 Starting TAD v12 Migration...');
-    const client = new Client({ connectionString });
-
-    try {
-        await client.connect();
-        console.log('✅ Connected to database.');
-
-        // Split SQL by some delimiter if needed, or just run as a block
-        // PostgreSQL handles multiple statements in one query call for the most part
-        await client.query(sql);
-        
-        console.log('🎉 Migration successful! TAD v12 Schema & Seed data applied.');
-    } catch (err) {
-        console.error('❌ Migration failed:', err.message);
-        if (err.detail) console.error('Detail:', err.detail);
-    } finally {
-        await client.end();
-    }
-}
-
-migrate();
+// Historical v12 one-off migration runner is deliberately retired.
+// It bypassed reviewed migration history and could execute SQL directly
+// against DATABASE_URL/DIRECT_URL without an explicit safety gate.
+// Its historical code remains available in Git history for forensics.
+console.error(
+  "[migration] REFUSED: the historical v12 direct SQL migration runner is disabled. " +
+    "Verify the canonical Supabase target and an isolated backup restore, then " +
+    "use the reviewed manual Prisma migration workflow documented in " +
+    "docs/runbooks/manual-prisma-migration-guard-2026-11-18.md.",
+);
+process.exitCode = 1;

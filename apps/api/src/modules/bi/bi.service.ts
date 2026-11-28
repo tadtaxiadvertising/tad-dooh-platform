@@ -278,7 +278,7 @@ export class BiService {
           take: 10,
         }),
         this.prisma.driverLocation.findMany({
-          where: { deviceId },
+          where: { device: { deviceId } },
           orderBy: { timestamp: "desc" },
           take: 5,
         }),
@@ -514,7 +514,7 @@ export class BiService {
             },
           },
         },
-        orderBy: { hasDiscrepancy: "desc" },
+        orderBy: [{ hasDiscrepancy: "desc" }, { id: "asc" }],
         skip: (safePage - 1) * safeSize,
         take: safeSize,
       }),

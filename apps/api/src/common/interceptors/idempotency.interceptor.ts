@@ -42,8 +42,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
     context: ExecutionContext,
     next: CallHandler,
   ): Promise<Observable<unknown>> {
-    const request =
-      context.switchToHttp().getRequest<IdempotencyRequest>();
+    const request = context.switchToHttp().getRequest<IdempotencyRequest>();
     const method = request.method;
 
     if (!["POST", "PUT", "PATCH"].includes(method)) {
@@ -59,7 +58,8 @@ export class IdempotencyInterceptor implements NestInterceptor {
     ) {
       throw new BadRequestException({
         code: "INVALID_IDEMPOTENCY_KEY",
-        message: "A nonempty Idempotency-Key header is required (max 256 characters).",
+        message:
+          "A nonempty Idempotency-Key header is required (max 256 characters).",
       });
     }
 

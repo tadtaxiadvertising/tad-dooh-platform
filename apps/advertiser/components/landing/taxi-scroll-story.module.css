@@ -1,0 +1,140 @@
+.section{position:relative;height:300svh;background:#fff;color:#151515;isolation:isolate}
+.sticky{position:sticky;top:0;height:100svh;max-height:1000px;min-height:650px;display:flex;flex-direction:column;justify-content:center;padding:clamp(22px,3vw,44px) max(28px,calc((100% - 1240px)/2));overflow:hidden}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px;border-bottom:1px solid #d8d8d5;font-size:10px;font-weight:800;letter-spacing:.16em}
+.topline span:last-child{color:#5e5e5a}
+.layout{display:grid;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);align-items:center;gap:clamp(30px,5vw,82px);flex:1;min-height:0}
+.words{min-width:0;position:relative}
+.overline{font-weight:800;font-size:10px;letter-spacing:.18em;color:#65655c;margin:0 0 18px}
+.words h2,.staticSequence h2{font-size:clamp(44px,5.4vw,88px);font-weight:800;letter-spacing:-.07em;line-height:.99;max-width:600px;margin:0;color:#131313}
+.words h2 em,.staticSequence h2 em{font-style:normal;color:#d2ab00}
+.chapterWindow{position:relative;height:238px;margin-top:25px;overflow:hidden}
+.chapter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;pointer-events:none}
+.chapterNumber{font-weight:800;color:#9f8200;font-size:11px;letter-spacing:.12em}
+.chapterEyebrow{font-size:10px;letter-spacing:.12em;color:#73736e;font-weight:800;margin:14px 0}
+.chapter h3{font-size:clamp(24px,2.65vw,37px);font-weight:750;letter-spacing:-.035em;line-height:1.14;max-width:450px;margin:0;color:#151515}
+.chapterDescription{font-size:13px;line-height:1.75;color:#65655f;max-width:410px;margin-top:14px}
+.link{display:inline-flex;align-items:center;justify-content:space-between;gap:26px;min-height:48px;border-radius:100px;padding:13px 21px;background:#f4ce19;color:#111;text-decoration:none;font-size:12px;font-weight:800;transition:transform .2s ease,background-color .2s ease;width:max-content}
+.link:hover{transform:translateY(-3px);background:#ffe15f}
+.link:focus-visible{outline:3px solid #171717;outline-offset:3px}
+.art{position:relative;width:100%;height:min(61vh,575px);min-height:390px;border-radius:32px;background:#f1f0eb;overflow:hidden;isolation:isolate;border:1px solid #e1e0db;box-shadow:0 30px 75px #1717170c}
+.artGrid{position:absolute;inset:0;background-image:linear-gradient(#15151509 1px,transparent 1px),linear-gradient(90deg,#15151509 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(to bottom,transparent,#000)}
+.artTop,.artBottom{position:absolute;z-index:8;display:flex;align-items:center;justify-content:space-between;left:22px;right:22px;font-size:9px;font-weight:800;letter-spacing:.10em;color:#6b6b63;gap:10px}
+.artTop{top:20px}.artBottom{bottom:20px}
+.taxiScene,.tabletScene,.reportScene{position:absolute;inset:0;display:grid;place-items:center;will-change:transform,opacity}
+.sun{position:absolute;width:240px;height:240px;border-radius:50%;background:#fbd32d;top:16%;right:12%;box-shadow:0 0 0 80px #fbd32d15}
+.route{position:absolute;width:115%;height:80px;bottom:22%;left:-8%;background:#d9d9d3;transform:skewY(-7deg);display:flex;align-items:center;justify-content:space-around}
+.route i{background:white;width:10%;height:3px}
+.taxi{position:absolute;bottom:30%;left:10%;height:135px;width:77%;border:2px solid #c19b09;background:linear-gradient(155deg,#ffeb8d,#f6c500 70%);border-radius:75px 110px 25px 25px;box-shadow:0 22px 20px #2223}
+.roofSign{position:absolute;top:-22px;left:42%;border-radius:5px 5px 0 0;background:#141414;color:#f8d11a;font-weight:850;font-size:10px;letter-spacing:.07em;padding:6px 12px}
+.carWindow{position:absolute;top:12px;left:16%;width:61%;height:58px;border-radius:50px 65px 5px 5px;background:linear-gradient(135deg,#8a9ba4,#182a35 60%);border:4px solid #e4b70c}
+.carDoor{position:absolute;top:74px;left:55%;height:52px;border-left:2px solid #ad8b06}
+.wheelLeft,.wheelRight{position:absolute;bottom:-26px;width:64px;height:64px;border:13px solid #171717;border-radius:50%;background:#999;box-shadow:inset 0 0 0 6px #4f4f4f}
+.wheelLeft{left:12%}.wheelRight{right:12%}
+.carLight{position:absolute;right:4%;top:67%;width:39px;height:14px;border-radius:6px;background:#fff9db}
+.streetLabel{position:absolute;right:28px;bottom:11%;font-size:10px;letter-spacing:.15em;font-weight:800;color:#343434}
+.headrest{position:absolute;top:12%;width:58%;height:65%;border-radius:42% 42% 18% 18%;background:linear-gradient(145deg,#1e1f22,#515256 52%,#1c1e21);box-shadow:0 22px 50px #0004}
+.device{position:relative;width:min(76%,440px);aspect-ratio:16/10;background:#111418;border:9px solid #16191d;border-radius:19px;box-shadow:0 26px 50px #1116,0 0 0 3px #777c7f;z-index:2;overflow:hidden}
+.deviceContent{width:100%;height:100%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;background:#f5cb08;padding:clamp(16px,4vw,36px);color:#121212;overflow:hidden}
+.deviceContent>span:first-child{font-size:9px;letter-spacing:.13em;font-weight:800}
+.deviceContent strong{font-size:clamp(25px,3.4vw,52px);font-weight:900;letter-spacing:-.06em;line-height:1.02;margin:18px 0 7px;overflow-wrap:anywhere;max-width:100%}
+.deviceContent p{font-size:clamp(12px,1.4vw,18px);font-weight:700;margin:0}
+.demoPill{font-size:8px;font-weight:850;border:1px solid #14141470;border-radius:30px;padding:7px 10px;margin-top:20px}
+.mount{position:absolute;bottom:12%;width:22%;height:60px;border-radius:8px;background:linear-gradient(90deg,#161717,#525355,#1d1d1d)}
+.deviceCaption{position:absolute;bottom:7%;font-size:9px;font-weight:800;letter-spacing:.1em;color:#6b6b63;text-align:center}
+.reportCard{width:83%;min-height:65%;border-radius:24px;background:#fff;border:1px solid #e0e0dc;box-shadow:0 25px 65px #17171720;padding:clamp(20px,3vw,38px)}
+.reportHeader{display:flex;align-items:center;justify-content:space-between;padding-bottom:18px;border-bottom:1px solid #e8e8e5}
+.reportHeader strong{font-size:25px;letter-spacing:-.08em}.reportHeader strong span{color:#e4bb00}
+.reportHeader small{font-size:9px;letter-spacing:.1em;font-weight:800;color:#777}
+.reportCard h3{margin:28px 0 9px;font-size:clamp(24px,3vw,38px);letter-spacing:-.05em;line-height:1}
+.reportCard p{font-size:12px;line-height:1.7;color:#696961;max-width:345px}
+.reportSteps{display:flex;justify-content:space-between;gap:5px;margin-top:28px;color:#4f4f4d;font-size:10px;font-weight:800}
+.progressRail{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.progressRail i{height:8px;background:#f2cc10;border-radius:4px}.progressRail i:last-child{background:#171717}
+.reportNote{font-size:9px;letter-spacing:.07em;color:#777;margin-top:22px}
+.progressTrack{width:100%;height:3px;background:#deded9;margin-top:12px}
+.progressTrack>div{background:#e5bf08;height:100%;transform-origin:left}
+.staticSequence{display:none}
+@media(max-width:900px),(max-height:690px){.section{height:auto;padding:56px max(18px,5vw) 75px}.sticky{display:none}.staticSequence{display:grid;gap:18px;max-width:740px;margin:auto}.staticSequence h2{font-size:clamp(40px,8vw,66px);margin-bottom:10px}.staticCard{padding:24px;border-radius:22px;background:#f5f5f2;border:1px solid #e8e8e2}.staticCard>span{font-size:10px;letter-spacing:.10em;color:#9a800c;font-weight:800}.staticPicture{margin:16px 0;display:grid;place-items:center;min-height:155px;border-radius:14px;color:#141414;background:radial-gradient(circle at 68% 40%,#f5cf20 0 19%,transparent 20%),linear-gradient(125deg,#f1f0e8,#e1e0d7);font-size:clamp(22px,5vw,45px);font-weight:900;letter-spacing:-.05em}.staticCard h3{font-size:clamp(21px,4.4vw,30px);line-height:1.2;letter-spacing:-.03em;margin:15px 0 10px}.staticCard p{color:#65655f;font-size:13px;line-height:1.7;margin:0}.staticSequence .link{margin-top:8px}}
+@media(prefers-reduced-motion:reduce){.section{height:auto;padding:56px max(18px,5vw) 75px}.sticky{display:none}.staticSequence{display:grid;gap:18px;max-width:740px;margin:auto}.staticSequence h2{font-size:clamp(40px,8vw,66px);margin-bottom:10px}.staticCard{padding:24px;border-radius:22px;background:#f5f5f2;border:1px solid #e8e8e2}.staticCard>span{font-size:10px;letter-spacing:.1em;color:#9a800c;font-weight:800}.staticPicture{margin:16px 0;display:grid;place-items:center;min-height:155px;border-radius:14px;background:#f5cf20;font-size:clamp(22px,5vw,45px);font-weight:850}.staticCard h3{font-size:clamp(21px,4.4vw,30px);line-height:1.2;letter-spacing:-.03em;margin:15px 0 10px}.staticCard p{color:#65655f;font-size:13px;line-height:1.7}.staticSequence .link{margin-top:8px}.link{transition:none}}
+@media(min-width:901px) and (min-height:691px){.section[data-reduced-motion="true"]{height:auto;padding:56px max(18px,5vw) 75px}.section[data-reduced-motion="true"] .sticky{display:none}.section[data-reduced-motion="true"] .staticSequence{display:grid;gap:18px;max-width:740px;margin:auto}}
+
+/* Progressive enhancement: without hydration, render all chapters instead of a frozen scroll stage. */
+.section:not([data-motion-ready="true"]) { height:auto; padding:56px max(18px,5vw) 75px; }
+.section:not([data-motion-ready="true"]) .sticky { display:none; }
+.section:not([data-motion-ready="true"]) .staticSequence { display:grid; gap:18px; max-width:740px; margin:auto; }
+
+.section:not([data-motion-ready="true"]) .staticSequence h2 { font-size:clamp(40px,8vw,66px); margin-bottom:10px; }
+.section:not([data-motion-ready="true"]) .staticCard { padding:24px; border-radius:22px; background:#f5f5f2; border:1px solid #e8e8e2; }
+.section:not([data-motion-ready="true"]) .staticCard>span { font-size:10px; letter-spacing:.10em; color:#9a800c; font-weight:800; }
+.section:not([data-motion-ready="true"]) .staticPicture { margin:16px 0; display:grid; place-items:center; min-height:155px; border-radius:14px; background:#f6d02a; font-size:clamp(22px,5vw,45px); font-weight:900; letter-spacing:-.05em; overflow-wrap:anywhere; text-align:center; padding:10px; }
+.section:not([data-motion-ready="true"]) .staticCard h3 { font-size:clamp(21px,4.4vw,30px); line-height:1.2; letter-spacing:-.03em; margin:15px 0 10px; }
+.section:not([data-motion-ready="true"]) .staticCard p { color:#65655f; font-size:13px; line-height:1.7; margin:0; }
+
+/* Stabilization: fixed nav must not occlude sticky content or anchor targets. */
+.section { scroll-margin-top: 90px; }
+.sticky { top: 90px; height: calc(100svh - 90px); min-height: 0; }
+/* Screen-reader chapters are always available when the animated stage is shown.
+   Do not hide this content using display:none, opacity:0 or aria-hidden. */
+.accessibleSummary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+}
+.words h2 em, .staticSequence h2 em { color: #806300; }
+.chapterNumber { color: #765d00; }
+.staticCard > span { color: #765d00; }
+.reportHeader small { color: #66665f; }
+.staticPicture {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: center;
+  padding: 12px;
+}
+@media (max-width: 900px) {
+  .section { scroll-margin-top: 78px; }
+}
+
+/* Optional mobile motion: transform-only (never dim essential text). */
+@keyframes tadCardRise {
+  from { transform: translate3d(0, 14px, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@supports (animation-timeline: view()) {
+  @media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
+    .staticCard {
+      animation-name: tadCardRise;
+      animation-duration: 1ms;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
+    }
+  }
+}
+
+/* Equal editorial artwork for mobile, reduced-motion and SSR/no-JS modes. */
+.section .staticPicture[data-static-art] {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  padding: 0 0 12px;
+  overflow: hidden;
+  background: #141819;
+  color: #fff;
+  border-radius: 16px;
+}
+.staticPicture[data-static-art] svg { display: block; width: 100%; height: auto; }
+.staticPicture[data-static-art] > span {
+  max-width: 100%;
+  padding-inline: 12px;
+  font-size: clamp(12px, 2.8vw, 16px);
+  line-height: 1.4;
+  letter-spacing: .04em;
+  overflow-wrap: anywhere;
+}

@@ -18,6 +18,7 @@ import {
   BUSINESS_RULES,
 } from "../../common/constants/business-rules";
 import { OAuthExchangeDto, OAuthPortalRole } from "./dto/oauth-exchange.dto";
+import { assertCommittedAdvertiserRegistration } from "./committed-advertiser-registration";
 
 @Injectable()
 export class AuthService {
@@ -97,6 +98,13 @@ export class AuthService {
         entityId = driver.id;
         this.logger.debug(`Found Driver with ID: ${entityId}`);
       }
+
+      await assertCommittedAdvertiserRegistration(
+        this.prisma,
+        data.user.app_metadata?.tad_onboarding_reservation,
+        userId,
+        role === "ADVERTISER" ? entityId : null,
+      );
 
       if (role === "GUEST") {
         this.logger.warn(`🚫 Usuario sin rol asignado en DB: ${email}`);
@@ -339,6 +347,12 @@ export class AuthService {
     } | null = null;
 
     if (dto.intended_role === OAuthPortalRole.ADMIN) {
+      await assertCommittedAdvertiserRegistration(
+        this.prisma,
+        payload.app_metadata?.tad_onboarding_reservation,
+        userId,
+        null,
+      );
       const adminUser = await this.prisma.user.findUnique({ where: { email } });
       if (adminUser?.role === "ADMIN") {
         resolvedRole = "ADMIN";
@@ -348,6 +362,12 @@ export class AuthService {
       const advertiser = await this.prisma.advertiser.findUnique({
         where: { email },
       });
+      await assertCommittedAdvertiserRegistration(
+        this.prisma,
+        payload.app_metadata?.tad_onboarding_reservation,
+        userId,
+        advertiser?.id ?? null,
+      );
       if (advertiser) {
         resolvedRole = "ADVERTISER";
         entityId = advertiser.id;

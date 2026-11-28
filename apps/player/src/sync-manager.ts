@@ -6,12 +6,17 @@ import type {
   MediaAsset,
   DeviceSyncPayload,
   DeviceCommand,
+  DeviceCommandResult,
   SyncManifest,
   CampaignSchedule,
 } from "./types";
 import { CacheManager } from "./cache-manager";
 import { PlaybackQueue } from "./playback-queue";
 import env from "./config";
+import { attachNetworkListener } from "./network-listeners";
+import { attachDeferredSubscription } from "./deferred-subscription";
+import { isWakeUpForDevice } from "./wake-up-targeting";
+import { prepareOfflinePlaylist } from "./offline-playlist-ready";
 
 // ─── Browser Battery API (W3C) ───
 // The W3C Battery Status API is not part of the installed lib.dom.d.ts.
@@ -34,12 +39,16 @@ export class SyncManager {
   private offlineLicenseExpiresAt: number | null = null;
   private offlineLicenseCheckTimer: ReturnType<typeof setInterval> | null =
     null;
+  private networkListenerDisposers: Array<() => void> = [];
+  private disposeRealtimeListener: (() => void) | null = null;
   private onPlaylistUpdate: (
     assets: MediaAsset[],
     schedules: CampaignSchedule[],
   ) => void;
   private onKillSwitch: (reason: string) => void;
-  private onCommands: (commands: DeviceCommand[]) => void;
+  private onCommands: (
+    commands: DeviceCommand[],
+  ) => Promise<DeviceCommandResult[]>;
 
   constructor(
     cacheManager: CacheManager,
@@ -50,7 +59,7 @@ export class SyncManager {
         schedules: CampaignSchedule[],
       ) => void;
       onKillSwitch: (reason: string) => void;
-      onCommands: (commands: DeviceCommand[]) => void;
+      onCommands: (commands: DeviceCommand[]) => Promise<DeviceCommandResult[]>;
     },
   ) {
     this.cacheManager = cacheManager;
@@ -61,6 +70,9 @@ export class SyncManager {
   }
 
   init(deviceId: string): void {
+    // Reinitialization must clear all timers, network handlers and Realtime.
+    this.destroy();
+    this.isOnline = navigator.onLine;
     this.deviceId = deviceId;
     this.playbackQueue.init(deviceId);
     this.setupNetworkListeners();
@@ -77,6 +89,12 @@ export class SyncManager {
     if (this.wakeUpDebounceTimer) clearTimeout(this.wakeUpDebounceTimer);
     if (this.offlineLicenseCheckTimer)
       clearInterval(this.offlineLicenseCheckTimer);
+    for (const detach of this.networkListenerDisposers) {
+      detach();
+    }
+    this.networkListenerDisposers = [];
+    this.disposeRealtimeListener?.();
+    this.disposeRealtimeListener = null;
     this.playbackQueue.destroy();
   }
 
@@ -101,9 +119,22 @@ export class SyncManager {
       }
 
       if (payload.commands && payload.commands.length > 0) {
-        this.onCommands(payload.commands);
-        for (const cmd of payload.commands) {
-          this.acknowledgeCommand(cmd.id).catch(() => {});
+        // Dispatch is not proof of execution. Wait for the actual command
+        // result before ACK, and never ACK failures or unknown outcomes.
+        try {
+          const outcomes = await this.onCommands(payload.commands);
+          const delivered = new Set(payload.commands.map((cmd) => cmd.id));
+          for (const outcome of outcomes) {
+            if (outcome.success && delivered.has(outcome.id)) {
+              await this.acknowledgeCommand(outcome.id);
+            }
+          }
+        } catch {
+          // A command failure must not block playlist/media sync or erase
+          // offline content. The server keeps it pending reconciliation.
+          console.warn(
+            "[SyncManager] Command result unavailable; no execution ACK sent.",
+          );
         }
       }
 
@@ -113,14 +144,15 @@ export class SyncManager {
         return;
       }
 
-      // Download + cache new assets
+      // The worker only ACKs that a download was scheduled, not that the
+      // file is cached. Preserve the current offline playlist and hash until
+      // every replacement file is durably available on the tablet.
       const assets = payload.media_assets || payload.videos || [];
-      if (assets.length > 0) {
-        const result = await this.cacheManager.cacheVideos(assets);
-        console.log(
-          `[SyncManager] Cached ${result.cached}/${assets.length} assets (${result.failed} failed)`,
+      if (!(await prepareOfflinePlaylist(this.cacheManager, assets))) {
+        console.warn(
+          "[SyncManager] New playlist not fully cached; keeping current offline playlist.",
         );
-        await this.cacheManager.evictStaleAssets(assets);
+        return;
       }
 
       this.lastSyncHash = payload.sync_hash;
@@ -173,12 +205,11 @@ export class SyncManager {
       }
 
       const assets = manifest.playlist || [];
-      if (assets.length > 0) {
-        const result = await this.cacheManager.cacheVideos(assets);
-        console.log(
-          `[SyncManager] Manifest cached ${result.cached}/${assets.length} assets`,
+      if (!(await prepareOfflinePlaylist(this.cacheManager, assets))) {
+        console.warn(
+          "[SyncManager] Manifest videos not fully cached; keeping current offline playlist.",
         );
-        await this.cacheManager.evictStaleAssets(assets);
+        return;
       }
 
       this.lastSyncHash = manifest.etag;
@@ -257,31 +288,56 @@ export class SyncManager {
 
   private async acknowledgeCommand(commandId: string): Promise<void> {
     try {
-      await fetch(`${env.API_URL}/device/command/${commandId}/ack`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ result: { acknowledged: true } }),
-      });
+      // Do not treat an unverified HTTP response (including 401/403) as ACK.
+      // Device credentials must be provisioned via the secure pairing flow
+      // (#233); an OFFLINE_LICENSE obtained from public manifest is NOT auth.
+      const response = await fetch(
+        `${env.API_URL}/device/command/${encodeURIComponent(commandId)}/ack`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ success: true }),
+        },
+      );
+      if (!response.ok) {
+        console.warn(
+          `[SyncManager] Command execution ACK rejected (HTTP ${response.status}).`,
+        );
+        return;
+      }
+      const receipt: { acknowledged?: boolean } = await response.json();
+      if (!receipt.acknowledged) {
+        console.warn(
+          "[SyncManager] Command execution ACK not confirmed by server.",
+        );
+      }
     } catch {
-      /* non-critical */
+      // Unknown ACK outcome: never assume the server recorded execution.
+      console.warn("[SyncManager] Command execution ACK unavailable.");
     }
   }
 
   private setupNetworkListeners(): void {
-    window.addEventListener("online", () => {
-      this.isOnline = true;
-      console.log("[SyncManager] Network online — triggering immediate sync");
-      this.executeFullSync();
-      this.playbackQueue.flushQueue();
-    });
-
-    window.addEventListener("offline", () => {
-      this.isOnline = false;
-      console.log("[SyncManager] Network offline — entering offline mode");
-    });
+    // Re-entrant init must not keep event handlers from an earlier session.
+    for (const detach of this.networkListenerDisposers) detach();
+    this.networkListenerDisposers = [
+      attachNetworkListener(window, "online", () => {
+        this.isOnline = true;
+        console.log("[SyncManager] Network online — triggering immediate sync");
+        this.executeFullSync();
+        this.playbackQueue.flushQueue();
+      }),
+      attachNetworkListener(window, "offline", () => {
+        this.isOnline = false;
+        console.log("[SyncManager] Network offline — entering offline mode");
+      }),
+    ];
   }
 
   private setupRealtimeListener(): void {
+    // A second init cannot retain an older WAKE_UP_CALL subscription.
+    this.disposeRealtimeListener?.();
+    this.disposeRealtimeListener = null;
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
       console.warn(
         "[SyncManager] Supabase Realtime not configured — relying on poll-based sync only",
@@ -289,61 +345,58 @@ export class SyncManager {
       return;
     }
 
-    try {
-      // Dynamic import to avoid bundling Supabase when not configured
-      import("@supabase/supabase-js")
-        .then(({ createClient }) => {
-          const client = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
-          client
-            .channel("fleet_sync")
-            .on(
-              "broadcast",
-              { event: "WAKE_UP_CALL" },
-              (payload: Record<string, unknown>) => {
-                console.log("[SyncManager] WAKE_UP_CALL received:", payload);
+    this.disposeRealtimeListener = attachDeferredSubscription(
+      // Import completes asynchronously; destroy may run before it resolves.
+      () => import("@supabase/supabase-js"),
+      ({ createClient }, isActive) => {
+        const client = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+        const channel = client.channel("fleet_sync");
+        channel
+          .on(
+            "broadcast",
+            { event: "WAKE_UP_CALL" },
+            (payload: Record<string, unknown>) => {
+              if (!isActive()) return;
+              console.log("[SyncManager] WAKE_UP_CALL received:", payload);
 
-                // Fix #1: Filtrar por targets — solo sincronizar si este device está
-                // en la lista de destinatarios. Si no hay targets, es un broadcast global.
-                const targets = payload.targets as string[] | undefined;
-                if (
-                  targets &&
-                  Array.isArray(targets) &&
-                  targets.length > 0 &&
-                  !targets.includes(this.deviceId)
-                ) {
-                  console.log(
-                    "[SyncManager] WAKE_UP_CALL filtered out — device not in targets",
-                  );
-                  return;
-                }
+              // SDK Broadcast messages carry their targets in payload.payload.
+              // Never treat an explicit empty/invalid target list as global.
+              if (!isWakeUpForDevice(payload, this.deviceId)) {
+                console.log(
+                  "[SyncManager] WAKE_UP_CALL skipped — not for this device",
+                );
+                return;
+              }
 
-                // Fix #2: Debounce de 5s — si llegan múltiples WAKE_UP_CALL en ráfaga
-                // (ej: campaign_updated + media_asset_added), solo ejecutar el último.
-                // Esto previbe saturar el API Gateway con peticiones duplicadas.
-                if (this.wakeUpDebounceTimer)
-                  clearTimeout(this.wakeUpDebounceTimer);
-                this.wakeUpDebounceTimer = setTimeout(() => {
-                  this.executeFullSync();
-                  this.wakeUpDebounceTimer = null;
-                }, this.WAKE_UP_DEBOUNCE_MS);
-              },
-            )
-            .subscribe((status: string) => {
-              console.log(
-                "[SyncManager] Realtime subscription status:",
-                status,
+              if (this.wakeUpDebounceTimer)
+                clearTimeout(this.wakeUpDebounceTimer);
+              this.wakeUpDebounceTimer = setTimeout(() => {
+                if (!isActive()) return;
+                this.executeFullSync();
+                this.wakeUpDebounceTimer = null;
+              }, this.WAKE_UP_DEBOUNCE_MS);
+            },
+          )
+          .subscribe((status: string) => {
+            if (!isActive()) return;
+            console.log("[SyncManager] Realtime subscription status:", status);
+          });
+
+        return () => {
+          // Never let a failed network unsubscribe break destroy().
+          void Promise.resolve()
+            .then(() => client.removeChannel(channel))
+            .catch(() => {
+              console.warn(
+                "[SyncManager] Supabase Realtime channel removal failed",
               );
             });
-        })
-        .catch((err) => {
-          console.warn(
-            "[SyncManager] Supabase import failed, Realtime disabled:",
-            err,
-          );
-        });
-    } catch {
-      console.warn("[SyncManager] Realtime listener setup failed");
-    }
+        };
+      },
+      (error) => {
+        console.warn("[SyncManager] Supabase Realtime disabled:", error);
+      },
+    );
   }
 
   // ── Fix #4: Offline License Persistence & Self-Destruct ──

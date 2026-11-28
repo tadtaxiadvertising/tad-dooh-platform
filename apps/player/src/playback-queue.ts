@@ -5,6 +5,12 @@
 
 import type { PlaybackEvent } from "./types";
 import env from "./config";
+import { buildPlaybackApiPayload } from "./playback-event-type";
+import { attachNetworkListener } from "./network-listeners";
+import {
+  persistPlaybackEvent,
+  removeAcknowledgedPlaybackEvents,
+} from "./playback-queue-storage";
 
 const QUEUE_DB_NAME = "tad_playback_queue";
 const QUEUE_DB_VERSION = 1;
@@ -13,19 +19,24 @@ const QUEUE_STORE = "events";
 export class PlaybackQueue {
   private dbReady: Promise<IDBDatabase>;
   private flushTimer: ReturnType<typeof setInterval> | null = null;
+  private flushInFlight: Promise<{ sent: number; failed: number }> | null =
+    null;
   private deviceId: string = "";
+  private disposeOnlineListener: (() => void) | null = null;
 
   constructor() {
     this.dbReady = this.openDB();
   }
 
   init(deviceId: string): void {
+    // A renewed init must not leave a previous timer or reconnect callback.
+    this.destroy();
     this.deviceId = deviceId;
     this.startFlushLoop();
     // Flush immediato al recuperar conectividad (item M4/R2): en 3G la red
     // cae/revive con frecuencia y no debemos esperar el timer largo antes
     // de entregar los Proofs of Play pendientes.
-    window.addEventListener("online", () => {
+    this.disposeOnlineListener = attachNetworkListener(window, "online", () => {
       this.flushQueue().catch((err) => {
         console.error("[PlaybackQueue] Flush on reconnect error:", err);
       });
@@ -33,6 +44,8 @@ export class PlaybackQueue {
   }
 
   destroy(): void {
+    this.disposeOnlineListener?.();
+    this.disposeOnlineListener = null;
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
       this.flushTimer = null;
@@ -41,60 +54,46 @@ export class PlaybackQueue {
 
   async saveToQueue(event: PlaybackEvent): Promise<void> {
     const db = await this.dbReady;
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(QUEUE_STORE, "readwrite");
-      const store = tx.objectStore(QUEUE_STORE);
-      const entry = {
-        id: `${event.video_id}_${event.timestamp}`,
-        ...event,
-        device_id: this.deviceId || event.device_id,
-        queuedAt: Date.now(),
-      };
-      const req = store.put(entry);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
-    });
+    // IDBRequest.onsuccess precedes the transaction commit and is not a
+    // durability receipt. Propagate abort/errors so a caller cannot claim a
+    // Proof-of-Play was persisted when IndexedDB rolled the transaction back.
+    return persistPlaybackEvent(db, QUEUE_STORE, event, this.deviceId);
   }
 
-  async flushQueue(): Promise<{ sent: number; failed: number }> {
+  // Reconnect, visibility and the periodic timer can call flush at once.
+  // Share the same Promise so no two callers upload the same local PoP batch.
+  flushQueue(): Promise<{ sent: number; failed: number }> {
+    if (this.flushInFlight) return this.flushInFlight;
+
+    this.flushInFlight = this.flushPendingQueue().finally(() => {
+      this.flushInFlight = null;
+    });
+    return this.flushInFlight;
+  }
+
+  private async flushPendingQueue(): Promise<{ sent: number; failed: number }> {
     const db = await this.dbReady;
+    // Fetch a bounded batch rather than loading or deleting the full queue.
+    // The remaining events stay durably queued until a later confirmed ACK.
+    const batchSize = Math.max(1, Math.floor(env.PLAYBACK_QUEUE_MAX_SIZE));
     const events = await new Promise<PlaybackEvent[]>((resolve) => {
       const tx = db.transaction(QUEUE_STORE, "readonly");
       const store = tx.objectStore(QUEUE_STORE);
-      const req = store.getAll();
+      const req = store.getAll(undefined, batchSize);
       req.onsuccess = () => resolve(req.result || []);
       req.onerror = () => resolve([]);
     });
 
     if (events.length === 0) return { sent: 0, failed: 0 };
 
-    // Trim queue to max size (anti-OOM)
-    if (events.length > env.PLAYBACK_QUEUE_MAX_SIZE) {
-      const excess = events.length - env.PLAYBACK_QUEUE_MAX_SIZE;
-      for (let i = 0; i < excess; i++) {
-        await this.removeEvent(`${events[i].video_id}_${events[i].timestamp}`);
-      }
-      events.splice(0, excess);
-    }
-
     // Batch send — use the validated endpoint
     let sent = 0;
     let failed = 0;
 
     try {
-      const payload = events.map((e) => ({
-        deviceId: e.device_id,
-        videoId: e.video_id,
-        eventType:
-          e.event_type === "play_start"
-            ? "START"
-            : e.event_type === "play_confirm"
-              ? "END"
-              : "END",
-        lat: e.lat,
-        lng: e.lng,
-        clientTimestamp: new Date(e.timestamp).toISOString(),
-      }));
+      // Fail closed on unrecognized persisted event kinds: an invalid
+      // offline record must not become a verified billable END.
+      const payload = buildPlaybackApiPayload(events);
 
       const response = await fetch(`${env.API_URL}/telemetry/playback-batch`, {
         method: "POST",
@@ -106,21 +105,41 @@ export class PlaybackQueue {
         signal: AbortSignal.timeout(15_000),
       });
 
-      if (response.ok) {
-        // Remove all successfully sent events
-        for (const event of events) {
-          await this.removeEvent(`${event.video_id}_${event.timestamp}`);
-        }
+      // The backend currently responds HTTP 201 even for
+      // { success: false, reason: "TABLET_KEY_MISSING" }. Never clear local
+      // proofs merely because HTTP succeeded: require full application ACK.
+      const acknowledgement = (await response.json().catch(() => null)) as {
+        success?: boolean;
+        processed?: number;
+        rejected?: number;
+        reason?: string;
+      } | null;
+      const fullyAccepted =
+        response.ok &&
+        acknowledgement?.success === true &&
+        acknowledgement.processed === payload.length &&
+        acknowledgement.rejected === 0;
+
+      if (fullyAccepted) {
+        // A batch is locally acknowledged only after every covered record
+        // has been deleted in one committed IndexedDB transaction.
+        await removeAcknowledgedPlaybackEvents(db, QUEUE_STORE, events);
         sent = events.length;
       } else {
+        // Preserve the entire local batch for retry/reconciliation if any
+        // event is rejected or the receipt is missing/ambiguous.
         failed = events.length;
         console.warn(
-          `[PlaybackQueue] Batch flush failed: HTTP ${response.status}`,
+          `[PlaybackQueue] Batch unacknowledged: HTTP ${response.status}, reason=${acknowledgement?.reason || "PARTIAL_OR_INVALID_ACK"}`,
         );
       }
-    } catch (err) {
+    } catch {
       failed = events.length;
-      console.warn("[PlaybackQueue] Network error during flush:", err);
+      // Could be network failure or an IndexedDB transaction rollback.
+      // Avoid logging raw requests, credentials or stored proof payloads.
+      console.warn(
+        "[PlaybackQueue] Delivery or local ACK cleanup failed; proofs remain pending.",
+      );
     }
 
     return { sent, failed };
@@ -132,17 +151,6 @@ export class PlaybackQueue {
         console.error("[PlaybackQueue] Flush error:", err);
       });
     }, env.PLAYBACK_FLUSH_INTERVAL_MS);
-  }
-
-  private async removeEvent(id: string): Promise<void> {
-    const db = await this.dbReady;
-    return new Promise((resolve) => {
-      const tx = db.transaction(QUEUE_STORE, "readwrite");
-      const store = tx.objectStore(QUEUE_STORE);
-      const req = store.delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = () => resolve();
-    });
   }
 
   private async openDB(): Promise<IDBDatabase> {

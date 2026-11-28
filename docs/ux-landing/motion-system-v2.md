@@ -38,3 +38,18 @@ Every interactive component requires:
 - Do NOT modify wallet/payout/payroll logic in motion PRs
 - Production ON by default only if backend contract confirms; landing uses `includeProduction=false`
 - No secrets in screenshots/logs
+
+## Driver hero — issue #249 (2026-11-11)
+
+- Static approved PR #248 WebP, confirmed by the user in this implementation session; exact source pixels preserved (520 × 779, 16,258 bytes). Static Next image import emits cacheable media and responsive variants with priority loading.
+- The image owns the taxi and circular screen callout; no overlay or duplicated animated screen. The frame uses the intrinsic ratio and contain. Hero headline scales to preserve readable copy and early access to the simulator CTA.
+- Existing opportunity buttons keep their pressed state and polite accessible summary. Image presentation adds no animation, listener, observer, or dependency; reduced motion and server-rendered content remain static.
+- Verification and performance evidence: [Driver hero #249](driver-hero-249-verification.md).
+
+## Driver hero — imagen horizontal actualizada (2026-11-11)
+
+El usuario sustituyó la referencia anterior por el PNG adjunto `ChatGPT Image Nov 11, 2026, 01_04_55 AM.png`. Se conserva el original de 1536 × 1024 en `public/tad-driver-taxi-headrest.png`; next/image mantiene la optimización de entrega. El marco usa 3:2 con contain y ocupa el ancho móvil disponible, hasta 600 px en escritorio/tablet. La imagen anterior se retira; no cambian el copy ni las interacciones. Evidencia vigente: [actualización de imagen](driver-hero-image-update.md).
+
+## Taxi Driver sin fondo (2026-11-11)
+
+El recorte transparente sustituye el fondo exterior de la fotografía. Se elimina el marco opaco y su resplandor, conservando ratio 3:2, caption y controles. No se añaden animaciones ni dependencias. El smoke verifica alfa real de la imagen optimizada. Ver [evidencia](driver-transparent-taxi.md).

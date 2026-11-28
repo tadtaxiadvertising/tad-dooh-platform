@@ -53,10 +53,7 @@ describe("SyncController license and device-status safety", () => {
         "Cache-Control",
         "private, no-store",
       );
-      expect(res.setHeader).toHaveBeenCalledWith(
-        "ETag",
-        activeManifest.etag,
-      );
+      expect(res.setHeader).toHaveBeenCalledWith("ETag", activeManifest.etag);
       expect(res.status).not.toHaveBeenCalledWith(HttpStatus.NOT_MODIFIED);
     }
   });
@@ -78,8 +75,14 @@ describe("SyncController license and device-status safety", () => {
     const firstRes = responseMock();
     const secondRes = responseMock();
 
-    await controller.getDeviceManifest("TAD-0001", firstRes as unknown as Response);
-    await controller.getDeviceManifest("TAD-0001", secondRes as unknown as Response);
+    await controller.getDeviceManifest(
+      "TAD-0001",
+      firstRes as unknown as Response,
+    );
+    await controller.getDeviceManifest(
+      "TAD-0001",
+      secondRes as unknown as Response,
+    );
 
     expect(getDeviceManifest).toHaveBeenCalledTimes(2);
     expect(secondRes.status).toHaveBeenCalledWith(HttpStatus.PAYMENT_REQUIRED);
@@ -93,9 +96,11 @@ describe("SyncController license and device-status safety", () => {
   });
 
   it("propagates disabled-device failures instead of replying 304", async () => {
-    const getDeviceManifest = jest.fn().mockRejectedValue(
-      new HttpException("DEVICE_DEACTIVATED", HttpStatus.FORBIDDEN),
-    );
+    const getDeviceManifest = jest
+      .fn()
+      .mockRejectedValue(
+        new HttpException("DEVICE_DEACTIVATED", HttpStatus.FORBIDDEN),
+      );
     const controller = new SyncController({
       getDeviceManifest,
     } as unknown as SyncService);

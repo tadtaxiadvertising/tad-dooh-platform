@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
   ArrowRight,
@@ -18,6 +17,7 @@ import CookieBanner from "@tad/ui/components/CookieBanner";
 import { trackAnalyticsEvent } from "@tad/services/cookie-consent";
 import {
   CITIES,
+  campaignSignupHref,
   formatRD,
   landingLinks,
   referralCodeFromSearch,
@@ -30,11 +30,14 @@ import {
   type DemoObjective,
 } from "../../lib/landing/content";
 import {
-  estimateCampaign,
   estimateCampaignDetailed,
   FIXED_FREQUENCY_SECONDS,
 } from "../advertiser/simulatorPricing";
+import { clearReferralCode } from "../advertiser/referral";
 import CampaignJourney from "./CampaignJourney";
+import CreativePreview from "./CreativePreview";
+import TaxiScrollStory from "./TaxiScrollStory";
+import PassengerQrStory from "./PassengerQrStory";
 import CityScene from "./CityScene";
 import LandingAnalytics from "./LandingAnalytics";
 import styles from "./landing.module.css";
@@ -49,22 +52,39 @@ const RANGE_KEYS = [
   "PageUp",
   "PageDown",
 ];
+type CtaDestination =
+  | "advertiser_login"
+  | "advertiser_signup"
+  | "advertiser_lab"
+  | "campaign_story";
+
+type CtaPlacement =
+  "header" | "hero" | "simulator_intro" | "simulator_result" | "final";
+
 const content = ROLE_CONTENT.advertiser;
 const money = formatRD;
 
 export default function LandingPage() {
   const [city, setCity] = useState<DemoCity>("sd");
   const [objective, setObjective] = useState<DemoObjective>("awareness");
+  // Editable in this browser session only; deliberately absent from analytics snapshots.
+  const [brandName, setBrandName] = useState("");
   const [screens, setScreens] = useState(3);
   const [months, setMonths] = useState(2);
   // Explicit consent, not an automatic upsell: same default as public onboarding.
   const [includeProduction, setIncludeProduction] = useState(false);
   const [referral, setReferral] = useState<string | null>(null);
   useEffect(() => {
-    setReferral(referralCodeFromSearch(window.location.search));
+    const search = window.location.search;
+    const code = referralCodeFromSearch(search);
+    // Do not let an explicit invalid link revive a previous session's code
+    // when the visitor proceeds to the portal without a referral parameter.
+    if (code === null && new URLSearchParams(search).has("ref")) {
+      clearReferralCode();
+    }
+    setReferral(code);
   }, []);
   const previousPreview = useRef("");
-  const reduceMotion = useReducedMotion();
   const links = landingLinks();
   const config = {
     screens,
@@ -72,16 +92,25 @@ export default function LandingPage() {
     frequencySeconds: FIXED_FREQUENCY_SECONDS,
     includeProduction,
   };
-  const quote = estimateCampaign(config);
+  // A single projection keeps costs, impact ranges and warnings consistent.
   const projection = estimateCampaignDetailed(config);
   const budgetOutputRef = useRef<HTMLOutputElement>(null);
-  const previousBudgetTotal = useRef(quote.total);
+  const previousBudgetTotal = useRef(projection.totalCost);
   useEffect(() => {
-    if (previousBudgetTotal.current === quote.total) return;
-    previousBudgetTotal.current = quote.total;
-    if (reduceMotion !== false || !budgetOutputRef.current) return;
+    if (previousBudgetTotal.current === projection.totalCost) return;
+    previousBudgetTotal.current = projection.totalCost;
     // A stable output avoids remounts, mount animation and keyboard focus loss.
-    const animation = budgetOutputRef.current.animate(
+    // Query motion preference at the moment the value changes; no animation SDK needed.
+    const output = budgetOutputRef.current;
+    if (
+      !output ||
+      typeof output.animate !== "function" ||
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    const animation = output.animate(
       [
         { transform: "translateY(3px)", opacity: 0.94 },
         { transform: "translateY(0px)", opacity: 1 },
@@ -89,15 +118,33 @@ export default function LandingPage() {
       { duration: 180, easing: "ease-out" },
     );
     return () => animation.cancel();
-  }, [quote.total, reduceMotion]);
+  }, [projection.totalCost]);
   const advertiserDestination = referral
     ? `${links.advertiser}?ref=${encodeURIComponent(referral)}`
     : links.advertiser;
-  const signupDestination = referral
-    ? `${links.advertiserSignup}?ref=${encodeURIComponent(referral)}`
-    : links.advertiserSignup;
-  const cta = (destination: string) =>
-    trackAnalyticsEvent("cta_clicked", { role: "advertiser", destination });
+  const signupDestination = campaignSignupHref(
+    { screens, months, city },
+    referral,
+  );
+  const finalDestination = links.signupEnabled
+    ? signupDestination
+    : advertiserDestination;
+  const finalEvent = links.signupEnabled
+    ? "advertiser_signup"
+    : "advertiser_login";
+  const nextLabel = links.signupEnabled
+    ? "Continuar con mi campaña"
+    : "Ingresar al portal";
+  const nextHint = links.signupEnabled
+    ? "Podrás revisar tu configuración antes de solicitar la campaña."
+    : "Acceso para anunciantes registrados.";
+  function cta(destination: CtaDestination, placement: CtaPlacement) {
+    trackAnalyticsEvent("cta_clicked", {
+      role: "advertiser",
+      destination,
+      placement,
+    });
+  }
   const recordPreview = (
     patch: Partial<{
       city: DemoCity;
@@ -139,6 +186,7 @@ export default function LandingPage() {
         </a>
         <nav aria-label="Navegación principal" className="landing-nav">
           <a href="#como-funciona">Cómo funciona</a>
+          <a href="#interaccion-qr">Promociones con QR</a>
           <a href="#experiencia">Simula tu campaña</a>
           <a href="#preguntas">Preguntas</a>
         </nav>
@@ -152,6 +200,14 @@ export default function LandingPage() {
               }
             >
               Cómo funciona
+            </a>
+            <a
+              href="#interaccion-qr"
+              onClick={(e) =>
+                e.currentTarget.closest("details")?.removeAttribute("open")
+              }
+            >
+              Promociones con QR
             </a>
             <a
               href="#experiencia"
@@ -174,7 +230,7 @@ export default function LandingPage() {
         <a
           href={advertiserDestination}
           className="landing-access"
-          onClick={() => cta("advertiser_login")}
+          onClick={() => cta("advertiser_login", "header")}
         >
           Ingresar <ArrowUpRight size={16} aria-hidden="true" />
         </a>
@@ -199,14 +255,14 @@ export default function LandingPage() {
               <a
                 className="landing-button landing-button-primary"
                 href="#experiencia"
-                onClick={() => cta("advertiser_lab")}
+                onClick={() => cta("advertiser_lab", "hero")}
               >
                 Simular mi campaña <ArrowUpRight size={19} aria-hidden="true" />
               </a>
               <a
                 className="landing-text-link"
-                href="#recorrido-campana"
-                onClick={() => cta("campaign_story")}
+                href="#motion-story"
+                onClick={() => cta("campaign_story", "hero")}
               >
                 Ver cómo funciona <ArrowRight size={17} aria-hidden="true" />
               </a>
@@ -229,7 +285,10 @@ export default function LandingPage() {
                   key={choice}
                   type="button"
                   aria-pressed={city === choice}
-                  onClick={() => setCity(choice)}
+                  onClick={() => {
+                    setCity(choice);
+                    recordPreview({ city: choice });
+                  }}
                 >
                   {CITIES[choice]}
                 </button>
@@ -250,7 +309,57 @@ export default function LandingPage() {
               </li>
             </ol>
           </div>
-          <CityScene city={city} />
+          <div className="landing-hero-stage">
+            <CityScene
+              city={city}
+              objective={objective}
+              brandName={brandName}
+            />
+            <div
+              className="landing-stage-controls"
+              role="group"
+              aria-label="Personalizar creatividad ilustrativa"
+            >
+              <label
+                className="landing-stage-objective"
+                htmlFor="hero-campaign-objective"
+              >
+                <span>Cambia el mensaje en pantalla</span>
+                <select
+                  id="hero-campaign-objective"
+                  value={objective}
+                  onChange={(event) => {
+                    const nextObjective = event.target.value as DemoObjective;
+                    setObjective(nextObjective);
+                    recordPreview({ objective: nextObjective });
+                  }}
+                >
+                  {Object.entries(OBJECTIVES).map(([value, title]) => (
+                    <option key={value} value={value}>
+                      {title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="landing-stage-brand" htmlFor="hero-brand-name">
+                <span>Tu marca en esta pantalla (opcional)</span>
+                <input
+                  id="hero-brand-name"
+                  type="text"
+                  autoComplete="off"
+                  maxLength={24}
+                  placeholder="Ej. Mi negocio"
+                  value={brandName}
+                  onChange={(event) => setBrandName(event.target.value)}
+                />
+              </label>
+            </div>
+            <p className="landing-stage-privacy">
+              La pantalla TAD va detrás del reposacabezas del copiloto,
+              orientada al pasajero. Esta escena es ilustrativa; el nombre de tu
+              marca no se guarda ni se incluye en los eventos de esta demo.
+            </p>
+          </div>
         </section>
         <noscript>
           <p className="landing-wrap landing-noscript">
@@ -274,6 +383,11 @@ export default function LandingPage() {
               contexto
             </span>
           </div>
+        </div>
+        <TaxiScrollStory city={city} brandName={brandName} />
+        <PassengerQrStory brandName={brandName} />
+        <div className="landing-wrap">
+          <CreativePreview />
         </div>
         <div id="como-funciona" className="landing-wrap landing-story-wrap">
           <CampaignJourney
@@ -321,23 +435,14 @@ export default function LandingPage() {
               <a
                 className="landing-button landing-button-light"
                 href={advertiserDestination}
-                onClick={() => cta("advertiser_login")}
+                onClick={() => cta("advertiser_login", "simulator_intro")}
               >
                 Entrar a mi portal <ArrowUpRight size={18} aria-hidden="true" />
               </a>
-              {links.signupEnabled && (
-                <a
-                  className="landing-signup"
-                  href={signupDestination}
-                  onClick={() => cta("advertiser_signup")}
-                >
-                  Solicitar registro <ArrowRight size={16} aria-hidden="true" />
-                </a>
-              )}
               <p className="landing-disclaimer">
-                Si la incorporación está cerrada, el acceso al portal existente
-                continúa disponible. La simulación no crea campañas ni reserva
-                pantallas.
+                {links.signupEnabled
+                  ? "Revisa tu configuración en el registro y confirma allí la producción opcional. La simulación no reserva pantallas."
+                  : "Si la incorporación está cerrada, el acceso al portal existente continúa disponible. La simulación no reserva pantallas."}
               </p>
             </div>
             <div className="landing-preview">
@@ -458,11 +563,11 @@ export default function LandingPage() {
               </label>
               <div className="landing-preview-summary">
                 <span>Pantallas y duración (precio de referencia)</span>
-                <strong>{money(quote.screensCost)}</strong>
+                <strong>{money(projection.screensCost)}</strong>
                 <span>Producción creativa (opcional)</span>
                 <strong>
                   {includeProduction
-                    ? money(quote.productionFee)
+                    ? money(projection.productionFee)
                     : "No incluida · RD$ 0"}
                 </strong>
               </div>
@@ -475,7 +580,7 @@ export default function LandingPage() {
                 id="budget-total"
                 htmlFor="campaign-screens campaign-months campaign-production"
               >
-                {money(quote.total)}
+                {money(projection.totalCost)}
               </output>
               <p className="landing-estimate-detail">
                 Impresiones estimadas por modelo:{" "}
@@ -503,6 +608,27 @@ export default function LandingPage() {
                   importes del simulador no sustituyen las tarifas aprobadas.
                 </p>
               </aside>
+              <p
+                id="campaign-referral-status"
+                className="landing-referral-status"
+                role="status"
+              >
+                {referral
+                  ? "Código de referido recibido. El descuento del 40 % sobre pantallas está sujeto a validación del servidor durante el registro. Este subtotal no incluye el descuento."
+                  : ""}
+              </p>
+              <div className="landing-budget-next">
+                <a
+                  id="campaign-next"
+                  className="landing-button landing-button-primary"
+                  href={finalDestination}
+                  onClick={() => cta(finalEvent, "simulator_result")}
+                >
+                  {nextLabel}
+                  <ArrowRight size={18} aria-hidden="true" />
+                </a>
+                <p>{nextHint}</p>
+              </div>
               {projection.warnings.length > 0 && (
                 <details className="landing-warning-details">
                   <summary>
@@ -595,11 +721,11 @@ export default function LandingPage() {
           <h2 id="final-title">{content.finalTitle}</h2>
           <p className="landing-final-copy">{content.finalCopy}</p>
           <a
-            href={advertiserDestination}
+            href={finalDestination}
             className="landing-button landing-button-primary"
-            onClick={() => cta("advertiser_login")}
+            onClick={() => cta(finalEvent, "final")}
           >
-            {content.cta}
+            {links.signupEnabled ? "Continuar con mi campaña" : content.cta}
             <ArrowUpRight size={19} aria-hidden="true" />
           </a>
         </section>

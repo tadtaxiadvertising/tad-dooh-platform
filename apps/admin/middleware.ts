@@ -12,6 +12,7 @@ const DASHBOARD_PATH = "/admin/dashboard";
 const EXPECTED_ROLE = "ADMIN";
 const PUBLIC_PATHS = [
   LOGIN_PATH,
+  "/admin/forgot-password",
   "/admin/auth/callback",
   "/check-in",
   "/login",

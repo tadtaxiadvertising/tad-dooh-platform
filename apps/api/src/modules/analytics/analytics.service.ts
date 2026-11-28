@@ -1,9 +1,41 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { assertNoDeviceHardwareUuidAlias } from "../device/device-identity-collision.guard";
 import { Prisma } from "@prisma/client";
 import { NotificationsService } from "../notifications/notifications.service";
 import { createUmamiClient } from "../../utils/umami";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
+
+// Passenger QR destinations come from campaign data. Redirect only to
+// ordinary web URLs; never pass arbitrary schemes or credentials to Express.
+// This does not authorize the campaign or verify ownership of the domain.
+const QR_FALLBACK_URL = "https://tad.do";
+
+export function safeQrDestinationUrl(value: string | null | undefined): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value.length > 2048 ||
+    /[\u0000-\u001f\u007f]/.test(value)
+  ) {
+    return QR_FALLBACK_URL;
+  }
+
+  try {
+    const target = new URL(value);
+    if (
+      (target.protocol !== "http:" && target.protocol !== "https:") ||
+      !target.hostname ||
+      target.username ||
+      target.password
+    ) {
+      return QR_FALLBACK_URL;
+    }
+    return target.toString();
+  } catch {
+    return QR_FALLBACK_URL;
+  }
+}
 
 @Injectable()
 export class AnalyticsService {
@@ -26,7 +58,12 @@ export class AnalyticsService {
       { data: TopTaxi[]; expiry: number } | undefined;
   } = {};
 
+  // Public device identifiers are untrusted. Bound both entry count and
+  // cached identifier length so a long-lived API process cannot accumulate
+  // unlimited distinct IDs in memory. Eviction only restores a DB lookup.
   private deviceExistsCache = new Set<string>();
+  private readonly MAX_CACHED_DEVICE_IDS = 10_000;
+  private readonly MAX_CACHED_DEVICE_ID_LENGTH = 128;
   private readonly CACHE_TTL = 30000; // 30 seconds
 
   constructor(
@@ -43,6 +80,19 @@ export class AnalyticsService {
     this.deviceExistsCache.clear();
   }
 
+  private rememberKnownDevice(deviceId: string) {
+    if (deviceId.length > this.MAX_CACHED_DEVICE_ID_LENGTH) return;
+
+    // Set insertion order forms a small LRU: refresh active devices and
+    // evict only stale *cache entries*, never database/device records.
+    this.deviceExistsCache.delete(deviceId);
+    this.deviceExistsCache.add(deviceId);
+    if (this.deviceExistsCache.size > this.MAX_CACHED_DEVICE_IDS) {
+      const oldest = this.deviceExistsCache.values().next().value;
+      if (oldest !== undefined) this.deviceExistsCache.delete(oldest);
+    }
+  }
+
   async ingestEvent(dto: IngestEventDto) {
     // 🔥 Optimization: Skip DB check if we already know this device exists in this session
     if (!this.deviceExistsCache.has(dto.deviceId)) {
@@ -51,15 +101,37 @@ export class AnalyticsService {
       });
 
       if (!device) {
-        device = await this.prisma.device.create({
-          data: {
-            deviceId: dto.deviceId,
-            status: BUSINESS_RULES.STATUS.DEVICE.ACTIVE,
-            lastSeen: new Date(),
-          },
-        });
+        await assertNoDeviceHardwareUuidAlias(this.prisma, dto.deviceId);
+        try {
+          device = await this.prisma.device.create({
+            data: {
+              deviceId: dto.deviceId,
+              // Events are unauthenticated telemetry, not administrator approval.
+              // Preserve the event, but keep unknown hardware pending enrollment.
+              status: BUSINESS_RULES.STATUS.DEVICE.INITIAL,
+              lastSeen: new Date(),
+            },
+          });
+        } catch (error) {
+          // Concurrent first events can race on the unique deviceId.
+          // Reconcile only P2002 and only if the device now exists.
+          if (
+            !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+            error.code !== "P2002"
+          ) {
+            throw error;
+          }
+          device = await this.prisma.device.findUnique({
+            where: { deviceId: dto.deviceId },
+          });
+          if (!device) throw error;
+          this.logger.warn("ANALYTICS_DEVICE_ENROLLMENT_RACE_RECONCILED");
+        }
       }
-      this.deviceExistsCache.add(dto.deviceId);
+      this.rememberKnownDevice(dto.deviceId);
+    } else {
+      // Keep frequently reporting tablets in cache at fleet scale.
+      this.rememberKnownDevice(dto.deviceId);
     }
 
     // Alertas Críticas (Conexión Alertas -> Notificaciones)
@@ -147,13 +219,17 @@ export class AnalyticsService {
       ? await this.getAdvertiserVideoIds(advertiserId)
       : null;
 
-    const [totalImpressions, uniqueNodesCount, totalScans, recentImpressions] =
+    const [impressionBuckets, uniqueNodesCount, totalScans, recentImpressions] =
       await Promise.all([
-        this.prisma.playbackEvent.count({
+        // One DB snapshot separates verified PoP from raw device events,
+        // without changing the legacy totalImpressions/CTR contract.
+        this.prisma.playbackEvent.groupBy({
+          by: ["verified"],
           where: {
             eventType: "play_confirm",
             ...(videoIds ? { videoId: { in: videoIds } } : {}),
           },
+          _count: { _all: true },
         }),
         this.prisma.playbackEvent.groupBy({
           by: ["deviceId"],
@@ -178,8 +254,19 @@ export class AnalyticsService {
         }),
       ]);
 
+    // verified is non-null in PlaybackEvent; groupBy ensures these totals
+    // come from the same SQL snapshot (unlike concurrent count queries).
+    const verifiedImpressions =
+      impressionBuckets.find((bucket) => bucket.verified)?._count._all ?? 0;
+    const unverifiedImpressions =
+      impressionBuckets.find((bucket) => !bucket.verified)?._count._all ?? 0;
+    const totalImpressions = verifiedImpressions + unverifiedImpressions;
+
     const data = {
-      totalImpressions,
+      totalImpressions, // Legacy raw count: preserve backwards compatibility.
+      verifiedImpressions,
+      unverifiedImpressions,
+      impressionMetricBasis: "raw" as const,
       activeNodes: uniqueNodesCount.length,
       totalScans,
       ctr: totalImpressions > 0 ? (totalScans / totalImpressions) * 100 : 0,
@@ -471,18 +558,28 @@ export class AnalyticsService {
   // QR SCAN TRACKING
   // ============================================
   async registerQrScan(campaignId: string, deviceId: string): Promise<string> {
-    const DEFAULT_URL = "https://tad.do";
+    if (!campaignId || !deviceId) return QR_FALLBACK_URL;
 
-    if (!campaignId || !deviceId) return DEFAULT_URL;
-
+    // Resolve and validate the destination first. An analytics write failure
+    // must never replace an already-validated advertiser offer with the TAD
+    // fallback, but an unavailable campaign lookup must still fail closed.
+    let destination: string;
     try {
-      // Buscamos la campaña para obtener su URL de destino
       const campaign = await this.prisma.campaign.findUnique({
         where: { id: campaignId },
         select: { targetUrl: true },
       });
+      if (!campaign) return QR_FALLBACK_URL;
+      destination = safeQrDestinationUrl(campaign.targetUrl);
+    } catch {
+      // Never log untrusted query identifiers or raw DB error details.
+      this.logger.warn("QR campaign lookup failed; using safe fallback");
+      return QR_FALLBACK_URL;
+    }
 
-      // Registro del evento QR_SCAN (fire-and-forget pattern)
+    // Best-effort measurement, awaited for durability while the DB is healthy.
+    // Scans must not be reported as persisted if the database rejects the event.
+    try {
       await this.prisma.analyticsEvent.create({
         data: {
           eventType: "QR_SCAN",
@@ -492,16 +589,12 @@ export class AnalyticsService {
           occurredAt: new Date(),
         },
       });
-
-      this.logger.log(
-        `📱 QR Scan registrado — Campaign: ${campaignId}, Device: ${deviceId}`,
-      );
-
-      return campaign?.targetUrl || DEFAULT_URL;
-    } catch (error) {
-      this.logger.error(`Error registrando QR scan: ${error.message}`);
-      return DEFAULT_URL;
+      this.logger.log("QR scan event persisted");
+    } catch {
+      this.logger.warn("QR scan persistence failed; preserving destination");
     }
+
+    return destination;
   }
 
   // ============================================
@@ -520,7 +613,7 @@ export class AnalyticsService {
     // 1. Get device to check if it has a driver
     const device = await this.prisma.device.findUnique({
       where: { deviceId: data.deviceId },
-      select: { driverId: true },
+      select: { id: true, driverId: true },
     });
 
     const now = new Date();
@@ -529,7 +622,7 @@ export class AnalyticsService {
     if (device?.driverId) {
       await this.prisma.driverLocation.create({
         data: {
-          deviceId: data.deviceId,
+          deviceId: device.id,
           driverId: device.driverId,
           latitude: data.lat,
           longitude: data.lng,
@@ -634,6 +727,9 @@ export class AnalyticsService {
 
 export interface AnalyticsSummary {
   totalImpressions: number;
+  verifiedImpressions: number;
+  unverifiedImpressions: number;
+  impressionMetricBasis: "raw";
   activeNodes: number;
   totalScans: number;
   ctr: number;

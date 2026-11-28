@@ -1,0 +1,64 @@
+"use strict";
+
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const { inspectPinnedSupabaseTarget } = require("./verify-supabase-runtime-target.cjs");
+
+const template = fs.readFileSync(path.resolve(__dirname, "../easypanel-env-template.md"), "utf8");
+const serviceStart = template.indexOf("# SERVICIO 1: tad-api");
+const serviceEnd = template.indexOf("# SERVICIO 2:", serviceStart);
+const apiBlock = template.slice(serviceStart, serviceEnd > serviceStart ? serviceEnd : undefined);
+
+test("EasyPanel template warns not to import secrets into Git/Dockerfile builds", () => {
+  assert.ok(serviceStart >= 0);
+  assert.match(template, /NO IMPORTAR NI DESPLEGAR DIRECTAMENTE/);
+  assert.match(template, /Git\/Dockerfile/);
+  assert.match(template, /build-args/);
+  assert.match(template, /SOLO en el runtime/);
+  assert.match(template, /#244\/\#489|#244\/#489/);
+  assert.doesNotMatch(template, /Importar desde este archivo/);
+  assert.doesNotMatch(template, /REDEPLOY cada servicio después de guardar/);
+});
+
+test("API runtime section requires independent Supabase target pin", () => {
+  assert.match(apiBlock, /^TAD_EXPECTED_SUPABASE_PROJECT_REF=<REF_20_CARACTERES_CONFIRMADA_POR_PROPIETARIO>$/m);
+  assert.match(apiBlock, /^SUPABASE_URL=<URL_OFICIAL_DEL_PROYECTO_SUPABASE>$/m);
+  assert.match(apiBlock, /^DATABASE_URL=<URI_DEL_POOLER_SUPABASE_CON_REF_VERIFICADO>$/m);
+  assert.match(apiBlock, /^DIRECT_URL=<URI_DIRECTA_O_POOLER_SESION_CON_REF_VERIFICADO>$/m);
+  assert.doesNotMatch(apiBlock, /aws-0-sa-east-1\.pooler/);
+  assert.doesNotMatch(apiBlock, /postgresql:\/\/postgres:/);
+  assert.match(apiBlock, /postgres\.<project_ref>/);
+});
+
+test("regression: no password-bearing Postgres URL literals in this test file", () => {
+  const source = fs.readFileSync(__filename, "utf8");
+  assert.doesNotMatch(source, /postgres(?:ql)?:\/\/[^\s"'@]+:[^\s"'@]+@/i);
+});
+
+// Construct fixture URLs at runtime. Source files must never contain strings
+// that look like password-bearing production connection URLs (#244).
+function testDatabaseUrl(username, hostname, port) {
+  const url = new URL("postgresql://example.invalid");
+  url.username = username;
+  url.password = "synthetic-fixture-only-not-a-secret";
+  url.hostname = hostname;
+  url.port = String(port);
+  url.pathname = "/postgres";
+  return url.toString();
+}
+
+test("pinned preflight accepts project-scoped URLs and rejects bare pooler username", () => {
+  const ref = "abcdefghijklmnopqrst";
+  const pooler = "aws-0-us-west-2.pooler.supabase.com";
+  const fixture = {
+    TAD_EXPECTED_SUPABASE_PROJECT_REF: ref,
+    SUPABASE_URL: "https://" + ref + ".supabase.co",
+    DATABASE_URL: testDatabaseUrl("postgres." + ref, pooler, 6543),
+    DIRECT_URL: testDatabaseUrl("postgres", "db." + ref + ".supabase.co", 5432),
+  };
+  assert.deepEqual(inspectPinnedSupabaseTarget(fixture), { ok: true, code: "TARGET_MATCH" });
+  const invalid = { ...fixture, DATABASE_URL: testDatabaseUrl("postgres", pooler, 6543) };
+  assert.deepEqual(inspectPinnedSupabaseTarget(invalid), { ok: false, code: "UNVERIFIABLE_TARGET" });
+});

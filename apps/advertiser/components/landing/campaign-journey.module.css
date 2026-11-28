@@ -84,3 +84,44 @@
   .journey .sceneTitle { font-size: 26px; }
 }
 @media (prefers-reduced-motion: reduce) { .journey *, .journey *::before, .journey *::after { animation: none !important; transition: none !important; } }
+
+
+/* Advertiser Motion V6 — light campaign journey on the public landing. */
+.journey { color:#181818; }
+.journey .eyebrow { color:#80700f; }
+.journey .title { color:#171717; }
+.title span { color:#947600; }
+.journey .introduction { color:#64645e; }
+.step { background:#fff; border-color:#dcdcd4; color:#1b1b1b; border-radius:17px; }
+.step:hover { background:#fff7d6; border-color:#d3bb55; }
+.step[aria-pressed="true"] { background:#fcebb1; border-color:#be9c19; }
+.stepTop { color:#68665d; }
+.step[aria-pressed="true"] .stepTop { color:#5e4b00; }
+.stepSummary { color:#64635d; }
+.stage { background:#fff; border-color:#deded6; border-radius:23px; }
+.visual { background: radial-gradient(ellipse at 50% 75%,#fdcb0138,transparent 66%),#ecece5; }
+.visualTop>span:first-child { color:#171717; }
+.example { color:#585850; border-color:#c6c6bb; }
+.tablet { border-color:#666b60; }
+.tabletContent { background:#fdcb01; color:#141414; }
+.sceneLabel { color:#383326; }
+.journey .sceneDetail { color:#4e4219; }
+.routeLine::before { background:#6f5c14; }
+.routeLine span { background:#f6d847; border-color:#4b421d; }
+.journey .visualNote { color:#64645a; }
+.journey .detailNumber { color:#8f7100; }
+.journey .detailTitle { color:#161616; }
+.journey .description { color:#62625c; }
+.context { border-color:#deded6; background:#f7f7f2; }
+.context > svg { color:#806500; }
+.journey .context h4 { color:#171717; }
+.journey .context p { color:#66665e; }
+.navigation button { background:#181818; color:#fff; border-color:#181818; border-radius:999px; }
+.navigation button:not(:disabled):hover { background:#424242; }
+.navigation button:disabled { background:#f4f4f1; color:#77776f; border-color:#deded6; }
+.journey .boundary { color:#74746b; }
+@media(max-width:760px) { .step{min-height:156px}.stage{border-radius:18px} }
+
+/* V6 light canvas: a dark focus ring remains visible on white and selected cards. */
+.journey .step:focus-visible,
+.journey .navigation button:focus-visible { outline: 3px solid #171717; outline-offset: 4px; }

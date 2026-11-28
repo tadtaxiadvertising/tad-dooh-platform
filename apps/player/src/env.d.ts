@@ -5,6 +5,7 @@
 
 declare global {
   interface ImportMetaEnv {
+    readonly DEV: boolean;
     readonly VITE_API_URL: string;
     readonly VITE_SUPABASE_URL: string;
     readonly VITE_SUPABASE_ANON_KEY: string;

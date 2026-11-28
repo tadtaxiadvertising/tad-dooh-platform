@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { parseReconciliationPage } from "@/lib/reconciliation-page";
+import type { ReconciliationPage as ReportPage } from "@/lib/reconciliation-page";
 import Head from "next/head";
 import type { GetServerSideProps } from "next";
 import {
@@ -63,7 +65,7 @@ function ReconStat({
             value
           )}
         </h2>
-        {!loading && (
+        {!loading && trend && (
           <div
             className={clsx(
               "flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wider",
@@ -95,22 +97,17 @@ export default function ReconciliationPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [period, setPeriod] = useState("2026-04");
-  const [reports, setReports] = useState<
-    {
-      id: string;
-      deviceId?: string;
-      driver?: { fullName?: string };
-      discrepancyType?: string;
-      revenueContracted?: number;
-      revenueReceived?: number;
-      payrollDue?: number;
-      payrollPaid?: number;
-      hasDiscrepancy?: boolean;
-      totalPlaybacks?: number;
-      deliveryRate?: number;
-    }[]
-  >([]);
+  const [period, setPeriod] = useState(() =>
+    new Date().toISOString().slice(0, 7),
+  );
+  const [page, setPage] = useState(1);
+  const [reportPage, setReportPage] = useState<ReportPage | null>(null);
+  const requestRef = useRef(0);
+  const currentReport =
+    reportPage?.period === period && reportPage.page === page
+      ? reportPage
+      : null;
+  const reports = currentReport?.data ?? [];
   const [kpis, setKpis] = useState<{
     projectedRevenue?: number;
     discrepancyCount?: number;
@@ -122,21 +119,30 @@ export default function ReconciliationPage() {
   const [selectedDevice, setSelectedDevice] = useState({ id: "", name: "" });
 
   const fetchData = useCallback(async () => {
+    const request = ++requestRef.current;
     setLoading(true);
+    setReportPage(null);
+    setKpis(null);
     try {
-      const [reportData, kpiData] = await Promise.all([
-        getReconciliationReport(period),
+      const [reportData, kpiData] = await Promise.allSettled([
+        getReconciliationReport(period, page, 100),
         getBiKpis(),
       ]);
-      setReports(Array.isArray(reportData) ? reportData : []);
-      setKpis(kpiData);
+      if (request !== requestRef.current) return;
+      setReportPage(
+        reportData.status === "fulfilled"
+          ? parseReconciliationPage(reportData.value, period, page, 100)
+          : null,
+      );
+      if (kpiData.status === "fulfilled") setKpis(kpiData.value);
     } catch (error) {
+      if (request !== requestRef.current) return;
       console.error("Error fetching reconciliation data:", error);
       toast.error("Error al cargar datos de conciliación");
     } finally {
-      setLoading(false);
+      if (request === requestRef.current) setLoading(false);
     }
-  }, [period]);
+  }, [period, page]);
 
   useEffect(() => {
     fetchData();
@@ -158,6 +164,7 @@ export default function ReconciliationPage() {
 
   const filteredReports = reports.filter(
     (r) =>
+      !search.trim() ||
       r.driver?.fullName?.toLowerCase().includes(search.toLowerCase()) ||
       r.deviceId?.toLowerCase().includes(search.toLowerCase()) ||
       r.discrepancyType?.toLowerCase().includes(search.toLowerCase()),
@@ -196,15 +203,21 @@ export default function ReconciliationPage() {
             <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">
               Periodo Fiscal
             </span>
-            <select
+            <input
+              type="month"
+              aria-label="Periodo fiscal"
               value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              className="px-6 py-3.5 bg-zinc-900/60 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white outline-none focus:border-tad-yellow/40 transition-all hover:bg-zinc-800/60 cursor-pointer"
-            >
-              <option value="2026-03">MARZO 2026</option>
-              <option value="2026-04">ABRIL 2026</option>
-              <option value="2026-05">MAYO 2026</option>
-            </select>
+              disabled={generating}
+              onChange={(e) => {
+                if (!/^\d{4}-\d{2}$/.test(e.target.value)) return;
+                requestRef.current++;
+                setReportPage(null);
+                setLoading(true);
+                setPage(1);
+                setPeriod(e.target.value);
+              }}
+              className="px-6 py-3.5 bg-zinc-900/60 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white outline-none focus:border-tad-yellow/40"
+            />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -228,31 +241,41 @@ export default function ReconciliationPage() {
       </div>
 
       {/* ── KPI GRID ──────────────────────────────────────────────────────── */}
+      <p className="mb-4 text-xs text-zinc-400">
+        Indicadores globales de BI; no representan el total del periodo elegido.
+      </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
         <ReconStat
           label="Ingreso Proyectado"
-          value={`RD$ ${(kpis?.projectedRevenue || 0).toLocaleString()}`}
+          value={
+            typeof kpis?.projectedRevenue === "number" &&
+            Number.isFinite(kpis.projectedRevenue)
+              ? `RD$ ${kpis.projectedRevenue.toLocaleString()}`
+              : "No disponible"
+          }
           icon={DollarSign}
-          trend="+12.5%"
-          trendType="up"
           loading={loading}
         />
         <ReconStat
           label="Anomalías Detectadas"
-          value={kpis?.discrepancyCount || 0}
-          icon={AlertTriangle}
-          trend={
-            kpis?.discrepancyCount > 0 ? "REQUIERE ACCIÓN" : "SISTEMA SANO"
+          value={
+            typeof kpis?.discrepancyCount === "number" &&
+            Number.isFinite(kpis.discrepancyCount)
+              ? kpis.discrepancyCount
+              : "No disponible"
           }
-          trendType={kpis?.discrepancyCount > 0 ? "down" : "up"}
+          icon={AlertTriangle}
           loading={loading}
         />
         <ReconStat
           label="Índice de Certificación"
-          value={`${(kpis?.deliveryRateAvg || 0).toFixed(1)}%`}
+          value={
+            typeof kpis?.deliveryRateAvg === "number" &&
+            Number.isFinite(kpis.deliveryRateAvg)
+              ? `${kpis.deliveryRateAvg.toFixed(1)}%`
+              : "No disponible"
+          }
           icon={ShieldCheck}
-          trend="+0.5%"
-          trendType="up"
           loading={loading}
         />
       </div>
@@ -266,7 +289,7 @@ export default function ReconciliationPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="BUSCAR POR SOCIO, UNIDAD O TIPO DE ERROR..."
+              placeholder="BUSCAR EN ESTA PÁGINA..."
               className="w-full bg-black/40 border border-white/[0.05] rounded-2xl py-4 pl-14 pr-6 text-[10px] font-bold uppercase tracking-[0.2em] outline-none focus:border-tad-yellow/30 transition-all text-white placeholder:text-zinc-700"
             />
           </div>
@@ -291,6 +314,17 @@ export default function ReconciliationPage() {
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600 animate-pulse">
                 Sincronizando registros con Supabase Master...
               </p>
+            </div>
+          ) : !currentReport ? (
+            <div role="alert" className="p-10 text-rose-400">
+              No se pudo verificar la conciliación de este periodo.
+              <button
+                type="button"
+                onClick={fetchData}
+                className="ml-4 underline"
+              >
+                Reintentar
+              </button>
             </div>
           ) : (
             <table className="w-full text-left border-collapse">
@@ -393,7 +427,9 @@ export default function ReconciliationPage() {
                     </td>
                     <td className="px-10 py-8 text-right">
                       <button
+                        disabled={!r.deviceId}
                         onClick={() => {
+                          if (!r.deviceId) return;
                           setSelectedDevice({
                             id: r.deviceId,
                             name: r.driver?.fullName || "Socio Desconocido",
@@ -414,11 +450,14 @@ export default function ReconciliationPage() {
                         <AlertTriangle className="w-10 h-10" />
                         <div className="space-y-1">
                           <p className="text-[10px] font-black uppercase tracking-[0.3em]">
-                            Ledger Vacío
+                            {currentReport.total === 0
+                              ? "Sin registros en el periodo"
+                              : "Sin coincidencias en esta página"}
                           </p>
                           <p className="text-xs font-bold uppercase">
-                            No se encontraron registros para los criterios de
-                            búsqueda
+                            {currentReport.total === 0
+                              ? "El reporte no contiene registros."
+                              : "La búsqueda se limita a la página actual."}
                           </p>
                         </div>
                       </div>
@@ -430,6 +469,49 @@ export default function ReconciliationPage() {
           )}
         </div>
       </div>
+
+      {currentReport && !loading && (
+        <nav
+          aria-label="Paginación de conciliación"
+          className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-300"
+        >
+          <p aria-live="polite">
+            {filteredReports.length} de {currentReport.data.length} filas de la
+            página · {currentReport.total} registros del periodo · Página{" "}
+            {currentReport.totalPages === 0
+              ? "0 de 0"
+              : `${page} de ${currentReport.totalPages}`}
+          </p>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              disabled={page <= 1 || generating}
+              onClick={() => {
+                requestRef.current++;
+                setReportPage(null);
+                setLoading(true);
+                setPage((value) => value - 1);
+              }}
+              className="rounded-lg border border-zinc-700 px-4 py-2 disabled:opacity-40"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              disabled={page >= currentReport.totalPages || generating}
+              onClick={() => {
+                requestRef.current++;
+                setReportPage(null);
+                setLoading(true);
+                setPage((value) => value + 1);
+              }}
+              className="rounded-lg border border-zinc-700 px-4 py-2 disabled:opacity-40"
+            >
+              Siguiente
+            </button>
+          </div>
+        </nav>
+      )}
 
       {/* ── FOOTER PROTOCOL ────────────────────────────────────────────────── */}
       <div className="mt-16 p-12 bg-zinc-900/60 border border-t-4 border-t-tad-yellow rounded-[48px] shadow-2xl relative overflow-hidden group">

@@ -1,0 +1,165 @@
+{
+  "runId": "TAD-CUA-20261126-01",
+  "date": "2026-11-26",
+  "status": "PENDING_VERIFICATION",
+  "branch": "codex/computer-use-current-20261126",
+  "commit": "01fb2e0f9507e1c0e3a696c11e76960fa9b56f9a",
+  "worktree": "C:/tad-audit-current-20261126",
+  "protectedOriginalWorktree": "C:/tad-dooh-platform",
+  "tests": {
+    "playerUnit": {
+      "passed": 56,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "apiFocused": {
+      "suites": 8,
+      "passed": 60,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "offlineBrowser": {
+      "passed": 7,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "playerTypeScript": {
+      "exitCode": 0
+    }
+  },
+  "blockers": [
+    "Player TLS certificate rejected independently by Chromium and Node HTTPS",
+    "Authenticated staging and synthetic roles not established",
+    "Computer Use image inconsistent with accessibility tree; use Playwright",
+    "Browser Use disabled in Work settings",
+    "Subagents unavailable due to usage limit",
+    "Strict Admin override fails; 169 diagnostic lines",
+    "Automatic approval review rejected local production-build server start including loopback",
+    "Documented Simulator and Remotion hostnames return ENOTFOUND"
+  ],
+  "nextAction": "Keep PR draft. Runtime correction requires an authorized way to run the compiled server after policy rejection; do not bypass. Reverify intended Player/Simulator/Remotion origins and obtain isolated authenticated sandbox before the 23-step business flow. No merge/deploy authorized.",
+  "productionWrites": 0,
+  "productionDeployments": 0,
+  "prsCreated": [],
+  "issuesCreated": [
+    "https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/560",
+    "https://github.com/tadtaxiadvertising/tad-dooh-platform/issues/561"
+  ],
+  "updatedAt": "2026-11-27T00:51:00.505Z",
+  "phase": "Pasada local documentada; UI del artefacto bloqueada por revisión automática; sin despliegue",
+  "usersEvaluated": [
+    "VISITOR (production read-only)",
+    "ADMIN (public UI + synthetic contracts)",
+    "ADVERTISER (public UI + synthetic contracts)",
+    "DRIVER (public UI + synthetic contracts)",
+    "DEVICE (synthetic guards/queue)"
+  ],
+  "completedFlows": [
+    "18 responsive anonymous UI cases",
+    "three anonymous private-page redirects",
+    "six API health/auth probes",
+    "56 Player unit cases",
+    "60 API focused cases",
+    "seven local browser queue cases",
+    "eight Admin recovery regressions",
+    "five CI isolation contracts"
+  ],
+  "pendingFlows": [
+    "Authenticated 23-step business flow",
+    "RLS/storage deployed policies",
+    "campaign media/QR/payment sandbox",
+    "physical tablet restart/playback/license",
+    "PostgreSQL financial reconciliation",
+    "10x load"
+  ],
+  "findingsFound": [
+    "CUA-20261126-001",
+    "CUA-20261126-002"
+  ],
+  "findingsCorrected": [
+    {
+      "id": "CUA-20261126-002",
+      "state": "PENDING_VERIFICATION",
+      "deployed": false,
+      "regressions": 8,
+      "build": "PASS",
+      "browser": "BLOCKED"
+    }
+  ],
+  "testsExecuted": {
+    "cases": 173,
+    "pass": 163,
+    "fail": 1,
+    "blocked": 9
+  },
+  "permission": "User explicitly chose isolated local tests and production read-only",
+  "pullRequestsCreated": [
+    "https://github.com/tadtaxiadvertising/tad-dooh-platform/pull/562"
+  ],
+  "testsExecutedDetails": "verification-receipts.json",
+  "modifiedFiles": [
+    ".github/workflows/ci.yml",
+    "apps/admin/middleware.ts",
+    "apps/admin/pages/_app.tsx",
+    "apps/admin/pages/admin/login.tsx",
+    "apps/admin/pages/admin/forgot-password.tsx",
+    "packages/ui/components/AuthProvider.tsx",
+    "packages/ui/components/PortalAuth.tsx",
+    "scripts/admin-recovery-entry.test.cjs",
+    "scripts/computer-use-public-audit.cjs",
+    "scripts/computer-use-offline-queue-audit.cjs",
+    "scripts/computer-use-recovery-audit.cjs",
+    "docs/audits/computer-use/2026-11-26"
+  ],
+  "implementationCommit": "3538a933",
+  "reviewHead": "06fadd22148e0e65e3604fe0fbb72d1709a17e53",
+  "currentPhase": "Implementation CI verified; read-only Supabase follow-up complete; runtime/provider remains blocked",
+  "ci": {
+    "implementationSha": "06fadd22148e0e65e3604fe0fbb72d1709a17e53",
+    "jobsPassed": 15,
+    "jobsFailed": 0,
+    "apiSuitesPassed": 102,
+    "apiTestsPassed": 892,
+    "recoveryRegressionsPassed": 8,
+    "qualityRun": 45918437013,
+    "dockerRun": 45918436990
+  },
+  "supabaseReadOnly": {
+    "project": "ltdcdhqixvbpdcitthqf",
+    "warningsExistingIssue": 507,
+    "warningCount": 3,
+    "infoCount": 32,
+    "noPolicyTablesWithEndUserGrants": 0
+  },
+  "continuation563": {
+    "status": "PENDING_VERIFICATION",
+    "baselineCommit": "e7b398bb4dcf2b028ad7e6cef62cf10dfb56b9a7",
+    "candidateCodeCommit": "1561b5245ab092334da493e61852395341ef0c78",
+    "branch": "fix/563-withdrawal-atomic-claim-independent-20261126",
+    "issue": 563,
+    "scope": "Independent candidate; original local Codex branch unavailable, preserved",
+    "verification": {
+      "syntheticMethods": {
+        "executed": 12,
+        "passed": 12,
+        "failed": 0,
+        "runner": "JavaScript evaluation of source methods with TypeScript parameter annotations removed; deterministic mock transaction, not Jest/PostgreSQL"
+      },
+      "jestRegressionCasesAdded": 10,
+      "jest": "NOT_TESTED",
+      "strictTypeScript": "NOT_TESTED",
+      "lint": "NOT_TESTED",
+      "build": "NOT_TESTED",
+      "postgresConcurrency": "BLOCKED",
+      "computerUse": "BLOCKED"
+    },
+    "productionWrites": 0,
+    "productionDeployments": 0,
+    "files": [
+      "apps/api/src/modules/wallet/wallet.service.ts",
+      "apps/api/src/modules/wallet/wallet-withdrawal-atomicity.spec.ts",
+      "docs/audits/computer-use/2026-11-26/checkpoint.json"
+    ],
+    "nextAction": "Review against original Codex candidate when available; run exact-head CI, strict TypeScript, lint/build and isolated PostgreSQL two-session regressions, including rollback and RBAC; no merge/deploy until verified."
+  }
+}

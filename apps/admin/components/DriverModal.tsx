@@ -1,17 +1,6 @@
 import React, { useState } from "react";
-import {
-  X,
-  User,
-  Phone,
-  IdCard,
-  CreditCard,
-  Tablet,
-  Hash,
-  CheckCircle2,
-  AlertTriangle,
-} from "lucide-react";
-import clsx from "clsx";
-import { createDriver, getDevices } from "@tad/services";
+import { X, User, Phone, IdCard, Hash, AlertTriangle } from "lucide-react";
+import { createDriver } from "@tad/services";
 import { notifyChange } from "@tad/ui";
 import { toast } from "sonner";
 
@@ -34,29 +23,8 @@ const DriverModal = React.memo(function DriverModal({
     cedula: "",
     taxiPlate: "",
     licensePlate: "",
-    deviceId: "",
-    subscriptionPaid: false,
-    deviceFound: null as boolean | null,
     contractAccepted: false,
   });
-
-  const checkDevice = async (id: string) => {
-    if (!id) {
-      setFormData((prev) => ({ ...prev, deviceId: "", deviceFound: null }));
-      return;
-    }
-
-    try {
-      const devices = await getDevices();
-      const exists = devices.some(
-        (d: { deviceId?: string; device_id?: string }) =>
-          (d.deviceId || d.device_id) === id,
-      );
-      setFormData((prev) => ({ ...prev, deviceId: id, deviceFound: exists }));
-    } catch {
-      setFormData((prev) => ({ ...prev, deviceId: id, deviceFound: null }));
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -64,14 +32,6 @@ const DriverModal = React.memo(function DriverModal({
     e.preventDefault();
     setLoading(true);
     setError(null);
-
-    if (formData.deviceId && formData.deviceFound === false) {
-      setError(
-        "EL ID DE TABLET NO EXISTE EN EL INVENTARIO. REGÍSTRELO PRIMERO EN LA SECCIÓN DE DISPOSITIVOS.",
-      );
-      setLoading(false);
-      return;
-    }
 
     try {
       await createDriver(formData);
@@ -85,9 +45,6 @@ const DriverModal = React.memo(function DriverModal({
         cedula: "",
         taxiPlate: "",
         licensePlate: "",
-        deviceId: "",
-        subscriptionPaid: false,
-        deviceFound: null,
         contractAccepted: false,
       });
     } catch (err: unknown) {
@@ -224,49 +181,10 @@ const DriverModal = React.memo(function DriverModal({
               </div>
             </div>
 
-            {/* Device ID */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2 px-1">
-                ID Tablet (Opcional)
-              </label>
-              <div className="relative">
-                <Tablet className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-                <input
-                  type="text"
-                  placeholder="Ej: TAD-XXXXXX"
-                  value={formData.deviceId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      deviceId: e.target.value.toUpperCase(),
-                    }))
-                  }
-                  onBlur={(e) => {
-                    const id = e.target.value.toUpperCase();
-                    if (id.length > 5) checkDevice(id);
-                  }}
-                  className={clsx(
-                    "w-full bg-zinc-900 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-zinc-700 outline-none transition-all text-sm",
-                    formData.deviceFound === true
-                      ? "border-emerald-500/50 focus:border-emerald-500"
-                      : formData.deviceFound === false
-                        ? "border-rose-500/50 focus:border-rose-500"
-                        : "border-white/10 focus:border-[#fad400]",
-                  )}
-                />
-                {formData.deviceFound === true && (
-                  <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500 animate-in zoom-in" />
-                )}
-                {formData.deviceFound === false && (
-                  <AlertTriangle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-500 animate-in zoom-in" />
-                )}
-              </div>
-              {formData.deviceFound === false && (
-                <p className="text-[9px] text-rose-500 font-bold uppercase tracking-widest mt-1">
-                  Dispositivo no localizado en el cluster.
-                </p>
-              )}
-            </div>
+            <p className="rounded-xl border border-[#fad400]/20 bg-[#fad400]/5 px-4 py-3 text-xs text-zinc-300">
+              La tablet se asigna desde Administración después del registro,
+              cuando el conductor esté habilitado para recibir un dispositivo.
+            </p>
 
             {/* Contract Acceptance - required when creating drivers as non-admin */}
             <div className="flex items-center gap-3 pt-2">
@@ -292,29 +210,10 @@ const DriverModal = React.memo(function DriverModal({
               </label>
             </div>
 
-            {/* Subscription Toggle */}
-            <div className="flex items-center gap-3 pt-6">
-              <button
-                type="button"
-                onClick={() =>
-                  setFormData({
-                    ...formData,
-                    subscriptionPaid: !formData.subscriptionPaid,
-                  })
-                }
-                className={clsx(
-                  "flex items-center gap-2 px-4 py-2 rounded-xl border transition-all font-bold text-xs uppercase tracking-wider",
-                  formData.subscriptionPaid
-                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                    : "bg-zinc-900 border-white/10 text-zinc-500",
-                )}
-              >
-                <CreditCard className="w-4 h-4" />
-                {formData.subscriptionPaid
-                  ? "Pagado RD$6,000"
-                  : "Pendiente Pago"}
-              </button>
-            </div>
+            <p className="text-xs text-zinc-400">
+              El pago se registra y valida por separado en el panel de
+              Administración.
+            </p>
           </div>
 
           <div className="flex gap-4 pt-4">

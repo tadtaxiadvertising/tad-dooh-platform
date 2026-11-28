@@ -24,3 +24,22 @@ npm-debug.log*
 .vscode
 .idea
 .DS_Store
+
+# Dockerfile-specific ignore files override the root .dockerignore.
+# Keep nested secret exclusions here too, before COPY . . in Dockerfile.api.
+**/.env
+**/.env.*
+**/.envrc
+**/.envrc.*
+**/id_rsa
+**/id_ed25519
+**/*.p8
+**/*.p12
+**/*.pfx
+**/*.pem
+
+# Confidential OAuth client JSON and agent attachment directories.
+.hermes
+**/.hermes
+client_secret*.json
+**/client_secret*.json

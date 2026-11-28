@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ConflictException,
   Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
@@ -81,89 +82,133 @@ export class CommissionService {
    * Si ya existe una comisión con esa reference, no se crea duplicada.
    */
   async createIdempotent(input: CreateCommissionInput) {
+    // A commission credits the driver wallet and creates a matching ledger
+    // entry once approved. Reject negative, NaN/Infinity, sub-cent or
+    // imprecisely huge amounts BEFORE any database transaction starts.
+    // This also protects internal callers that bypass the HTTP controller.
+    const amount = input?.amount;
+    if (
+      typeof amount !== "number" ||
+      !Number.isFinite(amount) ||
+      amount <= 0 ||
+      !Number.isSafeInteger(Math.round(amount * 100)) ||
+      Math.round(amount * 100) / 100 !== amount
+    ) {
+      throw new BadRequestException(
+        "Commission amount must be a positive finite RD$ amount in cents",
+      );
+    }
+
     this.logger.log(
       `[COMMISSION] Creating idempotent commission: ${input.reference} for driver ${input.driverId}`,
     );
 
-    return this.prisma.$transaction(async (tx) => {
-      // 1. Verificar si ya existe por reference (idempotencia)
-      const existing = await tx.commission.findFirst({
-        where: { reference: input.reference },
-      });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // 1. Verificar si ya existe por reference (idempotencia)
+        const existing = await tx.commission.findFirst({
+          where: { reference: input.reference },
+        });
 
-      if (existing) {
-        this.logger.warn(
-          `[COMMISSION] Duplicate reference ${input.reference} - returning existing commission ${existing.id}`,
-        );
-        return { commission: existing, created: false };
-      }
+        if (existing) {
+          // Replays are only idempotent for the SAME economic event.
+          // Never return another driver's commission for a reused reference.
+          this.assertMatchingCommissionReplay(existing, input);
+          this.logger.warn(
+            `[COMMISSION] Idempotent replay for reference ${input.reference}`,
+          );
+          return { commission: existing, created: false };
+        }
 
-      // 2. Validar que el conductor existe
-      const driver = await tx.driver.findUnique({
-        where: { id: input.driverId },
-        select: { id: true, fullName: true },
-      });
+        // 2. Validar que el conductor existe
+        const driver = await tx.driver.findUnique({
+          where: { id: input.driverId },
+          select: { id: true, fullName: true },
+        });
 
-      if (!driver) {
-        throw new NotFoundException(`Driver ${input.driverId} not found`);
-      }
+        if (!driver) {
+          throw new NotFoundException(`Driver ${input.driverId} not found`);
+        }
 
-      // 3. Validar regla de negocio: un mismo evento económico no genera dos comisiones
-      // Para DRIVER_REFERRAL: verificar que el conductor referido no tenga ya comisión pagada
-      if (input.sourceType === CommissionSourceType.DRIVER_REFERRAL) {
-        const referredDriverId = input.metadata?.referredDriverId;
-        if (referredDriverId) {
-          const existingReferral = await tx.commission.findFirst({
-            where: {
-              driverId: input.driverId,
-              sourceType: CommissionSourceType.DRIVER_REFERRAL,
-              metadata: {
-                path: ["referredDriverId"],
-                equals: referredDriverId,
+        // 3. Validar regla de negocio: un mismo evento económico no genera dos comisiones
+        // Para DRIVER_REFERRAL: verificar que el conductor referido no tenga ya comisión pagada
+        if (input.sourceType === CommissionSourceType.DRIVER_REFERRAL) {
+          const referredDriverId = input.metadata?.referredDriverId;
+          if (referredDriverId) {
+            const existingReferral = await tx.commission.findFirst({
+              where: {
+                driverId: input.driverId,
+                sourceType: CommissionSourceType.DRIVER_REFERRAL,
+                metadata: {
+                  path: ["referredDriverId"],
+                  equals: referredDriverId,
+                },
               },
-            },
-          });
-          if (existingReferral) {
-            throw new BadRequestException(
-              `Commission already exists for referred driver ${referredDriverId}`,
-            );
+            });
+            if (existingReferral) {
+              throw new BadRequestException(
+                `Commission already exists for referred driver ${referredDriverId}`,
+              );
+            }
           }
         }
+
+        // 4. Crear comisión
+        const commission = await tx.commission.create({
+          data: {
+            driverId: input.driverId,
+            amount: input.amount,
+            sourceType: input.sourceType,
+            reference: input.reference,
+            status: CommissionStatus.PENDING,
+            metadata: input.metadata || {},
+          },
+        });
+
+        // 5. Crear entrada en ledger financiero (OPEX_COMMISSION)
+        await tx.financialTransaction.create({
+          data: {
+            type: "OUTGOING",
+            category: "OPEX_COMMISSION",
+            amount: input.amount,
+            netAmount: input.amount,
+            taxAmount: 0,
+            entityId: input.driverId,
+            reference: input.reference,
+            note: `Comisión ${input.sourceType}: ${input.metadata?.note || "Sin descripción"}`,
+            status: "PENDING", // PENDING hasta que la comisión se APRUEBE
+          },
+        });
+
+        this.logger.log(
+          `[COMMISSION] Created commission ${commission.id} (${input.amount} RD$) for driver ${input.driverId}`,
+        );
+
+        return { commission, created: true };
+      });
+    } catch (error: unknown) {
+      // On two concurrent requests the unique(reference) constraint is the
+      // final arbiter. After the losing transaction rolls back, re-read the
+      // winner and verify it is the SAME event. Do not mask unrelated DB
+      // failures, create another ledger entry, or trust the caller's driver.
+      if (
+        typeof error !== "object" ||
+        error === null ||
+        !("code" in error) ||
+        error.code !== "P2002"
+      ) {
+        throw error;
       }
-
-      // 4. Crear comisión
-      const commission = await tx.commission.create({
-        data: {
-          driverId: input.driverId,
-          amount: input.amount,
-          sourceType: input.sourceType,
-          reference: input.reference,
-          status: CommissionStatus.PENDING,
-          metadata: input.metadata || {},
-        },
+      const winner = await this.prisma.commission.findUnique({
+        where: { reference: input.reference },
       });
-
-      // 5. Crear entrada en ledger financiero (OPEX_COMMISSION)
-      await tx.financialTransaction.create({
-        data: {
-          type: "OUTGOING",
-          category: "OPEX_COMMISSION",
-          amount: input.amount,
-          netAmount: input.amount,
-          taxAmount: 0,
-          entityId: input.driverId,
-          reference: input.reference,
-          note: `Comisión ${input.sourceType}: ${input.metadata?.note || "Sin descripción"}`,
-          status: "PENDING", // PENDING hasta que la comisión se APRUEBE
-        },
-      });
-
-      this.logger.log(
-        `[COMMISSION] Created commission ${commission.id} (${input.amount} RD$) for driver ${input.driverId}`,
+      if (!winner) throw error;
+      this.assertMatchingCommissionReplay(winner, input);
+      this.logger.warn(
+        `[COMMISSION] Concurrent idempotent replay for reference ${input.reference}`,
       );
-
-      return { commission, created: true };
-    });
+      return { commission: winner, created: false };
+    }
   }
 
   /**
@@ -179,34 +224,57 @@ export class CommissionService {
       const commission = await tx.commission.findUnique({
         where: { id: commissionId },
       });
-
       if (!commission) {
         throw new NotFoundException(`Commission ${commissionId} not found`);
       }
-
       if (commission.status !== CommissionStatus.PENDING) {
-        throw new BadRequestException(
-          `Commission ${commissionId} is not in PENDING status (current: ${commission.status})`,
+        throw new ConflictException(
+          `Commission ${commissionId} is already in ${commission.status} status`,
         );
       }
 
-      // Actualizar comisión a APPROVED
-      const updated = await tx.commission.update({
-        where: { id: commissionId },
+      // PostgreSQL compare-and-set is the concurrency gate. A transaction
+      // alone with findUnique() followed by update() does not prevent two
+      // concurrent admins from both incrementing the wallet.
+      const changed = await tx.commission.updateMany({
+        where: { id: commissionId, status: CommissionStatus.PENDING },
         data: {
           status: CommissionStatus.APPROVED,
           approvedAt: new Date(),
           approvedBy,
         },
       });
+      if (changed.count !== 1) {
+        throw new ConflictException(
+          `Commission ${commissionId} was processed concurrently`,
+        );
+      }
 
-      // Actualizar ledger a COMPLETED
-      await tx.financialTransaction.updateMany({
-        where: { reference: commission.reference },
+      // Fail closed: never grant wallet balance without advancing exactly
+      // one matching, still-pending source ledger entry in the SAME tx.
+      // Gross amount alone is insufficient: source net/tax/currency must
+      // match the same DOP commission or no wallet credit is permitted.
+      // A missing/mismatched/previously completed ledger must be reconciled.
+      const ledger = await tx.financialTransaction.updateMany({
+        where: {
+          reference: commission.reference,
+          type: "OUTGOING",
+          category: "OPEX_COMMISSION",
+          entityId: commission.driverId,
+          amount: commission.amount,
+          netAmount: commission.amount,
+          taxAmount: 0,
+          currency: "DOP",
+          status: "PENDING",
+        },
         data: { status: "COMPLETED" },
       });
+      if (ledger.count !== 1) {
+        throw new ConflictException(
+          `Commission ${commissionId} ledger requires reconciliation`,
+        );
+      }
 
-      // Incrementar wallet del conductor
       await tx.wallet.upsert({
         where: { driverId: commission.driverId },
         update: { availableBalance: { increment: commission.amount } },
@@ -216,10 +284,14 @@ export class CommissionService {
         },
       });
 
+      const updated = await tx.commission.findUnique({
+        where: { id: commissionId },
+      });
+      if (!updated)
+        throw new NotFoundException(`Commission ${commissionId} not found`);
       this.logger.log(
-        `[COMMISSION] Approved commission ${commissionId}, wallet incremented`,
+        `[COMMISSION] Approved commission ${commissionId}, wallet credited once`,
       );
-
       return updated;
     });
   }
@@ -229,27 +301,17 @@ export class CommissionService {
    * Se ejecuta durante el cierre mensual.
    */
   async markCommissionPaid(commissionId: string, paidAt: Date = new Date()) {
-    const commission = await this.prisma.commission.findUnique({
-      where: { id: commissionId },
-    });
-
-    if (!commission) {
-      throw new NotFoundException(`Commission ${commissionId} not found`);
-    }
-
-    if (commission.status !== CommissionStatus.APPROVED) {
-      throw new BadRequestException(
-        `Commission ${commissionId} must be APPROVED before marking PAID (current: ${commission.status})`,
-      );
-    }
-
-    return this.prisma.commission.update({
-      where: { id: commissionId },
-      data: {
-        status: CommissionStatus.PAID,
-        paidAt,
-      },
-    });
+    // A commission is APPROVED when credited to the driver's wallet.
+    // PAID is an external bank-settlement assertion, not a local state
+    // transition. This legacy method has no bank receipt, beneficiary
+    // confirmation or reconciliation ledger. Fail closed even for trusted
+    // internal callers, instead of creating a financially false status.
+    void commissionId;
+    void paidAt;
+    throw new ConflictException(
+      "Pago individual de comisiones suspendido: requiere confirmación bancaria " +
+        "por beneficiario y conciliación antes de marcar PAID.",
+    );
   }
 
   /**
@@ -269,20 +331,55 @@ export class CommissionService {
       const commission = await tx.commission.findUnique({
         where: { id: commissionId },
       });
-
       if (!commission) {
         throw new NotFoundException(`Commission ${commissionId} not found`);
       }
-
-      if (commission.status === CommissionStatus.REVOKED) {
-        throw new BadRequestException(
-          `Commission ${commissionId} already revoked`,
+      if (
+        ![
+          CommissionStatus.PENDING,
+          CommissionStatus.APPROVED,
+          CommissionStatus.PAID,
+        ].includes(commission.status as CommissionStatus)
+      ) {
+        throw new ConflictException(
+          `Commission ${commissionId} cannot be revoked from ${commission.status}`,
         );
       }
 
-      // Marcar comisión como REVOKED
-      await tx.commission.update({
-        where: { id: commissionId },
+      // Settlement batches snapshot their member commissions and totals.
+      // A direct revocation would leave DRAFT/APPROVED/PAID batch JSON
+      // inconsistent. Require an explicit batch dispute/reconciliation flow.
+      if (commission.settlementBatchId != null) {
+        throw new ConflictException(
+          `Commission ${commissionId} belongs to a settlement batch; reconcile it before revoking`,
+        );
+      }
+
+      // Older records predate the positive-cent validation at creation.
+      // A negative amount here would turn a "decrement" into a wallet credit.
+      // Never attempt a funded reversal of malformed legacy amounts.
+      if (
+        [CommissionStatus.APPROVED, CommissionStatus.PAID].includes(
+          commission.status as CommissionStatus,
+        ) &&
+        (!Number.isFinite(commission.amount) ||
+          commission.amount <= 0 ||
+          !Number.isSafeInteger(Math.round(commission.amount * 100)) ||
+          Math.round(commission.amount * 100) / 100 !== commission.amount)
+      ) {
+        throw new ConflictException(
+          `Commission ${commissionId} has an invalid amount; reconcile before revoking`,
+        );
+      }
+
+      const changed = await tx.commission.updateMany({
+        // Re-check membership atomically: a settlement generator may have
+        // claimed this APPROVED row after our initial findUnique().
+        where: {
+          id: commissionId,
+          status: commission.status,
+          settlementBatchId: null,
+        },
         data: {
           status: CommissionStatus.REVOKED,
           revokedAt: new Date(),
@@ -290,8 +387,12 @@ export class CommissionService {
           revocationReason: reason,
         },
       });
+      if (changed.count !== 1) {
+        throw new ConflictException(
+          `Commission ${commissionId} was changed concurrently`,
+        );
+      }
 
-      // Si ya estaba APROBADA/PAGADA, crear entrada compensatoria en ledger
       if (
         [CommissionStatus.APPROVED, CommissionStatus.PAID].includes(
           commission.status as CommissionStatus,
@@ -299,7 +400,7 @@ export class CommissionService {
       ) {
         await tx.financialTransaction.create({
           data: {
-            type: "INCOMING", // Reversión: entrada positiva para la empresa
+            type: "INCOMING",
             category: "OPEX_COMMISSION_REVERSAL",
             amount: commission.amount,
             netAmount: commission.amount,
@@ -311,17 +412,27 @@ export class CommissionService {
           },
         });
 
-        // Revertir wallet si ya se había abonado
-        if (commission.status === CommissionStatus.PAID) {
-          await tx.wallet.update({
-            where: { driverId: commission.driverId },
-            data: { availableBalance: { decrement: commission.amount } },
-          });
+        // Wallet credit occurs at APPROVED, not PAID. Never debit funds
+        // that have since been withdrawn/spent or use a stale balance read:
+        // an atomic PostgreSQL predicate prevents negative availableBalance
+        // even when another debit races with this revocation.
+        const debited = await tx.wallet.updateMany({
+          where: {
+            driverId: commission.driverId,
+            availableBalance: { gte: commission.amount },
+          },
+          data: { availableBalance: { decrement: commission.amount } },
+        });
+        if (debited.count !== 1) {
+          // Roll back the REVOKED claim and reversal ledger in this same tx.
+          // No silent debt/negative wallet: require explicit reconciliation.
+          throw new ConflictException(
+            `Commission ${commissionId} wallet funds unavailable; reconcile before revoking`,
+          );
         }
       }
 
       this.logger.log(`[COMMISSION] Revoked commission ${commissionId}`);
-
       return { success: true };
     });
   }
@@ -334,7 +445,24 @@ export class CommissionService {
     input: MonthlySettlementInput,
   ): Promise<SettlementBatch> {
     const { month, year, generatedBy } = input;
+    // Keep the domain boundary aligned with CommissionController. Internal
+    // jobs bypass HTTP validation, and Date() silently normalizes months 0/13
+    // into another year, potentially labelling a financial batch incorrectly.
+    if (
+      !Number.isInteger(month) ||
+      month < 1 ||
+      month > 12 ||
+      !Number.isInteger(year) ||
+      year < 2020 ||
+      year > 2100
+    ) {
+      throw new BadRequestException(
+        "month/year deben representar un período válido",
+      );
+    }
     const periodKey = `${year}-${String(month).padStart(2, "0")}`;
+    const periodStart = new Date(year, month - 1, 1);
+    const periodEnd = new Date(year, month, 1);
 
     this.logger.log(
       `[SETTLEMENT] Generating monthly settlement for ${periodKey}`,
@@ -347,6 +475,21 @@ export class CommissionService {
       });
 
       if (existingBatch) {
+        // Existing period snapshots are immutable. Do not silently return
+        // a stale batch when later-approved commissions remain unbatched.
+        // The operator must explicitly reconcile/rebuild the period.
+        const unbatchedApproved = await tx.commission.count({
+          where: {
+            status: CommissionStatus.APPROVED,
+            createdAt: { gte: periodStart, lt: periodEnd },
+            settlementBatchId: null,
+          },
+        });
+        if (unbatchedApproved > 0) {
+          throw new ConflictException(
+            `Settlement ${periodKey} has approved commissions outside its batch; reconciliation required`,
+          );
+        }
         this.logger.warn(
           `[SETTLEMENT] Batch for ${periodKey} already exists, returning existing`,
         );
@@ -357,10 +500,7 @@ export class CommissionService {
       const commissions = await tx.commission.findMany({
         where: {
           status: CommissionStatus.APPROVED,
-          createdAt: {
-            gte: new Date(year, month - 1, 1),
-            lt: new Date(year, month, 1),
-          },
+          createdAt: { gte: periodStart, lt: periodEnd },
           settlementBatchId: null,
         },
         include: {
@@ -370,32 +510,33 @@ export class CommissionService {
       });
 
       if (commissions.length === 0) {
-        this.logger.log(
-          `[SETTLEMENT] No approved commissions for ${periodKey}`,
+        // Do not permanently seal the period as APPROVED with zero members.
+        // A PENDING or late-arriving commission may become APPROVED later;
+        // keeping the unique period unclaimed lets the operator retry.
+        throw new ConflictException(
+          `Settlement ${periodKey} has no approved commissions; retry after approvals`,
         );
-        // Crear lote vacío para marcar periodo como procesado
-        const emptyBatch = await tx.settlementBatch.create({
-          data: {
-            period: periodKey,
-            status: "APPROVED",
-            grossTotal: 0,
-            netTotal: 0,
-            withholdings: 0,
-            referentsCount: 0,
-            commissionsCount: 0,
-            generatedBy,
-            approvedAt: new Date(),
-            approvedBy: generatedBy,
-            createdAt: new Date(),
-          },
-        });
-        return this.mapBatchToOutput(emptyBatch);
       }
 
-      // 3. Agrupar por referente (driverId)
+      // 3. Agrupar por referente (driverId) usando centavos enteros.
+      // Legacy rows may predate positive-cent input validation: fail closed
+      // rather than publishing an invalid amount in a financial snapshot.
       const byReferent = new Map<string, SettlementReferent>();
+      const grossCentsByReferent = new Map<string, number>();
 
       for (const c of commissions) {
+        const amountCents = Math.round(c.amount * 100);
+        if (
+          !Number.isFinite(c.amount) ||
+          c.amount <= 0 ||
+          !Number.isSafeInteger(amountCents) ||
+          amountCents / 100 !== c.amount
+        ) {
+          throw new ConflictException(
+            `Commission ${c.id} has an invalid amount; reconcile before settlement`,
+          );
+        }
+
         const key = c.driverId;
         if (!byReferent.has(key)) {
           byReferent.set(key, {
@@ -416,23 +557,52 @@ export class CommissionService {
           createdAt: c.createdAt,
           relatedEntityId: this.relatedEntityId(c.metadata),
         });
-        ref.grossAmount += c.amount;
+        const grossCents = (grossCentsByReferent.get(key) ?? 0) + amountCents;
+        if (!Number.isSafeInteger(grossCents)) {
+          throw new ConflictException(
+            `Settlement ${periodKey} exceeds the safe cent range`,
+          );
+        }
+        grossCentsByReferent.set(key, grossCents);
+        ref.grossAmount = grossCents / 100;
       }
 
-      // 4. Calcular retenciones (10% según BUSINESS_RULES.REFERRAL_RETENTION_RATE)
-      let totalGross = 0;
-      let totalWithholdings = 0;
+      // 4. Calcular la retención por referente al centavo más cercano.
+      // Math.round(grossAmount * rate) incorrectly rounded to whole pesos.
+      let totalGrossCents = 0;
+      let totalWithholdingCents = 0;
 
       for (const ref of byReferent.values()) {
-        ref.withholding = Math.round(
-          ref.grossAmount * BUSINESS_RULES.REFERRAL_RETENTION_RATE,
+        const grossCents = grossCentsByReferent.get(ref.driverId)!;
+        const withholdingCents = Math.round(
+          grossCents * BUSINESS_RULES.REFERRAL_RETENTION_RATE,
         );
-        ref.netAmount = ref.grossAmount - ref.withholding;
-        totalGross += ref.grossAmount;
-        totalWithholdings += ref.withholding;
+        if (
+          !Number.isSafeInteger(withholdingCents) ||
+          withholdingCents < 0 ||
+          withholdingCents > grossCents
+        ) {
+          throw new ConflictException(
+            `Settlement ${periodKey} has invalid withholding amounts`,
+          );
+        }
+        ref.withholding = withholdingCents / 100;
+        ref.netAmount = (grossCents - withholdingCents) / 100;
+        totalGrossCents += grossCents;
+        totalWithholdingCents += withholdingCents;
+        if (
+          !Number.isSafeInteger(totalGrossCents) ||
+          !Number.isSafeInteger(totalWithholdingCents)
+        ) {
+          throw new ConflictException(
+            `Settlement ${periodKey} exceeds the safe cent range`,
+          );
+        }
       }
 
-      const totalNet = totalGross - totalWithholdings;
+      const totalGross = totalGrossCents / 100;
+      const totalWithholdings = totalWithholdingCents / 100;
+      const totalNet = (totalGrossCents - totalWithholdingCents) / 100;
 
       // 5. Crear lote de liquidación
       const batch = await tx.settlementBatch.create({
@@ -462,13 +632,25 @@ export class CommissionService {
         },
       });
 
-      // 6. Vincular comisiones al lote
-      await tx.commission.updateMany({
+      // 6. Claim exactly the approved, still-unbatched commissions read above.
+      // PostgreSQL READ COMMITTED can observe a concurrent revoke/batch claim
+      // between findMany() and updateMany(). A plain update by ID would link
+      // ineligible rows and publish incorrect settlement totals.
+      const claimed = await tx.commission.updateMany({
         where: {
           id: { in: commissions.map((c) => c.id) },
+          status: CommissionStatus.APPROVED,
+          settlementBatchId: null,
         },
         data: { settlementBatchId: batch.id },
       });
+      if (claimed.count !== commissions.length) {
+        // The batch creation AND any partial links must roll back together.
+        // Do not recalculate totals from a stale snapshot or retry silently.
+        throw new ConflictException(
+          `Settlement ${periodKey} changed during generation; retry after reconciliation`,
+        );
+      }
 
       this.logger.log(
         `[SETTLEMENT] Generated batch ${batch.id} for ${periodKey}: ${commissions.length} commissions, ${byReferent.size} referents, Net: ${totalNet} RD$`,
@@ -484,114 +666,82 @@ export class CommissionService {
    */
   async approveSettlementBatch(batchId: string, approvedBy: string) {
     this.logger.log(`[SETTLEMENT] Approving batch ${batchId} by ${approvedBy}`);
-
     return this.prisma.$transaction(async (tx) => {
       const batch = await tx.settlementBatch.findUnique({
         where: { id: batchId },
       });
-
       if (!batch) {
         throw new NotFoundException(`Settlement batch ${batchId} not found`);
       }
-
       if (batch.status !== "DRAFT") {
-        throw new BadRequestException(
-          `Batch ${batchId} is not in DRAFT status`,
+        throw new ConflictException(
+          `Settlement batch ${batchId} already processed`,
         );
       }
-
-      // Marcar comisiones como PAID
-      await tx.commission.updateMany({
-        where: { settlementBatchId: batchId },
-        data: {
-          status: CommissionStatus.PAID,
-          paidAt: new Date(),
+      // Approving a DRAFT freezes the operator's financial snapshot.
+      // New APPROVED commissions for the same calendar period may have
+      // appeared after generation. Never approve totals that omit them.
+      const periodMatch = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(batch.period);
+      if (!periodMatch) {
+        throw new ConflictException(
+          `Settlement batch ${batchId} has an invalid period; reconcile first`,
+        );
+      }
+      const periodYear = Number(periodMatch[1]);
+      const periodMonth = Number(periodMatch[2]);
+      const unbatchedApproved = await tx.commission.count({
+        where: {
+          status: CommissionStatus.APPROVED,
+          createdAt: {
+            gte: new Date(periodYear, periodMonth - 1, 1),
+            lt: new Date(periodYear, periodMonth, 1),
+          },
+          settlementBatchId: null,
         },
       });
-
-      // Actualizar lote a APPROVED
-      const updated = await tx.settlementBatch.update({
+      if (unbatchedApproved > 0) {
+        throw new ConflictException(
+          `Settlement ${batch.period} has approved commissions outside its batch; reconcile before approval`,
+        );
+      }
+      // APPROVED is a review decision, not evidence of an external payout.
+      // Never change member commission statuses or paidAt at this stage.
+      const claimed = await tx.settlementBatch.updateMany({
+        where: { id: batchId, status: "DRAFT" },
+        data: { status: "APPROVED", approvedAt: new Date(), approvedBy },
+      });
+      if (claimed.count !== 1) {
+        throw new ConflictException(
+          `Settlement batch ${batchId} approved concurrently`,
+        );
+      }
+      const updated = await tx.settlementBatch.findUniqueOrThrow({
         where: { id: batchId },
-        data: {
-          status: "APPROVED",
-          approvedAt: new Date(),
-          approvedBy,
-        },
       });
-
-      this.logger.log(
-        `[SETTLEMENT] Batch ${batchId} approved, ${batch.commissionsCount} commissions marked PAID`,
-      );
-
+      this.logger.log(`[SETTLEMENT] Batch ${batchId} approved (not paid)`);
       return this.mapBatchToOutput(updated);
     });
   }
 
   /**
-   * Paga un lote aprobado (APPROVED → PAID)
-   * Genera las órdenes de pago reales (transferencias bancarias).
+   * Legacy payout endpoint is suspended until bank-confirmed reconciliation
+   * can update each beneficiary and its ledger idempotently.
    */
   async paySettlementBatch(
     batchId: string,
     paidBy: string,
     referenceNum?: string,
   ) {
-    this.logger.log(`[SETTLEMENT] Paying batch ${batchId} by ${paidBy}`);
-
-    return this.prisma.$transaction(async (tx) => {
-      const batch = await tx.settlementBatch.findUnique({
-        where: { id: batchId },
-      });
-
-      if (!batch) {
-        throw new NotFoundException(`Settlement batch ${batchId} not found`);
-      }
-
-      if (batch.status !== "APPROVED") {
-        throw new BadRequestException(
-          `Batch ${batchId} must be APPROVED before paying`,
-        );
-      }
-
-      const referents = batch.referents as unknown as SettlementReferent[];
-
-      // Procesar pago por referente
-      for (const ref of referents) {
-        // Crear registro de pago en financialTransaction
-        await tx.financialTransaction.create({
-          data: {
-            type: "OUTGOING",
-            category: "OPEX_COMMISSION_PAYOUT",
-            amount: ref.netAmount,
-            netAmount: ref.netAmount,
-            taxAmount: ref.withholding,
-            entityId: ref.driverId,
-            reference:
-              referenceNum ||
-              `SETTLE-${batch.period}-${ref.driverId.slice(0, 8)}`,
-            note: `Pago liquidación comisiones ${batch.period} - ${ref.commissions.length} comisiones`,
-            status: "COMPLETED",
-          },
-        });
-
-        // Notificar al conductor (fire-and-forget)
-        // await this.notificationsService.sendDriverNotification(...)
-      }
-
-      const updated = await tx.settlementBatch.update({
-        where: { id: batchId },
-        data: {
-          status: "PAID",
-          paidAt: new Date(),
-          paidBy,
-          paymentReference: referenceNum,
-        },
-      });
-
-      this.logger.log(`[SETTLEMENT] Batch ${batchId} marked as PAID`);
-
-      return this.mapBatchToOutput(updated);
-    });
+    // #309: This method never confirmed a bank transfer; it wrote PAID and
+    // COMPLETED directly, and reused a unique reference across beneficiaries.
+    // Preserve its contract for callers, but fail closed before any DB write.
+    void batchId;
+    void paidBy;
+    void referenceNum;
+    throw new ConflictException(
+      "Pago de liquidaciones suspendido en esta ruta: requiere confirmación " +
+        "bancaria por beneficiario y conciliación financiera.",
+    );
   }
 
   /**
@@ -599,6 +749,22 @@ export class CommissionService {
    * Detecta discrepancias para auditoría.
    */
   async reconcileCommissions(month: number, year: number) {
+    // Internal callers bypass HTTP param validation. Date() normalizes
+    // months 0/13 or fractional inputs into a different accounting period,
+    // which could otherwise produce a falsely clean reconciliation report.
+    // Keep the service domain bound aligned with monthly batch generation.
+    if (
+      !Number.isInteger(month) ||
+      month < 1 ||
+      month > 12 ||
+      !Number.isInteger(year) ||
+      year < 2020 ||
+      year > 2100
+    ) {
+      throw new BadRequestException(
+        "month/year deben representar un período válido",
+      );
+    }
     const periodKey = `${year}-${String(month).padStart(2, "0")}`;
 
     this.logger.log(`[RECONCILIATION] Running reconciliation for ${periodKey}`);
@@ -620,6 +786,7 @@ export class CommissionService {
         reference: true,
         settlementBatchId: true,
         createdAt: true,
+        approvedAt: true,
         paidAt: true,
       },
     });
@@ -636,7 +803,11 @@ export class CommissionService {
       select: {
         id: true,
         reference: true,
+        type: true,
         amount: true,
+        netAmount: true,
+        taxAmount: true,
+        currency: true,
         status: true,
         entityId: true,
         createdAt: true,
@@ -669,30 +840,145 @@ export class CommissionService {
       },
     });
 
+    // Reversals may be posted months after the original commission.
+    // Look them up by the exact immutable source reference, NOT by the
+    // reconciliation month's ledger createdAt window. The reference column
+    // has a unique index and avoids scanning unrelated financial rows.
+    // Bound each IN-list to avoid unbounded SQL parameters at 10x volume.
+    const reversalReferences = [
+      ...new Set(commissions.map((c) => `REV-${c.reference}`)),
+    ];
+    const reversals: Array<{
+      id: string;
+      reference: string | null;
+      entityId: string | null;
+      type: string;
+      amount: number;
+      netAmount: number;
+      taxAmount: number;
+      currency: string;
+      status: string;
+    }> = [];
+    for (let offset = 0; offset < reversalReferences.length; offset += 500) {
+      const matches = await this.prisma.financialTransaction.findMany({
+        where: {
+          category: "OPEX_COMMISSION_REVERSAL",
+          reference: { in: reversalReferences.slice(offset, offset + 500) },
+        },
+        select: {
+          id: true,
+          reference: true,
+          entityId: true,
+          type: true,
+          currency: true,
+          amount: true,
+          netAmount: true,
+          taxAmount: true,
+          status: true,
+        },
+      });
+      reversals.push(...matches);
+    }
+
     // Análisis de discrepancias
     const discrepancies: string[] = [];
 
-    // Comisión sin entrada en ledger
+    // Index source records by their unique reference. Avoid quadratic scans
+    // as driver/commission volume grows 10x, and never confuse a reference
+    // match with a valid economic event.
+    const ledgerByReference = new Map(
+      ledgerEntries.map((entry) => [entry.reference, entry] as const),
+    );
+    const commissionByReference = new Map(
+      commissions.map(
+        (commission) => [commission.reference, commission] as const,
+      ),
+    );
+    const reversalByReference = new Map(
+      reversals.map((entry) => [entry.reference, entry] as const),
+    );
+
     for (const c of commissions) {
-      const ledger = ledgerEntries.find((l) => l.reference === c.reference);
+      const ledger = ledgerByReference.get(c.reference);
       if (!ledger) {
         discrepancies.push(
           `Commission ${c.id} (${c.reference}) has no ledger entry`,
         );
-      } else if (ledger.amount !== c.amount) {
+        continue;
+      }
+      if (ledger.amount !== c.amount) {
         discrepancies.push(
           `Commission ${c.id} amount mismatch: commission=${c.amount}, ledger=${ledger.amount}`,
         );
       }
+      if (ledger.entityId !== c.driverId) {
+        discrepancies.push(`Commission ${c.id} ledger beneficiary mismatch`);
+      }
+      if (ledger.type !== "OUTGOING" || ledger.currency !== "DOP") {
+        discrepancies.push(`Commission ${c.id} ledger type/currency mismatch`);
+      }
+      if (ledger.netAmount !== c.amount || ledger.taxAmount !== 0) {
+        discrepancies.push(`Commission ${c.id} ledger net/tax mismatch`);
+      }
+      // Approved credits must have exactly one completed source ledger
+      // entry. Pending commissions must not masquerade as completed credits.
+      const expectedStatus =
+        c.status === CommissionStatus.PENDING ||
+        (c.status === CommissionStatus.REVOKED && !c.approvedAt)
+          ? "PENDING"
+          : c.status === CommissionStatus.APPROVED ||
+              c.status === CommissionStatus.PAID ||
+              (c.status === CommissionStatus.REVOKED && !!c.approvedAt)
+            ? "COMPLETED"
+            : null;
+      if (expectedStatus && ledger.status !== expectedStatus) {
+        discrepancies.push(`Commission ${c.id} source ledger status mismatch`);
+      }
     }
 
-    // Entrada en ledger sin comisión
+    // Ledger entries with no related commission must never be ignored.
     for (const l of ledgerEntries) {
-      const commission = commissions.find((c) => c.reference === l.reference);
-      if (!commission) {
+      if (!l.reference || !commissionByReference.has(l.reference)) {
         discrepancies.push(
           `Ledger entry ${l.id} (${l.reference}) has no matching commission`,
         );
+      }
+    }
+
+    // A revoked credit has to have its exact, completed compensating
+    // financial entry. A PENDING commission was never wallet-credited,
+    // therefore a reversal would instead be an unexpected money movement.
+    // This verifies ledger consistency, not the bank or current wallet state.
+    for (const c of commissions) {
+      const reversal = reversalByReference.get(`REV-${c.reference}`);
+      const fundedRevocation =
+        c.status === CommissionStatus.REVOKED && !!c.approvedAt;
+      if (fundedRevocation && !reversal) {
+        discrepancies.push(
+          `Commission ${c.id} revoked after approval but has no reversal ledger entry`,
+        );
+        continue;
+      }
+      if (!fundedRevocation && reversal) {
+        discrepancies.push(
+          `Commission ${c.id} has an unexpected reversal ledger entry`,
+        );
+        continue;
+      }
+      if (fundedRevocation && reversal) {
+        if (
+          reversal.entityId !== c.driverId ||
+          reversal.type !== "INCOMING" ||
+          reversal.currency !== "DOP" ||
+          reversal.amount !== c.amount ||
+          reversal.netAmount !== c.amount ||
+          reversal.taxAmount !== 0 ||
+          reversal.status !== "COMPLETED"
+        ) {
+          discrepancies.push(
+            `Commission ${c.id} reversal ledger attribution/amount/status mismatch`,
+          );
+        }
       }
     }
 
@@ -706,15 +992,15 @@ export class CommissionService {
       );
     }
 
-    // Comisiones PAID sin payout correspondiente
-    const paidCommissions = commissions.filter((c) => c.status === "PAID");
-    for (const c of paidCommissions) {
-      const payout = payouts.find((p) =>
-        p.reference?.includes(c.driverId.slice(0, 8)),
-      );
-      if (!payout) {
+    // A payout reference containing an ID prefix is NOT bank evidence.
+    // The legacy payout route and individual mark-paid method are disabled
+    // until per-beneficiary bank confirmation exists (#309/#338). Therefore
+    // a historical PAID commission cannot be declared reconciled here,
+    // even if an unverified OPEX_COMMISSION_PAYOUT row happens to exist.
+    for (const c of commissions) {
+      if (c.status === CommissionStatus.PAID) {
         discrepancies.push(
-          `Commission ${c.id} marked PAID but no payout found for driver ${c.driverId}`,
+          `Commission ${c.id} marked PAID without verified bank evidence; manual reconciliation required`,
         );
       }
     }
@@ -755,6 +1041,44 @@ export class CommissionService {
         settlementBatch: { select: { id: true, period: true, status: true } },
       },
     });
+  }
+
+  /**
+   * The same unique reference can only identify one economic event.
+   * Metadata notes/timestamps are not identity fields; the referred driver
+   * and campaign are. Reject mismatched replays rather than leaking someone
+   * else's commission or silently accepting a different amount.
+   */
+  private assertMatchingCommissionReplay(
+    existing: {
+      driverId: string;
+      amount: number;
+      sourceType: string;
+      metadata: unknown;
+    },
+    input: CreateCommissionInput,
+  ): void {
+    const eventId = (value: unknown, key: string): string | undefined => {
+      if (value === null || typeof value !== "object" || Array.isArray(value)) {
+        return undefined;
+      }
+      const field = (value as Record<string, unknown>)[key];
+      return typeof field === "string" ? field : undefined;
+    };
+
+    if (
+      existing.driverId !== input.driverId ||
+      existing.amount !== input.amount ||
+      existing.sourceType !== input.sourceType ||
+      eventId(existing.metadata, "referredDriverId") !==
+        eventId(input.metadata, "referredDriverId") ||
+      eventId(existing.metadata, "campaignId") !==
+        eventId(input.metadata, "campaignId")
+    ) {
+      throw new ConflictException(
+        "Commission reference belongs to another economic event",
+      );
+    }
   }
 
   private groupBy<T>(array: T[], key: keyof T): Record<string, number> {

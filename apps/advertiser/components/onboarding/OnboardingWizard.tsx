@@ -14,6 +14,7 @@ interface OnboardingWizardProps<T extends number> {
   onClose: () => void;
   stepLabels?: string[];
   className?: string;
+  navigationLocked?: boolean;
 }
 
 export function OnboardingWizard<T extends number>({
@@ -24,6 +25,7 @@ export function OnboardingWizard<T extends number>({
   onClose,
   stepLabels,
   className,
+  navigationLocked = false,
 }: OnboardingWizardProps<T>) {
   const reduceMotion = useReducedMotion();
   const content = useRef<HTMLDivElement>(null);
@@ -58,8 +60,11 @@ export function OnboardingWizard<T extends number>({
         <button
           type="button"
           aria-label={step > 1 ? "Volver al paso anterior" : "Volver al acceso"}
-          onClick={() => (step > 1 ? onPrev() : onClose())}
-          className="w-11 h-11 flex items-center justify-center rounded-2xl bg-white/5 border border-white/5 text-gray-400 hover:text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FDCB01]"
+          disabled={navigationLocked}
+          onClick={() => {
+            if (!navigationLocked) (step > 1 ? onPrev : onClose)();
+          }}
+          className="w-11 h-11 flex items-center justify-center rounded-2xl bg-white/5 border border-white/5 text-gray-400 hover:text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FDCB01] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="w-5 h-5" aria-hidden="true" />
         </button>

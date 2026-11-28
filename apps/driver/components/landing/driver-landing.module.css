@@ -289,7 +289,7 @@
 .heroCopy { position: relative; z-index: 1; min-width: 0; }
 .hero .eyebrow { font-size: 11px; letter-spacing: .2em; }
 .hero h1 {
-  font-size: clamp(58px, 5.9vw, 94px);
+  font-size: clamp(48px, 4.4vw, 64px);
   font-weight: 850;
   line-height: 1.01;
   letter-spacing: -.071em;
@@ -416,12 +416,12 @@
   50% { transform: translate3d(0, -6px, 0) rotate(-1deg); }
 }
 @media (max-width: 1100px) {
-  .hero h1 { font-size: clamp(49px, 5vw, 70px); }
+  .hero h1 { font-size: clamp(42px, 4.6vw, 56px); }
   .scene { min-height: 395px; }
 }
 @media (max-width: 800px) {
   .hero { grid-template-columns: minmax(0, 1fr); min-height: 0; padding-block: 58px 70px; gap: 30px; }
-  .hero h1 { font-size: clamp(52px, 9vw, 76px); }
+  .hero h1 { font-size: clamp(44px, 7vw, 60px); }
   .scene { max-width: 650px; width: 100%; margin-inline: auto; aspect-ratio: 1.2; min-height: 385px; }
   .benefitGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .benefitCard:last-child { grid-column: 1 / -1; }
@@ -430,7 +430,7 @@
   .container { width: calc(100% - 36px); }
   .headerInner { width: calc(100% - 32px); min-height: 74px; }
   .hero { padding-block: 40px 52px; gap: 26px; }
-  .hero h1 { font-size: clamp(44px, 10.5vw, 59px); }
+  .hero h1 { font-size: clamp(34px, 9.7vw, 42px); }
   .heroDescription { font-size: 14px; }
   .scene { min-height: 300px; border-radius: 22px; }
   .screenCard { top: 48px; }
@@ -444,7 +444,7 @@
   .closingCard h2 { font-size: clamp(34px, 9vw, 48px); }
 }
 @media (max-width: 370px) {
-  .hero h1 { font-size: 41px; }
+  .hero h1 { font-size: 34px; }
   .scene { min-height: 280px; }
   .heroChannels { gap: 6px; }
   .brand img { width: 111px; height: auto; }
@@ -546,4 +546,159 @@
 @media (max-width: 370px) {
   .heroChannels button { padding-inline: 11px; font-size: 11px; }
   .channelDescription { font-size: 12px; }
+}
+
+
+/* Transparent taxi cutout: the image blends into the landing surface. */
+.heroVisual {
+  position: relative;
+  isolation: isolate;
+  justify-self: center;
+  width: min(100%, 600px);
+  margin: 0;
+  padding: 0 0 26px;
+}
+.heroVisualFrame {
+  aspect-ratio: 3 / 2;
+}
+.heroVisualFrame :global(img) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.heroVisual figcaption {
+  position: absolute;
+  right: 22px;
+  bottom: 0;
+  left: 22px;
+  color: #f7efce;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .15em;
+  text-align: center;
+}
+@media (max-width: 580px) {
+  .heroVisual {
+    width: 100%;
+    padding-bottom: 24px;
+  }
+  .heroVisual figcaption {
+    right: 15px;
+    left: 15px;
+    font-size: 7px;
+  }
+}
+
+/* Motion Experience 01: the approved taxi stays untouched; chapters stay next to the controls on mobile. */
+.heroVisual { padding-bottom: 0; }
+.heroVisual figcaption {
+  position: static;
+  display: block;
+  margin: 0;
+  padding: 5px 12px 16px;
+  text-align: center;
+  color: #d6d2c5;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.heroVisualSteps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  width: 100%;
+  margin: 0;
+  padding: 10px;
+  list-style: none;
+  background: #15171b;
+  border: 1px solid #ffffff29;
+  border-radius: 18px;
+}
+.heroVisualSteps li {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 9px;
+  padding: 12px 10px;
+  color: #e8e8e2;
+  background: #ffffff06;
+  border: 1px solid #ffffff13;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+.heroVisualSteps li > span:first-child {
+  color: #ffd400;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+.heroVisualSteps { margin-top: 14px; }
+.heroVisualSteps li:nth-child(2) {
+  background: #ffd40012;
+  border-color: #ffd40050;
+}
+@media (max-width: 580px) {
+  .heroVisual { padding-bottom: 0; }
+  .heroVisual figcaption { font-size: 9px; padding: 4px 8px 12px; }
+  .heroVisualSteps { gap: 6px; padding: 7px; border-radius: 14px; }
+  .heroVisualSteps li { gap: 7px; padding: 11px 7px; font-size: 11px; }
+}
+
+/* Product-first hero: source order follows mobile reading order (intro → real taxi → opportunities). */
+.heroExperience { position: relative; z-index: 1; min-width: 0; }
+@media (min-width: 801px) {
+  .hero {
+    grid-template-rows: auto auto;
+    align-items: start;
+    row-gap: 0;
+  }
+  .heroCopy {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+  }
+  .heroVisual {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+  .heroExperience {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+  }
+  .heroExperience .heroChannels { margin-top: 22px; }
+}
+@media (max-width: 800px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    align-items: start;
+    gap: 20px;
+  }
+  .heroCopy { grid-column: 1; grid-row: 1; }
+  .heroVisual {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    margin-block: 0;
+  }
+  .heroExperience {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .heroExperience .heroChannels {
+    margin-top: 0;
+  }
+}
+@media (max-width: 580px) {
+  .hero { gap: 14px; }
+  .heroVisual { max-width: 100%; }
+  .heroExperience .heroChannels {
+    padding-top: 15px;
+  }
 }

@@ -1,0 +1,166 @@
+{
+  "sourceCommit": "01fb2e0f9507e1c0e3a696c11e76960fa9b56f9a",
+  "candidate": "working tree patch on codex/computer-use-current-20261126",
+  "dependencyEnvironment": "Preinstalled dependencies reused via junctions; Next resolves 15.5.28 while current manifest requests 15.5.29; not clean lockfile install",
+  "checks": [
+    {
+      "id": "player-unit",
+      "command": "node --experimental-strip-types --test apps/player/tests/unit/*.test.mjs",
+      "exitCode": 0,
+      "passed": 56,
+      "failed": 0,
+      "log": "player-unit-results.tap"
+    },
+    {
+      "id": "api-focused",
+      "cwd": "apps/api",
+      "command": "node node_modules/jest/bin/jest.js --runInBand --silent --runTestsByPath src/modules/device/guards/device-token.guard.spec.ts src/modules/device/guards/device-request-scope.spec.ts src/modules/auth/auth.service.login.spec.ts src/modules/auth/guards/tenant.guard.spec.ts src/modules/wallet/wallet-identity-storage.spec.ts src/modules/telemetry/telemetry-canonical-pop.spec.ts src/modules/telemetry/telemetry-playback-batch-tenant.spec.ts src/modules/referral/referral.service.spec.ts",
+      "exitCode": 0,
+      "suites": 8,
+      "passed": 60,
+      "failed": 0,
+      "elapsedSeconds": 138.489,
+      "evidence": "Tool completion for exec session 68958; exact suite/test summary recorded during run; raw console transcript not copied"
+    },
+    {
+      "id": "offline-browser",
+      "command": "node scripts/computer-use-offline-queue-audit.cjs",
+      "exitCode": 0,
+      "passed": 7,
+      "failed": 0,
+      "log": "offline-browser-results.json"
+    },
+    {
+      "id": "admin-regression",
+      "command": "node --test scripts/admin-recovery-entry.test.cjs",
+      "exitCode": 0,
+      "passed": 8,
+      "failed": 0,
+      "log": "admin-recovery-green.tap"
+    },
+    {
+      "id": "player-tsc-strict",
+      "command": "node node_modules/typescript/bin/tsc -p apps/player/tsconfig.json --noEmit --incremental false",
+      "exitCode": 0
+    },
+    {
+      "id": "player-build",
+      "cwd": "apps/player",
+      "command": "VITE_API_URL=https://tad.api.ibusiness.com.do/api/v1 node node_modules/vite/bin/vite.js build",
+      "exitCode": 0,
+      "modules": 63,
+      "elapsedSeconds": 3.35
+    },
+    {
+      "id": "admin-tsc-initial",
+      "command": "node node_modules/typescript/bin/tsc -p apps/admin/tsconfig.json --noEmit --incremental false",
+      "exitCode": 2,
+      "log": "admin-typecheck.log",
+      "note": "Workspace package dependencies not linked at initial run"
+    },
+    {
+      "id": "admin-tsc-after-links",
+      "command": "node node_modules/typescript/bin/tsc -p apps/admin/tsconfig.json --noEmit --incremental false",
+      "exitCode": 0,
+      "log": "admin-typecheck-after-links.log",
+      "note": "Workspace strict=false; do not equate with strict gate"
+    },
+    {
+      "id": "admin-tsc-strict",
+      "command": "node node_modules/typescript/bin/tsc -p apps/admin/tsconfig.json --noEmit --incremental false --strict",
+      "exitCode": 2,
+      "log": "admin-typecheck-strict.log",
+      "note": "Diagnostics include unchanged advertiser detail pages; strict repository baseline not independently rerun"
+    },
+    {
+      "id": "admin-lint",
+      "command": "eslint pages/admin/login.tsx pages/admin/forgot-password.tsx pages/_app.tsx middleware.ts",
+      "cwd": "apps/admin",
+      "exitCode": 0,
+      "log": "admin-lint.log"
+    },
+    {
+      "id": "ui-lint-root-attempt",
+      "command": "eslint packages/ui/components/PortalAuth.tsx",
+      "exitCode": 2,
+      "log": "shared-ui-lint.log",
+      "note": "No root flat config"
+    },
+    {
+      "id": "ui-lint-admin-config-attempt",
+      "command": "eslint -c apps/admin/eslint.config.mjs packages/ui/components/PortalAuth.tsx packages/ui/components/AuthProvider.tsx",
+      "exitCode": 1,
+      "log": "shared-ui-lint-explicit.log",
+      "note": "Existing react-hooks directive has no registered plugin under this config"
+    },
+    {
+      "id": "ui-lint-project-legacy",
+      "command": "ESLINT_USE_FLAT_CONFIG=false eslint -c packages/services/eslint.config.cjs packages/ui/components/PortalAuth.tsx packages/ui/components/AuthProvider.tsx",
+      "exitCode": 0,
+      "warnings": 10,
+      "log": "shared-ui-lint-legacy.log"
+    },
+    {
+      "id": "admin-runtime",
+      "command": "next dev -p 3108; node scripts/computer-use-recovery-audit.cjs",
+      "exitCode": 1,
+      "status": "BLOCKED",
+      "log": "admin-recovery-browser-results.json",
+      "note": "Next compilation initially missing linked dependencies; then stale missing-module artifact @tanstack/react-query; no real email sent"
+    },
+    {
+      "id": "admin-build",
+      "command": "next build",
+      "status": "PASS",
+      "log": "admin-build.log",
+      "note": "Existing config skips integrated TS/lint, checked independently; synthetic public Supabase settings only",
+      "exitCode": 0
+    },
+    {
+      "id": "ci-isolation",
+      "command": "node --test scripts/ci-e2e-isolation.test.cjs",
+      "exitCode": 0,
+      "passed": 5,
+      "log": "ci-isolation-results.tap"
+    },
+    {
+      "id": "admin-build-final",
+      "command": "next build",
+      "status": "PASS",
+      "log": "admin-build-final.log",
+      "note": "Final source mutation compiled and all build stages completed; integrated type/lint skipped by preexisting config and checked separately",
+      "exitCode": 0
+    },
+    {
+      "id": "admin-tsc-final",
+      "command": "tsc -p apps/admin/tsconfig.json --noEmit --incremental false",
+      "exitCode": 0,
+      "log": "admin-typecheck-final.log",
+      "note": "Configured strict=false; strict override has separate FAIL receipt"
+    },
+    {
+      "id": "ui-lint-final",
+      "command": "ESLINT_USE_FLAT_CONFIG=false eslint -c packages/services/eslint.config.cjs packages/ui/components/PortalAuth.tsx packages/ui/components/AuthProvider.tsx",
+      "exitCode": 0,
+      "warnings": 10,
+      "log": "shared-ui-lint-final.log"
+    },
+    {
+      "id": "admin-production-build-local-server",
+      "command": "next start --hostname 127.0.0.1 --port 3108",
+      "status": "BLOCKED",
+      "exitCode": null,
+      "note": "Automatic approval review rejected both default host and explicitly loopback-only start commands; tool reason only blocked by policy. Commands did not execute. No bypass attempted."
+    }
+  ],
+  "evidenceNormalization": "Trailing whitespace removed from text TAP/log snapshots only; results and diagnostic content retained.",
+  "ciContinuation": {
+    "implementationSha": "06fadd22148e0e65e3604fe0fbb72d1709a17e53",
+    "jobsPassed": 15,
+    "apiSuites": 102,
+    "apiTests": 892,
+    "recoveryTests": 8,
+    "receipt": "ci-verified-06fadd22.json"
+  },
+  "databaseReadOnlyContinuation": "supabase-readonly-followup.json"
+}

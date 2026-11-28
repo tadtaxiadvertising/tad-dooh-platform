@@ -27,7 +27,6 @@ const mediaSafeSelect = {
   name: true,
   filename: true,
   originalFilename: true,
-  mime_type: true,
   mimeType: true,
   durationSeconds: true,
   width: true,

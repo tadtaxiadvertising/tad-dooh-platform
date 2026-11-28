@@ -18,7 +18,7 @@ COPY apps/ ./apps/
 RUN pnpm install --frozen-lockfile
 
 # Build-time Vite public env vars
-ARG VITE_API_URL=https://tad.api.ibusiness.com.do/api
+ARG VITE_API_URL=https://tad.api.ibusiness.com.do/api/v1
 ARG VITE_SUPABASE_URL=https://ltdcdhqixvbpdcitthqf.supabase.co
 ARG VITE_SUPABASE_ANON_KEY=REPLACE_WITH_REAL_ANON_KEY
 
@@ -32,6 +32,11 @@ RUN pnpm --filter tad-player run build
 # ---- Production Nginx Runner ----
 FROM nginx:alpine AS runner
 COPY --from=builder /app/apps/player/dist /usr/share/nginx/html
+
+# Static origin liveness only: does not certify API or offline playback.
+RUN test -s /usr/share/nginx/html/index.html \
+    && test -s /usr/share/nginx/html/sw.js \
+    && printf '%s\n' '{"status":"OK"}' > /usr/share/nginx/html/health
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

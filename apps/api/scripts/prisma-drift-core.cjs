@@ -4,7 +4,60 @@
  * Pure, read-only comparison of Prisma's generated DMMF against PostgreSQL
  * information_schema metadata. No DB client and no credentials involved.
  */
-function auditPrismaSchema({ models, tables, columns }) {
+/**
+ * Compare only PostgreSQL scalar types with an unambiguous Prisma mapping.
+ * STRING/DateTime/array/native variants not listed here are intentionally
+ * excluded: a false positive would block API startup. String primary keys
+ * retain their existing dedicated UUID/TEXT validation below.
+ *
+ * This is schema metadata validation, never financial-data inspection.
+ */
+function expectedPostgresScalarType(field) {
+  if (field.isList) return null;
+
+  const native = field.nativeType?.[0];
+  if (native) {
+    const nativeTypes = {
+      Uuid: "uuid",
+      SmallInt: "int2",
+      Integer: "int4",
+      BigInt: "int8",
+      Real: "float4",
+      DoublePrecision: "float8",
+      Decimal: "numeric",
+      Money: "money",
+      Json: "json",
+      JsonB: "jsonb",
+      Boolean: "bool",
+    };
+    return nativeTypes[native] || null;
+  }
+
+  const defaults = {
+    Int: "int4",
+    BigInt: "int8",
+    Float: "float8",
+    Decimal: "numeric",
+    Boolean: "bool",
+    Json: "jsonb",
+  };
+  return defaults[field.type] || null;
+}
+
+const { stringIdTypes } = require("./prisma-generated-types.cjs");
+
+function auditPrismaSchema({
+  models,
+  tables,
+  columns,
+  idTypes,
+  nativeUuidFields,
+  generatedSchema,
+}) {
+  const generatedTypes =
+    generatedSchema === undefined
+      ? null
+      : stringIdTypes(models, generatedSchema);
   const actualTables = new Set(tables.map(({ table_name }) => table_name));
   const columnTypes = new Map(
     columns.map(({ table_name, column_name, udt_name }) => [
@@ -18,6 +71,7 @@ function auditPrismaSchema({ models, tables, columns }) {
   const missingTables = [];
   const missingColumns = [];
   const idTypeMismatches = [];
+  const scalarTypeMismatches = [];
   const relationTypeMismatches = [];
   const missingColumnKeys = new Set();
 
@@ -41,9 +95,30 @@ function auditPrismaSchema({ models, tables, columns }) {
       }
       if (field.isId && field.type === "String") {
         // Prisma String maps to PostgreSQL TEXT unless @db.Uuid is present.
-        const expected = field.nativeType?.[0] === "Uuid" ? "uuid" : "text";
+        // Runtime Prisma.dmmf may omit nativeType. Prefer the id contract
+        // parsed from schema.prisma bundled with this exact image.
+        const expected =
+          generatedTypes?.get(key) ||
+          idTypes?.get(model.name + "." + field.name) ||
+          (field.nativeType?.[0] === "Uuid" ? "uuid" : "text");
         if (actual !== expected) {
           idTypeMismatches.push({ table, column, expected, actual });
+        }
+      } else if (field.kind === "scalar") {
+        // Prisma.dmmf may omit nativeType for non-ID String @db.Uuid.
+        // The bundled source schema is authoritative for these explicit
+        // native mappings; implicit strings remain intentionally unchecked.
+        const expected = nativeUuidFields?.has(model.name + "." + field.name)
+          ? "uuid"
+          : expectedPostgresScalarType(field);
+        if (expected && actual !== expected) {
+          scalarTypeMismatches.push({
+            table,
+            column,
+            prismaType: field.type,
+            expected,
+            actual,
+          });
         }
       }
     }
@@ -89,6 +164,9 @@ function auditPrismaSchema({ models, tables, columns }) {
   missingTables.sort();
   missingColumns.sort();
   idTypeMismatches.sort((a, b) => a.table.localeCompare(b.table));
+  scalarTypeMismatches.sort((a, b) =>
+    `${a.table}.${a.column}`.localeCompare(`${b.table}.${b.column}`),
+  );
   relationTypeMismatches.sort((a, b) => a.from.localeCompare(b.from));
 
   return {
@@ -100,6 +178,8 @@ function auditPrismaSchema({ models, tables, columns }) {
     missingColumns: missingColumns.slice(0, 100),
     idTypeMismatchCount: idTypeMismatches.length,
     idTypeMismatches,
+    scalarTypeMismatchCount: scalarTypeMismatches.length,
+    scalarTypeMismatches,
     relationTypeMismatchCount: relationTypeMismatches.length,
     relationTypeMismatches,
   };

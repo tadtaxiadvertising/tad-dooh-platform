@@ -34,23 +34,44 @@ export class TenantGuard implements CanActivate {
     // Los ADMIN tienen acceso irrestricto
     if (user.role === UserRole.ADMIN) return true;
 
-    // Extraer el ID del recurso del param de ruta
-    const resourceId = request.params?.id;
+    // Resource ownership can be encoded under several route param names.
+    // Treat all tenant IDs as binding. A request with both :id and another
+    // tenant parameter must satisfy ALL ownership checks (never first-match).
+    // Do not change generic :id behavior: existing controllers depend on it.
+    const params = request.params || {};
+    const scopedIds: Array<{
+      key: string;
+      id: string;
+      requiredRole?: UserRole;
+    }> = [
+      { key: "id", id: params.id },
+      {
+        key: "advertiserId",
+        id: params.advertiserId,
+        requiredRole: UserRole.ADVERTISER,
+      },
+      { key: "driverId", id: params.driverId, requiredRole: UserRole.DRIVER },
+    ].filter((param) => param.id !== undefined);
 
-    // Si no hay param :id, no hay nada que validar (ej: GET /advertisers sin param)
-    if (!resourceId) return true;
-
-    // Verificar que el entityId del token coincida con el recurso solicitado
-    if (user.entityId !== resourceId) {
-      this.logger.warn(
-        `🚨 [TENANT_VIOLATION] User ${user.sub || user.id} (entity: ${user.entityId}) ` +
-          `intentó acceder al recurso ${resourceId}`,
-      );
-      throw new UnauthorizedException(
-        "No tienes permiso para acceder a este recurso.",
-      );
+    for (const param of scopedIds) {
+      if (
+        typeof param.id !== "string" ||
+        !param.id.trim() ||
+        !user.entityId ||
+        user.entityId !== param.id ||
+        (param.requiredRole !== undefined && user.role !== param.requiredRole)
+      ) {
+        this.logger.warn(
+          `[TENANT_VIOLATION] Rejected ${param.key} resource ownership mismatch`,
+        );
+        throw new UnauthorizedException(
+          "No tienes permiso para acceder a este recurso.",
+        );
+      }
     }
 
+    // Paramless KYC and similar routes may additionally verify body ownership
+    // in their controller. This guard does not inspect untrusted body IDs.
     return true;
   }
 }

@@ -22,7 +22,7 @@ import { PORTAL_CONFIGS } from "@tad/services";
 
 export { captureReferralCode, clearReferralCode };
 
-type GatewayView = "login" | "forgot" | "forgot-sent";
+type GatewayView = "login" | "forgot";
 
 interface AdvertiserSessionPayload {
   access_token?: string;
@@ -115,39 +115,6 @@ export default function AdvertiserLoginPage() {
     }
   };
 
-  const handleRecover = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (!email.trim()) {
-      setError("Ingresa el correo corporativo de tu cuenta.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/proxy/advertisers/recover-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(
-          data?.message || "No pudimos procesar la recuperación.",
-        );
-      }
-      setView("forgot-sent");
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Ocurrió un error inesperado.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const inputClass =
     "w-full min-h-[48px] bg-black/60 border border-white/10 rounded-xl pl-11 pr-4 text-sm font-bold text-white placeholder:text-white/25 focus:outline-none focus:border-[#FDCB01]/70 transition-colors";
 
@@ -184,14 +151,14 @@ export default function AdvertiserLoginPage() {
             </h1>
           </div>
 
-          {view !== "forgot-sent" ? (
+          {view === "login" ? (
             <div className="w-[95%] sm:w-full mx-auto bg-[#121212]/90 border border-white/10 rounded-xl p-6 sm:p-8 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.65)]">
-              <form
-                onSubmit={view === "login" ? handleLogin : handleRecover}
-                noValidate
-              >
+              <form onSubmit={handleLogin} noValidate>
                 {error && (
-                  <div className="mb-4 p-3 bg-red-500/10 border border-red-500/25 rounded-lg flex items-center gap-2 text-red-400 animate-shake">
+                  <div
+                    role="alert"
+                    className="mb-4 p-3 bg-red-500/10 border border-red-500/25 rounded-lg flex items-center gap-2 text-red-400 animate-shake"
+                  >
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     <p className="text-[11px] font-bold">{error}</p>
                   </div>
@@ -218,47 +185,41 @@ export default function AdvertiserLoginPage() {
                   />
                 </div>
 
-                {view === "login" && (
-                  <>
-                    <label
-                      htmlFor="adv-password"
-                      className="block text-[10px] font-black text-[#AAAAAA] uppercase tracking-widest mb-1.5 ml-1"
-                    >
-                      Password
-                    </label>
-                    <div className="relative mb-6">
-                      <div className="absolute inset-y-0 left-3.5 flex items-center text-white/30 pointer-events-none">
-                        <Lock className="w-4 h-4" />
-                      </div>
-                      <input
-                        id="adv-password"
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="current-password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className={`${inputClass} pr-11`}
-                      />
-                      <button
-                        type="button"
-                        tabIndex={-1}
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-3.5 flex items-center text-white/30 hover:text-[#FDCB01] transition-colors"
-                        aria-label={
-                          showPassword
-                            ? "Ocultar contraseña"
-                            : "Mostrar contraseña"
-                        }
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </>
-                )}
+                <label
+                  htmlFor="adv-password"
+                  className="block text-[10px] font-black text-[#AAAAAA] uppercase tracking-widest mb-1.5 ml-1"
+                >
+                  Password
+                </label>
+                <div className="relative mb-6">
+                  <div className="absolute inset-y-0 left-3.5 flex items-center text-white/30 pointer-events-none">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    id="adv-password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className={`${inputClass} pr-11`}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-3.5 flex items-center text-white/30 hover:text-[#FDCB01] transition-colors"
+                    aria-label={
+                      showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                    }
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
 
                 <button
                   type="submit"
@@ -267,78 +228,68 @@ export default function AdvertiserLoginPage() {
                 >
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : view === "login" ? (
+                  ) : (
                     <>
                       <span>Entrar al portal</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
-                  ) : (
-                    <span>Enviar instrucciones</span>
                   )}
                 </button>
 
-                {view === "login" && (
-                  <>
-                    {/* ─── OAuth Divider + Google Sign-In ─── */}
-                    <div
-                      className="flex items-center gap-3 pt-1"
-                      aria-hidden="true"
-                    >
-                      <div className="flex-1 h-px bg-white/10" />
-                      <span className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">
-                        o
-                      </span>
-                      <div className="flex-1 h-px bg-white/10" />
-                    </div>
+                {/* ─── OAuth Divider + Google Sign-In ─── */}
+                <div
+                  className="flex items-center gap-3 pt-1"
+                  aria-hidden="true"
+                >
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">
+                    o
+                  </span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
 
-                    <GoogleSignInButton
-                      config={PORTAL_CONFIGS.ADVERTISER}
-                      disabled={loading}
-                    />
+                <GoogleSignInButton
+                  config={PORTAL_CONFIGS.ADVERTISER}
+                  disabled={loading}
+                />
 
-                    <p className="mt-4 text-center text-[11px] text-[#AAAAAA] leading-relaxed">
-                      Cada día sin presencia en la calle es alcance que captura
-                      tu competencia.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setView("forgot");
-                        setError("");
-                      }}
-                      className="block mx-auto mt-4 py-2 text-[11px] font-bold uppercase tracking-wider text-white/40 hover:text-[#FDCB01] transition-colors"
-                    >
-                      ¿Olvidaste tu contraseña?
-                    </button>
-                  </>
-                )}
-
-                {view === "forgot" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setView("login");
-                      setError("");
-                    }}
-                    className="block mx-auto mt-4 py-2 text-[11px] font-bold uppercase tracking-wider text-white/40 hover:text-white transition-colors"
-                  >
-                    ← Volver a iniciar sesión
-                  </button>
-                )}
+                <p className="mt-4 text-center text-[11px] text-[#AAAAAA] leading-relaxed">
+                  Cada día sin presencia en la calle es alcance que captura tu
+                  competencia.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPassword("");
+                    setView("forgot");
+                    setError("");
+                  }}
+                  className="block mx-auto mt-4 py-2 text-[11px] font-bold uppercase tracking-wider text-white/40 hover:text-[#FDCB01] transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
               </form>
             </div>
           ) : (
             <div className="w-[95%] sm:w-full mx-auto bg-[#121212]/90 border border-white/10 rounded-xl p-8 sm:p-10 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.65)] text-center">
-              <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-emerald-500/10 border border-emerald-500/25 grid place-items-center">
-                <Mail className="w-7 h-7 text-emerald-400" />
+              <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-[#FDCB01]/10 border border-[#FDCB01]/25 grid place-items-center">
+                <AlertCircle
+                  aria-hidden="true"
+                  className="w-7 h-7 text-[#FDCB01]"
+                />
               </div>
               <h2 className="text-xl font-black uppercase tracking-tight text-white mb-2">
-                Revisa tu correo
+                Recuperar acceso
               </h2>
-              <p className="text-sm text-[#AAAAAA] leading-relaxed mb-6">
-                Si <span className="text-white font-bold">{email}</span> está
-                registrado, recibirás las instrucciones para restablecer tu
-                contraseña en unos minutos.
+              <p
+                role="status"
+                className="text-sm text-[#AAAAAA] leading-relaxed mb-6"
+              >
+                La recuperación automática de contraseña del portal no está
+                disponible. No se ha enviado ningún correo. Contacta al equipo
+                de soporte de TAD para verificar tu identidad y recuperar el
+                acceso. No compartas tu contraseña ni vuelvas a registrar tu
+                empresa.
               </p>
               <button
                 type="button"
@@ -353,16 +304,18 @@ export default function AdvertiserLoginPage() {
             </div>
           )}
 
-          <a
-            href="/advertiser/onboarding"
-            className="group mt-6 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/[0.03] border border-white/10 hover:border-[#FDCB01]/40 transition-all"
-          >
-            <TrendingUp className="w-4 h-4 text-[#FDCB01]" />
-            <span className="text-[11px] font-black uppercase tracking-widest text-white group-hover:text-[#FDCB01] transition-colors">
-              Aún no tienes cuenta · Simula tu campaña gratis
-            </span>
-            <ArrowRight className="w-4 h-4 text-[#FDCB01] transition-transform group-hover:translate-x-0.5" />
-          </a>
+          {view === "login" && (
+            <a
+              href="/advertiser/onboarding"
+              className="group mt-6 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/[0.03] border border-white/10 hover:border-[#FDCB01]/40 transition-all"
+            >
+              <TrendingUp className="w-4 h-4 text-[#FDCB01]" />
+              <span className="text-[11px] font-black uppercase tracking-widest text-white group-hover:text-[#FDCB01] transition-colors">
+                Aún no tienes cuenta · Simula tu campaña gratis
+              </span>
+              <ArrowRight className="w-4 h-4 text-[#FDCB01] transition-transform group-hover:translate-x-0.5" />
+            </a>
+          )}
         </div>
 
         <footer className="absolute bottom-4 left-0 right-0 z-10 text-center text-[10px] font-medium tracking-wide text-white/25 px-4">

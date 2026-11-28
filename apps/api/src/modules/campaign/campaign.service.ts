@@ -1,17 +1,30 @@
 import { errorMessage } from "../../utils/error.util";
 import { CreateCampaignDto } from "./dto/create-campaign.dto";
 import { AddMediaAssetDto } from "./dto/add-media-asset.dto";
-import { Injectable, BadRequestException, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { SupabaseService } from "../supabase/supabase.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import * as crypto from "crypto";
 import { BUSINESS_RULES } from "../../common/constants/business-rules";
 import { AuthUser } from "../auth/auth.types";
-import { calculateImpact, ImpactOutput } from "@tad/impact-calculator";
+import {
+  calculateAdvertiserOffer,
+  calculateImpact,
+  ImpactOutput,
+} from "@tad/impact-calculator";
 import { ReferralService } from "../referral/referral.service";
 import type { Prisma } from "@prisma/client";
-import { deviceIdentityWhere } from "./device-identity-lookup";
+import {
+  deviceIdentityWhere,
+  deviceIdentityWhereMany,
+} from "./device-identity-lookup";
+import { withLegacyCampaignMedia } from "../media/media-mime-contract";
 
 interface SyncMediaAsset {
   id?: string;
@@ -47,7 +60,6 @@ const mediaSafeSelect = {
   name: true,
   filename: true,
   originalFilename: true,
-  mime_type: true,
   mimeType: true,
   durationSeconds: true,
   width: true,
@@ -297,6 +309,14 @@ export class CampaignService {
       });
     });
 
+    // An advertiser-created campaign is only a REVIEW REQUEST, not sellable
+    // inventory. Do not reserve slots, notify drivers, enqueue FORCE_SYNC or
+    // broadcast a tablet wake-up until a separate commercial/payment approval
+    // workflow has explicitly authorized publication.
+    if (result.status === "PENDING_REVIEW") {
+      return result;
+    }
+
     // TAD-ADMIN: Distribución Inteligente de Inventario
     // Si no se pasaron dispositivos pero hay ciudad, auto-asignamos usando prioridad ORO > PLATA > BASE
     let devicesToAssign = dto.target_devices || [];
@@ -333,9 +353,7 @@ export class CampaignService {
   async assignCampaignToDevices(campaignId: string, idOrHwIds: string[]) {
     // 1. Fetch devices using either UUID (id) or Hardware ID (deviceId)
     const devices = await this.prisma.device.findMany({
-      where: {
-        OR: [{ id: { in: idOrHwIds } }, { deviceId: { in: idOrHwIds } }],
-      },
+      where: deviceIdentityWhereMany(idOrHwIds),
       select: { id: true, deviceId: true },
     });
 
@@ -457,10 +475,28 @@ export class CampaignService {
   // pg_advisory_xact_lock(device) — elimina el TOCTOU del count previo.
   async assignCampaignToDevice(deviceId: string, campaignId: string) {
     return await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"dc:" + deviceId})::bigint)`;
+      // Both the hardware ID and database UUID are accepted at the API edge.
+      // DeviceCampaign stores the database UUID serialized as TEXT.
+      const matches = await tx.device.findMany({
+        where: deviceIdentityWhere(deviceId),
+        select: { id: true, deviceId: true },
+        take: 2,
+      });
+
+      if (matches.length === 0) {
+        throw new NotFoundException("Dispositivo no encontrado");
+      }
+      if (matches.length > 1) {
+        // A UUID-looking hardware ID can collide with a different device PK.
+        // Fail closed rather than assign inventory to an arbitrary device.
+        throw new BadRequestException("Identificador de dispositivo ambiguo");
+      }
+
+      const canonicalId = matches[0].id;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"dc:" + canonicalId})::bigint)`;
 
       const currentCount = await tx.deviceCampaign.count({
-        where: { device_id: deviceId },
+        where: { device_id: canonicalId },
       });
 
       if (currentCount >= BUSINESS_RULES.MAX_CAMPAIGNS_PER_DRIVER) {
@@ -470,7 +506,7 @@ export class CampaignService {
       }
 
       return tx.deviceCampaign.create({
-        data: { device_id: deviceId, campaign_id: campaignId },
+        data: { device_id: canonicalId, campaign_id: campaignId },
       });
     });
   }
@@ -784,7 +820,7 @@ export class CampaignService {
   }
 
   async getAllCampaigns() {
-    return this.prisma.campaign.findMany({
+    const campaigns = await this.prisma.campaign.findMany({
       // SRE Cache Bust: Adding a trivial condition to force PgBouncer to parse a new Prepared Statement
       // after the schedule_days column was added in the database.
       where: { id: { not: "00000000-0000-0000-0000-000000000000" } },
@@ -794,16 +830,18 @@ export class CampaignService {
       },
       orderBy: { createdAt: "desc" },
     });
+    return campaigns.map(withLegacyCampaignMedia);
   }
 
   async getCampaignById(id: string) {
-    return this.prisma.campaign.findUnique({
+    const campaign = await this.prisma.campaign.findUnique({
       where: { id },
       include: {
         mediaAssets: { select: mediaAssetSafeSelect },
         media: { select: mediaSafeSelect },
       },
     });
+    return campaign ? withLegacyCampaignMedia(campaign) : null;
   }
 
   /**
@@ -1249,7 +1287,24 @@ export class CampaignService {
     calibrationDescription: string;
     sourceLabel: string;
   }> {
-    const costPerScreen = BUSINESS_RULES.ADVERTISER_COST_PER_CAMPAIGN_RD; // RD$1,500 (legacy)
+    // This simulation has no referral code, so it must use the REAL base
+    // tariff, not RD$1,500 (the conditional 40%-discounted driver rate).
+    // Keep historical BUSINESS_RULES untouched for old financial records.
+    if (
+      typeof budgetRD !== "number" ||
+      !Number.isFinite(budgetRD) ||
+      budgetRD < 0
+    ) {
+      throw new BadRequestException(
+        "El presupuesto debe ser un monto válido no negativo.",
+      );
+    }
+    const costPerScreen = calculateAdvertiserOffer({
+      screens: 1,
+      months: 1,
+      includeProduction: false,
+      verifiedDriverCode: false,
+    }).baseMonthlyScreenRate;
 
     // Contar pantallas disponibles en la zona
     const onlineScreensCount = await this.prisma.device.count({

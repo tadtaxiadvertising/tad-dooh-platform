@@ -25,3 +25,23 @@ npm-debug.log*
 .vscode
 .idea
 .DS_Store
+
+# Defence in depth: Docker copies the whole monorepo. Exclude every nested
+# environment file even when checked out accidentally on a build runner.
+**/.env
+**/.env.*
+**/.envrc
+**/.envrc.*
+**/id_rsa
+**/id_ed25519
+**/*.p8
+**/*.p12
+**/*.pfx
+**/*.pem
+
+# Do not package agent attachments or confidential Google OAuth clients.
+# These paths are excluded from build contexts, even if Git tracks them.
+.hermes
+**/.hermes
+client_secret*.json
+**/client_secret*.json

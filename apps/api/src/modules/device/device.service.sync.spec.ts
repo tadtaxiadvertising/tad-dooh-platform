@@ -21,9 +21,11 @@ function setupSync(
       }),
     },
     deviceCommand: {
-      findMany: jest.fn().mockResolvedValue([
-        { id: "command-01", commandType: "FORCE_SYNC", commandParams },
-      ]),
+      findMany: jest
+        .fn()
+        .mockResolvedValue([
+          { id: "command-01", commandType: "FORCE_SYNC", commandParams },
+        ]),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     notification: { create: jest.fn() },
@@ -59,7 +61,9 @@ describe("DeviceService synced license and command delivery", () => {
       blocked: false,
       sync_hash: "same-hash",
       media_assets: [],
-      commands: [{ id: "command-01", type: "FORCE_SYNC", params: { force: true } }],
+      commands: [
+        { id: "command-01", type: "FORCE_SYNC", params: { force: true } },
+      ],
     });
     expect(payload).toHaveProperty("licenseToken", expect.any(String));
     expect(payload).toHaveProperty("expiresAt", expect.any(String));

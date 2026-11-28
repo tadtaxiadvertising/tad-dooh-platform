@@ -9,7 +9,7 @@ const collapseLayout = (source) => source.replace(/\s+/g, " ");
 
 test("advertiser creative reframe preserves the live estimate and explicit production opt-in", () => {
   const landing = read("apps/advertiser/components/landing/LandingPage.tsx");
-  assert.match(landing, /estimateCampaign\(config\)/);
+  assert.doesNotMatch(landing, /estimateCampaign\(config\)/);
   assert.match(landing, /estimateCampaignDetailed\(config\)/);
   assert.match(landing, /setIncludeProduction\] = useState\(false\)/);
   assert.match(landing, /id="campaign-production"/);
@@ -84,16 +84,20 @@ test("financial outputs only animate after a changed amount, never on mount", ()
   const advertiser = read("apps/advertiser/components/landing/LandingPage.tsx");
   const driver = read("apps/driver/components/landing/DriverEarningsLab.tsx");
   for (const [name, source] of [["advertiser", advertiser], ["driver", driver]]) {
-    assert.doesNotMatch(source, /<motion\.output|key=\{(?:quote\.total|result\.illustrativeTotalRD)\}/, name);
+    assert.doesNotMatch(source, /<motion\.output|key=\{(?:projection\.totalCost|result\.illustrativeTotalRD)\}/, name);
     assert.match(source, /\.animate\(/, name);
     assert.match(source, /duration:\s*180/, name);
     assert.match(source, /opacity:\s*0\.94/, name);
-    assert.match(source, /reduceMotion !== false/, name);
+    assert.match(source, /typeof output\.animate !== "function"/, name);
+    assert.match(source, /window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)\.matches/, name);
+    assert.doesNotMatch(source, /from ["']framer-motion["']/, name);
     assert.match(source, /animation\.cancel\(\)/, name);
   }
   assert.match(advertiser, /<h1 id="hero-title">/);
   assert.match(advertiser, /ref=\{budgetOutputRef\}/);
   assert.match(driver, /ref=\{earningsOutputRef\}/);
+  assert.doesNotMatch(driver, /<motion\.div|whileInView=|initial=\{false\}/);
+  assert.match(driver, /<div key=\{id\} className=\{styles\.control\}>/);
 });
 
 
@@ -114,4 +118,26 @@ test("driver sales and referrals distinguish simulator display limits from comme
   assert.match(collapseLayout(lab), /no define condiciones ni posibles límites contractuales/);
   assert.match(lab, /max:\s*100/);
   assert.match(css, /\.rangeNote/);
+});
+
+
+test("public landing financial disclosures stay readable on small screens", () => {
+  const earnings = read("apps/driver/components/landing/driver-earnings-lab.module.css");
+  const advertiser = read("apps/advertiser/components/landing/landing.module.css");
+
+  // These are contract-critical labels and disclaimers, not decorative captions.
+  assert.match(earnings, /\.controlTitle small \{[^}]*font-size:\s*13px/);
+  assert.match(earnings, /\.control input\[type=range\] \{[^}]*min-height:\s*44px/);
+  assert.match(earnings, /\.breakdown div \{[^}]*font-size:\s*13px; flex-wrap: wrap/);
+  assert.match(earnings, /\.rateTable dd \{[^}]*font-size:\s*13px/);
+  assert.match(earnings, /\.notice \{[^}]*font-size:\s*13px/);
+  assert.match(earnings, /\.rangeNote \{[^}]*font-size:\s*13px; padding-inline: 2px/);
+
+  assert.match(advertiser, /\.landing :global\(\.landing-preview label\) \{[^}]*font-size:\s*14px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-preview select\) \{[^}]*font-size:\s*14px; min-height:\s*48px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-preview input\[type=range\]\) \{[^}]*min-height:\s*44px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-production-option span\) \{[^}]*font-size:\s*14px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-estimate-detail\) \{[^}]*font-size:\s*13px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-warning-details\) \{[^}]*font-size:\s*13px/);
+  assert.match(advertiser, /\.landing :global\(\.landing-disclaimer\) \{[^}]*font-size:\s*13px/);
 });

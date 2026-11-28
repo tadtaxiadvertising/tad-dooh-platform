@@ -2,9 +2,13 @@ name: CI Quality Gates
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, validation/mobile-gateway-ci-20261122, security/p0-538-media-gc-failclosed-20261124, security/p0-538-media-gc-inventory-guard-20261124]
   pull_request:
-    branches: [main]
+    branches: [main, validation/mobile-gateway-pr-target-20261122]
+
+# CI runs untrusted PR code; no job needs repository write privileges.
+permissions:
+  contents: read
 
 # ─── GATES ───────────────────────────────────────────────────────────────────────
 env:
@@ -29,6 +33,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
+      - name: Verify lockfile mappings before dependency installation
+        run: |
+          set -euo pipefail
+          node --test scripts/check-pnpm-lockfile-unique.test.cjs
+          node scripts/check-pnpm-lockfile-unique.cjs
+
       - name: Verify pinned overrides match the frozen lockfile
         run: node --test scripts/pnpm-overrides-contract.test.cjs
 
@@ -39,9 +49,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ -d packages/ui/src ]; then
-            pnpm dlx prettier --check "packages/ui/src/**/*.{ts,tsx}"
+            pnpm dlx prettier@3.9.10 --check "packages/ui/src/**/*.{ts,tsx}"
           fi
-          pnpm dlx prettier --check "apps/**/*.{ts,tsx}"
+          pnpm dlx prettier@3.9.10 --check "apps/**/*.{ts,tsx}"
 
       - name: Lint (ESLint)
         run: |
@@ -81,6 +91,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared impact calculator before consumer checks
+        run: |
+          set -euo pipefail
+          pnpm --filter @tad/impact-calculator run build
+
       - name: TypeScript check (all workspaces)
         run: |
           set -euo pipefail
@@ -112,15 +127,56 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared impact calculator before consumer checks
+        run: |
+          set -euo pipefail
+          pnpm --filter @tad/impact-calculator run build
+
+      - name: Verify built impact calculator public contract
+        run: |
+          set -euo pipefail
+          node --test scripts/impact-calculator-build-contract.test.cjs
+
       - name: Run API tests
         run: |
           set -euo pipefail
           pnpm --filter api test --runInBand
 
+      - name: Advertiser registration PostgreSQL isolation contract
+        timeout-minutes: 6
+        run: |
+          set -euo pipefail
+          node scripts/advertiser-registration-postgres.cjs --isolated-docker
+
+      - name: Advertiser onboarding Prisma integration
+        timeout-minutes: 6
+        run: |
+          set -euo pipefail
+          node apps/api/scripts/advertiser-onboarding-prisma.cjs --isolated-docker
+
+      - name: Fast verification runner regressions (offline fixtures)
+        run: python3 -B -m unittest discover -s scripts -p test_run_fast_gates.py -v
+
       - name: Driver offline queue retry safety (Node 22)
         run: |
           set -euo pipefail
           pnpm --filter driver run test:unit:offline
+
+      - name: Player offline Proof-of-Play durability and event contracts (Node 22)
+        run: |
+          set -euo pipefail
+          pnpm --filter tad-player run test:pop
+          pnpm --filter tad-player run test:pop-storage
+          node --experimental-strip-types --test \
+            apps/player/tests/unit/network-listeners.test.mjs \
+            apps/player/tests/unit/deferred-subscription.test.mjs \
+            apps/player/tests/unit/wake-up-targeting.test.mjs \
+            apps/player/tests/unit/api-url.test.mjs
+
+      - name: Player offline media cache and worker regressions (Node 22)
+        run: |
+          set -euo pipefail
+          pnpm --filter tad-player run test:offline-cache
 
       # The root tests/e2e tree includes authenticated production audits and
       # mutating driver-registration flows. Never execute those against live
@@ -129,15 +185,43 @@ jobs:
       - name: Run safe cross-portal integration contracts
         run: |
           set -euo pipefail
+          node --test scripts/api-device-token-cors.contract.test.cjs
+          node --test scripts/admin-recovery-entry.test.cjs
+          node --test scripts/admin-finance-summary.test.cjs
+          node --test scripts/admin-reconciliation-pagination.test.cjs
+          node --test scripts/admin-content-request-media.test.cjs
+          node --test scripts/advertiser-impact-alias-contract.test.cjs
           node --test scripts/landing.test.cjs scripts/landing-creative-reframe.test.cjs scripts/driver-landing.test.cjs scripts/driver-preview-arithmetic.test.cjs scripts/advertiser-onboarding-presentation.test.cjs
           node --test scripts/simulator-key-security.test.cjs scripts/next-security-contract.test.cjs
           node --test scripts/ci-e2e-isolation.test.cjs
+          node --test scripts/nest-runtime-major-contract.test.cjs
+          node --test scripts/protect-main-branch.test.cjs
+          node --test scripts/verify-production-checklist.test.cjs
+          node --test scripts/ci-docker-matrix.test.cjs scripts/ghcr-api-promotion-contract.test.cjs scripts/tracked-postgres-secrets-guard.test.cjs
           node --test scripts/api-entrypoint-env.test.cjs
+          node --test scripts/api-docker-ownership.test.cjs
+          node --test scripts/easypanel-host-triage.test.cjs
+          node --test scripts/easypanel-api-runtime-template.contract.test.cjs
+          node --test scripts/api-safe-migrate.test.cjs
+          node --test scripts/legacy-migration-runner-disabled.test.cjs scripts/legacy-v12-migration-runner-disabled.test.cjs scripts/verify-supabase-runtime-target.test.cjs
+          node --test scripts/legacy-db-mutators-disabled.test.cjs
+          node --test scripts/postgis-rls-agent-safety.test.cjs
+          node --test scripts/verify-supabase-backup-export.test.cjs
+          node --test scripts/compare-supabase-restore-snapshots.test.cjs
+          node --test scripts/api-recovery-evidence-preflight.test.cjs
+          node --test scripts/verify-supabase-storage-byte-export.test.cjs
+          node --test scripts/export-supabase-storage-bytes.test.cjs
+          node --test scripts/storage-policy-readonly-gate.test.cjs
+          node --test scripts/supabase-function-searchpath-plan.test.cjs
+          node --test apps/api/scripts/prisma-drift-core.test.cjs
+          node --test scripts/api-health-route-contract.test.cjs scripts/check-api-readiness.test.cjs
           node --test apps/api/scripts/master-sync-migration.contract.test.cjs
+          node --test apps/api/scripts/device-command-ack.contract.test.cjs
           node --experimental-strip-types --test apps/api/scripts/device-scope.test.mjs
           node --test apps/api/scripts/sync-renewal.contract.test.cjs
           node --test scripts/error-message-contract.test.cjs scripts/advertiser-upload-contract.test.cjs scripts/driver-error-contract.test.cjs scripts/direct-upload-checksum.test.cjs scripts/monitoring-status.test.cjs scripts/driver-pwa-config.test.cjs
           node --test --test-concurrency=1 scripts/security-compatible-transitives.test.cjs scripts/permissions-parser-security.test.cjs scripts/tmp-cli-security.test.cjs scripts/security-major-compatibility.test.cjs scripts/smtp-transport-security.test.cjs scripts/security-followup-regressions.test.cjs
+          node --test scripts/api-local-seed-gate.test.cjs
 
   # ── 4. PRISMA SCHEMA VALIDATION ──────────────────────────────────────────────
   prisma:
@@ -171,6 +255,17 @@ jobs:
           set -euo pipefail
           pnpm exec prisma generate --schema="$PRISMA_SCHEMA"
 
+      - name: Managed and atomic recovery contracts (offline)
+        run: |
+          set -euo pipefail
+          python3 -B -m unittest discover \
+            -s docs/incidents/recovery-217/managed-transition \
+            -p test_compile.py -v
+          python3 -B -m unittest discover \
+            -s docs/incidents/recovery-217/production-operation \
+            -p test_compile.py -v
+          node --test docs/incidents/recovery-217/production-operation/preflight.test.cjs
+
   # ── 5. SECURITY AUDIT ───────────────────────────────────────────────────────
   security:
     name: Security Audit
@@ -189,6 +284,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
+      - name: Reject tracked credentials before dependency installation
+        run: |
+          set -euo pipefail
+          node --test --test-name-pattern='^(sensitive tracked paths|tracked repository no longer|runtime source does not|security job runs tracked)' scripts/tracked-postgres-secrets-guard.test.cjs
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -199,10 +299,15 @@ jobs:
 
       - name: TruffleHog secret scan
         if: ${{ always() }}
-        uses: trufflesecurity/trufflehog@v3.99.8
+        uses: trufflesecurity/trufflehog@v3.100.1
         with:
           path: ./
           extra_args: --results=verified,unknown
+
+  # Public browser QA is fixture-only and now part of the required Summary.
+  landing:
+    name: Required landing gates
+    uses: ./.github/workflows/landing-v5-checks.yml
 
   # ── 6. BUILD IMAGES IN ISOLATED RUNNERS ──────────────────────────────────────
   # Docker builds do not consume the monorepo's installed node_modules. Each
@@ -220,6 +325,8 @@ jobs:
             dockerfile: Dockerfile.api
           - image: admin
             dockerfile: Dockerfile.admin
+          - image: advertiser
+            dockerfile: Dockerfile.advertiser
           - image: driver
             dockerfile: Dockerfile.driver
           - image: player
@@ -235,11 +342,29 @@ jobs:
       - name: Build Docker image
         run: docker build . --file "${{ matrix.dockerfile }}" --tag "tad-${{ matrix.image }}:test"
 
+      - name: Smoke Player static origin (isolated)
+        if: ${{ matrix.image == 'player' }}
+        run: |
+          set -euo pipefail
+          container="$(docker run --detach --network none tad-player:test)"
+          trap 'docker rm -f "$container" >/dev/null' EXIT
+          for attempt in {1..10}; do
+            if body="$(docker exec "$container" wget -q -T 2 -O - http://127.0.0.1/health)"; then
+              test "$body" = '{"status":"OK"}'
+              docker exec "$container" wget -q -T 2 -O /dev/null http://127.0.0.1/
+              docker exec "$container" wget -q -T 2 -O /dev/null http://127.0.0.1/sw.js
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Player static origin did not become ready" >&2
+          exit 1
+
   # ── SUMMARY ──────────────────────────────────────────────────────────────────
   summary:
     name: Summary
     runs-on: ubuntu-24.04
-    needs: [format, typecheck, test, prisma, security, build]
+    needs: [format, typecheck, test, prisma, security, build, landing]
     if: always()
     steps:
       - name: Report results
@@ -250,6 +375,7 @@ jobs:
           PRISMA_RESULT: ${{ needs.prisma.result }}
           SECURITY_RESULT: ${{ needs.security.result }}
           BUILD_RESULT: ${{ needs.build.result }}
+          LANDING_RESULT: ${{ needs.landing.result }}
         run: |
           set -euo pipefail
           echo "## 🚀 CI Quality Gates Summary" >> "$GITHUB_STEP_SUMMARY"
@@ -260,14 +386,16 @@ jobs:
             "- **test**: $TEST_RESULT" \
             "- **prisma**: $PRISMA_RESULT" \
             "- **security**: $SECURITY_RESULT" \
-            "- **build**: $BUILD_RESULT" >> "$GITHUB_STEP_SUMMARY"
+            "- **build**: $BUILD_RESULT" \
+            "- **landing**: $LANDING_RESULT" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           if [ "$FORMAT_RESULT" != "success" ] || \
              [ "$TYPECHECK_RESULT" != "success" ] || \
              [ "$TEST_RESULT" != "success" ] || \
              [ "$PRISMA_RESULT" != "success" ] || \
              [ "$SECURITY_RESULT" != "success" ] || \
-             [ "$BUILD_RESULT" != "success" ]; then
+             [ "$BUILD_RESULT" != "success" ] || \
+             [ "$LANDING_RESULT" != "success" ]; then
             echo "❌ **One or more quality gates did not succeed** — review logs before merging." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi

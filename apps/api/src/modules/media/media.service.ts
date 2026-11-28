@@ -191,6 +191,7 @@ export class MediaService {
       });
       return {
         ...media,
+        mime_type: media.mimeType,
         fileSize: Number(media.fileSize),
       };
     } catch (dbError: unknown) {
@@ -268,6 +269,7 @@ export class MediaService {
       });
       return {
         ...media,
+        mime_type: media.mimeType,
         fileSize: Number(media.fileSize),
       };
     } catch (error: unknown) {
@@ -484,6 +486,7 @@ export class MediaService {
 
       return {
         ...media,
+        mime_type: media.mimeType,
         fileSize: Number(media.fileSize),
         verified: true,
       };
@@ -517,7 +520,7 @@ export class MediaService {
       originalFilename: media.originalFilename,
       size: Number(media.fileSize),
       mimeType: media.mimeType,
-      mime_type: media.mime_type,
+      mime_type: media.mimeType,
       durationSeconds: media.durationSeconds,
       width: media.width,
       height: media.height,

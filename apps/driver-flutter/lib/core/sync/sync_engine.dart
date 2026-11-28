@@ -50,6 +50,8 @@ class HybridSyncEngine {
   Timer? _activeModeTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   bool _activeMode = false;
+  Future<void>? _flushBatchTask;
+  bool _isDrainingOfflineQueue = false;
 
   bool get isActiveMode => _activeMode;
 
@@ -89,25 +91,34 @@ class HybridSyncEngine {
     if (_pending.length >= 60) flushBatch();
   }
 
-  /// Reenvía los batches GPS que quedaron persistidos offline durante períodos
-  /// sin conectividad (proceso matado o red caída).
+  /// Reenvía lotes persistidos sin eliminarlos hasta obtener ACK completo.
+  /// Single-flight evita que arranque y reconexión envíen el mismo lote a la vez.
   Future<void> _flushOfflineQueue() async {
+    if (_isDrainingOfflineQueue) return;
+    _isDrainingOfflineQueue = true;
     try {
-      final queued = await OfflineQueue.instance.drainAll();
-      for (final batch in queued) {
-        await _sendBatch(batch);
+      while (true) {
+        final batch = await OfflineQueue.instance.peekFirstBatch();
+        if (batch == null) break;
+
+        // Un ACK ambiguo, 402, timeout o 5xx debe dejar el lote persistido.
+        if (!await _sendBatch(batch)) break;
+        await OfflineQueue.instance.acknowledgeFirstBatch();
       }
     } catch (e) {
       _kLog('[SyncEngine] Offline queue flush failed: $e');
+    } finally {
+      _isDrainingOfflineQueue = false;
     }
   }
 
-  Future<void> _sendBatch(List<GpsPoint> buffer) async {
-    if (buffer.isEmpty) return;
-    final path = '/fleet/track-batch';
+  /// Aceptar únicamente recibos del endpoint real /fleet/track-batch.
+  /// count=0 puede ser un replay deduplicado; input siempre debe coincidir.
+  Future<bool> _sendBatch(List<GpsPoint> buffer) async {
+    if (buffer.isEmpty) return true;
     try {
       final res = await _dio.post(
-        path,
+        '/fleet/track-batch',
         data: {
           'driverId': _driverId ?? '',
           'deviceId': _deviceId ?? '',
@@ -117,28 +128,56 @@ class HybridSyncEngine {
           headers: _deviceId != null ? {'X-Device-Id': _deviceId} : null,
         ),
       );
-      _kLog('[SyncEngine] Batch sync success: ${res.statusCode}');
-    } on DioException catch (e) {
-      _kLog('[SyncEngine] DioException: ${e.type} - ${e.message}');
-      if (e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout ||
-          e.response == null) {
-        _kLog('[SyncEngine] Connection failed. Enqueueing offline.');
-        await OfflineQueue.instance.enqueueGpsBatch(buffer);
+
+      final status = res.statusCode ?? 0;
+      final receipt = res.data;
+      final input = receipt is Map ? receipt['input'] : null;
+      final count = receipt is Map ? receipt['count'] : null;
+      final acknowledged = status >= 200 &&
+          status < 300 &&
+          input is int &&
+          input == buffer.length &&
+          count is int &&
+          count >= 0 &&
+          count <= input;
+      if (!acknowledged) {
+        _kLog('[SyncEngine] Missing/partial GPS receipt; preserving queue.');
+        return false;
       }
+      return true;
+    } on DioException catch (e) {
+      // Dio rejects non-2xx by default, including 402/403/5xx.
+      // The point history must survive all rejections, not just timeouts.
+      _kLog('[SyncEngine] GPS sync rejected: ${e.type}');
+      return false;
     } catch (e) {
-      _kLog('[SyncEngine] Unexpected sync error: $e');
+      _kLog('[SyncEngine] GPS sync error; batch retained: $e');
+      return false;
     }
   }
 
-  /// Flush buffered GPS points to the backend immediately.
-  /// Called by the batch timer, when 60 points accumulate, or on
-  /// manual sync request from the UI.
-  Future<void> flushBatch() async {
-    if (_pending.isEmpty) return;
-    final buffer = List<GpsPoint>.from(_pending);
-    _pending.clear();
-    await _sendBatch(buffer);
+  /// Persistir antes de transmitir. Nunca vaciar _pending en un error de disco.
+  Future<void> flushBatch() {
+    final inFlight = _flushBatchTask;
+    if (inFlight != null) return inFlight;
+
+    late Future<void> task;
+    task = _persistAndFlush().whenComplete(() {
+      if (identical(_flushBatchTask, task)) _flushBatchTask = null;
+    });
+    _flushBatchTask = task;
+    return task;
+  }
+
+  Future<void> _persistAndFlush() async {
+    if (_pending.isNotEmpty) {
+      final snapshot = List<GpsPoint>.from(_pending);
+      await OfflineQueue.instance.enqueueGpsBatch(snapshot);
+      // Only remove the points that were durably queued. New points added
+      // during async persistence remain in memory for a later flush.
+      _pending.removeRange(0, snapshot.length);
+    }
+    await _flushOfflineQueue();
   }
 
   // ── Supabase realtime placeholder ───────────────────────────────────────

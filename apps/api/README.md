@@ -254,14 +254,16 @@ Phase 3 (runner):   Copia dist/ + prisma/ + node_modules prod → EXPOSE 3000
 # Desarrollo local
 npm run start:dev          # NestJS watch mode (hot reload)
 
-# Producción
-npm run start:prod         # Detecta automáticamente dist/main.js o dist/src/main.js
+# Producción (la imagen oficial usa docker-entrypoint.sh)
+npm run start:prod         # Ejecuta dist/main.js; no migra
 
-# Con migración automática
-npm run start:migrate      # prisma db push + start
+# Solo con aprobación operativa, backup y revisión del destino Supabase:
+TAD_APPROVE_MANUAL_MIGRATION=YES npm run deploy:migrate  # Validación de destino + migraciones versionadas
+TAD_APPROVE_MANUAL_MIGRATION=YES npm run start:migrate   # Igual + inicio (NO db push)
+# Nunca ejecutar sobre un esquema distinto por suposición.
 
 # Build
-npm run build              # nest build (SWC)
+npm run build              # nest build
 
 # Prisma
 npm run prisma:generate    # Generar Prisma Client
@@ -272,7 +274,9 @@ npm run prisma:studio      # UI visual de la BD
 
 ```bash
 curl http://localhost:3000/health
-# → { "status": "OK", "uptime": 12345.67, "memory": { "rss": ..., "heapUsed": ... } }
+# → status: "up" (liveness, no verifica DB)
+curl -i http://localhost:3000/health/ready
+# → HTTP 200 si DB y vista master-sync están listas; HTTP 503 si no.
 ```
 
 ---

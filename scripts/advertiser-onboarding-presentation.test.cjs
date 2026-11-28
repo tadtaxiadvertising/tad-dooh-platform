@@ -30,6 +30,7 @@ const allowedSources = new Set([
   'apps/advertiser/components/onboarding/BenefitsStep.tsx',
   'apps/advertiser/components/onboarding/SimulatorStep.tsx',
   'apps/advertiser/components/onboarding/OnboardingWizard.tsx',
+  'apps/advertiser/components/onboarding/SuccessStep.tsx',
   'apps/advertiser/components/advertiser/simulatorPricing.ts',
   'packages/impact-calculator/index.ts',
   'packages/impact-calculator/sources.ts',
@@ -74,6 +75,7 @@ const benefits = loadSource(path.join(ROOT, 'apps/advertiser/components/onboardi
 const simulator = loadSource(path.join(ROOT, 'apps/advertiser/components/onboarding/SimulatorStep.tsx')).default;
 const wizard = loadSource(path.join(ROOT, 'apps/advertiser/components/onboarding/OnboardingWizard.tsx')).OnboardingWizard;
 const pricing = loadSource(path.join(ROOT, 'apps/advertiser/components/advertiser/simulatorPricing.ts'));
+const success = loadSource(path.join(ROOT, 'apps/advertiser/components/onboarding/SuccessStep.tsx')).default;
 
 function text(node) {
   if (node == null || typeof node === 'boolean') return '';
@@ -172,6 +174,27 @@ test('wizard back action retains the existing close and previous-step callbacks'
   assert.equal(previous, 1);
 });
 
+test('onboarding simulator keeps inherited custom screens and allows explicit city review', () => {
+  let config = { screens: 12, months: 4, frequencySeconds: 30, includeProduction: false };
+  let city = 'stgo';
+  const props = () => ({
+    config, city, onCityChange: value => { city = value; },
+    onChange: patch => { config = { ...config, ...patch }; },
+    onNext() {}, onPrev() {},
+  });
+  let page = render(simulator, props());
+  assert.equal(page.find('input', input => input['aria-label'] === 'Número de pantallas personalizado').value, 12);
+  assert.equal(page.find('input', input => input.type === 'range').value, 4);
+  assert.equal(page.find('input', input => input.type === 'checkbox').checked, false);
+  const select = page.find('select', element => element.id === 'onboarding-campaign-city');
+  assert.equal(select.value, 'stgo');
+  select.onChange({ target: { value: 'sd' } });
+  page = render(simulator, props());
+  assert.equal(page.find('select', element => element.id === 'onboarding-campaign-city').value, 'sd');
+  assert.equal(config.screens, 12);
+  assert.equal(config.months, 4);
+});
+
 test('simulator keeps live model quotes, deliberate production opt-in and existing navigation', () => {
   let config = { screens: 3, months: 2, frequencySeconds: 30, includeProduction: false };
   let next = 0;
@@ -183,7 +206,26 @@ test('simulator keeps live model quotes, deliberate production opt-in and existi
   const assertQuote = page => {
     const amount = page.find('output', output => output['aria-label'] === 'Presupuesto ilustrativo');
     assert.equal(text(amount.children), pricing.estimateCampaign(config).total.toLocaleString());
-    assert.ok(page.html.includes('conciliación'), 'Quote must disclose pending commercial reconciliation');
+    assert.equal(pricing.estimateCampaign(config).screensCost,
+      pricing.SCREEN_MONTHLY_RATE * config.screens * config.months,
+      'Displayed monthly unit rate must reconcile to the illustrative subtotal');
+    const unitLabels = page.elements
+      .filter(element => element.type === 'span')
+      .map(element => text(element.props.children));
+    assert.ok(unitLabels.some(label =>
+      label.startsWith('Pantallas (') &&
+      label.includes(`RD$${pricing.SCREEN_MONTHLY_RATE.toLocaleString()}`)),
+    'Onboarding must display the same unit rate used to calculate the subtotal');
+    // TAD commercial rate is confirmed: RD$2,500 base and a 40% discount
+    // only after a real driver's code is verified by the server.
+    assert.ok(page.html.includes('La tarifa base es RD$2,500'), 'Display the confirmed base rate');
+    assert.ok(page.html.includes('sin ITBIS'), 'Disclose pre-tax amounts');
+    assert.ok(page.html.includes('verificación del código por el servidor'),
+      'Driver discount may not be granted from a URL alone');
+    assert.ok(page.html.includes('La producción creativa opcional'),
+      'Creative production must be quoted separately');
+    assert.ok(page.html.includes('no contrata, cobra ni reserva pantallas'),
+      'An illustrative simulation cannot activate a contract or charge');
     assert.ok(page.html.includes('ilustrativ'), 'Quote must remain educational');
   };
   let page = render(simulator, props());
@@ -214,4 +256,72 @@ test('simulator keeps live model quotes, deliberate production opt-in and existi
   page.find('button', button => text(button.children).includes('Ajustar simulación')).onClick();
   assert.equal(next, 1);
   assert.equal(prev, 1);
+});
+
+
+test('driver code discount appears only after server quote verification', () => {
+  const impact = loadSource(path.join(ROOT, 'packages/impact-calculator/index.ts'));
+  const config = { screens: 3, months: 2, frequencySeconds: 30, includeProduction: true };
+  const offer = impact.calculateAdvertiserOffer({
+    screens: config.screens, months: config.months,
+    includeProduction: true, verifiedDriverCode: true,
+  });
+  let changedCode = null;
+  const props = {
+    config, onChange() {}, onNext() {}, onPrev() {},
+    referralCode: 'DRIVER_TEST_1',
+    onReferralCodeChange(code) { changedCode = code; },
+  };
+  const pending = render(simulator, {
+    ...props, verifiedOffer: offer, quoteStatus: 'checking',
+  });
+  const amountOf = page => text(page.find('output',
+    node => node['aria-label'] === 'Presupuesto ilustrativo').children);
+  assert.equal(amountOf(pending), pricing.estimateCampaign(config).total.toLocaleString(),
+    'The offer must not be displayed while verification is pending');
+  const verified = render(simulator, {
+    ...props, verifiedOffer: offer, quoteStatus: 'verified',
+  });
+  assert.equal(amountOf(verified), offer.subtotal.toLocaleString());
+  assert.ok(verified.html.includes('40 %'));
+  assert.ok(verified.html.includes('6,000'), 'The verified discount must be itemized');
+  assert.ok(verified.html.includes('Código verificado'));
+  const invalid = render(simulator, {
+    ...props, verifiedOffer: null, quoteStatus: 'invalid',
+  });
+  assert.equal(amountOf(invalid), pricing.estimateCampaign(config).total.toLocaleString());
+  assert.ok(invalid.html.includes('Código no válido'));
+  verified.find('input', node => node.id === 'advertiser-driver-code')
+    .onChange({ target: { value: 'DRIVER_TEST_2' } });
+  assert.equal(changedCode, 'DRIVER_TEST_2');
+});
+
+
+test('wizard disables back navigation while submitting or after successful registration', () => {
+  for (const step of [3, 4]) {
+    let navigated = 0;
+    const page = render(wizard, { step, totalSteps: 4, navigationLocked: true,
+      onNext() {}, onPrev() { navigated++; }, onClose() { navigated++; },
+      children: React.createElement('p', null, 'Fixture') });
+    const back = page.find('button', node => node['aria-label'] === 'Volver al paso anterior');
+    assert.equal(back.disabled, true);
+    back.onClick();
+    assert.equal(navigated, 0);
+  }
+});
+
+
+test('registration receipt distinguishes recorded pre-tax subtotal from pending confirmation', () => {
+  const props = { companyName: 'Fixture', screens: 12, months: 4, impressions: 123 };
+  const verified = render(success, { onContinue() {}, campaignData: { ...props, budget: 120000 } });
+  assert.ok(verified.html.includes('Subtotal registrado (sin ITBIS)'));
+  assert.ok(verified.html.includes((120000).toLocaleString('es-DO')));
+  assert.ok(!verified.html.includes('Pendiente de confirmación'));
+  for (const campaignData of [{ ...props, budget: null }, undefined]) {
+    const pending = render(success, { onContinue() {}, campaignData });
+    assert.ok(pending.html.includes('Pendiente de confirmación'));
+    assert.ok(pending.html.includes('sin volver a registrarte'));
+    assert.doesNotMatch(pending.html, /RD\$\s*0/);
+    assert.ok(pending.html.includes('Ir a iniciar sesión'));
+  }
 });

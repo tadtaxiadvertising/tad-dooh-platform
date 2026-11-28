@@ -1,5 +1,6 @@
 import type { PortalRequestRecord } from "@/types/admin-api";
 import { getErrorMessage } from "@/lib/error-message";
+import { parseContentRequestMedia } from "@/lib/content-request-media";
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import type { GetServerSideProps } from "next";
@@ -49,20 +50,41 @@ export default function RequestsPage() {
       .finally(() => setLoading(false));
   };
 
+  // Approval here is administrative only; financial, creative and campaign
+  // side effects are suspended in the API until #299 is reconciled.
+  const canApprove = (request: PortalRequestRecord) =>
+    request.type === "GENERAL" && !request.campaignId;
+
   const handleAction = async (id: string, status: "APPROVED" | "REJECTED") => {
     setProcessing(true);
     try {
-      // NOTE: Content linking is now handled server-side in PortalRequestsService.update()
-      // The backend activates the campaign, links media, and dispatches FORCE_SYNC on approval.
       await updatePortalRequest(id, { status, adminNotes });
       loadRequests();
       setSelectedRequest(null);
       setAdminNotes("");
       alert(
-        `Petición ${status === "APPROVED" ? "✅ Aprobada — Contenido desplegado en flota" : "❌ Rechazada"} correctamente.`,
+        `Petición ${status === "APPROVED" ? "aprobada administrativamente" : "rechazada"} correctamente.`,
       );
     } catch (err: unknown) {
       alert("Error: " + (getErrorMessage(err) || "No se pudo procesar"));
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleSaveNotes = async (id: string) => {
+    setProcessing(true);
+    try {
+      await updatePortalRequest(id, { adminNotes });
+      loadRequests();
+      setSelectedRequest(null);
+      setAdminNotes("");
+      alert("Notas guardadas sin aprobar ni ejecutar la solicitud.");
+    } catch (err: unknown) {
+      alert(
+        "Error: " +
+          (getErrorMessage(err) || "No se pudieron guardar las notas"),
+      );
     } finally {
       setProcessing(false);
     }
@@ -92,6 +114,8 @@ export default function RequestsPage() {
 
     return isOfPortalType && matchesFilter && matchesSearch;
   });
+
+  const contentMedia = parseContentRequestMedia(selectedRequest?.data);
 
   return (
     <>
@@ -243,20 +267,25 @@ export default function RequestsPage() {
 
                 <div className="flex items-center gap-4">
                   <button
-                    onClick={() => setSelectedRequest(req)}
+                    onClick={() => {
+                      setSelectedRequest(req);
+                      setAdminNotes(req.adminNotes || "");
+                    }}
                     className="px-8 py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-tad-yellow transition-all"
                   >
                     Revisar Detalles
                   </button>
                   {req.status === "PENDING" && (
                     <>
-                      <button
-                        onClick={() => handleAction(req.id, "APPROVED")}
-                        title="Aprobar Petición"
-                        className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-500/5 group-hover:scale-110"
-                      >
-                        <CheckCircle2 className="w-6 h-6" />
-                      </button>
+                      {canApprove(req) && (
+                        <button
+                          onClick={() => handleAction(req.id, "APPROVED")}
+                          title="Aprobar solicitud general"
+                          className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-500/5 group-hover:scale-110"
+                        >
+                          <CheckCircle2 className="w-6 h-6" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleAction(req.id, "REJECTED")}
                         title="Rechazar Petición"
@@ -345,38 +374,47 @@ export default function RequestsPage() {
                   </p>
                 </div>
 
-                {selectedRequest.type === "CONTENT_UPDATE" &&
-                  selectedRequest.data && (
-                    <div className="bg-tad-yellow/5 border border-tad-yellow/10 rounded-3xl p-8 flex items-center justify-between">
-                      <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center border border-tad-yellow/20 text-tad-yellow">
-                          <Play className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-black uppercase tracking-widest text-white">
-                            Nuevo Media Asset
-                          </h4>
-                          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em] mt-1">
-                            {typeof selectedRequest.data === "string"
-                              ? JSON.parse(selectedRequest.data).filename
-                              : selectedRequest.data.filename}
-                          </p>
-                        </div>
+                {selectedRequest.type === "CONTENT_UPDATE" && (
+                  <div className="bg-tad-yellow/5 border border-tad-yellow/10 rounded-3xl p-8 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-6 min-w-0">
+                      <div className="w-14 h-14 shrink-0 bg-black rounded-2xl flex items-center justify-center border border-tad-yellow/20 text-tad-yellow">
+                        <Play className="w-6 h-6" />
                       </div>
-                      <button
-                        onClick={() => {
-                          const url =
-                            typeof selectedRequest.data === "string"
-                              ? JSON.parse(selectedRequest.data).url
-                              : selectedRequest.data.url;
-                          window.open(url, "_blank");
-                        }}
-                        className="flex items-center gap-2 px-6 py-3 bg-white text-black text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-tad-yellow transition-all"
-                      >
-                        <ExternalLink className="w-3 h-3" /> Previsualizar
-                      </button>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-white">
+                          Nuevo Media Asset
+                        </h4>
+                        <p className="text-[10px] text-zinc-400 font-bold break-all mt-1">
+                          {contentMedia.filename ?? "Nombre no disponible"}
+                        </p>
+                        {!contentMedia.url && (
+                          <p
+                            className="mt-2 text-xs text-zinc-400"
+                            role="status"
+                          >
+                            Vista previa no disponible.
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  )}
+                    <button
+                      type="button"
+                      disabled={!contentMedia.url}
+                      onClick={() => {
+                        if (contentMedia.url) {
+                          window.open(
+                            contentMedia.url,
+                            "_blank",
+                            "noopener,noreferrer",
+                          );
+                        }
+                      }}
+                      className="flex items-center gap-2 px-6 py-3 bg-white text-black text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-tad-yellow transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Previsualizar
+                    </button>
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-4">
@@ -393,20 +431,51 @@ export default function RequestsPage() {
 
               <div className="flex gap-4 relative z-10 pt-4">
                 <button
-                  disabled={processing}
+                  disabled={processing || selectedRequest.status !== "PENDING"}
                   onClick={() => handleAction(selectedRequest.id, "REJECTED")}
                   className="flex-1 py-5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all disabled:opacity-30"
                 >
                   Rechazar Petición
                 </button>
                 <button
-                  disabled={processing}
+                  disabled={
+                    processing ||
+                    selectedRequest.status !== "PENDING" ||
+                    !canApprove(selectedRequest)
+                  }
+                  title={
+                    !canApprove(selectedRequest)
+                      ? "Aprobación automática suspendida por seguridad"
+                      : "Aprobar solicitud general"
+                  }
                   onClick={() => handleAction(selectedRequest.id, "APPROVED")}
                   className="flex-1 py-5 bg-tad-yellow text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-xl shadow-tad-yellow/5 disabled:opacity-30"
                 >
-                  Aprobar y Ejecutar
+                  Aprobar solicitud
                 </button>
               </div>
+              {!canApprove(selectedRequest) &&
+                selectedRequest.status === "PENDING" && (
+                  <button
+                    disabled={processing}
+                    onClick={() => handleSaveNotes(selectedRequest.id)}
+                    className="w-full rounded-2xl border border-tad-yellow/30 bg-tad-yellow/10 px-5 py-3 text-xs font-bold text-tad-yellow hover:bg-tad-yellow/20 disabled:opacity-30"
+                  >
+                    Guardar notas sin aprobar
+                  </button>
+                )}
+              {!canApprove(selectedRequest) &&
+                selectedRequest.status === "PENDING" && (
+                  <p
+                    role="alert"
+                    className="text-amber-300 text-xs font-medium relative z-10"
+                  >
+                    Aprobación automática suspendida para esta solicitud:
+                    requiere revisión financiera o de publicación antes de
+                    ejecutar cambios en campañas y tablets. Puedes documentarla
+                    o rechazarla sin efectos automáticos.
+                  </p>
+                )}
             </motion.div>
           </div>
         )}

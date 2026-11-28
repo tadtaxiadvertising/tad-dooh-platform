@@ -26,6 +26,7 @@ describe("OnboardingController security boundary", () => {
   const tenantGuard = new TenantGuard();
   const service = {
     onboardAdvertiser: jest.fn(),
+    quoteAdvertiser: jest.fn(),
     completeOnboarding: jest.fn(),
   };
   const controller = new OnboardingController(
@@ -33,6 +34,43 @@ describe("OnboardingController security boundary", () => {
   );
 
   beforeEach(() => jest.clearAllMocks());
+
+  it("exposes a public read-only quote delegated to server verification", async () => {
+    const handler = OnboardingController.prototype.quote;
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, handler)).toBe(true);
+    service.quoteAdvertiser.mockResolvedValue({
+      baseMonthlyScreenRate: 2500,
+      effectiveMonthlyScreenRate: 1500,
+      discountPercent: 40,
+    });
+    const request = {
+      expectedScreens: 1,
+      campaignMonths: 1,
+      includeProduction: false,
+      referralCode: "DRIVER_TEST_1",
+    };
+    const response = await controller.quote(request);
+    expect(service.quoteAdvertiser).toHaveBeenCalledWith(request);
+    expect(response.discountPercent).toBe(40);
+  });
+
+  it("forwards the registration attempt key without changing public access", async () => {
+    const request = {
+      name: "Fixture",
+      companyName: "Fixture Company",
+      email: "signup@example.invalid",
+      phone: "8095550101",
+      password: "fixture-password",
+      budget: 1,
+      expectedScreens: 1,
+      targetCity: "Santiago",
+    };
+    const key = "12345678-1234-4234-8234-123456789abc";
+    await controller.onboard(request, key);
+    expect(service.onboardAdvertiser).toHaveBeenCalledWith(request, key);
+    await controller.onboard(request);
+    expect(service.onboardAdvertiser).toHaveBeenCalledWith(request, undefined);
+  });
 
   it("keeps initial registration public", () => {
     expect(

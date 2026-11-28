@@ -28,6 +28,7 @@ import { SupabaseModule } from "./modules/supabase/supabase.module";
 import { SheetsModule } from "./modules/sheets/sheets.module";
 import { AuthService } from "./modules/auth/auth.service";
 import { SupabaseAuthGuard } from "./modules/auth/guards/supabase-auth.guard";
+import { AdvertiserAccountStatusGuard } from "./modules/auth/guards/advertiser-account-status.guard";
 import { LoggerMiddleware } from "./middleware/logger.middleware";
 import { SimulationModule } from "./modules/simulation/simulation.module";
 import { AntigravityModule } from "./antigravity/antigravity.module";
@@ -166,6 +167,12 @@ import { HealthController } from "./health/health.controller";
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    // Enforce current PostgreSQL advertiser status on ALL private API routes.
+    // Must run AFTER authentication and RBAC; onboarding exceptions are explicit.
+    {
+      provide: APP_GUARD,
+      useClass: AdvertiserAccountStatusGuard,
     },
     // SHELTER C-AD1: ThrottlerGuard global — aplica rate limiting en todas las rutas
     {

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import type { AdvertiserOffer } from "@tad/impact-calculator";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import "clsx";
@@ -14,7 +15,15 @@ import CommitmentStep, {
   CommitmentForm,
 } from "@/components/onboarding/CommitmentStep";
 import SuccessStep from "@/components/onboarding/SuccessStep";
-import { estimateCampaign } from "../../components/advertiser/simulatorPricing";
+import {
+  estimateCampaign,
+  matchesAdvertiserOffer,
+} from "../../components/advertiser/simulatorPricing";
+import {
+  campaignDraftFromSearch,
+  CITIES,
+  type DemoCity,
+} from "../../lib/landing/model";
 import {
   captureReferralCode,
   clearReferralCode,
@@ -32,11 +41,19 @@ const EMPTY_FORM: CommitmentForm = {
 };
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
+const PENDING_REGISTRATION_KEY = "tad_advertiser_registration_pending_v1";
 
 export default function AdvertiserOnboarding() {
   const router = useRouter();
   const [step, setStep] = useState<OnboardingStep>(1);
-  const [, setMounted] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+  const [quoteState, setQuoteState] = useState<{
+    key: string;
+    offer: AdvertiserOffer;
+  } | null>(null);
+  const [quoteStatus, setQuoteStatus] = useState<
+    "none" | "checking" | "verified" | "invalid" | "error"
+  >("none");
 
   const [simulator, setSimulator] = useState<SimulatorConfig>({
     screens: 1,
@@ -44,6 +61,7 @@ export default function AdvertiserOnboarding() {
     frequencySeconds: 30,
     includeProduction: false, // Opcional, desactivado por defecto
   });
+  const [city, setCity] = useState<DemoCity>("sd");
   const [form, setForm] = useState<CommitmentForm>(EMPTY_FORM);
   const [agreements, setAgreements] = useState<CommitmentAgreements>({
     representative: false,
@@ -54,23 +72,125 @@ export default function AdvertiserOnboarding() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submissionUncertain, setSubmissionUncertain] = useState(false);
+  // Synchronous lock covers repeated events before React commits loading state.
+  const submissionLocked = useRef(false);
   const [campaignData, setCampaignData] = useState<{
     companyName: string;
     screens: number;
     months: number;
-    budget: number;
+    budget: number | null;
     impressions: number;
   } | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-    captureReferralCode();
+    // Persist only an outcome-unknown marker, never credentials or form data.
+    // A reload/back navigation must not silently create a new attempt.
+    try {
+      if (window.sessionStorage.getItem(PENDING_REGISTRATION_KEY) !== null) {
+        submissionLocked.current = true;
+        setSubmissionUncertain(true);
+        return;
+      }
+    } catch {
+      // Storage can be blocked; submission independently fails closed below.
+    }
+    setReferralCode(captureReferralCode() || "");
+    const draft = campaignDraftFromSearch(window.location.search);
+    if (draft) {
+      setCity(draft.city);
+      setSimulator((current) => ({
+        ...current,
+        screens: draft.screens,
+        months: draft.months,
+      }));
+    }
   }, []);
 
-  const estimate = estimateCampaign(simulator);
+  const quoteKey = `${referralCode}:${simulator.screens}:${simulator.months}:${simulator.includeProduction}`;
+  const verifiedOffer = quoteState?.key === quoteKey ? quoteState.offer : null;
+  const effectiveQuoteStatus = !referralCode
+    ? "none"
+    : verifiedOffer
+      ? "verified"
+      : quoteStatus === "verified"
+        ? "checking"
+        : quoteStatus;
 
-  const nextStep = () => setStep((s) => Math.min(s + 1, 4) as OnboardingStep);
+  // A code in a URL or in an input is never proof of eligibility.
+  // The API resolves it against the Driver table; stale responses are ignored.
+  useEffect(() => {
+    setQuoteState(null);
+    if (!referralCode) {
+      setQuoteStatus("none");
+      return;
+    }
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(referralCode)) {
+      setQuoteStatus("invalid");
+      return;
+    }
+    setQuoteStatus("checking");
+    const abort = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch("/api/proxy/onboarding/advertiser/quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: abort.signal,
+          body: JSON.stringify({
+            expectedScreens: simulator.screens,
+            campaignMonths: simulator.months,
+            includeProduction: simulator.includeProduction,
+            referralCode,
+          }),
+        });
+        if (!res.ok) {
+          if (res.status === 400) {
+            if (!abort.signal.aborted) setQuoteStatus("invalid");
+            return;
+          }
+          throw new Error("Quote API unavailable");
+        }
+        const offer: unknown = await res.json();
+        if (
+          !matchesAdvertiserOffer(offer, {
+            screens: simulator.screens,
+            months: simulator.months,
+            includeProduction: simulator.includeProduction,
+            verifiedDriverCode: true,
+          })
+        ) {
+          throw new Error("Unexpected quote response");
+        }
+        if (!abort.signal.aborted) {
+          setQuoteState({ key: quoteKey, offer });
+          setQuoteStatus("verified");
+        }
+      } catch {
+        if (!abort.signal.aborted) setQuoteStatus("error");
+      }
+    }, 300);
+    return () => {
+      window.clearTimeout(timer);
+      abort.abort();
+    };
+  }, [
+    quoteKey,
+    referralCode,
+    simulator.screens,
+    simulator.months,
+    simulator.includeProduction,
+  ]);
+
+  const estimate = estimateCampaign(simulator);
+  const displayedBudget = verifiedOffer?.subtotal ?? estimate.total;
+
+  const nextStep = () => {
+    if (!submissionLocked.current)
+      setStep((s) => Math.min(s + 1, 4) as OnboardingStep);
+  };
   const prevStep = () => {
+    if (submissionLocked.current) return;
     setError("");
     setStep((s) => Math.max(s - 1, 1) as OnboardingStep);
   };
@@ -111,18 +231,50 @@ export default function AdvertiserOnboarding() {
   };
 
   const handleSubmit = async () => {
+    if (submissionLocked.current) return;
+    if (
+      referralCode &&
+      (!verifiedOffer || effectiveQuoteStatus !== "verified")
+    ) {
+      setError(
+        "Verifica tu código de conductor o elimínalo para continuar sin descuento.",
+      );
+      return;
+    }
     const validationError = validateCommitment();
     if (validationError) {
       setError(validationError);
       return;
     }
 
+    let attemptKey: string;
+    try {
+      // Check synchronously again, including a submission before mount effects.
+      if (window.sessionStorage.getItem(PENDING_REGISTRATION_KEY) !== null) {
+        submissionLocked.current = true;
+        setSubmissionUncertain(true);
+        return;
+      }
+      attemptKey = window.crypto.randomUUID();
+      // Persist before the first network side effect. If storage is denied,
+      // do not send an attempt that cannot be contained after a reload.
+      window.sessionStorage.setItem(PENDING_REGISTRATION_KEY, "pending");
+    } catch {
+      setError(
+        "No pudimos iniciar un registro seguro. Utiliza HTTPS y permite el almacenamiento de sesión en tu navegador.",
+      );
+      return;
+    }
+    submissionLocked.current = true;
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/proxy/onboarding/advertiser", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": attemptKey,
+        },
         body: JSON.stringify({
           name: form.repName.trim(),
           companyName: form.companyName.trim(),
@@ -130,13 +282,13 @@ export default function AdvertiserOnboarding() {
           email: form.email.trim(),
           phone: form.phone.trim(),
           password: form.password,
-          budget: estimate.total,
+          budget: displayedBudget,
           expectedScreens: simulator.screens,
-          targetCity: "Santo Domingo",
+          targetCity: CITIES[city],
           campaignMonths: simulator.months,
           frequencySeconds: simulator.frequencySeconds,
           includeProduction: simulator.includeProduction,
-          referralCode: captureReferralCode() || undefined,
+          referralCode: referralCode || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -145,24 +297,55 @@ export default function AdvertiserOnboarding() {
         : data?.message;
 
       if (!res.ok) {
-        throw new Error(
-          serverMessage || "No pudimos registrar tu campaña. Intenta de nuevo.",
-        );
+        // Validation and throttling reject before provisioning. All other
+        // outcomes may require reconciliation, including identity conflicts.
+        if (res.status === 400 || res.status === 429) {
+          // Only known pre-provisioning rejection permits a new attempt.
+          window.sessionStorage.removeItem(PENDING_REGISTRATION_KEY);
+          submissionLocked.current = false;
+          setError(
+            res.status === 429
+              ? "Demasiadas solicitudes. Espera antes de intentarlo nuevamente."
+              : typeof serverMessage === "string"
+                ? serverMessage
+                : "Revisa los datos de tu solicitud antes de continuar.",
+          );
+          return;
+        }
+        setSubmissionUncertain(true);
+        return;
       }
 
+      // A confirmed HTTP success no longer needs an outcome-unknown marker.
+      // If removal fails, retain the conservative recovery state after reload.
+      try {
+        window.sessionStorage.removeItem(PENDING_REGISTRATION_KEY);
+      } catch {
+        // Do not turn a successful response into a new submission opportunity.
+      }
       clearReferralCode();
+      // A successful registration must not be submitted again just because
+      // its receipt is incomplete. Only display a contract-consistent amount.
+      const recordedBudget = matchesAdvertiserOffer(data?.quote, {
+        screens: simulator.screens,
+        months: simulator.months,
+        includeProduction: simulator.includeProduction,
+        verifiedDriverCode: Boolean(referralCode),
+      })
+        ? data.quote.subtotal
+        : null;
       setCampaignData({
         companyName: form.companyName.trim(),
         screens: simulator.screens,
         months: simulator.months,
-        budget: estimate.total,
+        budget: recordedBudget,
         impressions: estimate.impressions,
       });
-      setTimeout(() => setStep(4), 600);
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Ocurrió un error inesperado.",
-      );
+      // Keep the lock after a successful request and transition immediately.
+      setStep(4);
+    } catch {
+      // The request may have committed before the response was lost.
+      setSubmissionUncertain(true);
     } finally {
       setLoading(false);
     }
@@ -171,6 +354,37 @@ export default function AdvertiserOnboarding() {
   const TOTAL_STEPS = 4;
 
   const renderStepContent = () => {
+    if (submissionUncertain) {
+      return (
+        <section
+          aria-labelledby="uncertain-registration-title"
+          className="flex flex-1 flex-col justify-center gap-5 py-12"
+        >
+          <h1
+            id="uncertain-registration-title"
+            className="text-3xl font-black text-white"
+          >
+            No pudimos confirmar el resultado
+          </h1>
+          <p role="status" className="text-sm leading-relaxed text-[#AAAAAA]">
+            Tu solicitud pudo haber sido procesada. No vuelvas a registrarte
+            hasta comprobar su estado. No podemos confirmar que exista una
+            cuenta o campaña.
+          </p>
+          <p className="text-sm leading-relaxed text-[#AAAAAA]">
+            Intenta acceder al portal. Si no puedes acceder, contacta al equipo
+            TAD para verificar el registro antes de enviar otra solicitud.
+          </p>
+          <button
+            type="button"
+            onClick={goToLogin}
+            className="min-h-[52px] rounded-xl bg-[#FDCB01] px-4 py-3 text-sm font-black text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+          >
+            Ir a iniciar sesión
+          </button>
+        </section>
+      );
+    }
     switch (step) {
       case 1:
         return <BenefitsStep onNext={nextStep} />;
@@ -178,11 +392,20 @@ export default function AdvertiserOnboarding() {
         return (
           <SimulatorStep
             config={simulator}
+            city={city}
+            onCityChange={setCity}
             onChange={(patch) =>
               setSimulator((prev) => ({ ...prev, ...patch }))
             }
             onNext={nextStep}
             onPrev={prevStep}
+            referralCode={referralCode}
+            onReferralCodeChange={(code) => {
+              setReferralCode(code);
+              if (!code) clearReferralCode();
+            }}
+            verifiedOffer={verifiedOffer}
+            quoteStatus={effectiveQuoteStatus}
           />
         );
       case 3:
@@ -197,7 +420,8 @@ export default function AdvertiserOnboarding() {
             campaignSummary={{
               screens: simulator.screens,
               months: simulator.months,
-              budget: estimate.total,
+              city: CITIES[city],
+              budget: displayedBudget,
             }}
             onSubmit={handleSubmit}
             onPrev={prevStep}
@@ -239,6 +463,7 @@ export default function AdvertiserOnboarding() {
         onNext={nextStep}
         onPrev={prevStep}
         onClose={goToLogin}
+        navigationLocked={loading || submissionUncertain || step === 4}
         stepLabels={["Beneficios", "Simulador", "Compromiso", "Éxito"]}
       >
         {renderStepContent()}

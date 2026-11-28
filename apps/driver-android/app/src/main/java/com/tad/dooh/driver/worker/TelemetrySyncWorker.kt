@@ -126,7 +126,11 @@ class TelemetrySyncWorker @AssistedInject constructor(
 
             try {
                 val response = apiService.trackBatch(request)
-                Log.d(TAG, "Chunk OK — saved=${response.saved}, skipped=${response.skipped}")
+                if (!response.acknowledges(points.size)) {
+                    Log.w(TAG, "Incomplete GPS receipt; retaining chunk for WorkManager retry")
+                    return Result.retry()
+                }
+                Log.d(TAG, "Chunk GPS receipt — count=${response.count}, input=${response.input}")
 
                 // ── Delete synced chunk from Room ──────────────────────────
                 telemetryDao.deleteByTsList(chunk.map { it.ts })

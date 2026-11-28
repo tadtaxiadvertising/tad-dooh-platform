@@ -136,15 +136,15 @@ Cada conductor actúa como un nodo de venta mediante su código QR único.
 * [x] **Background Telemetry**: Debounce de 5 min para preservar batería de dispositivos móviles.
 * [x] **Bypass API (PostgREST)**: Telemetría enviada directamente a la base de datos para saltar límites de Vercel/NestJS.
 * [x] **CORS & handshake**: Estabilizado vía `x-device-id` whitelist para el handshake entre la app móvil y el gateway de NestJS.
-* [x] **PostGIS & RLS Isolation (spatial_ref_sys)**: Corrección de ownership y blindaje de migraciones de Prisma. La tabla de extensión no se somete a RLS directo, evitando error 42501 y permitiendo que todas las tablas de negocio (GPS batching, suscripciones, usuarios) activen RLS sin conflictos de permisos en Supabase/Easypanel.
+* [ ] **PostGIS & RLS Isolation (spatial_ref_sys)**: PENDIENTE de verificación sobre el proyecto canónico de EasyPanel. El proyecto Supabase conectado el 2026-11-21 tenía PostGIS ausente; no se considera resuelto el error 42501 ni autorizado ningún cambio de propiedad, GRANT o RLS. Incidente P0 #217.
 
 ---
 
 ### Fase 7: Gobernanza de Base de Datos y RLS (DBA PostGIS SOP)
 
-Protocolo determinista para la manipulación de Row Level Security (RLS) en presencia de extensiones geográficas (PostGIS):
+Protocolo de diagnóstico de solo lectura de Row Level Security (RLS) y PostGIS. La reparación requiere respaldo restaurado y revisión de migración independiente (P0 #217):
 
-1. **Aislamiento de Extensiones**: `spatial_ref_sys` es administrado por `supabase_admin`. No debe forzarse RLS directo sobre esta tabla.
-2. **Privilegios de Aplicación**: El rol `postgres` mantiene `GRANT ALL ON TABLE public.spatial_ref_sys TO postgres;` para consultas de proyección espacial en telemetría de taxis.
-3. **Migraciones Idempotentes**: Prisma ORM ejecuta guardas defensivas en migraciones de RLS para excluir tablas de sistema.
-4. **Verificación Periódica**: Auditoría automatizada vía skill `tad-postgis-rls-resolver` y script `apps/api/scripts/dba_remediation.cjs`.
+1. **Aislamiento de Extensiones**: verificar primero mediante catálogo si PostGIS y `spatial_ref_sys` existen y quién es el propietario; no asumir ownership ni forzar RLS sobre objetos de extensión.
+2. **Privilegios de Aplicación**: comprobar permisos efectivos mediante consultas de catálogo; no presumir grants ni modificarlos automáticamente.
+3. **Migraciones Revisadas**: no ejecutar DDL ni migraciones sobre la base activa durante el incidente P0; preparar una migración aditiva revisada tras verificar backup/restauración aislada.
+4. **Verificación Periódica**: utilizar únicamente el protocolo de diagnóstico de solo lectura de la skill `tad-postgis-rls-resolver`. El ejecutor `apps/api/scripts/dba_remediation.cjs` está retirado y rechaza su ejecución.

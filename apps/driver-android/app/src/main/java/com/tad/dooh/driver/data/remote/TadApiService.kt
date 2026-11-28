@@ -116,12 +116,22 @@ data class ChangePasswordResponse(
     val success: Boolean = true
 )
 
-/** Telemetry batch upload confirmation. */
+/**
+ * Server receipt: { count, input }. count=0 is a valid idempotent replay.
+ * Missing or malformed acknowledgements must never erase queued GPS.
+ */
 @Serializable
 data class TrackBatchResponse(
-    val saved: Int = 0,
-    val skipped: Int = 0
-)
+    val count: Int? = null,
+    val input: Int? = null
+) {
+    fun acknowledges(expectedInput: Int): Boolean {
+        val persisted = count ?: return false
+        return expectedInput > 0 &&
+            input == expectedInput &&
+            persisted in 0..expectedInput
+    }
+}
 
 // ─── Retrofit interface ──────────────────────────────────────────────────────
 

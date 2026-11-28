@@ -16,8 +16,8 @@
  *      procesa la cola offline por lotes hacia /fleet/track-batch sin bloquear
  *      la UI thread. Reconexión (navigator.onLine) triggera sync automático.
  *
- *   4. IndexedDB BUFFER — coordenadas acumuladas en TADTelemetryDB con
- *      status 'batch' (en vuelo) y 'offline' (pendientes). Máx 500 registros.
+ *   4. IndexedDB BUFFER — coordenadas persistidas en TADTelemetryDB.
+ *      No descartar datos pendientes para imponer un límite de registros.
  *
  *   5. KILL-SWITCH 402 — HTTP 402 del backend → destruye worker GPS,
  *      invalida JWT local, dispara TAD_FORCE_LOGOUT, activa PaymentLockOverlay.
@@ -33,12 +33,13 @@ import { supabase } from "@tad/services";
 import { usePaymentStore } from "../store/usePaymentStore";
 import { openDB } from "../utils/indexedDb";
 import { emitNotification } from "../lib/notificationEngine";
+import { isCompleteGpsBatchReceipt } from "../lib/gps-batch-receipt";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 const BATCH_SIZE = 10;
 const FLUSH_INTERVAL_MS = 300_000; // 5 minutos — debounce estricto (regla de negocio)
-const MAX_OFFLINE_RECORDS = 500;
 const DRIP_CHUNK_SIZE = 50; // Tamaño de chunk para drip-sync offline
+const GPS_UPLOAD_MAX_BATCH_SIZE = 500; // Compatible con el límite del API
 const LIVE_PING_THROTTLE_MS = 30_000; // 30s — MAP-SPEC-2026
 const SYNC_IDLE_DELAY_MS = 200; // requestIdleCallback fallback delay
 // Delay post-reconnect para stabilizar red
@@ -103,89 +104,59 @@ async function readCoordsByStatus(
 }
 
 async function writeBatchCoords(batch: TelemetryCoord[]): Promise<void> {
-  try {
-    const db = await openDB();
+  if (!batch.length) return;
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
     const tx = db.transaction("telemetry", "readwrite");
     const store = tx.objectStore("telemetry");
-    return new Promise<void>((resolve) => {
-      const allRequest = store.getAll();
-      allRequest.onsuccess = () => {
-        const all: StoredTelemetryCoord[] = allRequest.result || [];
-        all
-          .filter((x) => x.status === "batch")
-          .forEach((x) => store.delete(x.ts));
-        batch.forEach((coord) => store.put({ ...coord, status: "batch" }));
-        resolve();
-      };
-      allRequest.onerror = () => resolve();
-    });
-  } catch {
-    /* graceful */
-  }
+    // Never delete unrelated newly captured or unsent batch points.
+    batch.forEach((coord) => store.put({ ...coord, status: "batch" }));
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error ?? new Error("GPS_BATCH_WRITE_FAILED"));
+    tx.onerror = () => reject(tx.error ?? new Error("GPS_BATCH_WRITE_FAILED"));
+  });
 }
 
+/** Move a batch into durable offline storage without evicting unsent history. */
 async function appendOfflineCoords(coords: TelemetryCoord[]): Promise<void> {
-  try {
-    const db = await openDB();
+  if (!coords.length) return;
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
     const tx = db.transaction("telemetry", "readwrite");
     const store = tx.objectStore("telemetry");
-    return new Promise<void>((resolve) => {
-      const allRequest = store.getAll();
-      allRequest.onsuccess = () => {
-        const all: StoredTelemetryCoord[] = allRequest.result || [];
-        const offlineRecords = all.filter((x) => x.status === "offline");
-        const merged = [...offlineRecords, ...coords];
-        const toKeep = merged.slice(-MAX_OFFLINE_RECORDS);
-        const toKeepKeys = new Set(toKeep.map((x) => x.ts));
-        offlineRecords.forEach((x) => {
-          if (!toKeepKeys.has(x.ts)) store.delete(x.ts);
-        });
-        toKeep.forEach((coord) => store.put({ ...coord, status: "offline" }));
-        resolve();
-      };
-      allRequest.onerror = () => resolve();
-    });
-  } catch {
-    /* graceful */
-  }
+    coords.forEach((coord) => store.put({ ...coord, status: "offline" }));
+    tx.oncomplete = () => resolve();
+    tx.onabort = () =>
+      reject(tx.error ?? new Error("GPS_OFFLINE_WRITE_FAILED"));
+    tx.onerror = () =>
+      reject(tx.error ?? new Error("GPS_OFFLINE_WRITE_FAILED"));
+  });
 }
 
-async function clearOfflineCoords(): Promise<void> {
-  try {
-    const db = await openDB();
+/** Remove only fully acknowledged points with the expected queue status. */
+async function removeCoordsByKeys(
+  keys: number[],
+  status: "batch" | "offline",
+): Promise<void> {
+  if (!keys.length) return;
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
     const tx = db.transaction("telemetry", "readwrite");
     const store = tx.objectStore("telemetry");
-    return new Promise<void>((resolve) => {
-      const allRequest = store.getAll();
-      allRequest.onsuccess = () => {
-        const all: StoredTelemetryCoord[] = allRequest.result || [];
-        all
-          .filter((x) => x.status === "offline")
-          .forEach((x) => store.delete(x.ts));
-        resolve();
+    keys.forEach((key) => {
+      const read = store.get(key);
+      read.onsuccess = () => {
+        if (
+          (read.result as StoredTelemetryCoord | undefined)?.status === status
+        ) {
+          store.delete(key);
+        }
       };
-      allRequest.onerror = () => resolve();
     });
-  } catch {
-    /* graceful */
-  }
-}
-
-// A2: elimina SOLO las claves específicas (ts) de la cola offline,
-// preservando cualquier item nuevo añadido concurrentemente durante el sync.
-async function removeOfflineCoordsByKeys(keys: number[]): Promise<void> {
-  if (keys.length === 0) return;
-  try {
-    const db = await openDB();
-    const tx = db.transaction("telemetry", "readwrite");
-    const store = tx.objectStore("telemetry");
-    return new Promise<void>((resolve) => {
-      keys.forEach((k) => store.delete(k));
-      resolve();
-    });
-  } catch {
-    /* graceful */
-  }
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error ?? new Error("GPS_ACK_DELETE_FAILED"));
+    tx.onerror = () => reject(tx.error ?? new Error("GPS_ACK_DELETE_FAILED"));
+  });
 }
 
 // ─── Kill-Switch ──────────────────────────────────────────────────────────────
@@ -244,6 +215,7 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
   );
   const lastLivePingRef = useRef<number>(0);
   const syncInProgressRef = useRef(false);
+  const batchFlushInProgressRef = useRef(false);
 
   const resolveApiBase = useCallback(() => "/api/proxy", []);
 
@@ -305,66 +277,67 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
       syncInProgressRef.current = true;
 
       let processed = 0;
-      let remainingQueue = await readCoordsByStatus("offline");
+      let remainingQueue: TelemetryCoord[] = [];
+      try {
+        remainingQueue = await readCoordsByStatus("offline");
+        while (remainingQueue.length > 0) {
+          const chunk = remainingQueue.slice(0, DRIP_CHUNK_SIZE);
+          const processedKeys = chunk.map((c) => c.ts);
 
-      while (remainingQueue.length > 0) {
-        const chunk = remainingQueue.slice(0, DRIP_CHUNK_SIZE);
-        // A2: guardar las claves (ts) de los items procesados para eliminarlos
-        // SOLO a ellos, preservando items nuevos añadidos concurrentemente.
-        const processedKeys = chunk.map((c) => c.ts);
-
-        try {
-          const res = await postTrackBatch(apiBase, driverId, deviceId, chunk);
-          if (res.status === 402) {
-            triggerKillSwitch({
-              setLock,
-              setConnectionStatus,
-              stopTracking: stopTrackingRef.current,
-            });
-            break;
+          try {
+            const res = await postTrackBatch(
+              apiBase,
+              driverId,
+              deviceId,
+              chunk,
+            );
+            if (res.status === 402) {
+              triggerKillSwitch({
+                setLock,
+                setConnectionStatus,
+                stopTracking: stopTrackingRef.current,
+              });
+              break; // Keep every unacknowledged point on disk.
+            }
+            if (!(await isCompleteGpsBatchReceipt(res, chunk.length))) {
+              break;
+            }
+            // A valid receipt is not enough until IndexedDB commits the ACK.
+            await removeCoordsByKeys(processedKeys, "offline");
+          } catch {
+            break; // Retry all outstanding points after connectivity returns.
           }
-          if (!res.ok) break;
-        } catch {
-          break;
+
+          processed += chunk.length;
+          // Include points queued concurrently, never clear the whole store.
+          remainingQueue = await readCoordsByStatus("offline");
+          setOfflineCount(remainingQueue.length);
+
+          if (remainingQueue.length > 0) {
+            await new Promise<void>((resolve) =>
+              scheduleIdleTask(() => resolve()),
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.random() * 800 + 200),
+            );
+          }
         }
 
-        processed += chunk.length;
-        remainingQueue = remainingQueue.slice(chunk.length);
-        // A2: solo elimina las claves procesadas, no sobrescribe toda la cola.
-        await removeOfflineCoordsByKeys(processedKeys);
-        setOfflineCount(remainingQueue.length);
-
-        // Non-blocking: yield a la UI thread entre chunks
-        if (remainingQueue.length > 0) {
-          await new Promise<void>((resolve) =>
-            scheduleIdleTask(() => resolve()),
-          );
-          // Delay aleatorio para no saturar backend
-          await new Promise((resolve) =>
-            setTimeout(resolve, Math.random() * 800 + 200),
-          );
+        if (processed > 0) {
+          void emitNotification("SYNC_COMPLETED", {
+            processed,
+            remaining: remainingQueue.length,
+          });
         }
-      }
 
-      if (remainingQueue.length === 0) {
-        await clearOfflineCoords();
-        setOfflineCount(0);
-      }
-
-      syncInProgressRef.current = false;
-
-      if (processed > 0) {
-        void emitNotification("SYNC_COMPLETED", {
+        return {
           processed,
           remaining: remainingQueue.length,
-        });
+          success: remainingQueue.length === 0,
+        };
+      } finally {
+        syncInProgressRef.current = false;
       }
-
-      return {
-        processed,
-        remaining: remainingQueue.length,
-        success: remainingQueue.length === 0,
-      };
     },
     [postTrackBatch, setLock],
   );
@@ -375,84 +348,119 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
   // ─── Flush: envía batch al backend ────────────────────────────────────────
   const flushBatch = useCallback(
     async (forceFlush = false) => {
-      const storageBatch = await readCoordsByStatus("batch");
-      const combined = [...storageBatch, ...memoryBufferRef.current];
-
-      if (combined.length === 0) return;
-      if (!forceFlush && combined.length < BATCH_SIZE) return;
-
-      memoryBufferRef.current = [];
-      await writeBatchCoords([]);
-
-      if (!isOnlineRef.current) {
-        await appendOfflineCoords(combined);
-        setBatchCount(0);
-        const len = (await readCoordsByStatus("offline")).length;
-        setOfflineCount(len);
-        void emitNotification("OFFLINE_MODE", { pointsBuffered: len });
-        return;
-      }
-
-      setConnectionStatus("syncing");
-
+      if (batchFlushInProgressRef.current) return;
+      batchFlushInProgressRef.current = true;
       try {
-        const apiBase = resolveApiBase();
-        const userRaw = localStorage.getItem("tad_driver_user");
-        let user = null;
-        // A2: JSON.parse seguro — si localStorage corrupto, no romper el sync loop.
-        if (userRaw) {
-          try {
-            user = JSON.parse(userRaw);
-          } catch {
-            user = null;
-          }
-        }
-        const driverId = user?.entityId || "unknown";
-        const deviceId = localStorage.getItem("TAD_DEVICE_ID") || "unknown";
-
-        if (driverId === "unknown" || deviceId === "unknown") {
-          await appendOfflineCoords(combined);
-          setBatchCount(0);
-          setOfflineCount((await readCoordsByStatus("offline")).length);
-          setConnectionStatus("offline");
-          return;
-        }
-
-        const res = await postTrackBatch(apiBase, driverId, deviceId, combined);
-
-        if (res.status === 402) {
-          triggerKillSwitch({
-            setLock,
-            setConnectionStatus,
-            stopTracking: stopTrackingRef.current,
-          });
-          return;
-        }
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        setBatchCount(0);
-
-        const offlineQueue = await readCoordsByStatus("offline");
-        if (offlineQueue.length > 0) {
-          const syncResult = await syncOfflineQueue(
-            apiBase,
-            driverId,
-            deviceId,
+        const storageBatch = await readCoordsByStatus("batch");
+        const combined = Array.from(
+          new Map(
+            [...storageBatch, ...memoryBufferRef.current].map((coord) => [
+              coord.ts,
+              coord,
+            ]),
+          ).values(),
+        ).slice(0, GPS_UPLOAD_MAX_BATCH_SIZE);
+        const processedKeys = combined.map((coord) => coord.ts);
+        const keys = new Set(processedKeys);
+        const dropAcknowledgedMemory = () => {
+          memoryBufferRef.current = memoryBufferRef.current.filter(
+            (coord) => !keys.has(coord.ts),
           );
-          if (!syncResult.success) {
+          setBatchCount(memoryBufferRef.current.length);
+        };
+
+        if (combined.length === 0) return;
+        if (!forceFlush && combined.length < BATCH_SIZE) return;
+
+        // Keep IndexedDB and memory intact while HTTP is in flight.
+        if (!isOnlineRef.current) {
+          await appendOfflineCoords(combined);
+          dropAcknowledgedMemory();
+          const len = (await readCoordsByStatus("offline")).length;
+          setOfflineCount(len);
+          void emitNotification("OFFLINE_MODE", { pointsBuffered: len });
+          return;
+        }
+
+        setConnectionStatus("syncing");
+
+        try {
+          const apiBase = resolveApiBase();
+          const userRaw = localStorage.getItem("tad_driver_user");
+          let user = null;
+          // A2: JSON.parse seguro — si localStorage corrupto, no romper el sync loop.
+          if (userRaw) {
+            try {
+              user = JSON.parse(userRaw);
+            } catch {
+              user = null;
+            }
+          }
+          const driverId = user?.entityId || "unknown";
+          const deviceId = localStorage.getItem("TAD_DEVICE_ID") || "unknown";
+
+          if (driverId === "unknown" || deviceId === "unknown") {
+            await appendOfflineCoords(combined);
+            dropAcknowledgedMemory();
+            setOfflineCount((await readCoordsByStatus("offline")).length);
             setConnectionStatus("offline");
             return;
           }
-        }
 
-        setConnectionStatus("online");
+          const res = await postTrackBatch(
+            apiBase,
+            driverId,
+            deviceId,
+            combined,
+          );
+
+          if (res.status === 402) {
+            triggerKillSwitch({
+              setLock,
+              setConnectionStatus,
+              stopTracking: stopTrackingRef.current,
+            });
+            // Preserve pending GPS during a subscription suspension.
+            await appendOfflineCoords(combined);
+            dropAcknowledgedMemory();
+            return;
+          }
+
+          if (!(await isCompleteGpsBatchReceipt(res, combined.length))) {
+            throw new Error("GPS_BATCH_ACK_INCOMPLETE");
+          }
+          // Commit local deletion only after server confirms full processing.
+          await removeCoordsByKeys(processedKeys, "batch");
+          dropAcknowledgedMemory();
+
+          const offlineQueue = await readCoordsByStatus("offline");
+          if (offlineQueue.length > 0) {
+            const syncResult = await syncOfflineQueue(
+              apiBase,
+              driverId,
+              deviceId,
+            );
+            if (!syncResult.success) {
+              setConnectionStatus("offline");
+              return;
+            }
+          }
+
+          setConnectionStatus("online");
+        } catch {
+          await appendOfflineCoords(combined);
+          dropAcknowledgedMemory();
+          setOfflineCount((await readCoordsByStatus("offline")).length);
+          setConnectionStatus("offline");
+          void emitNotification("SYNC_FAILED", {
+            pointsBuffered: combined.length,
+          });
+        }
       } catch {
-        await appendOfflineCoords(combined);
-        setBatchCount(0);
-        setOfflineCount((await readCoordsByStatus("offline")).length);
+        // A failed disk write leaves the original batch and RAM snapshot intact.
         setConnectionStatus("offline");
-        void emitNotification("SYNC_FAILED", { pointsLost: combined.length });
+      } finally {
+        batchFlushInProgressRef.current = false;
       }
     },
     [postTrackBatch, resolveApiBase, setLock, syncOfflineQueue],
@@ -472,7 +480,9 @@ export function useBackgroundTelemetry(): UseBackgroundTelemetryReturn {
     (coord: TelemetryCoord) => {
       memoryBufferRef.current.push(coord);
       setBatchCount((prev) => prev + 1);
-      writeBatchCoords(memoryBufferRef.current);
+      void writeBatchCoords([coord]).catch(() => {
+        setConnectionStatus("offline");
+      });
 
       // ── Realtime broadcast (throttle 30s, MAP-SPEC-2026) ──────────────────
       const now = Date.now();

@@ -1,0 +1,346 @@
+TAP version 13
+# Subtest: production Player builds authenticated API endpoint URLs under /api/v1
+ok 1 - production Player builds authenticated API endpoint URLs under /api/v1
+  ---
+  duration_ms: 101.3315
+  type: 'test'
+  ...
+# Subtest: missing VITE_API_URL does not silently fall back to a retired host
+ok 2 - missing VITE_API_URL does not silently fall back to a retired host
+  ---
+  duration_ms: 7.645
+  type: 'test'
+  ...
+# Subtest: rejects mismatched path, including the historical /api prefix
+ok 3 - rejects mismatched path, including the historical /api prefix
+  ---
+  duration_ms: 1.0884
+  type: 'test'
+  ...
+# Subtest: rejects unsafe production schemes, even if the URL has the right path
+ok 4 - rejects unsafe production schemes, even if the URL has the right path
+  ---
+  duration_ms: 0.6766
+  type: 'test'
+  ...
+# Subtest: allows HTTP only for explicit local development
+ok 5 - allows HTTP only for explicit local development
+  ---
+  duration_ms: 1.1203
+  type: 'test'
+  ...
+# Subtest: rejects secret-bearing credentials, query parameters, and hash fragments
+ok 6 - rejects secret-bearing credentials, query parameters, and hash fragments
+  ---
+  duration_ms: 0.6374
+  type: 'test'
+  ...
+# Subtest: deployment source defaults and Player config agree on Nest global prefix
+ok 7 - deployment source defaults and Player config agree on Nest global prefix
+  ---
+  duration_ms: 16.8272
+  type: 'test'
+  ...
+# Subtest: destroy before a delayed import prevents stale channel creation
+ok 8 - destroy before a delayed import prevents stale channel creation
+  ---
+  duration_ms: 3.8437
+  type: 'test'
+  ...
+# Subtest: destroy releases exactly one channel and suppresses late callbacks
+ok 9 - destroy releases exactly one channel and suppresses late callbacks
+  ---
+  duration_ms: 8.8791
+  type: 'test'
+  ...
+# Subtest: repeat mount/unmount never leaves old subscriptions active
+ok 10 - repeat mount/unmount never leaves old subscriptions active
+  ---
+  duration_ms: 3.4855
+  type: 'test'
+  ...
+# Subtest: load errors are reported only for live subscriptions
+ok 11 - load errors are reported only for live subscriptions
+  ---
+  duration_ms: 1.8718
+  type: 'test'
+  ...
+# Subtest: production SyncManager owns and releases the channel during destroy and init
+ok 12 - production SyncManager owns and releases the channel during destroy and init
+  ---
+  duration_ms: 150.6245
+  type: 'test'
+  ...
+# Subtest: online listener fires only while mounted and cleanup is idempotent
+ok 13 - online listener fires only while mounted and cleanup is idempotent
+  ---
+  duration_ms: 3.0275
+  type: 'test'
+  ...
+# Subtest: remount leaves exactly one listener; offline does not fire online
+ok 14 - remount leaves exactly one listener; offline does not fire online
+  ---
+  duration_ms: 1.5882
+  type: 'test'
+  ...
+# Subtest: both Player managers actually wire the cleanup into destroy
+ok 15 - both Player managers actually wire the cleanup into destroy
+  ---
+  duration_ms: 309.9264
+  type: 'test'
+  ...
+# Subtest: worker scheduling success alone cannot activate or evict previous offline playlist
+ok 16 - worker scheduling success alone cannot activate or evict previous offline playlist
+  ---
+  duration_ms: 10.9798
+  type: 'test'
+  ...
+# Subtest: fully cached new playlist evicts stale videos only after verification
+ok 17 - fully cached new playlist evicts stale videos only after verification
+  ---
+  duration_ms: 0.6131
+  type: 'test'
+  ...
+# Subtest: explicit failed downloads retain the currently playable offline cache
+ok 18 - explicit failed downloads retain the currently playable offline cache
+  ---
+  duration_ms: 0.6162
+  type: 'test'
+  ...
+# Subtest: cache metadata read failure never causes eviction or playlist promotion
+ok 19 - cache metadata read failure never causes eviction or playlist promotion
+  ---
+  duration_ms: 1.5513
+  type: 'test'
+  ...
+# Subtest: failed eviction never returns a false success receipt
+ok 20 - failed eviction never returns a false success receipt
+  ---
+  duration_ms: 1.2613
+  type: 'test'
+  ...
+# Subtest: an empty authorized playlist needs no new download and can clear playback
+ok 21 - an empty authorized playlist needs no new download and can clear playback
+  ---
+  duration_ms: 0.5037
+  type: 'test'
+  ...
+# Subtest: a later cache-ready retry can promote the manifest without changing its assets
+ok 22 - a later cache-ready retry can promote the manifest without changing its assets
+  ---
+  duration_ms: 0.8965
+  type: 'test'
+  ...
+# Subtest: real playback start remains unbillable START
+ok 23 - real playback start remains unbillable START
+  ---
+  duration_ms: 3.2344
+  type: 'test'
+  ...
+# Subtest: only actual playback confirmation maps to billable END
+ok 24 - only actual playback confirmation maps to billable END
+  ---
+  duration_ms: 0.4929
+  type: 'test'
+  ...
+# Subtest: playback failure maps to ERROR, never billable END
+ok 25 - playback failure maps to ERROR, never billable END
+  ---
+  duration_ms: 0.4112
+  type: 'test'
+  ...
+# Subtest: unknown and malformed historical IndexedDB kinds never map to END
+ok 26 - unknown and malformed historical IndexedDB kinds never map to END
+  ---
+  duration_ms: 0.4113
+  type: 'test'
+  ...
+# Subtest: batch preserves device, video, timestamps and maps all three real kinds
+ok 27 - batch preserves device, video, timestamps and maps all three real kinds
+  ---
+  duration_ms: 4.6549
+  type: 'test'
+  ...
+# Subtest: an unknown stored event aborts the entire batch instead of billing it as END
+ok 28 - an unknown stored event aborts the entire batch instead of billing it as END
+  ---
+  duration_ms: 1.5007
+  type: 'test'
+  ...
+# Subtest: invalid historical timestamps cannot silently become confirmed plays
+ok 29 - invalid historical timestamps cannot silently become confirmed plays
+  ---
+  duration_ms: 5.121
+  type: 'test'
+  ...
+# Subtest: does not ACK on put request success before IndexedDB commit
+ok 30 - does not ACK on put request success before IndexedDB commit
+  ---
+  duration_ms: 3.6546
+  type: 'test'
+  ...
+# Subtest: rejects a transaction abort even after put succeeds
+ok 31 - rejects a transaction abort even after put succeeds
+  ---
+  duration_ms: 2.0407
+  type: 'test'
+  ...
+# Subtest: rejects when the IndexedDB transaction errors
+ok 32 - rejects when the IndexedDB transaction errors
+  ---
+  duration_ms: 0.6803
+  type: 'test'
+  ...
+# Subtest: rejects synchronous put failure instead of reporting queued PoP
+ok 33 - rejects synchronous put failure instead of reporting queued PoP
+  ---
+  duration_ms: 0.602
+  type: 'test'
+  ...
+# Subtest: persists original PoP kind, ID, device binding, and timestamp
+ok 34 - persists original PoP kind, ID, device binding, and timestamp
+  ---
+  duration_ms: 3.2009
+  type: 'test'
+  ...
+# Subtest: uses event device identity when player has not been initialized
+ok 35 - uses event device identity when player has not been initialized
+  ---
+  duration_ms: 42.15
+  type: 'test'
+  ...
+# Subtest: acknowledged playback is not locally marked removed before transaction commit
+ok 36 - acknowledged playback is not locally marked removed before transaction commit
+  ---
+  duration_ms: 2.056
+  type: 'test'
+  ...
+# Subtest: two acknowledged playback entries are removed in one committed transaction
+ok 37 - two acknowledged playback entries are removed in one committed transaction
+  ---
+  duration_ms: 0.605
+  type: 'test'
+  ...
+# Subtest: transaction abort after delete requests retains every acknowledged event
+ok 38 - transaction abort after delete requests retains every acknowledged event
+  ---
+  duration_ms: 52.6329
+  type: 'test'
+  ...
+# Subtest: overwritten unacknowledged event aborts cleanup and rolls back previous deletes
+ok 39 - overwritten unacknowledged event aborts cleanup and rolls back previous deletes
+  ---
+  duration_ms: 2.1752
+  type: 'test'
+  ...
+# Subtest: reused key with a newer queuedAt value is not deleted by an old ACK
+ok 40 - reused key with a newer queuedAt value is not deleted by an old ACK
+  ---
+  duration_ms: 8.9795
+  type: 'test'
+  ...
+# Subtest: already-removed records do not trigger deletion of unrelated events
+ok 41 - already-removed records do not trigger deletion of unrelated events
+  ---
+  duration_ms: 0.4687
+  type: 'test'
+  ...
+# Subtest: failed IndexedDB cleanup transaction propagates an error for retry
+ok 42 - failed IndexedDB cleanup transaction propagates an error for retry
+  ---
+  duration_ms: 0.5289
+  type: 'test'
+  ...
+# Subtest: worker stores a real blob in the player video cache before reporting done
+ok 43 - worker stores a real blob in the player video cache before reporting done
+  ---
+  duration_ms: 23.9156
+  type: 'test'
+  ...
+# Subtest: a pre-fix 'done' task without a cached blob must be downloaded again
+ok 44 - a pre-fix 'done' task without a cached blob must be downloaded again
+  ---
+  duration_ms: 4.0934
+  type: 'test'
+  ...
+# Subtest: the worker processes all 16 manifest assets rather than silently clipping to 15
+ok 45 - the worker processes all 16 manifest assets rather than silently clipping to 15
+  ---
+  duration_ms: 46.8896
+  type: 'test'
+  ...
+# Subtest: a failed video-cache commit never reports a completed offline download
+ok 46 - a failed video-cache commit never reports a completed offline download
+  ---
+  duration_ms: 8.0457
+  type: 'test'
+  ...
+# Subtest: HTTP errors do not manufacture downloaded offline media
+ok 47 - HTTP errors do not manufacture downloaded offline media
+  ---
+  duration_ms: 8.3544
+  type: 'test'
+  ...
+# Subtest: a fully committed cached task is skipped without duplicate download work
+ok 48 - a fully committed cached task is skipped without duplicate download work
+  ---
+  duration_ms: 11.3017
+  type: 'test'
+  ...
+# Subtest: a changed checksum requeues the same URL for a new content version
+ok 49 - a changed checksum requeues the same URL for a new content version
+  ---
+  duration_ms: 5.6245
+  type: 'test'
+  ...
+# Subtest: empty media is never marked cached or completed
+ok 50 - empty media is never marked cached or completed
+  ---
+  duration_ms: 96.8987
+  type: 'test'
+  ...
+# Subtest: Supabase nested targeted broadcast syncs only its intended device
+ok 51 - Supabase nested targeted broadcast syncs only its intended device
+  ---
+  duration_ms: 3.0665
+  type: 'test'
+  ...
+# Subtest: legacy flat targeted messages remain compatible
+ok 52 - legacy flat targeted messages remain compatible
+  ---
+  duration_ms: 0.5078
+  type: 'test'
+  ...
+# Subtest: no explicit targets remains a global wake-up
+ok 53 - no explicit targets remains a global wake-up
+  ---
+  duration_ms: 0.5653
+  type: 'test'
+  ...
+# Subtest: empty, malformed or mixed target lists fail closed
+ok 54 - empty, malformed or mixed target lists fail closed
+  ---
+  duration_ms: 0.9464
+  type: 'test'
+  ...
+# Subtest: invalid event/envelope/payload/device never triggers sync
+ok 55 - invalid event/envelope/payload/device never triggers sync
+  ---
+  duration_ms: 0.7719
+  type: 'test'
+  ...
+# Subtest: SyncManager consults the targeting helper rather than top-level targets
+ok 56 - SyncManager consults the targeting helper rather than top-level targets
+  ---
+  duration_ms: 71.8971
+  type: 'test'
+  ...
+1..56
+# tests 56
+# suites 0
+# pass 56
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12401.5779

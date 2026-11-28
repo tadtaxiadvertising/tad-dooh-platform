@@ -282,14 +282,21 @@ export function calculateImpact(input: ImpactInput): ImpactOutput {
       "Cálculo basado en benchmarks internacionales (sin datos operativos RD propios). Incertidumbre alta: ~±40-60%.",
     );
   }
-  if (calibration.staleSourcesCount > 0) {
+  // Public warnings must describe the exact sources used by THIS estimate,
+  // not deprecated historical entries in the global calibration catalog.
+  // A date expires after its final UTC calendar day; never silently renew it.
+  const todayUTC = new Date().toISOString().slice(0, 10);
+  const expiredUsedSources = sourcesUsed.filter(
+    (source) => source.stale === true || source.expiresAt < todayUTC,
+  );
+  if (expiredUsedSources.length > 0) {
     warnings.push(
-      `${calibration.staleSourcesCount} fuente(s) vencida(s) — revisar sources.ts`,
+      `${expiredUsedSources.length} fuente(s) utilizada(s) vencida(s) — revisar vigencia de los benchmarks`,
     );
+    expiredUsedSources.forEach((source) => {
+      warnings.push(`Fuente vencida: ${source.id} (${source.studyName})`);
+    });
   }
-  sourcesUsed.forEach((s) => {
-    if (s.stale) warnings.push(`Fuente vencida: ${s.id} (${s.studyName})`);
-  });
 
   return {
     screensCost,
@@ -405,5 +412,87 @@ export function getCalibrationBadge(): {
     color: "amber",
     description:
       "Calculado con benchmarks IAB/Geopath/NYC-TLC. Incertidumbre ~±40-60%. Datos propios DIGESETT/ONE/eye-tracking pendientes Q4 2026.",
+  };
+}
+
+
+/**
+ * TAD commercial offer for NEW advertiser onboarding requests only.
+ * The base screen rate is RD$2,500/month. A database-verified driver's
+ * referral code discounts the SCREEN price by 40% (RD$1,500/month).
+ * Optional creative production is separate and is not discounted.
+ *
+ * "verifiedDriverCode" MUST come from a trusted backend DB lookup, NEVER
+ * from a client-supplied boolean. This helper does not issue an invoice.
+ */
+export const DRIVER_CODE_DISCOUNT_PERCENT = 40 as const;
+export const ADVERTISER_OFFER_VERSION = "TAD-2026-11-18-DRIVER40" as const;
+
+export interface AdvertiserOfferInput {
+  screens: number;
+  months: number;
+  includeProduction: boolean;
+  verifiedDriverCode: boolean;
+}
+
+export interface AdvertiserOffer {
+  pricingVersion: typeof ADVERTISER_OFFER_VERSION;
+  currency: "DOP";
+  baseMonthlyScreenRate: number;
+  effectiveMonthlyScreenRate: number;
+  screens: number;
+  months: number;
+  baseScreensSubtotal: number;
+  verifiedDriverCode: boolean;
+  discountPercent: number;
+  discountAmount: number;
+  screensSubtotal: number;
+  productionFee: number;
+  subtotal: number;
+  taxesIncluded: false;
+}
+
+export function calculateAdvertiserOffer(input: AdvertiserOfferInput): AdvertiserOffer {
+  if (
+    !Number.isSafeInteger(input.screens) ||
+    input.screens < 1 || input.screens > 100 ||
+    !Number.isSafeInteger(input.months) ||
+    input.months < 1 || input.months > 12 ||
+    typeof input.includeProduction !== "boolean" ||
+    typeof input.verifiedDriverCode !== "boolean"
+  ) {
+    throw new Error("Invalid advertiser quote configuration");
+  }
+
+  const unitPrice = getSource("screen-monthly-rate-rd")?.value;
+  const creativePrice = getSource("creative-production-fee")?.value;
+  if (
+    typeof unitPrice !== "number" || !Number.isSafeInteger(unitPrice) || unitPrice <= 0 ||
+    typeof creativePrice !== "number" || !Number.isSafeInteger(creativePrice) || creativePrice < 0
+  ) {
+    throw new Error("Missing or invalid advertiser price source");
+  }
+
+  const baseScreensSubtotal = input.screens * input.months * unitPrice;
+  const discountPercent = input.verifiedDriverCode ? DRIVER_CODE_DISCOUNT_PERCENT : 0;
+  const discountAmount = Math.round(baseScreensSubtotal * discountPercent / 100);
+  const screensSubtotal = baseScreensSubtotal - discountAmount;
+  const productionFee = input.includeProduction ? creativePrice : 0;
+
+  return {
+    pricingVersion: ADVERTISER_OFFER_VERSION,
+    currency: "DOP",
+    baseMonthlyScreenRate: unitPrice,
+    effectiveMonthlyScreenRate: Math.round(unitPrice * (100 - discountPercent) / 100),
+    screens: input.screens,
+    months: input.months,
+    baseScreensSubtotal,
+    verifiedDriverCode: input.verifiedDriverCode,
+    discountPercent,
+    discountAmount,
+    screensSubtotal,
+    productionFee,
+    subtotal: screensSubtotal + productionFee,
+    taxesIncluded: false,
   };
 }

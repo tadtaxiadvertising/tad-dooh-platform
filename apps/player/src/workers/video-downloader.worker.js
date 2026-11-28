@@ -5,6 +5,9 @@
 const DB_NAME = 'tad_player_download_queue';
 const DB_VERSION = 1;
 const STORE = 'tasks';
+const VIDEO_CACHE_DB_NAME = 'tad_video_cache';
+const VIDEO_CACHE_DB_VERSION = 1;
+const VIDEO_CACHE_STORE = 'videos';
 
 // Enforce the same per-asset cap as BUSINESS_RULES.MAX_VIDEO_SIZE_BYTES (55MB).
 // Oversized media is aborted with an explicit status instead of silently
@@ -13,6 +16,60 @@ const MAX_VIDEO_SIZE_BYTES = 57_671_680;
 
 /** @type {IDBDatabase | null} */
 let database = null;
+/** @type {IDBDatabase | null} */
+let videoCacheDatabase = null;
+
+/** The player only considers a video offline-ready after this commit. */
+function openVideoCacheDatabase() {
+  if (videoCacheDatabase) return Promise.resolve(videoCacheDatabase);
+  return new Promise(function (resolve, reject) {
+    const request = indexedDB.open(VIDEO_CACHE_DB_NAME, VIDEO_CACHE_DB_VERSION);
+    request.onupgradeneeded = function () {
+      if (!request.result.objectStoreNames.contains(VIDEO_CACHE_STORE)) {
+        request.result.createObjectStore(VIDEO_CACHE_STORE, { keyPath: 'url' });
+      }
+    };
+    request.onsuccess = function () {
+      videoCacheDatabase = request.result;
+      resolve(videoCacheDatabase);
+    };
+    request.onerror = function () { reject(request.error); };
+  });
+}
+
+/** Store the *blob*, not just a task status, using the player's existing DB. */
+async function storeVideoBlob(task, blob) {
+  const db = await openVideoCacheDatabase();
+  return new Promise(function (resolve, reject) {
+    const tx = db.transaction(VIDEO_CACHE_STORE, 'readwrite');
+    tx.oncomplete = function () { resolve(); };
+    tx.onabort = function () { reject(tx.error || new Error('VIDEO_CACHE_WRITE_ABORTED')); };
+    tx.onerror = function () { reject(tx.error || new Error('VIDEO_CACHE_WRITE_FAILED')); };
+    tx.objectStore(VIDEO_CACHE_STORE).put({
+      url: task.url,
+      blob: blob,
+      checksum: task.checksum || 'no-checksum',
+      cachedAt: Date.now(),
+      size: blob.size,
+    });
+  });
+}
+
+/** Existing 'done' task rows from older worker builds may lack a video blob. */
+async function hasStoredVideo(asset) {
+  const db = await openVideoCacheDatabase();
+  return new Promise(function (resolve, reject) {
+    const tx = db.transaction(VIDEO_CACHE_STORE, 'readonly');
+    const req = tx.objectStore(VIDEO_CACHE_STORE).get(asset.url);
+    req.onsuccess = function () {
+      const value = req.result;
+      resolve(Boolean(value && value.blob && value.blob.size > 0 &&
+        (!asset.checksum || value.checksum === asset.checksum)));
+    };
+    req.onerror = function () { reject(req.error); };
+  });
+}
+
 
 /**
  * @returns {Promise<IDBDatabase>}
@@ -70,15 +127,10 @@ function putTask(task) {
   return openDatabase().then(function (db) {
     return new Promise(function (resolve, reject) {
       const tx = db.transaction(STORE, 'readwrite');
-      const store = tx.objectStore(STORE);
-      const request = store.put(task);
-
-      request.onsuccess = function () {
-        resolve();
-      };
-      request.onerror = function () {
-        reject(request.error);
-      };
+      tx.oncomplete = function () { resolve(); };
+      tx.onabort = function () { reject(tx.error || new Error('VIDEO_TASK_WRITE_ABORTED')); };
+      tx.onerror = function () { reject(tx.error || new Error('VIDEO_TASK_WRITE_FAILED')); };
+      tx.objectStore(STORE).put(task);
     });
   });
 }
@@ -93,25 +145,17 @@ function updateTaskStatus(id, status) {
     return new Promise(function (resolve, reject) {
       const tx = db.transaction(STORE, 'readwrite');
       const store = tx.objectStore(STORE);
+      let updated;
+      tx.oncomplete = function () { resolve(updated); };
+      tx.onabort = function () { reject(tx.error || new Error('VIDEO_TASK_STATUS_ABORTED')); };
+      tx.onerror = function () { reject(tx.error || new Error('VIDEO_TASK_STATUS_FAILED')); };
       const getReq = store.get(id);
 
       getReq.onsuccess = function () {
         const task = getReq.result;
-        if (!task) {
-          resolve(undefined);
-          return;
-        }
-        task.status = status;
-        const putReq = store.put(task);
-        putReq.onsuccess = function () {
-          resolve(task);
-        };
-        putReq.onerror = function () {
-          reject(putReq.error);
-        };
-      };
-      getReq.onerror = function () {
-        reject(getReq.error);
+        if (!task) return;
+        updated = Object.assign({}, task, { status: status });
+        store.put(updated);
       };
     });
   });
@@ -141,11 +185,12 @@ async function handleSyncAssets(message) {
     return;
   }
 
-  const selectedAssets = candidateAssets
-    .filter(function (asset) {
-      return Boolean(asset && asset.url && asset.filename);
-    })
-    .slice(0, 15);
+  // Queue every manifest asset. Download processing is sequential and each
+  // response is bounded to 55 MB; silently slicing to 15 strands larger
+  // campaigns permanently offline.
+  const selectedAssets = candidateAssets.filter(function (asset) {
+    return Boolean(asset && asset.url && asset.filename);
+  });
 
   /** @type {Map<string, Object>} */
   const existingMap = new Map();
@@ -166,11 +211,16 @@ async function handleSyncAssets(message) {
     const asset = selectedAssets[i];
     const existingTask = existingMap.get(asset.url);
 
-    if (existingTask && (existingTask.status === 'done' || existingTask.status === 'downloading')) {
+    // Old workers marked tasks 'done' without storing the video; do not
+    // trust that status unless the blob is actually cached and current.
+    if (existingTask && existingTask.status === 'done' &&
+      existingTask.checksum === (asset.checksum || null) &&
+      await hasStoredVideo(asset).catch(function () { return false; })) {
       skipped++;
       tasks.push(existingTask);
       continue;
     }
+    // Re-queue stale downloading/error tasks after worker restart or retry.
 
     const task = {
       id: asset.url,
@@ -247,10 +297,16 @@ async function handleDownloadAssets(message) {
         }
 
         const blob = await response.blob();
+        if (blob.size === 0) {
+          throw new Error('Empty media response');
+        }
         if (blob.size > MAX_VIDEO_SIZE_BYTES) {
           throw new Error('Asset exceeds MAX_VIDEO_SIZE_BYTES (' + blob.size + ' bytes)');
         }
 
+        // A successful fetch alone is not an offline download. Only report
+        // 'done' after the full IndexedDB video blob transaction commits.
+        await storeVideoBlob(task, blob);
         await updateTaskStatus(task.id, 'done');
       } catch (error) {
         await updateTaskStatus(task.id, 'error');
@@ -263,7 +319,9 @@ async function handleDownloadAssets(message) {
           status: 'error',
         });
 
-        console.warn('[video-downloader-worker] download failed', error);
+        // URLs may contain signed media query tokens: never print errors
+        // or full URL in device logs.
+        console.warn('[video-downloader-worker] media download/cache failed');
       }
     }
 

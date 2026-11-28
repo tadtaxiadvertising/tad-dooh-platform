@@ -52,6 +52,11 @@ async function bootstrap() {
         { path: "api/health", method: RequestMethod.GET },
         { path: "api/v1", method: RequestMethod.GET },
         { path: "health", method: RequestMethod.GET },
+        // Explicit exclusions: "health" does not match GET /health/full.
+        // Do not expose /health/db to unauthenticated root probes; it includes
+        // operational connection counts and remains under /api/v1.
+        { path: "health/full", method: RequestMethod.GET },
+        { path: "health/ready", method: RequestMethod.GET },
       ],
     });
 
@@ -124,7 +129,7 @@ async function bootstrap() {
       },
       methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
       allowedHeaders:
-        "Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id, X-Tablet-Id, X-Tablet-Key, X-Admin-Secret",
+        "Content-Type, Accept, Authorization, X-Requested-With, X-Device-Id, X-Tablet-Id, X-Tablet-Key, X-Admin-Secret, X-Device-Token",
       credentials: true,
       optionsSuccessStatus: 204,
       preflightContinue: false,

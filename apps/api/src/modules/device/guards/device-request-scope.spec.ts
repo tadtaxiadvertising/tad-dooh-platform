@@ -8,6 +8,7 @@ describe("matchesAuthenticatedDevice", () => {
   });
 
   const crossDeviceCases: Array<[readonly unknown[], string]> = [
+  const invalidCases: Array<[readonly unknown[], string]> = [
     [["TAD-B"], "different device body"],
     [["TAD-A", "TAD-B"], "conflicting header and query"],
     [[["TAD-A"]], "array value"],
@@ -17,6 +18,7 @@ describe("matchesAuthenticatedDevice", () => {
   ];
 
   it.each(crossDeviceCases)("rejects %s (%s)", (values, description) => {
+  it.each(invalidCases)("rejects %s (%s)", (values) => {
     expect(matchesAuthenticatedDevice("TAD-A", values)).toBe(false);
   });
 });

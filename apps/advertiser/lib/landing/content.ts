@@ -10,11 +10,8 @@ export type DemoObjective = keyof typeof OBJECTIVES;
 export const ROLE_CONTENT = {
   advertiser: {
     eyebrow: "TU NEGOCIO, EN EL RECORRIDO",
-    headline: [
-      "La ciudad está en movimiento.",
-      "Tu marca también puede estarlo.",
-    ],
-    lead: "Tu próxima campaña puede salir del feed y entrar al recorrido de cada día. Diseña una idea para pantallas a bordo de taxis, explora el presupuesto y conoce cada paso antes de contratar.",
+    headline: ["Tu marca no espera.", "Va a su encuentro."],
+    lead: "Anuncia tu negocio en pantallas dentro de taxis. Con un código QR en tu anuncio, los pasajeros interesados pueden descubrir tu promoción desde sus celulares. Simula tu inversión sin crear una cuenta.",
     heroCta: "Explorar mi campaña",
     title: "Que tu marca salga a la calle.",
     description:
@@ -25,9 +22,9 @@ export const ROLE_CONTENT = {
       "Actividad y estimaciones con contexto",
     ],
     cta: "Ingresar como anunciante",
-    finalTitle: "Que tu siguiente idea tome las calles.",
+    finalTitle: "Tu próxima campaña puede comenzar aquí.",
     finalCopy:
-      "Llévala a tu portal para revisar las condiciones, la creatividad y la disponibilidad.",
+      "Accede al portal de anunciantes para revisar la creatividad, las condiciones y la disponibilidad. La simulación no reserva inventario.",
   },
   driver: {
     eyebrow: "TU RECORRIDO. OTRA POSIBILIDAD.",
@@ -69,12 +66,20 @@ export const ROLE_FAQS: Record<
 > = {
   advertiser: [
     [
+      "¿Cuánto cuesta una pantalla y qué descuento ofrece el conductor?",
+      "La tarifa base es RD$2,500 por pantalla y mes, antes de impuestos. Un código válido de conductor TAD aplica un descuento del 40 % al importe de pantallas: RD$1,500 por pantalla y mes. El código se valida en el servidor durante el registro; la producción creativa opcional se cotiza por separado.",
+    ],
+    [
       "¿Este presupuesto ya contrata una campaña?",
       "No. El ejemplo ayuda a preparar una idea. Las pantallas, condiciones, contenido y disponibilidad se confirman durante la revisión en el portal autorizado.",
     ],
     [
       "¿Cuántas personas verán mi anuncio?",
-      "Esta demo no estima alcance. Las impresiones dependen de la metodología, la actividad y los supuestos de una campaña; no equivalen a personas únicas ni a atención individual verificada.",
+      "El simulador muestra un rango de impresiones estimadas según la metodología y los supuestos del modelo. No estima cuántas personas únicas verán tu anuncio ni confirma atención individual. La actividad real se interpreta en los reportes de campaña.",
+    ],
+    [
+      "¿Cómo interactúan los pasajeros con una promoción mediante QR?",
+      "Una campaña puede mostrar un código QR para que quien esté interesado lo escanee con su celular y visite una página móvil de la marca. El escaneo es voluntario; no equivale a una compra, ni se garantizan visitas o conversiones. La disponibilidad y medición se validan al configurar la campaña.",
     ],
     [
       "¿Cómo empiezo una campaña?",

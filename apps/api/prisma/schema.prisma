@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(uuid())
+  id        String     @id @default(uuid()) @db.Uuid
   email     String     @unique
   password  String
   name      String
@@ -22,12 +22,12 @@ model User {
 }
 
 model Device {
-  id                String            @id @default(uuid())
+  id                String            @id @default(uuid()) @db.Uuid
   deviceId          String            @unique @map("device_id")
   name              String?
   taxiNumber        String?           @map("taxi_number")
   city              String?
-  status            SystemStatus      @default(OPERATIVO)
+  status            SystemStatus      @default(OPERATIVO) @map("status_enum_217")
   lastSync          DateTime?         @map("last_sync")
   lastHeartbeat     DateTime?         @map("last_heartbeat")
   batteryLevel      Int?              @default(100) @map("battery_level")
@@ -49,7 +49,7 @@ model Device {
   lastSyncAt        DateTime?         @map("last_sync_at")
   lastOnline        DateTime?         @map("last_online")
   lastSyncSuccess   Boolean?          @map("last_sync_success")
-  driverId          String?           @map("driver_id")
+  driverId          String?           @map("driver_id_text_217")
   events            AnalyticsEvent[]
   campaignMetrics   CampaignMetric[]
   campaigns         DeviceCampaign[]
@@ -74,10 +74,10 @@ model Device {
 }
 
 model Campaign {
-  id                String   @id @default(uuid())
+  id                String   @id @default(uuid()) @db.Uuid
   name              String
   advertiser        String
-  advertiserId      String?  @map("advertiser_id")
+  advertiserId      String?  @map("advertiser_id") @db.Uuid
   description       String?
   status            String   @default("PENDING_PAYMENT")
   active            Boolean  @default(true)
@@ -95,7 +95,7 @@ model Campaign {
   campaignMonths    Int?     @default(1) @map("campaign_months")
   includeProduction Boolean? @default(false) @map("include_production")
   targetUrl         String?  @map("target_url")
-  createdById       String?  @map("created_by")
+  createdById       String?  @db.Uuid @map("created_by")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
   facebook          String?
@@ -134,7 +134,7 @@ model Campaign {
 
 model Playlist {
   id         String   @id @default(uuid())
-  campaignId String   @map("campaign_id")
+  campaignId String   @map("campaign_id") @db.Uuid
   name       String
   loopType   String   @default("SEQUENTIAL") // SEQUENTIAL | WEIGHTED | SHUFFLE | PRIORITY
   createdAt  DateTime @default(now()) @map("created_at")
@@ -144,7 +144,7 @@ model Playlist {
 }
 
 model PlaylistItem {
-  campaignId String   @map("campaign_id")
+  campaignId String   @map("campaign_id") @db.Uuid
   deviceId   String   @map("device_id")
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   device     Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
@@ -154,8 +154,8 @@ model PlaylistItem {
 }
 
 model DeviceCampaign {
-  device_id   String
-  campaign_id String
+  device_id   String @db.Uuid @map("device_uuid_217")
+  campaign_id String @db.Uuid
   assigned_at DateTime @default(now())
   campaign    Campaign @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
   device      Device   @relation(fields: [device_id], references: [id], onDelete: Cascade)
@@ -167,12 +167,11 @@ model DeviceCampaign {
 }
 
 model Media {
-  id               String    @id @default(uuid())
+  id               String    @id @default(uuid()) @db.Uuid
   name             String?
   filename         String?
   originalFilename String?   @map("original_filename")
-  mime_type        String?   @map("mime_type")
-  mimeType         String?
+  mimeType         String?   @map("mime_type")
   size             BigInt?
   fileSize         BigInt?   @map("file_size")
   durationSeconds  Int?      @map("duration_seconds")
@@ -184,7 +183,7 @@ model Media {
   hash             String?
   hashMd5          String?   @map("hash_md5")
   hashSha256       String?   @map("hash_sha256")
-  campaign_id      String?
+  campaign_id      String? @db.Uuid
   status           String    @default("READY")
   createdAt        DateTime  @default(now()) @map("created_at")
   qrUrl            String?   @map("qr_url")
@@ -220,8 +219,8 @@ model AnalyticsEvent {
 
 model CampaignMetric {
   id                BigInt   @id @default(autoincrement())
-  campaignId        String   @map("campaign_id")
-  deviceId          String?  @map("device_id")
+  campaignId        String   @map("campaign_id") @db.Uuid
+  deviceId          String?  @map("device_id") @db.Uuid
   date              DateTime
   city              String?
   totalImpressions  Int      @default(0) @map("total_impressions")
@@ -241,7 +240,7 @@ model CampaignMetric {
 
 model DeviceCommand {
   id            String    @id @default(uuid())
-  deviceId      String    @map("device_id")
+  deviceId      String    @map("device_id") @db.Uuid
   commandType   String    @map("command_type")
   commandParams String?   @map("command_params")
   status        String    @default("PENDING")
@@ -258,7 +257,7 @@ model DeviceCommand {
 
 model Video {
   id         String   @id @default(uuid())
-  campaignId String   @map("campaign_id")
+  campaignId String   @map("campaign_id") @db.Uuid
   title      String
   url        String
   duration   Int
@@ -286,7 +285,7 @@ model DeviceHeartbeat {
 }
 
 model PlaybackEvent {
-  id          String   @id @default(uuid())
+  id          String   @id @default(uuid()) @db.Uuid
   deviceId    String   @map("device_id")
   eventType   String   @map("event_type")
   videoId     String   @map("video_id")
@@ -309,8 +308,8 @@ model PlaybackEvent {
 }
 
 model MediaAsset {
-  id               String   @id @default(uuid())
-  campaignId       String   @map("campaign_id")
+  id               String   @id @default(uuid()) @db.Uuid
+  campaignId       String   @map("campaign_id") @db.Uuid
   type             String
   filename         String
   url              String
@@ -349,7 +348,7 @@ model Driver {
   taxiNumber                 String?      @map("taxi_number")
   subscriptionPaid           Boolean      @default(false) @map("subscription_paid")
   subscriptionEnd            DateTime?    @map("subscription_end")
-  status                     SystemStatus @default(PENDIENTE_PAGO)
+  status                     SystemStatus @default(PENDIENTE_PAGO) @map("status_enum_217")
   onboardingStatus           String       @default("PENDING_AGREEMENT") @map("onboarding_status")
   onboardedAt                DateTime     @default(now()) @map("onboarded_at")
   blockedAt                  DateTime?    @map("blocked_at")
@@ -394,14 +393,14 @@ model Driver {
 }
 
 model FinancialTransaction {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @db.Uuid
   type      String
   category  String
   amount    Float
   netAmount Float    @map("net_amount")
   taxAmount Float    @map("tax_amount")
   status    String   @default("PENDING")
-  currency  Currency @default(DOP) @map("currency")
+  currency  Currency @default(DOP) @map("currency_enum_217")
   entityId  String?  @map("entity_id")
   reference String?  @unique
   note      String?
@@ -418,7 +417,7 @@ model FinancialTransaction {
 }
 
 model PayrollPayment {
-  id           String    @id @default(uuid())
+  id           String    @id @default(uuid()) @db.Uuid
   driverId     String    @map("driver_id")
   amount       Float
   month        Int
@@ -468,7 +467,7 @@ model Subscription {
 }
 
 model Advertiser {
-  id             String                   @id @default(uuid())
+  id             String                   @id @default(uuid()) @db.Uuid
   companyName    String                   @map("company_name")
   contactName    String                   @map("contact_name")
   email          String                   @unique
@@ -499,7 +498,7 @@ model Advertiser {
 
 model PortalRequest {
   id           String      @id @default(uuid())
-  advertiserId String?     @map("advertiser_id")
+  advertiserId String?     @map("advertiser_id") @db.Uuid
   driverId     String?     @map("driver_id")
   campaignId   String?     @map("campaign_id")
   type         String
@@ -521,15 +520,15 @@ model PortalRequest {
 }
 
 model DriverLocation {
-  id          String   @id @default(uuid())
-  driverId    String   @map("driver_id")
-  deviceId    String   @map("device_id")
+  id          String   @id @default(uuid()) @db.Uuid
+  driverId    String   @map("driver_id_text_217")
+  deviceId    String   @db.Uuid @map("device_id")
   latitude    Float
   longitude   Float
   speed       Float    @default(0)
   timestamp   DateTime @default(now())
   isSimulated Boolean  @default(false) @map("is_simulated")
-  device      Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   driver      Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   // V12.1.3 (B3 PATCH): UNIQUE constraint requerido por SRE para evitar
@@ -585,12 +584,12 @@ model NotificationQueue {
 /// V12.1.4 (B4 PATCH): Registro de campañas que expirarán pronto para
 /// disparar notificaciones de caducidad a anunciantes.
 model CampaignExpiration {
-  id                 String    @id @default(uuid())
-  campaignId         String
-  advertiserId       String
-  driverId           String?
-  remainingDays      Int
-  notificationSent   Boolean   @default(false)
+  id                 String    @id @default(uuid()) @db.Uuid
+  campaignId         String    @map("campaign_id") @db.Uuid
+  advertiserId       String    @map("advertiser_id")
+  driverId           String?   @map("driver_id")
+  remainingDays      Int       @map("remaining_days")
+  notificationSent   Boolean   @default(false) @map("notification_sent")
   scheduledFor       DateTime  @map("scheduled_for")
   notifiedAt         DateTime? @map("notified_at")
   createdAt          DateTime  @default(now()) @map("created_at")
@@ -668,7 +667,7 @@ model ContractAcceptance {
 
 model AdvertiserSubscription {
   id              String     @id @default(uuid())
-  advertiserId    String     @map("advertiser_id")
+  advertiserId    String     @map("advertiser_id") @db.Uuid
   numberOfScreens Int        @map("number_of_screens")
   monthlyRate     Float      @default(1500.0) @map("monthly_rate")
   taxRate         Float      @default(0.18) @map("tax_rate")
@@ -684,8 +683,8 @@ model AdvertiserSubscription {
 }
 
 model Invoice {
-  id           String     @id @default(uuid())
-  advertiserId String     @map("advertiser_id")
+  id           String     @id @default(uuid()) @db.Uuid
+  advertiserId String     @map("advertiser_id") @db.Uuid
   issueDate    DateTime   @default(now()) @map("issue_date")
   dueDate      DateTime   @map("due_date")
   subtotal     Float
@@ -765,8 +764,8 @@ model SettlementBatch {
 }
 
 model Telemetry {
-  id        String                                @id @default(uuid())
-  driverId  String                                @map("driver_id")
+  id        String                                @id @default(uuid()) @db.Uuid
+  driverId  String                                @map("driver_id_text_217")
   coords    Unsupported("geography(Point, 4326)")
   speed     Float
   battery   Int                                   @default(100)
@@ -774,21 +773,18 @@ model Telemetry {
   timestamp DateTime                              @default(now())
   driver    Driver                                @relation("DriverTelemetry", fields: [driverId], references: [id])
 
-  // NOTE (Prisma schema vs DB): The database applies a COMPUTED unique constraint
-  // on (driver_id, date_trunc('second', timestamp)) — see migration
-  // `20261012_telemetry_gps_burst_fix` (constraint `telemetry_driver_timestamp_sec_unique`).
-  // Prisma does not support computed expressions inside @@unique, so this client-side
-  // model keeps only the legacy composite @@unique for reference. Runtime enforcement
-  // comes from raw SQL `ON CONFLICT (driver_id, date_trunc('second', timestamp))`
-  // in telemetry.service.ts:sync(), which matches the DB constraint exactly.
+  // The #217 expansion retains the legacy driver_id index and adds the canonical
+  // computed unique index on (driver_id_text_217, date_trunc('second', timestamp)).
+  // Prisma cannot express computed @@unique keys. Raw sync targets the canonical
+  // per-second index; this model retains its exact-timestamp client selector.
   @@unique([driverId, timestamp], name: "telemetry_driver_timestamp_unique")
   @@index([driverId, timestamp(sort: Desc)], map: "idx_telemetry_driver_time")
   @@map("telemetry")
 }
 
 model Wallet {
-  id                String @id @default(uuid())
-  driverId          String @unique @map("driver_id")
+  id                String @id @default(uuid()) @db.Uuid
+  driverId          String @unique @map("driver_id_text_217")
   availableBalance  Float  @default(0.0) @map("available_balance")
   pendingWithdrawal Float  @default(0.0) @map("pending_withdrawal")
   bankInfo          Json?  @map("bank_info")
@@ -824,7 +820,7 @@ model SystemSetting {
 }
 
 model CampaignIntent {
-  id              String   @id @default(uuid())
+  id              String   @id @default(uuid()) @db.Uuid
   brandName       String   @map("brand_name")
   budget          Float
   expectedScreens Int      @map("expected_screens")

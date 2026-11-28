@@ -12,6 +12,8 @@ const { VIEWPORT_WIDTHS, assertOpaque, assertNoHorizontalOverflow,
   assertCssZoomReflow, monetaryAmount, setRangeWithKeyboard, installAmountFeedbackProbe,
   assertAmountFeedback } = require('./landing-browser-contracts.cjs');
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
+// Keep the shared stress cases and include every width requested in issue #249.
+const DRIVER_VIEWPORT_WIDTHS = [...new Set([...VIEWPORT_WIDTHS, 375, 428])].sort((a, b) => a - b);
 const results = [];
 
 function localUrl(raw) {
@@ -102,9 +104,100 @@ async function guardContext(context, base, effects) {
   });
 }
 
-function recordErrors(page, errors) {
+function recordErrors(page, errors, failedRequests) {
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('requestfailed', request => failedRequests.push({
+    path: new URL(request.url()).pathname, error: request.failure()?.errorText,
+  }));
+  page.on('response', response => {
+    if (response.status() >= 400) failedRequests.push({
+      path: new URL(response.url()).pathname, status: response.status(),
+    });
+  });
+}
+
+async function assertHeroImage(page, base, label) {
+  const image = page.locator('section[aria-labelledby="hero-title"] figure img');
+  await assertOpaque(image, `${label}: approved taxi image`);
+  await image.evaluate(async element => { await element.decode(); });
+  const source = await image.evaluate(element => ({
+    currentSrc: element.currentSrc, complete: element.complete,
+    width: element.naturalWidth, height: element.naturalHeight,
+    alt: element.alt, loading: element.getAttribute('loading'),
+    preloaded: [...document.querySelectorAll('link[rel="preload"][as="image"]')].some(link =>
+      (element.srcset && link.getAttribute('imagesrcset') === element.srcset)
+      || link.href === element.currentSrc),
+  }));
+  assert.equal(source.complete, true, `${label}: image must finish loading.`);
+  assert.ok(source.width > 0 && source.height > 0, `${label}: image must decode to real pixels.`);
+  const alpha = await image.evaluate(element => {
+    // Inspect decoded pixels from the delivered variant, including Next's
+    // optimized response; a PNG extension or alpha channel alone proves nothing.
+    const canvas = document.createElement('canvas');
+    canvas.width = element.naturalWidth;
+    canvas.height = element.naturalHeight;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) throw new Error('Canvas is unavailable for the taxi transparency check.');
+    context.drawImage(element, 0, 0);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let transparent = 0;
+    let opaque = 0;
+    for (let index = 3; index < pixels.length; index += 4) {
+      if (pixels[index] === 0) transparent++;
+      if (pixels[index] >= 250) opaque++;
+    }
+    const total = canvas.width * canvas.height;
+    return { transparentRatio: transparent / total, opaqueRatio: opaque / total };
+  });
+  assert.ok(alpha.transparentRatio > 0.05,
+    `${label}: more than 5% of delivered pixels must be fully transparent; got ${alpha.transparentRatio}.`);
+  assert.ok(alpha.opaqueRatio > 0.05,
+    `${label}: more than 5% of delivered pixels must preserve opaque taxi/callout content; got ${alpha.opaqueRatio}.`);
+  const requested = new URL(source.currentSrc, base);
+  assert.equal(requested.origin, base.origin, `${label}: load the taxi from the local site.`);
+  const media = new URL(requested.pathname === '/_next/image'
+    ? requested.searchParams.get('url') : requested.href, base);
+  assert.equal(media.origin, base.origin);
+  assert.match(media.pathname, /^\/_next\/static\/media\/tad-driver-taxi-headrest\.[^/]+\.png$|^\/tad-driver-taxi-headrest\.png$/,
+    `${label}: the browser must load the checked-in taxi asset, not an inline or remote substitute.`);
+  assert.match(source.alt, /detrás del reposacabezas del copiloto/i);
+  await image.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
+  const geometry = await image.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    const crop = [];
+    for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+      const bounds = ancestor.getBoundingClientRect();
+      const ancestorStyle = getComputedStyle(ancestor);
+      if (/hidden|clip|scroll|auto/.test(ancestorStyle.overflowX)
+        && (rect.left < bounds.left - 1 || rect.right > bounds.right + 1)) crop.push('horizontal');
+      if (/hidden|clip|scroll|auto/.test(ancestorStyle.overflowY)
+        && (rect.top < bounds.top - 1 || rect.bottom > bounds.bottom + 1)) crop.push('vertical');
+    }
+    const scale = style.objectFit === 'cover'
+      ? Math.max(rect.width / element.naturalWidth, rect.height / element.naturalHeight)
+      : Math.min(rect.width / element.naturalWidth, rect.height / element.naturalHeight);
+    const occluded = [];
+    // Sample both sides, the upper callout region and the taxi body after scrolling
+    // the photograph into view. A visible box alone can still have an overlay.
+    for (const [x, y] of [[0.1, 0.1], [0.5, 0.2], [0.9, 0.1], [0.1, 0.8], [0.5, 0.8], [0.9, 0.8]]) {
+      const target = document.elementFromPoint(rect.left + rect.width * x, rect.top + rect.height * y);
+      if (target !== element) occluded.push([x, y, target?.tagName]);
+    }
+    return { width: rect.width, height: rect.height, left: rect.left, right: rect.right,
+      fit: style.objectFit, crop, occluded, intrinsicRatio: element.naturalWidth / element.naturalHeight,
+      paintedWidth: element.naturalWidth * scale, paintedHeight: element.naturalHeight * scale };
+  });
+  assert.ok(geometry.left >= -1 && geometry.right <= (await page.viewportSize()).width + 1,
+    `${label}: taxi photograph must fit horizontally.`);
+  assert.deepEqual(geometry.crop, [], `${label}: ancestors must not clip the taxi or screen callout.`);
+  assert.ok(geometry.paintedWidth <= geometry.width + 1 && geometry.paintedHeight <= geometry.height + 1,
+    `${label}: object-fit must preserve the complete taxi and screen callout.`);
+  assert.ok(geometry.fit !== 'fill' || Math.abs(geometry.width / geometry.height - geometry.intrinsicRatio) < 0.01,
+    `${label}: preserve the photograph's intrinsic proportions.`);
+  assert.deepEqual(geometry.occluded, [], `${label}: taxi and screen callout must not be covered.`);
+  return source;
 }
 
 async function assertLabGeometry(page, label) {
@@ -165,6 +258,7 @@ async function main() {
   const remote = [];
   const api = [];
   const errors = [];
+  const failedRequests = [];
   const workers = [];
   try {
     const context = await browser.newContext({
@@ -175,7 +269,7 @@ async function main() {
     await installAmountFeedbackProbe(context, amountSelector);
     const page = await context.newPage();
     page.setDefaultTimeout(15_000);
-    recordErrors(page, errors);
+    recordErrors(page, errors, failedRequests);
 
     await check('Guest driver root responds 200 without login redirect', async () => {
       const response = await page.goto(base.href, { waitUntil: 'networkidle', timeout: 60_000 });
@@ -198,6 +292,16 @@ async function main() {
       if (await close.isVisible()) await close.click();
     });
 
+    await check('Approved taxi image loads publicly, decodes and preserves its complete photograph', async () => {
+      const image = await assertHeroImage(page, base, 'Driver desktop');
+      assert.notEqual(image.loading, 'lazy', 'The hero must load eagerly.');
+      assert.equal(image.preloaded, true, 'next/image must preload the priority hero image.');
+      const response = await page.request.get(image.currentSrc);
+      assert.equal(response.status(), 200, 'A guest must be able to fetch the emitted hero asset.');
+      assert.match(response.headers()['content-type'], /^image\//);
+      await page.evaluate(() => scrollTo(0, 0));
+    });
+
     await check('Participation, conditions, FAQ and legal links are discoverable', async () => {
       for (const id of ['como-participar', 'condiciones', 'preguntas']) {
         assert.equal(await page.locator(`#${id}`).count(), 1);
@@ -216,26 +320,30 @@ async function main() {
         'Run default smoke with NEXT_PUBLIC_LANDING_SIGNUP_ENABLED unset or false.');
     });
 
-    await check('Driver cinematic chapters update with keyboard, keep one active option and restore', async () => {
+    await check('Driver opportunity choices update accessible content with keyboard, keep one active option and restore', async () => {
       const hero = page.locator('section[aria-labelledby="hero-title"]');
       const choices = hero.locator('ul[aria-label="Explora las tres oportunidades para conductores"] button');
       assert.equal(await choices.count(), 3);
-      const titles = new Set();
-      for (const [index, channel] of ['screen', 'sales', 'referrals'].entries()) {
+      const summaries = new Set();
+      for (const index of [0, 1, 2]) {
         const button = choices.nth(index);
         await button.focus();
         await button.press('Enter');
         assert.equal(await button.getAttribute('aria-pressed'), 'true');
         assert.equal(await hero.locator('ul[aria-label="Explora las tres oportunidades para conductores"] button[aria-pressed="true"]').count(), 1);
-        const scene = hero.locator('[data-channel="' + channel + '"]');
-        assert.equal(await scene.count(), 1);
-        titles.add(await scene.locator('strong').last().innerText());
-        assert.ok((await hero.locator('#driver-channel-summary').innerText()).trim().length > 40);
+        assert.equal(await button.getAttribute('aria-controls'), 'driver-channel-summary');
+        const summary = hero.locator('#driver-channel-summary');
+        assert.equal(await summary.getAttribute('role'), 'status');
+        assert.equal(await summary.getAttribute('aria-live'), 'polite');
+        const text = (await summary.innerText()).trim();
+        assert.match(text, [ /^Pantalla:/, /^Ventas:/, /^Referidos:/ ][index]);
+        summaries.add(text);
+        assert.ok(text.length > 40);
         assert.ok((await button.evaluate(element => element.getBoundingClientRect().height)) >= 44);
       }
-      assert.equal(titles.size, 3, 'Each chapter needs distinct explanatory media.');
+      assert.equal(summaries.size, 3, 'Each opportunity needs distinct accessible explanatory content.');
       await choices.first().click();
-      assert.equal(await hero.locator('[data-channel="screen"]').count(), 1);
+      assert.match(await hero.locator('#driver-channel-summary').innerText(), /^Pantalla:/);
     });
 
     await check('Three earning streams match independent fixtures through actual keyboard controls', async () => {
@@ -323,12 +431,33 @@ async function main() {
       await assertNoHorizontalOverflow(page, 'Driver after mobile menu navigation');
     });
 
-    await check('Driver landing fits all eight required widths', async () => {
-      for (const width of VIEWPORT_WIDTHS) {
+    await check('Driver landing and complete taxi image fit all required widths', async () => {
+      for (const width of DRIVER_VIEWPORT_WIDTHS) {
         await page.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
         await page.evaluate(() => { document.activeElement?.blur(); scrollTo(0, 0); });
         await assertNoHorizontalOverflow(page, `Driver ${width}px`);
         await assertLabGeometry(page, `Driver ${width}px`);
+        await assertHeroImage(page, base, `Driver ${width}px`);
+        if (width <= 800) {
+          const order = await page.locator('section[aria-labelledby="hero-title"]').evaluate(hero => {
+            const cta = hero.querySelector('a[href="#calculadora"]');
+            const taxi = hero.querySelector('figure');
+            const choices = hero.querySelector('ul[aria-label="Explora las tres oportunidades para conductores"]');
+            if (!cta || !taxi || !choices) return null;
+            return {
+              ctaBottom: cta.getBoundingClientRect().bottom,
+              taxiTop: taxi.getBoundingClientRect().top,
+              taxiBottom: taxi.getBoundingClientRect().bottom,
+              choicesTop: choices.getBoundingClientRect().top,
+            };
+          });
+          assert.ok(order, `Driver ${width}px: missing CTA, taxi or earning choices.`);
+          assert.ok(order.taxiTop >= order.ctaBottom - 2,
+            `Driver ${width}px: approved taxi must follow the primary CTA.`);
+          assert.ok(order.choicesTop >= order.taxiBottom - 2,
+            `Driver ${width}px: earning chapters must follow the taxi image.`);
+        }
+        await page.evaluate(() => scrollTo(0, 0));
         if (screenshots) await page.screenshot({ path: path.join(screenshots, `driver-landing-${width}.png`), fullPage: true });
       }
     });
@@ -389,7 +518,7 @@ async function main() {
       await guardContext(normal, base, { remote, api, workers });
       await installAmountFeedbackProbe(normal, amountSelector);
       const normalPage = await normal.newPage();
-      recordErrors(normalPage, errors);
+      recordErrors(normalPage, errors, failedRequests);
       try {
         const response = await normalPage.goto(base.href, { waitUntil: 'networkidle', timeout: 60_000 });
         assert.equal(response.status(), 200);
@@ -403,23 +532,25 @@ async function main() {
       } finally { await normal.close(); }
     });
 
-    await check('Without JavaScript, driver heading, earnings controls and total remain opaque at all eight widths', async () => {
+    await check('Without JavaScript, driver heading, taxi image, earnings controls and total remain visible at all required widths', async () => {
       const noJs = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: 'block',
         viewport: { width: 390, height: 844 } });
       await guardContext(noJs, base, { remote, api, workers });
       const staticPage = await noJs.newPage();
-      recordErrors(staticPage, errors);
+      recordErrors(staticPage, errors, failedRequests);
       try {
         const response = await staticPage.goto(base.href, { waitUntil: 'load', timeout: 60_000 });
         assert.equal(response.status(), 200);
         assert.equal(new URL(staticPage.url()).pathname, '/');
-        for (const width of VIEWPORT_WIDTHS) {
+        for (const width of DRIVER_VIEWPORT_WIDTHS) {
           await staticPage.setViewportSize({ width, height: width >= 1440 ? 1000 : 844 });
           for (const selector of ['#hero-title', '#driver-lab-ads', '#driver-lab-sales', '#driver-lab-referrals',
             'output[for="driver-lab-ads driver-lab-sales driver-lab-referrals"]']) {
             await assertOpaque(staticPage.locator(selector), `Driver no-JS ${width}px ${selector}`);
           }
           await assertNoHorizontalOverflow(staticPage, `Driver no-JS ${width}px`);
+          await assertHeroImage(staticPage, base, `Driver no-JS ${width}px`);
+          await staticPage.evaluate(() => scrollTo(0, 0));
           assert.equal(await staticPage.locator('header a[href="/driver/login"]').count(), 1);
           assert.equal(await staticPage.locator('a[href="/register"]').count(), 0);
           if (screenshots) await staticPage.screenshot({
@@ -443,6 +574,7 @@ async function main() {
     await check('Public interactions make no remote requests or JavaScript errors', async () => {
       assert.deepEqual(remote, [], 'Unexpected network requests were blocked.');
       assert.deepEqual(errors, [], 'Browser errors occurred.');
+      assert.deepEqual(failedRequests, [], 'Requests failed or returned HTTP errors, including missing hero assets.');
       assert.equal(new URL(page.url()).origin, base.origin);
       assert.equal(new URL(page.url()).pathname, '/');
     });

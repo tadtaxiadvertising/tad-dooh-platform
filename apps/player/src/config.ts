@@ -1,8 +1,13 @@
 // ─── TAD DOOH Player — Environment Configuration ───
 // Read from Vite env vars injected at build time
 
+import { resolvePlayerApiUrl } from "./api-url";
+
 const env = {
-  API_URL: import.meta.env.VITE_API_URL || "https://api.tad.dooh.cloud",
+  API_URL: resolvePlayerApiUrl(
+    import.meta.env.VITE_API_URL,
+    import.meta.env.DEV,
+  ),
   SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || "",
   SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
   KIOSK_URL: import.meta.env.VITE_KIOSK_URL || "",

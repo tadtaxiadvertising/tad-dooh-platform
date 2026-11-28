@@ -39,9 +39,8 @@ export class RolesGuard implements CanActivate {
 
     // RBAC Check: el rol viene inyectado por el SupabaseAuthGuard previo (del JWT)
     if (!user || !user.role) {
-      this.logger.error(
-        `❌ RolesGuard: Intento de acceso sin usuario o rol: ${JSON.stringify(user)}`,
-      );
+      // Never serialize the principal: it may contain PII or untrusted claims.
+      this.logger.error("RBAC_DENIED_MISSING_ROLE");
       throw new ForbiddenException(
         "No tienes permisos suficientes para acceder a este recurso.",
       );
@@ -50,9 +49,8 @@ export class RolesGuard implements CanActivate {
     const hasRole = requiredRoles.includes(user.role as UserRole);
 
     if (!hasRole) {
-      this.logger.warn(
-        `🚫 RolesGuard: Usuario [${user.email}] con rol [${user.role}] intentó acceder a ruta restringida para [${requiredRoles}]`,
-      );
+      // Do not include caller-supplied email, role or JWT fields in logs.
+      this.logger.warn("RBAC_DENIED_INSUFFICIENT_ROLE");
       throw new ForbiddenException(
         `Se requiere uno de los siguientes roles: ${requiredRoles.join(", ")}`,
       );

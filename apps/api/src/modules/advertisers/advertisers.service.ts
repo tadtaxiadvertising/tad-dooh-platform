@@ -1,8 +1,11 @@
+import { withMediaMimeAliases } from "../media/media-response";
+import { advertiserSafeSelect } from "./advertiser-safe-select";
 import {
   Injectable,
   UnauthorizedException,
   Logger,
   BadRequestException,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
@@ -56,9 +59,115 @@ export class AdvertisersService {
     private configService: ConfigService,
   ) {}
 
+  /**
+   * Read-only verification of legacy advertiser sessions issued by login().
+   *
+   * The Next middleware MUST NOT trust JWT.decode(), even when the upstream
+   * identity provider is unreachable. Only a correctly signed, unexpired
+   * advertiser token tied to an existing advertiser passes this check.
+   * Never return credentials or the raw token.
+   */
+  async verifyAdvertiserSession(token: string): Promise<{
+    role: "ADVERTISER";
+    advertiserId: string;
+    status: string;
+  }> {
+    const secret =
+      this.configService.get<string>("SUPABASE_JWT_SECRET") ||
+      this.configService.get<string>("JWT_SECRET");
+
+    if (!secret || typeof token !== "string" || token.length > 8192) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+
+    let claims: jwt.JwtPayload;
+    try {
+      const decoded = jwt.verify(token, secret, { algorithms: ["HS256"] });
+      if (typeof decoded === "string") {
+        throw new Error("Unstructured JWT");
+      }
+      claims = decoded;
+    } catch {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+
+    if (
+      claims.role !== "ADVERTISER" ||
+      claims.app_metadata?.role !== "ADVERTISER" ||
+      typeof claims.sub !== "string" ||
+      !claims.sub ||
+      claims.app_metadata?.entityId !== claims.sub ||
+      typeof claims.email !== "string" ||
+      !claims.email ||
+      claims.purpose !== undefined
+    ) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+
+    const advertiser = await this.prisma.advertiser.findUnique({
+      where: { id: claims.sub },
+      select: { id: true, email: true, status: true },
+    });
+    if (
+      !advertiser ||
+      advertiser.email.trim().toLowerCase() !==
+        claims.email.trim().toLowerCase() ||
+      !["ACTIVE", "PENDING_REVIEW"].includes(advertiser.status)
+    ) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+    return {
+      role: "ADVERTISER",
+      advertiserId: advertiser.id,
+      status: advertiser.status,
+    };
+  }
+
+  /**
+   * Current commercial account status for a SUPABASE-VERIFIED identity.
+   * Never use JWT metadata or a caller-supplied advertiser ID as the source
+   * of authorization. Nest global auth guard supplies verified user data.
+   */
+  async verifyOAuthAdvertiserStatus(identity: {
+    role?: string;
+    entityId?: string | null;
+    email?: string;
+  }): Promise<{ role: "ADVERTISER"; advertiserId: string; status: string }> {
+    if (
+      identity?.role !== "ADVERTISER" ||
+      typeof identity.entityId !== "string" ||
+      !identity.entityId.trim() ||
+      typeof identity.email !== "string" ||
+      !identity.email.trim()
+    ) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+    const advertiser = await this.prisma.advertiser.findUnique({
+      where: { id: identity.entityId },
+      select: { id: true, email: true, status: true },
+    });
+    if (
+      !advertiser ||
+      advertiser.id !== identity.entityId ||
+      advertiser.email.trim().toLowerCase() !==
+        identity.email.trim().toLowerCase() ||
+      !["ACTIVE", "PENDING_REVIEW", "PENDING_ONBOARDING"].includes(
+        advertiser.status,
+      )
+    ) {
+      throw new UnauthorizedException("Sesión de anunciante inválida.");
+    }
+    return {
+      role: "ADVERTISER",
+      advertiserId: advertiser.id,
+      status: advertiser.status,
+    };
+  }
+
   async findAll() {
     return this.prisma.advertiser.findMany({
-      include: {
+      select: {
+        ...advertiserSafeSelect,
         _count: { select: { campaigns: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -66,9 +175,10 @@ export class AdvertisersService {
   }
 
   async findOne(id: string) {
-    return this.prisma.advertiser.findUnique({
+    const advertiser = await this.prisma.advertiser.findUnique({
       where: { id },
-      include: {
+      select: {
+        ...advertiserSafeSelect,
         campaigns: {
           include: {
             metrics: true,
@@ -78,6 +188,15 @@ export class AdvertisersService {
         },
       },
     });
+    return advertiser
+      ? {
+          ...advertiser,
+          campaigns: advertiser.campaigns.map((campaign) => ({
+            ...campaign,
+            media: campaign.media.map(withMediaMimeAliases),
+          })),
+        }
+      : null;
   }
 
   async create(data: {
@@ -97,9 +216,10 @@ export class AdvertisersService {
     if (data.referralCode) {
       const driver = await this.prisma.driver.findUnique({
         where: { referralCode: data.referralCode },
-        select: { id: true },
+        select: { id: true, isSimulated: true },
       });
-      if (driver) {
+      // Do not attribute potential paid referrals to internal test drivers.
+      if (driver && !driver.isSimulated) {
         referredByDriverId = driver.id;
         this.logger.log(
           `🔗 Advertiser ${data.companyName} referred by Driver ${driver.id}`,
@@ -117,6 +237,7 @@ export class AdvertisersService {
         status: BUSINESS_RULES.STATUS.ADVERTISER.INITIAL,
         referredBy: referredByDriverId,
       },
+      select: advertiserSafeSelect,
     });
   }
 
@@ -135,18 +256,26 @@ export class AdvertisersService {
       updateData.password = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
     }
 
-    return this.prisma.advertiser.update({ where: { id }, data: updateData });
+    return this.prisma.advertiser.update({
+      where: { id },
+      data: updateData,
+      select: advertiserSafeSelect,
+    });
   }
 
   async remove(id: string) {
     await this.prisma.campaign.deleteMany({ where: { advertiserId: id } });
-    return this.prisma.advertiser.delete({ where: { id } });
+    return this.prisma.advertiser.delete({
+      where: { id },
+      select: advertiserSafeSelect,
+    });
   }
 
   async getPortalData(id: string) {
     const advertiser = await this.prisma.advertiser.findUnique({
       where: { id },
-      include: {
+      select: {
+        ...advertiserSafeSelect,
         campaigns: {
           where: { active: true },
           include: {
@@ -495,7 +624,7 @@ export class AdvertisersService {
         ...c.media.map((m) => ({
           id: m.id,
           url: m.cdnUrl || m.url,
-          type: m.mimeType || m.mime_type,
+          type: m.mimeType,
           name: m.name || m.filename,
           category: "Vault",
         })),
@@ -669,7 +798,8 @@ export class AdvertisersService {
   async getAdminProfile(id: string) {
     const advertiser = await this.prisma.advertiser.findUnique({
       where: { id },
-      include: {
+      select: {
+        ...advertiserSafeSelect,
         campaigns: {
           orderBy: { createdAt: "desc" },
           include: {
@@ -721,6 +851,13 @@ export class AdvertisersService {
       throw new UnauthorizedException("Credenciales inválidas");
     }
 
+    // Align token issuance with verifyAdvertiserSession(): suspended/unknown
+    // advertisers must not receive a signed token that every protected route
+    // will immediately reject. Validate after password to avoid enumeration.
+    if (!["ACTIVE", "PENDING_REVIEW"].includes(user.status)) {
+      throw new UnauthorizedException("Cuenta de anunciante no habilitada.");
+    }
+
     const payload = {
       sub: user.id,
       email: user.email,
@@ -754,78 +891,23 @@ export class AdvertisersService {
     };
   }
 
-  // RECOVER PASSWORD
-  async recoverPassword(email: string) {
-    const user = await this.prisma.advertiser.findUnique({ where: { email } });
-    if (!user) {
-      // Return success to avoid email enumeration
-      return { success: true, message: "If email exists, recovery sent." };
-    }
-
-    const jwtSecret =
-      this.configService.get<string>("SUPABASE_JWT_SECRET") ||
-      this.configService.get<string>("JWT_SECRET");
-    if (!jwtSecret) {
-      this.logger.error(
-        `[ADVERTISER_AUTH][RECOVER_PASSWORD] JWT secret no configurado para email=${email}.`,
-      );
-      return {
-        success: false,
-        message: "Error de configuración del servidor.",
-      };
-    }
-
-    jwt.sign({ sub: user.id, email: user.email, purpose: "reset" }, jwtSecret, {
-      expiresIn: "15m",
+  // Legacy password recovery has no delivery or single-use token contract.
+  // Keep both endpoints uniformly unavailable until that contract is verified.
+  // Supabase Auth recovery is a separate credential system.
+  async recoverPassword(_email: string): Promise<never> {
+    throw new ServiceUnavailableException({
+      code: "ADVERTISER_PASSWORD_RECOVERY_UNAVAILABLE",
+      message:
+        "La recuperación automática no está disponible. Contacta a soporte de TAD.",
     });
-
-    // FIX B-1: Usar NestJS Logger en lugar de console.log
-    this.logger.log(
-      `[AUTH] Recovery token generado para ${email} — integrar con Resend/SendGrid`,
-    );
-
-    return { success: true, message: "Recovery instructions sent." };
   }
 
-  // RESET PASSWORD (POST-RECOVERY)
-  async resetPassword(token: string, newPass: string) {
-    const jwtSecret =
-      this.configService.get<string>("SUPABASE_JWT_SECRET") ||
-      this.configService.get<string>("JWT_SECRET");
-    if (!jwtSecret) {
-      this.logger.error(
-        "[ADVERTISER_AUTH][RESET_PASSWORD] JWT secret no configurado.",
-      );
-      throw new Error("Error de configuración del servidor.");
-    }
-
-    try {
-      const payload = jwt.verify(token, jwtSecret);
-      if (
-        typeof payload === "string" ||
-        payload.purpose !== "reset" ||
-        typeof payload.sub !== "string"
-      ) {
-        throw new BadRequestException("Token inválido para esta operación");
-      }
-
-      const hashedPassword = await bcrypt.hash(newPass, BCRYPT_ROUNDS);
-
-      await this.prisma.advertiser.update({
-        where: { id: payload.sub },
-        data: { password: hashedPassword },
-      });
-
-      return {
-        success: true,
-        message: "Contraseña actualizada correctamente.",
-      };
-    } catch (err) {
-      this.logger.error(
-        `[ADVERTISER_AUTH][RESET_PASSWORD] Token inválido o expirado: ${err.message}`,
-      );
-      throw new UnauthorizedException("El enlace ha expirado o es inválido.");
-    }
+  async resetPassword(_token: string, _newPass: string): Promise<never> {
+    throw new ServiceUnavailableException({
+      code: "ADVERTISER_PASSWORD_RECOVERY_UNAVAILABLE",
+      message:
+        "La recuperación automática no está disponible. Contacta a soporte de TAD.",
+    });
   }
   /**
    * Endpoint dedicado para obtener facturas del anunciante.

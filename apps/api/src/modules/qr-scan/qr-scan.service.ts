@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { ForbiddenException, Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
 export interface RecordQrScanInput {
@@ -123,6 +123,30 @@ export class QrScanService {
       conversions: converted,
       conversionRate: total > 0 ? (converted / total) * 100 : 0,
     };
+  }
+
+  /**
+   * Driver-only referral metrics. Resolve ownership against the trusted
+   * Driver.referralCode, never a client-supplied driver ID or scan.driverId.
+   * A missing driver/code and another driver's code have the same 403 result.
+   */
+  async getDriverReferralStats(
+    referrerCode: string,
+    driverId: string,
+    days: number = 30,
+  ) {
+    if (!referrerCode?.trim() || !driverId?.trim()) {
+      throw new ForbiddenException("No tienes acceso a estas estadísticas.");
+    }
+
+    const owner = await this.prisma.driver.findFirst({
+      where: { id: driverId, referralCode: referrerCode },
+      select: { id: true },
+    });
+    if (!owner) {
+      throw new ForbiddenException("No tienes acceso a estas estadísticas.");
+    }
+    return this.getReferralStats(referrerCode, days);
   }
 
   /**

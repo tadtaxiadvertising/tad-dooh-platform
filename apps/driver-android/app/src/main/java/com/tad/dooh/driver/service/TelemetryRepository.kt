@@ -212,7 +212,11 @@ class TelemetryRepository(
 
             try {
                 val response = apiService.trackBatch(request)
-                Log.d(TAG, "Manual sync chunk OK — saved=${response.saved}, skipped=${response.skipped}")
+                if (!response.acknowledges(points.size)) {
+                    Log.w(TAG, "Incomplete GPS receipt; retaining manual sync chunk")
+                    return false
+                }
+                Log.d(TAG, "Manual GPS receipt — count=${response.count}, input=${response.input}")
                 telemetryDao.deleteByTsList(chunk.map { it.ts })
 
             } catch (e: HttpException) {

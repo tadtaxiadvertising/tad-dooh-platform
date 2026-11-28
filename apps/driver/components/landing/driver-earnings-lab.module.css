@@ -12,16 +12,16 @@
 .icon { display:grid; place-items:center; width:42px; height:42px; color:#FFD400; background:#FFD40013; border:1px solid #FFD40033; border-radius:12px; flex-shrink:0; }
 .controlTitle { min-width:0; flex:1; }
 .controlTitle label { display:block; font-size:15px; font-weight:800; color:#fff; }
-.controlTitle small { display:block; margin-top:3px; font-size:11px; line-height:1.5; color:#aaafb7; }
+.controlTitle small { display:block; margin-top:3px; font-size:13px; line-height:1.5; color:#aaafb7; }
 .value { color:#FFD400; font-weight:900; font-size:24px; font-variant-numeric:tabular-nums; }
-.control input[type=range] { width:100%; min-height:36px; accent-color:#FFD400; cursor:pointer; }
+.control input[type=range] { width:100%; min-height:44px; accent-color:#FFD400; cursor:pointer; }
 .control input:focus-visible,.next:focus-visible { outline:3px solid #FFD400; outline-offset:5px; }
 .slots { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; margin-top:16px; }
 .slots span { display:grid; place-items:center; height:36px; background:#252a2f; border:1px solid #ffffff1b; border-radius:8px; color:#9da2aa; font-size:11px; transition:background .2s,color .2s; }
 .slots span[data-active=true] { background:#FFD400; color:#161616; border-color:#FFD400; font-weight:800; }
 .result { min-width:0; container-type:inline-size; position:sticky; top:24px; padding:32px; background:radial-gradient(circle at 90% 0%,#6e651d50,transparent 50%),linear-gradient(145deg,#1b211c,#101410); border:1px solid #FFD40042; border-radius:26px; box-shadow:0 24px 65px #0005; }
 .resultTop { display:flex; gap:9px; align-items:center; color:#FFD400; font-size:10px; font-weight:800; letter-spacing:.13em; }
-.resultEyebrow { margin-top:30px; color:#c2c9bf; font-size:12px; }
+.resultEyebrow { margin-top:30px; color:#c2c9bf; font-size:13px; }
 .total { display:block; color:#FFD400; font-size:min(clamp(33px,4vw,53px),14cqi); white-space:nowrap; font-weight:900; line-height:1.2; letter-spacing:-.045em; font-variant-numeric:tabular-nums; margin:10px 0 27px; }
 .breakdown { display:grid; gap:17px; border-top:1px solid #ffffff24; border-bottom:1px solid #ffffff24; padding:22px 0; }
 .breakdown div { display:flex; justify-content:space-between; align-items:start; gap:12px; font-size:11px; line-height:1.5; color:#b4bcb0; }
@@ -36,7 +36,7 @@
 .rateTable tbody tr:hover { background:#13171b44; }
 .rateNote { margin-top:12px; font-size:10px; color:#9da2aa; line-height:1.6; }
 .notice { font-size:11px; color:#bcc5b7; line-height:1.75; }
-.next { display:flex; align-items:center; justify-content:space-between; min-height:50px; margin-top:25px; padding:13px 19px; background:#FFD400; color:#131313; border-radius:11px; font-size:12px; font-weight:800; transition:transform .2s,background .2s; }
+.next { display:flex; align-items:center; justify-content:space-between; min-height:50px; margin-top:25px; padding:13px 19px; background:#FFD400; color:#131313; border-radius:11px; font-size:14px; font-weight:800; transition:transform .2s,background .2s; }
 .next:hover { background:#ffe55b; transform:translateY(-2px); }
 @media (max-width:850px) { .section { width:calc(100% - 40px); padding:64px 0 78px; } .layout { grid-template-columns:minmax(0,1fr); } .result { position:static; } }
 @media (max-width:400px) { .section { width:calc(100% - 32px); } .control { padding:16px; } .result { padding:20px; } .controlTitle label { font-size:13px; } .controlHeader { gap:9px; } }
@@ -71,17 +71,17 @@
 .resultEyebrow { color: #d2d0c8; }
 .total { color: #ffd400; }
 .breakdown { border-color: #ffffff33; }
-.breakdown div { color: #c5c4be; font-size: 12px; }
+.breakdown div { color: #c5c4be; font-size: 13px; flex-wrap: wrap; }
 .breakdown strong { color: #fff; }
-.explainer { color: #d3d0c2; font-size: 12px; }
+.explainer { color: #d3d0c2; font-size: 13px; }
 .explainer strong { color: #fff; }
 .rateTable { margin-top: 20px; border: 1px solid #ffd40040; background: #ffffff09; border-radius: 20px; padding: 21px; }
 .rateTable h3 { margin: 0 0 13px; color: #ffe17c; font-size: 17px; line-height: 1.3; }
 .rateTable dl { margin: 0; display: grid; gap: 13px; }
 .rateTable dl > div { padding-top: 12px; border-top: 1px solid #ffffff22; }
-.rateTable dt { color: #fff1b0; font-size: 12px; font-weight: 800; }
-.rateTable dd { margin: 5px 0 0; color: #c5c4bc; font-size: 11px; line-height: 1.7; }
-.notice { margin-top: 17px; color: #babbb9; font-size: 11px; line-height: 1.75; }
+.rateTable dt { color: #fff1b0; font-size: 13px; font-weight: 800; }
+.rateTable dd { margin: 5px 0 0; color: #c5c4bc; font-size: 13px; line-height: 1.7; }
+.notice { margin-top: 17px; color: #babbb9; font-size: 13px; line-height: 1.75; }
 .next { min-height: 55px; border-radius: 999px; background: #ffd400; color: #151515; }
 .next:hover { background: #ffe775; }
 @media (max-width: 850px) {
@@ -103,7 +103,7 @@
 /* Keep quantity in its own output; the illustrative rate is explanatory text. */
 .valueGroup { display: grid; justify-items: end; flex: 0 0 auto; min-width: 0; text-align: right; line-height: 1.2; }
 .valueGroup .value { font-variant-numeric: tabular-nums; }
-.unit { margin-top: 4px; font-size: 10px; font-weight: 700; color: #d5d1b6; white-space: nowrap; }
+.unit { margin-top: 4px; font-size: 12px; font-weight: 700; color: #d5d1b6; white-space: nowrap; }
 @media (max-width: 400px) {
   .valueGroup { justify-items: start; text-align: left; }
 }
@@ -112,7 +112,7 @@
 .rangeNote {
   margin: 0;
   padding: 2px 8px 4px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.65;
   color: #c4c6c9;
 }
@@ -125,5 +125,5 @@
   .rateTable { padding: 12px; }
 }
 @media (max-width: 400px) {
-  .rangeNote { font-size: 11px; padding-inline: 2px; }
+  .rangeNote { font-size: 13px; padding-inline: 2px; }
 }

@@ -43,7 +43,15 @@ export const BUSINESS_RULES = {
   /** Máximo de campañas activas simultáneas por anunciante */
   MAX_CAMPAIGNS_PER_ADVERTISER: 15,
 
-  /** Costo por campaña para el anunciante en RD$ (subtotal sin ITBIS) */
+  /**
+   * @deprecated Historic fixed rate (RD$1,500). Do not use this as the base
+   * price for NEW advertiser offers. Confirmed base is RD$2,500/screen/month;
+   * RD$1,500 is the 40%-discounted rate ONLY with a server-verified driver
+   * referral code. Use calculateAdvertiserOffer() for new quote requests.
+   *
+   * Kept unchanged until legacy billing/BI consumers and historical invoice
+   * semantics are migrated via an independently reviewed financial rollout.
+   */
   ADVERTISER_COST_PER_CAMPAIGN_RD: 1500,
 
   /** Tasa de ITBIS aplicable (18%) */

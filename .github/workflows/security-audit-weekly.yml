@@ -15,13 +15,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     
-    env:
-      # NEVER hardcode project refs. Set as repo secret: SUPABASE_PROJECT_REF
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF || 'REPLACE_WITH_SECRET' }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,8 +26,35 @@ jobs:
 
       - name: Run Security Audit
         id: audit
+        # Privileged API and PostgreSQL credentials are needed ONLY here;
+        # never inherit them in checkout, setup, artifact or GitHub-script.
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF || 'REPLACE_WITH_SECRET' }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           set -euo pipefail
+
+          # Refuse missing credentials before contacting Supabase. Never print values.
+          if [[ ! "${SUPABASE_PROJECT_REF:-}" =~ ^[a-z0-9]{20}$ ]] ||
+             [[ -z "${SUPABASE_ACCESS_TOKEN:-}" ]] ||
+             [[ -z "${DB_PASSWORD:-}" ]]; then
+            echo "::error::Supabase security audit configuration missing or invalid."
+            exit 1
+          fi
+          # Fail closed on a valid but WRONG Supabase project. The identifier
+          # below is the independently confirmed EasyPanel API project (#217);
+          # changing production requires a reviewed update to this contract.
+          # A project ref is not a credential; no secret values are logged.
+          AUDIT_EXPECTED_PROJECT_REF="ltdcdhqixvbpdcitthqf"
+          if [[ "$SUPABASE_PROJECT_REF" != "$AUDIT_EXPECTED_PROJECT_REF" ]]; then
+            echo "::error::Supabase audit target does not match approved production project."
+            exit 1
+          fi
+          # Libpq reads the password from process environment, not argv/URI.
+          export PGHOST="db.$SUPABASE_PROJECT_REF.supabase.co"
+          export PGUSER="postgres" PGDATABASE="postgres" PGPORT="5432"
+          export PGPASSWORD="$DB_PASSWORD"
           
           echo "=== Supabase Security Audit $(date -u) ==="
           echo "Project: $SUPABASE_PROJECT_REF"
@@ -43,27 +63,36 @@ jobs:
           
           # Helper: API call with error handling
           api_get() {
-            curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF$1"
+            # Pass the Authorization header over stdin, not process argv.
+            curl -fsS --config - "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF$1" <<CURL_CONFIG
+          header = "Authorization: Bearer $SUPABASE_ACCESS_TOKEN"
+          CURL_CONFIG
           }
           
           # 1. Security Advisories
           echo "--- 1. Security Advisories ---"
           ADVISORIES=$(api_get "/database/lints")
-          
+
+          # Management API errors or unexpected JSON must never count as zero
+          # advisories. Keep only aggregate counts in public artifacts.
+          if ! jq -e 'type == "array" and all(.[]; type == "object" and (.name | type == "string" and length > 0) and (.level | IN("ERROR", "WARN", "INFO")))' <<<"$ADVISORIES" >/dev/null; then
+            echo "::error::Invalid Supabase security advisory response."
+            exit 1
+          fi
+
           ERROR_COUNT=$(echo "$ADVISORIES" | jq '[.[] | select(.level=="ERROR")] | length')
           WARN_COUNT=$(echo "$ADVISORIES" | jq '[.[] | select(.level=="WARN")] | length')
           INFO_COUNT=$(echo "$ADVISORIES" | jq '[.[] | select(.level=="INFO")] | length')
           
           echo "ERROR: $ERROR_COUNT | WARN: $WARN_COUNT | INFO: $INFO_COUNT"
-          echo "$ADVISORIES" > advisories.json
-          echo "$ADVISORIES" | jq -r '.[] | select(.level=="ERROR" or .level=="WARN") | "\(.level): \(.name) - \(.detail)"'
+          # Only aggregate counts may be attached to public GitHub artifacts.
+          printf '{"ERROR_COUNT":%s,"WARN_COUNT":%s,"INFO_COUNT":%s}\n' "$ERROR_COUNT" "$WARN_COUNT" "$INFO_COUNT" > advisories-summary.json
+          echo "$ADVISORIES" | jq -r '.[] | select(.level=="ERROR" or .level=="WARN") | "\(.level): \(.name)"'
           
           # 2. Database Size & Usage
           echo ""
           echo "--- 2. Database Size & Usage ---"
-          DB_STATS=$(PGPASSWORD="$DB_PASSWORD" psql \
-            "postgresql://postgres:$DB_PASSWORD@db.$SUPABASE_PROJECT_REF.supabase.co:5432/postgres" \
+          DB_STATS=$(psql -X -v ON_ERROR_STOP=1 \
             -c "
             SELECT 
               pg_size_pretty(pg_database_size('postgres')) as total_db,
@@ -75,8 +104,7 @@ jobs:
           echo "$DB_STATS"
           
           # Check DB size threshold (400MB warning, 450MB critical on 500MB limit)
-          DB_SIZE_MB=$(PGPASSWORD="$DB_PASSWORD" psql \
-            "postgresql://postgres:$DB_PASSWORD@db.$SUPABASE_PROJECT_REF.supabase.co:5432/postgres" \
+          DB_SIZE_MB=$(psql -X -v ON_ERROR_STOP=1 \
             -c "SELECT round(pg_database_size('postgres')/1024/1024) as mb;" -t -A | head -1)
           echo "Database: ${DB_SIZE_MB} MB / 500 MB limit"
           
@@ -92,16 +120,24 @@ jobs:
           echo ""
           echo "--- 3. Storage Usage ---"
           STORAGE=$(api_get "/storage/buckets")
+          if ! jq -e 'type == "array" and all(.[]; type == "object" and (.id | type == "string" and length > 0) and (.name | type == "string" and length > 0) and (.public | type == "boolean"))' <<<"$STORAGE" >/dev/null; then
+            echo "::error::Invalid required Supabase Storage bucket response."
+            exit 1
+          fi
           echo "$STORAGE" | jq -r '.[] | "\(.name): \(.public // false | if . then "public" else "private" end) - \(.file_size_limit // "no limit")"'
           
           # Total storage via Management API (if available)
           STORAGE_TOTAL=$(api_get "/storage/usage" 2>/dev/null || echo '{}')
-          echo "Storage usage: $STORAGE_TOTAL"
+          echo "Storage usage response collected; raw metadata withheld from public logs."
           
           # 4. Auth Users & Config
           echo ""
           echo "--- 4. Auth Users & Config ---"
           AUTH_CONFIG=$(api_get "/config/auth")
+          if ! jq -e 'type == "object" and (.disable_signup | type == "boolean") and (.external_email_enabled | type == "boolean")' <<<"$AUTH_CONFIG" >/dev/null; then
+            echo "::error::Invalid required Supabase Auth configuration response."
+            exit 1
+          fi
           echo "$AUTH_CONFIG" | jq '{leaked_password_protection_enabled, password_min_length, enable_signup, mfa_enabled, jwt_expiry, session_timebox, enable_email_confirmations}'
           
           # Get user count (approximate via list with limit)
@@ -112,6 +148,10 @@ jobs:
           echo ""
           echo "--- 5. Edge Functions ---"
           FUNCTIONS=$(api_get "/functions")
+          if ! jq -e 'type == "array" and all(.[]; type == "object" and (.slug | type == "string" and length > 0) and (.name | type == "string" and length > 0))' <<<"$FUNCTIONS" >/dev/null; then
+            echo "::error::Invalid required Supabase Edge Functions response."
+            exit 1
+          fi
           FUNC_COUNT=$(echo "$FUNCTIONS" | jq 'length')
           echo "Deployed functions: $FUNC_COUNT"
           echo "$FUNCTIONS" | jq -r '.[] | "\(.name): v\(.version // "latest") - \(.status // "unknown")"'
@@ -132,20 +172,34 @@ jobs:
           REALTIME=$(api_get "/realtime/usage" 2>/dev/null || echo '{}')
           echo "Realtime usage: $REALTIME"
           
-          # 7. RLS Deny-by-Default Check
+          # 7. Effective public DML privileges (including inherited PUBLIC grants)
           echo ""
           echo "--- 7. RLS Deny-by-Default Check ---"
-          GRANT_COUNT=$(PGPASSWORD="$DB_PASSWORD" psql \
-            "postgresql://postgres:$DB_PASSWORD@db.$SUPABASE_PROJECT_REF.supabase.co:5432/postgres" \
-            -c "SELECT count(*) FROM information_schema.table_privileges WHERE grantee IN ('anon','authenticated') AND table_schema='public';" \
+          GRANT_COUNT=$(psql -X -v ON_ERROR_STOP=1 \
+            -c "SELECT count(*)::integer
+            FROM pg_catalog.pg_class c
+            JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'public'
+              AND c.relkind IN ('r','p','v','m','f')
+              AND EXISTS (
+                SELECT 1
+                FROM (VALUES ('anon'), ('authenticated')) AS roles(role_name)
+                CROSS JOIN (VALUES ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) AS perms(privilege)
+                WHERE pg_catalog.has_table_privilege(roles.role_name, c.oid, perms.privilege)
+                   OR (perms.privilege IN ('SELECT','INSERT','UPDATE')
+                       AND pg_catalog.has_any_column_privilege(roles.role_name, c.oid, perms.privilege))
+              );" \
             -t -A | head -1)
-          echo "Grants to anon/authenticated on public tables: $GRANT_COUNT"
+          if ! [[ "$GRANT_COUNT" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid effective PostgreSQL client-grant count."
+            exit 1
+          fi
+          echo "Public relations with effective anon/authenticated DML access: $GRANT_COUNT"
           
           # 8. Function search_path (mutable check)
           echo ""
           echo "--- 8. Function search_path (mutable check) ---"
-          MUTABLE_FUNCS=$(PGPASSWORD="$DB_PASSWORD" psql \
-            "postgresql://postgres:$DB_PASSWORD@db.$SUPABASE_PROJECT_REF.supabase.co:5432/postgres" \
+          MUTABLE_FUNCS=$(psql -X -v ON_ERROR_STOP=1 \
             -c "
             SELECT count(*) FROM pg_proc p
             JOIN pg_namespace n ON p.pronamespace = n.oid
@@ -157,8 +211,7 @@ jobs:
           # 9. st_estimatedextent Permissions
           echo ""
           echo "--- 9. st_estimatedextent Permissions ---"
-          PGPASSWORD="$DB_PASSWORD" psql \
-            "postgresql://postgres:$DB_PASSWORD@db.$SUPABASE_PROJECT_REF.supabase.co:5432/postgres" \
+          psql -X -v ON_ERROR_STOP=1 \
             -c "
             SELECT 
               p.proname,
@@ -170,30 +223,34 @@ jobs:
             WHERE n.nspname = 'public' AND p.proname = 'st_estimatedextent';
             "
           
-          # 10. Recent Errors (last 24h)
+          # 10. Long-idle transactions. pg_stat_activity is a live
+          # activity view, NOT an error log (it has no log_time column).
           echo ""
-          echo "--- 10. Recent Errors (24h) ---"
-          PGPASSWORD="$DB_PASSWORD" psql \
-            "postgresql://postgres:$DB_PASSWORD@db.$SUPABASE_PROJECT_REF.supabase.co:5432/postgres" \
+          echo "--- 10. Idle transactions over 5 minutes ---"
+          IDLE_TXN_COUNT=$(psql -X -v ON_ERROR_STOP=1 \
             -c "
-            SELECT 
-              count(*) as error_count,
-              max(log_time) as last_error
+            SELECT count(*)::integer
             FROM pg_catalog.pg_stat_activity
-            WHERE state = 'idle in transaction' 
+            WHERE datname = current_database()
+              AND state = 'idle in transaction'
               AND state_change < now() - interval '5 minutes';
-            " 2>/dev/null || echo "pg_stat_activity check skipped (permissions)"
+            " -t -A | head -1)
+          if ! [[ "$IDLE_TXN_COUNT" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid idle-transaction count from PostgreSQL."
+            exit 1
+          fi
+          echo "Idle transactions older than five minutes: $IDLE_TXN_COUNT"
+          if [ "$IDLE_TXN_COUNT" -gt 0 ]; then
+            echo "::warning::Long-idle transactions detected ($IDLE_TXN_COUNT)."
+          fi
           
           # Long-running queries
-          PGPASSWORD="$DB_PASSWORD" psql \
-            "postgresql://postgres:$DB_PASSWORD@db.$SUPABASE_PROJECT_REF.supabase.co:5432/postgres" \
+          psql -X -v ON_ERROR_STOP=1 \
             -c "
-            SELECT pid, now() - pg_stat_activity.query_start AS duration, query 
-            FROM pg_stat_activity 
-            WHERE (now() - pg_stat_activity.query_start) > interval '30 seconds'
-              AND state = 'active'
-            ORDER BY duration DESC
-            LIMIT 5;
+            SELECT count(*) AS active_queries_over_30_seconds
+            FROM pg_stat_activity
+            WHERE (now() - query_start) > interval '30 seconds'
+              AND state = 'active';
             " 2>/dev/null || echo "Long query check skipped"
           
           # 11. Determine overall status
@@ -201,26 +258,29 @@ jobs:
           echo "=== AUDIT RESULT ==="
           
           # Fail on new ERRORs (excluding known blocked ones)
-          KNOWN_BLOCKED_ERRORS='["rls_disabled_in_public"]'
+          # Do not suppress every RLS-disabled table by lint name.
+          # The only legacy exception is the exact extension-managed object;
+          # missing/unknown metadata fails closed and remains a NEW_ERROR.
+          KNOWN_BLOCKED_ERRORS='{"name":"rls_disabled_in_public","schema":"public","table":"spatial_ref_sys"}'
           NEW_ERRORS=$(echo "$ADVISORIES" | jq --argjson known "$KNOWN_BLOCKED_ERRORS" \
-            '[.[] | select(.level=="ERROR" and (.name | IN($known[])) | not)]')
+            '[.[] | select(.level=="ERROR" and ((.name == $known.name and .metadata.schema == $known.schema and .metadata.name == $known.table) | not))]')
           NEW_ERROR_COUNT=$(echo "$NEW_ERRORS" | jq 'length')
           
           if [ "$NEW_ERROR_COUNT" -gt 0 ]; then
             echo "::error::NEW SECURITY ERRORS DETECTED ($NEW_ERROR_COUNT)"
-            echo "$NEW_ERRORS" | jq -r '.[] | "ERROR: \(.name) - \(.detail)"'
+            echo "$NEW_ERRORS" | jq -r '.[] | "ERROR: \(.name)"'
             echo "new_errors=true" >> $GITHUB_OUTPUT
           fi
           
           # Warn on new WARNs (excluding known)
           KNOWN_WARNS='["extension_in_public","anon_security_definer_function_executable","authenticated_security_definer_function_executable"]'
           NEW_WARNS=$(echo "$ADVISORIES" | jq --argjson known "$KNOWN_WARNS" \
-            '[.[] | select(.level=="WARN" and (.name | IN($known[])) | not)]')
+            '[.[] | select(.level=="WARN" and ((.name | IN($known[])) | not))]')
           NEW_WARN_COUNT=$(echo "$NEW_WARNS" | jq 'length')
           
           if [ "$NEW_WARN_COUNT" -gt 0 ]; then
             echo "::warning::NEW WARNINGS DETECTED ($NEW_WARN_COUNT)"
-            echo "$NEW_WARNS" | jq -r '.[] | "WARN: \(.name) - \(.detail)"'
+            echo "$NEW_WARNS" | jq -r '.[] | "WARN: \(.name)"'
           fi
           
           # Fail if grants found
@@ -235,12 +295,14 @@ jobs:
             echo "mutable_funcs=true" >> $GITHUB_OUTPUT
           fi
           
-          # Check for critical DB size
-          if [ "${DB_SIZE_MB:-0}" -gt 450 ]; then
-            exit 1
-          fi
-          
-          if [ "${new_errors:-false}" = "true" ] || [ "${new_grants:-false}" = "true" ] || [ "${mutable_funcs:-false}" = "true" ] || [ "${db_critical:-false}" = "true" ]; then
+          # The GITHUB_OUTPUT file does NOT set variables in this Bash process.
+          # Fail closed using the actual counters, never ${new_errors:-false}
+          # or other undefined local flags. Keep output flags for issue reporting.
+          if [ "$NEW_ERROR_COUNT" -gt 0 ] ||
+             [ "$GRANT_COUNT" -gt 0 ] ||
+             [ "$MUTABLE_FUNCS" -gt 0 ] ||
+             [ "${DB_SIZE_MB:-0}" -gt 450 ]; then
+            echo "::error::Weekly Supabase audit failed one or more security checks."
             exit 1
           fi
           
@@ -255,46 +317,99 @@ jobs:
         if: always()
         with:
           name: security-advisories-${{ github.run_id }}
-          path: advisories.json
+          path: advisories-summary.json
           retention-days: 30
 
       - name: Create GitHub Issue on failure
-        if: failure() && (steps.audit.outputs.new_errors == 'true' || steps.audit.outputs.new_grants == 'true' || steps.audit.outputs.mutable_funcs == 'true' || steps.audit.outputs.db_critical == 'true')
+        # Preflight, Management API, PostgreSQL and upload failures must be
+        # reported too; audit step outputs may not exist after an early error.
+        if: failure()
         uses: actions/github-script@v7
+        env:
+          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+          AUDIT_NEW_ERRORS: ${{ steps.audit.outputs.new_errors }}
+          AUDIT_NEW_GRANTS: ${{ steps.audit.outputs.new_grants }}
+          AUDIT_MUTABLE_FUNCS: ${{ steps.audit.outputs.mutable_funcs }}
+          AUDIT_DB_CRITICAL: ${{ steps.audit.outputs.db_critical }}
         with:
           script: |
             const fs = require('fs');
-            const advisories = JSON.parse(fs.readFileSync('./advisories.json', 'utf8'));
-            const counts = advisories.reduce((acc, l) => {
-              acc[`${l.level}_COUNT`] = (acc[`${l.level}_COUNT`] || 0) + 1;
-              return acc;
-            }, {});
-            
-            const issues = [];
-            if ('${{ steps.audit.outputs.new_errors }}' === 'true') issues.push('New security ERRORs detected');
-            if ('${{ steps.audit.outputs.new_grants }}' === 'true') issues.push('Grants to anon/authenticated found');
-            if ('${{ steps.audit.outputs.mutable_funcs }}' === 'true') issues.push('Mutable search_path functions found');
-            if ('${{ steps.audit.outputs.db_critical }}' === 'true') issues.push('Database size critical (>450MB/500MB)');
-            
+            // Raw advisories, SQL, URLs, and credentials must never go to
+            // issues. The summary is optional when audit failed early.
+            let counts = null;
+            try {
+              if (fs.existsSync('./advisories-summary.json')) {
+                const parsed = JSON.parse(fs.readFileSync('./advisories-summary.json', 'utf8'));
+                const names = ['ERROR_COUNT', 'WARN_COUNT', 'INFO_COUNT'];
+                if (names.every(key => Number.isSafeInteger(parsed[key]) && parsed[key] >= 0)) {
+                  counts = Object.fromEntries(names.map(key => [key, parsed[key]]));
+                }
+              }
+            } catch {
+              counts = null;
+            }
+
+            const flags = [
+              ['AUDIT_NEW_ERRORS', 'New security ERRORs detected'],
+              ['AUDIT_NEW_GRANTS', 'Client-role table grants detected'],
+              ['AUDIT_MUTABLE_FUNCS', 'Mutable function search_path detected'],
+              ['AUDIT_DB_CRITICAL', 'Database size critical'],
+            ];
+            const findings = flags.filter(([key]) => process.env[key] === 'true')
+              .map(([, reason]) => reason);
+            if (findings.length === 0) {
+              findings.push(process.env.AUDIT_OUTCOME === 'failure'
+                ? 'Audit interrupted or failed before findings were available'
+                : 'Workflow failed in setup, artifact upload, or another step');
+            }
+            const countSummary = counts
+              ? 'ERROR: ' + counts.ERROR_COUNT + ', WARN: ' + counts.WARN_COUNT +
+                ', INFO: ' + counts.INFO_COUNT
+              : 'Unavailable (audit may have failed before creating summary)';
+            const body = [
+              '**Weekly Supabase Security Audit failed.**',
+              'Run: ' + context.runId,
+              'Timestamp (UTC): ' + new Date().toISOString(),
+              'Findings:',
+              ...findings.map(reason => '- ' + reason),
+              'Aggregate advisory counts: ' + countSummary,
+              'Inspect the restricted Actions run for diagnosis; do not paste secrets or raw SQL.',
+            ].join('\n');
+            // Avoid optional assignees/labels blocking issue creation if the
+            // actor is a bot or the repository has no matching labels.
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `🔴 Security Audit Failed - ${issues.join(', ')}`,
-              body: `**Weekly Supabase Security Audit** detected issues.\n\n**Run:** ${context.runId}\n**Project:** ltdcdhqixvbpdcitthqf\n**Timestamp:** ${new Date().toISOString()}\n\n**Issues:**\n${issues.map(i => `- ${i}`).join('\n')}\n\n**Summary:**\n- ERROR: ${counts.ERROR_COUNT || 0}\n- WARN: ${counts.WARN_COUNT || 0}\n- INFO: ${counts.INFO_COUNT || 0}\n\n**Action Required:** Review the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.\n\n**Known Blocked (OK):**\n- rls_disabled_in_public (spatial_ref_sys) - requires Supabase Support\n- extension_in_public (postgis) - requires Supabase Support\n- st_estimatedextent functions - PostGIS system functions\n`,
-              labels: ['security', 'audit', 'supabase'],
-              assignees: ['${{ github.actor }}']
-            })
+              title: 'Security Audit Failed - run ' + context.runId,
+              body,
+            });
 
       - name: Slack Notification on failure
-        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        if: failure()
+        # The Slack webhook is a credential; only this notification receives it.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          curl -X POST -H 'Content-type: application/json' \
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            exit 0
+          fi
+          curl -fsS -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"🔴 *Security Audit Failed* for TAD DOOH\nProject: \`ltdcdhqixvbpdcitthqf\`\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>\nCheck GitHub Actions for details.\"}" \
-            "$SLACK_WEBHOOK_URL"
+            --config - <<CURL_CONFIG
+          url = "$SLACK_WEBHOOK_URL"
+          CURL_CONFIG
 
       - name: Slack Notification on success
-        if: success() && env.SLACK_WEBHOOK_URL != ''
+        if: success()
+        # The Slack webhook is a credential; only this notification receives it.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          curl -X POST -H 'Content-type: application/json' \
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            exit 0
+          fi
+          curl -fsS -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"✅ *Security Audit Passed* for TAD DOOH\nProject: \`ltdcdhqixvbpdcitthqf\`\nNo new security regressions.\"}" \
-            "$SLACK_WEBHOOK_URL"
+            --config - <<CURL_CONFIG
+          url = "$SLACK_WEBHOOK_URL"
+          CURL_CONFIG

@@ -21,11 +21,13 @@ import {
   Req,
   UseInterceptors,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   ForbiddenException,
   Inject,
 } from "@nestjs/common";
 import { z } from "zod";
+import { Prisma, type PaymentIntent } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { PaymentEvidenceService } from "./services/payment-evidence.service";
 import type {
@@ -123,20 +125,14 @@ export class PaymentIntentController {
     const existing = await this.prisma.paymentIntent.findUnique({
       where: { reference: input.reference },
     });
-    if (existing) {
-      // Only an authenticated payment operator can reach this replay.
-      return {
-        id: existing.id,
-        type: existing.type,
-        amount: existing.amount,
-        currency: existing.currency,
-        reference: existing.reference,
-        status: existing.status,
-        createdAt: existing.createdAt,
-        paidAt: existing.paidAt,
-        leadId: existing.leadId,
-        idempotencyReplay: true,
-      };
+    if (existing) return this.replayIntent(existing, input);
+
+    // Only the side-effect-free local adapter is supported here. A remote
+    // provider needs a durable reservation and reconciliation before calls.
+    if (this.currentProvider.providerType !== "MANUAL_TRANSFER") {
+      throw new ConflictException(
+        "Payment provider requires reconciliation support",
+      );
     }
 
     // Si viene leadId, verificar que existe
@@ -147,10 +143,15 @@ export class PaymentIntentController {
       if (!lead) {
         throw new NotFoundException(`Lead ${input.leadId} not found`);
       }
+      const expectedType =
+        input.type === "DRIVER_SUBSCRIPTION" ? "DRIVER" : "ADVERTISER";
+      if (lead.type !== expectedType) {
+        throw new ConflictException("Payment intent and lead type mismatch");
+      }
     }
 
-    // idempotencyKey interna — única por intent
-    const idempotencyKey = `${input.reference}-${Date.now()}`;
+    // Stable across HTTP retries and across different administrative actors.
+    const idempotencyKey = `payment-intent:${input.reference}`;
 
     // Crear vía provider activo
     const providerResult = await this.currentProvider.createPaymentIntent({
@@ -164,29 +165,50 @@ export class PaymentIntentController {
       customerInfo: input.customerInfo,
     });
 
+    if (providerResult.status !== "CREATED") {
+      throw new ConflictException("Unexpected initial payment status");
+    }
+
     // Persistir PaymentIntent
-    const intent = await this.prisma.paymentIntent.create({
-      data: {
-        type: input.type,
-        amount: input.amount,
-        currency: input.currency,
-        provider: this.currentProvider.providerType,
-        reference: input.reference,
-        idempotencyKey,
-        status: providerResult.status,
-        providerRef: providerResult.id,
-        providerData: {
-          instructions: providerResult.paymentInstructions,
-          expiresAt: providerResult.expiresAt,
-          ...providerResult.providerData,
+    let intent: PaymentIntent;
+    try {
+      intent = await this.prisma.paymentIntent.create({
+        data: {
+          type: input.type,
+          amount: input.amount,
+          currency: input.currency,
+          provider: this.currentProvider.providerType,
+          reference: input.reference,
+          idempotencyKey,
+          status: providerResult.status,
+          providerRef: providerResult.id,
+          providerData: {
+            instructions: providerResult.paymentInstructions,
+            expiresAt: providerResult.expiresAt,
+            ...providerResult.providerData,
+          },
+          leadId: input.leadId,
+          metadata: {
+            ...input.metadata,
+            customerInfo: input.customerInfo,
+          },
         },
-        leadId: input.leadId,
-        metadata: {
-          ...input.metadata,
-          customerInfo: input.customerInfo,
-        },
-      },
-    });
+      });
+    } catch (error) {
+      if (
+        !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+        error.code !== "P2002"
+      ) {
+        throw error;
+      }
+      // The local adapter creates no external payment. Replay only the
+      // committed winner for this exact reference and financial tuple.
+      const winner = await this.prisma.paymentIntent.findUnique({
+        where: { reference: input.reference },
+      });
+      if (!winner) throw error;
+      return this.replayIntent(winner, input);
+    }
 
     return {
       id: intent.id,
@@ -197,6 +219,34 @@ export class PaymentIntentController {
       status: intent.status,
       expiresAt: providerResult.expiresAt,
       paymentInstructions: providerResult.paymentInstructions,
+    };
+  }
+
+  private replayIntent(
+    existing: PaymentIntent,
+    input: z.infer<typeof CreateIntentSchema>,
+  ) {
+    if (
+      existing.type !== input.type ||
+      existing.amount !== input.amount ||
+      existing.currency !== input.currency ||
+      existing.leadId !== (input.leadId ?? null)
+    ) {
+      throw new ConflictException(
+        "Payment reference has different financial terms",
+      );
+    }
+    return {
+      id: existing.id,
+      type: existing.type,
+      amount: existing.amount,
+      currency: existing.currency,
+      reference: existing.reference,
+      status: existing.status,
+      createdAt: existing.createdAt,
+      paidAt: existing.paidAt,
+      leadId: existing.leadId,
+      idempotencyReplay: true,
     };
   }
 

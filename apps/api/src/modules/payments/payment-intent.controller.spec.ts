@@ -1,5 +1,10 @@
 import { ConfigModule } from "@nestjs/config";
-import { BadRequestException, ForbiddenException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from "@nestjs/common";
+import type { IPaymentProvider } from "./interfaces/payment-provider.interface";
 import { PaymentEvidenceService } from "./services/payment-evidence.service";
 import type { AuthenticatedRequest } from "../auth/auth.types";
 import type { TestingModule } from "@nestjs/testing";
@@ -157,6 +162,9 @@ describe("PaymentIntentController", () => {
         id: "pi-1",
         reference: "REF-0001",
         status: "PENDING",
+        type: "ADVERTISER_CAMPAIGN",
+        amount: 1000,
+        currency: "DOP",
         leadId: null,
       });
       const result = await controller.createIntent(
@@ -168,6 +176,50 @@ describe("PaymentIntentController", () => {
         },
       );
       expect(result).toMatchObject({ id: "pi-1", idempotencyReplay: true });
+    });
+
+    it.each([
+      { amount: 1001 },
+      { type: "DRIVER_SUBSCRIPTION" },
+      { currency: "USD" },
+      { leadId: "11111111-1111-4111-8111-111111111111" },
+    ])("rejects a reference replay with changed terms %j", async (change) => {
+      prisma.paymentIntent.findUnique.mockResolvedValue({
+        id: "pi-1",
+        reference: "REF-0001",
+        status: "PENDING",
+        type: "ADVERTISER_CAMPAIGN",
+        amount: 1000,
+        currency: "DOP",
+        leadId: null,
+      });
+      const provider = module.get<IPaymentProvider>(CURRENT_PAYMENT_PROVIDER);
+      const create = jest.spyOn(provider, "createPaymentIntent");
+      await expect(
+        controller.createIntent(requestFor("admin", "ADMIN"), {
+          type: "ADVERTISER_CAMPAIGN",
+          amount: 1000,
+          reference: "REF-0001",
+          ...change,
+        }),
+      ).rejects.toThrow(ConflictException);
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it("rejects mismatched lead type before calling the provider", async () => {
+      prisma.paymentIntent.findUnique.mockResolvedValue(null);
+      prisma.lead.findUnique.mockResolvedValue({ type: "DRIVER" });
+      const provider = module.get<IPaymentProvider>(CURRENT_PAYMENT_PROVIDER);
+      const create = jest.spyOn(provider, "createPaymentIntent");
+      await expect(
+        controller.createIntent(requestFor("admin", "ADMIN"), {
+          type: "ADVERTISER_CAMPAIGN",
+          amount: 1000,
+          reference: "REF-0001",
+          leadId: "11111111-1111-4111-8111-111111111111",
+        }),
+      ).rejects.toThrow(ConflictException);
+      expect(create).not.toHaveBeenCalled();
     });
 
     it.each([undefined, "not-a-date", "2026-01-01T00:00:00Z"])(

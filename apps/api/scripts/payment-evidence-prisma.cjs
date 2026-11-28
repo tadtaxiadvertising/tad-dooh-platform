@@ -489,6 +489,53 @@ async function verify() {
     }
     console.log("PASS fresh evidence decisions cannot overwrite terminal payment intents");
 
+    // Two controllers with independent real clients observe the same missing
+    // reference. The only provider here is a side-effect-free local fixture.
+    const { PaymentIntentController } = require("../src/modules/payments/payment-intent.controller.ts");
+    async function raceCreation(changes) {
+      let arrived = 0, release;
+      const barrier = new Promise(resolve => { release = resolve; });
+      const keys = [];
+      const provider = {
+        providerType: "MANUAL_TRANSFER",
+        async createPaymentIntent(input) {
+          keys.push(input.idempotencyKey);
+          return { id: input.reference, status: "CREATED", paymentInstructions: "fixture only",
+            expiresAt: new Date("2027-01-01T00:00:00Z") };
+        },
+      };
+      const controllers = [first, second].map(client => new PaymentIntentController({
+        paymentIntent: {
+          async findUnique(args) {
+            const row = await client.paymentIntent.findUnique(args);
+            if (++arrived <= 2) {
+              if (arrived === 2) release();
+              await barrier;
+            }
+            return row;
+          },
+          create: client.paymentIntent.create.bind(client.paymentIntent),
+        },
+        lead: client.lead,
+      }, service, () => provider, provider));
+      const reference = "REF-" + randomUUID();
+      const payload = { reference, type: "ADVERTISER_CAMPAIGN", amount: 1000 };
+      const results = await Promise.allSettled(controllers.map((controller, i) =>
+        controller.createIntent({ user: { id: "fixture-admin-" + i, role: "ADMIN" } },
+          { ...payload, ...changes[i] })));
+      assert.deepEqual(keys, ["payment-intent:" + reference, "payment-intent:" + reference]);
+      assert.equal(await first.paymentIntent.count({ where: { reference } }), 1);
+      return results;
+    }
+    const sameCreation = await raceCreation([{}, {}]);
+    assert.ok(sameCreation.every(result => result.status === "fulfilled"));
+    assert.equal(sameCreation[0].value.id, sameCreation[1].value.id);
+    assert.equal(sameCreation.filter(result => result.value.idempotencyReplay === true).length, 1);
+    const differentCreation = await raceCreation([{}, { amount: 1001 }]);
+    assert.equal(differentCreation.filter(result => result.status === "fulfilled").length, 1);
+    assert.equal(differentCreation.find(result => result.status === "rejected").reason.getStatus(), 409);
+    console.log("PASS same-reference intent races preserve one committed financial tuple");
+
     const rollbackLead = await lead();
     const rollbackPayment = await payment(rollbackLead);
     // A real SQL constraint fails AFTER the payment, verification, commission

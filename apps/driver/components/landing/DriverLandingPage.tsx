@@ -28,8 +28,8 @@ const benefits = [
   },
   {
     icon: MonitorPlay,
-    title: "Un espacio para tu operación",
-    text: "Al tener una cuenta aprobada, accede al portal de conductor para consultar las herramientas habilitadas para tu perfil.",
+    title: "Tu operación, con una nueva fuente de ingresos",
+    text: "Al tener una cuenta aprobada, accede al portal de conductor para usar las herramientas habilitadas para tu perfil.",
   },
   {
     icon: ShieldCheck,

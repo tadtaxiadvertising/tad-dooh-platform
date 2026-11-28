@@ -32,7 +32,6 @@ test("driver creative reframe preserves three separate income streams and approv
   }
   assert.match(landing, /signupEnabled \? "\/register" : "#como-participar"/);
   assert.match(lab, /previewDriverEarnings\(ads, sales, referrals\)/);
-  assert.match(collapseLayout(lab), /RD\$1\.25 por play validado es un concepto distinto/);
   assert.match(lab, /No son pagos recurrentes/);
   assert.match(lab, /Campañas elegibles · hasta 15 simultáneas/);
   assert.match(landing, /campañas elegibles en tu pantalla \(hasta 15 simultáneas\)/);

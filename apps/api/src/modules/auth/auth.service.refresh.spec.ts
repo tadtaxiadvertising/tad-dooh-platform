@@ -4,7 +4,7 @@ describe("AuthService login token refresh security", () => {
   const prisma = {
     user: { findUnique: jest.fn() },
     advertiser: { findUnique: jest.fn() },
-    driver: { findFirst: jest.fn() },
+    driver: { findUnique: jest.fn() },
   };
   const anonClient = {
     auth: {
@@ -24,7 +24,7 @@ describe("AuthService login token refresh security", () => {
     jest.clearAllMocks();
     prisma.user.findUnique.mockResolvedValue(null);
     prisma.advertiser.findUnique.mockResolvedValue({ id: "advertiser-1" });
-    prisma.driver.findFirst.mockResolvedValue(null);
+    prisma.driver.findUnique.mockResolvedValue(null);
     anonClient.auth.signInWithPassword.mockResolvedValue({
       data: {
         user: { id: "auth-1", email: "adv@example.com" },

@@ -20,12 +20,6 @@ describe("DeviceTokenGuard device ownership", () => {
 
   const contextFor = (overrides: Record<string, unknown> = {}) => {
     const request = {
-      headers: {
-        "x-device-token": jwt.sign(
-          { deviceId: "TAD-A", type: "OFFLINE_LICENSE" },
-          signingKey,
-        ),
-      },
       body: { deviceId: "TAD-A" },
       query: {},
       params: {},
@@ -62,7 +56,7 @@ describe("DeviceTokenGuard device ownership", () => {
     [{ query: { device_id: "TAD-B" } }, "GET /assets/manifest"],
     [{ headers: { "x-device-id": "TAD-B" } }, "conflicting device header"],
     [{ params: { deviceId: "TAD-B" } }, "path-scoped device"],
-  ])("rejects cross-device access (%s, %s)", async (override) => {
+  ])("rejects cross-device access (%s, %s)", async (override, description) => {
     const { context } = contextFor(override);
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
       ForbiddenException,

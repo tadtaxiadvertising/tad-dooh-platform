@@ -13,6 +13,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
+import { PrismaClient } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import type { PaymentIntent, Prisma } from "@prisma/client";
@@ -53,86 +54,90 @@ export class PaymentEvidenceService {
       `Submitting payment evidence for intent: ${input.paymentIntentId}`,
     );
 
-    // Verificar que la intención de pago existe
-    const paymentIntent = await this.prisma.paymentIntent.findUnique({
-      where: { id: input.paymentIntentId },
-    });
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Verificar que la intención de pago existe
+      const paymentIntent = await tx.paymentIntent.findUnique({
+        where: { id: input.paymentIntentId },
+      });
 
-    if (!paymentIntent) {
-      throw new NotFoundException(
-        `PaymentIntent ${input.paymentIntentId} not found`,
-      );
-    }
+      if (!paymentIntent) {
+        throw new NotFoundException(
+          `PaymentIntent ${input.paymentIntentId} not found`,
+        );
+      }
 
-    // Verificar si ya hay evidencia pendiente para esta intención
-    const existing = await this.prisma.paymentEvidence.findFirst({
-      where: {
-        paymentIntentId: input.paymentIntentId,
-        reviewStatus: { in: ["SUBMITTED", "UNDER_REVIEW"] },
-      },
-    });
+      // Idempotente: si ya hay una evidencia pendiente, la actualizamos en
+      // lugar de crear una duplicada dentro de la misma transacción.
+      const existing = await tx.paymentEvidence.findFirst({
+        where: {
+          paymentIntentId: input.paymentIntentId,
+          reviewStatus: { in: ["SUBMITTED", "UNDER_REVIEW"] },
+        },
+      });
+      if (existing) {
+        this.logger.warn(
+          `Evidence already exists for ${input.paymentIntentId}, updating`,
+        );
+        return tx.paymentEvidence.update({
+          where: { id: existing.id },
+          data: {
+            fileUrl: input.fileUrl,
+            fileHash: input.fileHash,
+            fileSize: input.fileSize,
+            mimeType: input.mimeType,
+            submittedBy: input.submittedBy,
+            submittedAt: new Date(),
+            reviewStatus: "SUBMITTED",
+            metadata: input.metadata,
+          },
+        });
+      }
 
-    if (existing) {
-      this.logger.warn(
-        `Evidence already exists for ${input.paymentIntentId}, updating`,
-      );
-      return this.prisma.paymentEvidence.update({
-        where: { id: existing.id },
+      // Crear nueva evidencia
+      const evidence = await tx.paymentEvidence.create({
         data: {
+          paymentIntentId: input.paymentIntentId,
           fileUrl: input.fileUrl,
           fileHash: input.fileHash,
           fileSize: input.fileSize,
           mimeType: input.mimeType,
           submittedBy: input.submittedBy,
-          submittedAt: new Date(),
           reviewStatus: "SUBMITTED",
           metadata: input.metadata,
         },
       });
-    }
 
-    // Crear nueva evidencia
-    const evidence = await this.prisma.paymentEvidence.create({
-      data: {
-        paymentIntentId: input.paymentIntentId,
-        fileUrl: input.fileUrl,
-        fileHash: input.fileHash,
-        fileSize: input.fileSize,
-        mimeType: input.mimeType,
-        submittedBy: input.submittedBy,
-        reviewStatus: "SUBMITTED",
-        metadata: input.metadata,
-      },
-    });
-
-    // Crear HumanReviewTask para revisión obligatoria
-    await this.prisma.humanReviewTask.create({
-      data: {
-        type: "PAYMENT_VERIFICATION",
-        entityId: evidence.id,
-        entityType: "PaymentEvidence",
-        status: "PENDING",
-        payload: {
-          paymentIntentId: input.paymentIntentId,
-          fileUrl: input.fileUrl,
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-          type: paymentIntent.type,
-          leadId: paymentIntent.leadId,
+      // Crear HumanReviewTask para revisión obligatoria
+      await tx.humanReviewTask.create({
+        data: {
+          type: "PAYMENT_VERIFICATION",
+          entityId: evidence.id,
+          entityType: "PaymentEvidence",
+          status: "PENDING",
+          payload: {
+            paymentIntentId: input.paymentIntentId,
+            fileUrl: input.fileUrl,
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            type: paymentIntent.type,
+            leadId: paymentIntent.leadId,
+          },
         },
-      },
+      });
+
+      // Actualizar PaymentIntent status a UNDER_REVIEW
+      await tx.paymentIntent.update({
+        where: { id: input.paymentIntentId },
+        data: { status: "UNDER_REVIEW" },
+      });
+
+      this.logger.log(
+        `Payment evidence ${evidence.id} submitted, HumanReviewTask created`,
+      );
+      return evidence;
     });
 
-    // Actualizar PaymentIntent status a UNDER_REVIEW
-    await this.prisma.paymentIntent.update({
-      where: { id: input.paymentIntentId },
-      data: { status: "UNDER_REVIEW" },
-    });
-
-    this.logger.log(
-      `Payment evidence ${evidence.id} submitted, HumanReviewTask created`,
-    );
-    return evidence;
+    return result;
   }
 
   /**
@@ -155,67 +160,77 @@ export class PaymentEvidenceService {
       );
     }
 
+    // Idempotente: si ya está confirmada o rechazada, solo devolvemos el
+    // estado anterior; el flujo no se reejecuta.
     if (evidence.reviewStatus === "PAYMENT_CONFIRMED") {
-      throw new BadRequestException("Evidence already confirmed");
+      return evidence;
     }
     if (evidence.reviewStatus === "REJECTED") {
-      throw new BadRequestException("Evidence already rejected");
+      return evidence;
     }
 
-    // Actualizar evidencia
-    const updatedEvidence = await this.prisma.paymentEvidence.update({
-      where: { id: input.evidenceId },
-      data: {
-        reviewStatus: input.status,
-        reviewedBy: input.reviewedBy,
-        reviewedAt: new Date(),
-        reviewNote: input.reviewNote,
-      },
-    });
-
-    // Actualizar HumanReviewTask
-    await this.prisma.humanReviewTask.updateMany({
-      where: {
-        entityId: input.evidenceId,
-        entityType: "PaymentEvidence",
-        status: "PENDING",
-      },
-      data: {
-        status: input.status === "PAYMENT_CONFIRMED" ? "APPROVED" : "REJECTED",
-        reviewerId: input.reviewedBy,
-        reviewedAt: new Date(),
-        reviewNote: input.reviewNote,
-      },
-    });
-
-    // Si confirmado, crear PaymentVerification y actualizar PaymentIntent
-    if (input.status === "PAYMENT_CONFIRMED") {
-      await this.confirmPayment(
-        evidence.paymentIntentId,
-        input.reviewedBy,
-        input.amountConfirmed,
-      );
-    } else {
-      // Rechazado
-      await this.prisma.paymentIntent.update({
-        where: { id: evidence.paymentIntentId },
-        data: { status: "REJECTED" },
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Actualizar evidencia
+      const updatedEvidence = await tx.paymentEvidence.update({
+        where: { id: input.evidenceId },
+        data: {
+          reviewStatus: input.status,
+          reviewedBy: input.reviewedBy,
+          reviewedAt: new Date(),
+          reviewNote: input.reviewNote,
+        },
       });
-    }
 
-    return updatedEvidence;
+      // Actualizar HumanReviewTask
+      await tx.humanReviewTask.updateMany({
+        where: {
+          entityId: input.evidenceId,
+          entityType: "PaymentEvidence",
+          status: "PENDING",
+        },
+        data: {
+          status: input.status === "PAYMENT_CONFIRMED" ? "APPROVED" : "REJECTED",
+          reviewerId: input.reviewedBy,
+          reviewedAt: new Date(),
+          reviewNote: input.reviewNote,
+        },
+      });
+
+      // Si confirmado, crear PaymentVerification y actualizar PaymentIntent
+      if (input.status === "PAYMENT_CONFIRMED") {
+        await this.confirmPayment(
+          tx,
+          evidence.paymentIntentId,
+          input.reviewedBy,
+          input.amountConfirmed,
+        );
+      } else {
+        // Rechazado
+        await tx.paymentIntent.update({
+          where: { id: evidence.paymentIntentId },
+          data: { status: "REJECTED" },
+        });
+      }
+
+      return updatedEvidence;
+    });
+
+    return result;
   }
 
   /**
-   * Confirma el pago tras revisión humana exitosa
-   * Crea PaymentVerification y dispara flujo correspondiente
+   * Confirma el pago tras revisión humana exitosa.
+   * Es idempotente: si el intento ya estaba PAID no vuelve a crear la
+   * verificación ni a re-actualizar el proceso de pago.
+   * @internal
    */
   private async confirmPayment(
+    tx: any,
     paymentIntentId: string,
     verifiedBy: string,
     amountConfirmed?: number,
   ) {
-    const paymentIntent = await this.prisma.paymentIntent.findUnique({
+    const paymentIntent = await tx.paymentIntent.findUnique({
       where: { id: paymentIntentId },
     });
 
@@ -223,10 +238,19 @@ export class PaymentEvidenceService {
       throw new NotFoundException(`PaymentIntent ${paymentIntentId} not found`);
     }
 
+    // Idempotente: ya estaba pagado, no crear verificación duplicada ni
+    // re-ejecutar los flujos de confirmación.
+    if (paymentIntent.status === "PAID") {
+      this.logger.log(
+        `Payment ${paymentIntentId} already PAID, skipping re-confirm`,
+      );
+      return;
+    }
+
     const confirmedAmount = amountConfirmed || paymentIntent.amount;
 
     // Crear PaymentVerification
-    await this.prisma.paymentVerification.create({
+    await tx.paymentVerification.create({
       data: {
         paymentIntentId,
         verifiedBy,
@@ -237,7 +261,7 @@ export class PaymentEvidenceService {
     });
 
     // Actualizar PaymentIntent
-    await this.prisma.paymentIntent.update({
+    await tx.paymentIntent.update({
       where: { id: paymentIntentId },
       data: {
         status: "PAID",

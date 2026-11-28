@@ -22,6 +22,7 @@ import {
   UseInterceptors,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
   Inject,
 } from "@nestjs/common";
 import { z } from "zod";
@@ -120,7 +121,32 @@ export class PaymentIntentController {
       where: { reference: input.reference },
     });
     if (existing) {
-      return { ...existing, idempotentReplay: true };
+      // Replay limitado al mismo DTO de salida del alta (sin proveedorData ni metadatos).
+      // El owner solicitante puede reutilizar la intención; nadie más puede leer su estado.
+      if (existing.leadId) {
+        const lead = await this.prisma.lead.findUnique({
+          where: { id: existing.leadId },
+        });
+        const sameEntity =
+          req.user?.role === "ADMIN" || (lead?.type === req.user?.role);
+        if (!sameEntity) {
+          throw new ForbiddenException(
+            "No puedes reutilizar una intención de pago que no te pertenece.",
+          );
+        }
+      }
+      return {
+        id: existing.id,
+        type: existing.type,
+        amount: existing.amount,
+        currency: existing.currency,
+        reference: existing.reference,
+        status: existing.status,
+        createdAt: existing.createdAt,
+        paidAt: existing.paidAt,
+        leadId: existing.leadId,
+        idempotencyReplay: true,
+      };
     }
 
     // Si viene leadId, verificar que existe
@@ -250,6 +276,21 @@ export class PaymentIntentController {
     }
 
     const submittedBy = req?.user?.id ?? req?.user?.sub ?? "anonymous";
+
+    // F2: la evidencia solo puede adjuntarse a una intención propia del actor.
+    // El vínculo es el lead de la intención: su tipo (ADVERTISER/DRIVER) debe
+    // coincidir con el rol del usuario autenticado. Los ADMIN pueden actuar
+    // sobre cualquier intención porque son el propietario de la auditoría.
+    const intentLead = intent.leadId
+      ? await this.prisma.lead.findUnique({ where: { id: intent.leadId } })
+      : null;
+    const ownedByActor =
+      req.user?.role === "ADMIN" || (intentLead?.type === req.user?.role);
+    if (!ownedByActor) {
+      throw new ForbiddenException(
+        "No tienes permiso para adjuntar evidencia a esta intención de pago.",
+      );
+    }
 
     return this.evidenceService.submitEvidence({
       paymentIntentId: intentId,

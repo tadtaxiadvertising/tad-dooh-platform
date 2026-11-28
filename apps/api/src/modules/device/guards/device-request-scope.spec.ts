@@ -7,14 +7,16 @@ describe("matchesAuthenticatedDevice", () => {
     ).toBe(true);
   });
 
-  it.each([
+  const crossDeviceCases: Array<[readonly unknown[], string]> = [
     [["TAD-B"], "different device body"],
     [["TAD-A", "TAD-B"], "conflicting header and query"],
     [[["TAD-A"]], "array value"],
     [[{ value: "TAD-A" }], "object value"],
     [[""], "empty device"],
     [[null], "null explicit device"],
-  ])("rejects %s (%s)", (values) => {
+  ];
+
+  it.each(crossDeviceCases)("rejects %s (%s)", (values, description) => {
     expect(matchesAuthenticatedDevice("TAD-A", values)).toBe(false);
   });
 });

@@ -6,13 +6,13 @@ SET LOCAL statement_timeout = '5s';
 SET LOCAL lock_timeout = '1s';
 
 WITH candidates AS MATERIALIZED (
-  SELECT "isLocked", created_at, path, method, response
+  SELECT id, "isLocked", created_at, path, method, response
   FROM public.idempotency_keys
   WHERE "driverId" = 'public-advertiser-onboarding:single-use:v1'
   ORDER BY created_at DESC, id DESC
   LIMIT 1001
 ), sample AS MATERIALIZED (
-  SELECT * FROM candidates LIMIT 1000
+  SELECT * FROM candidates ORDER BY created_at DESC, id DESC LIMIT 1000
 ), decoded AS MATERIALIZED (
   SELECT *,
     CASE

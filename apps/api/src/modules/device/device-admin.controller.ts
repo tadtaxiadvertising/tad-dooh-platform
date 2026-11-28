@@ -1,3 +1,4 @@
+import { advertiserSafeSelect } from "../advertisers/advertiser-safe-select";
 import { errorMessage } from "../../utils/error.util";
 import {
   Controller,
@@ -306,7 +307,7 @@ export class DeviceAdminController {
                     select: {
                       id: true,
                       name: true,
-                      advertiser: true,
+                      advertiser: { select: advertiserSafeSelect },
                       active: true,
                     },
                   },

@@ -884,7 +884,7 @@ test('advertiser brand editor is local-only and never alters the budget or analy
 
 // Exercise the real onboarding page with synthetic hooks and an explicitly
 // controlled transport. No actual account, campaign or quote request is sent.
-function onboardingSubmissionHarness({ referral = null } = {}) {
+function onboardingSubmissionHarness({ referral = null, session = new Map(), storageDenied = false, removalDenied = false } = {}) {
   const hooks = [];
   let cursor = 0;
   let effects = [];
@@ -930,6 +930,17 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
     window: {
       location: { search: '?screens=12&months=4&city=stgo&includeProduction=true&budget=1' },
       crypto: { randomUUID: () => require('node:crypto').randomUUID() },
+      sessionStorage: {
+        getItem(key) { return session.get(key) ?? null; },
+        setItem(key, value) {
+          if (storageDenied) throw new Error('fixture storage denied');
+          session.set(key, value);
+        },
+        removeItem(key) {
+          if (removalDenied) throw new Error('fixture removal denied');
+          session.delete(key);
+        },
+      },
       setTimeout(callback) { quoteTimers.set(++timerId, callback); return timerId; },
       clearTimeout(id) { quoteTimers.delete(id); },
     },
@@ -941,6 +952,7 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
       }
       assert.equal(url, '/api/proxy/onboarding/advertiser');
       assert.equal(options.method, 'POST');
+      assert.deepEqual([...session.entries()], [['tad_advertiser_registration_pending_v1', 'pending']], 'marker must precede request');
       attemptKeys.push(options.headers['Idempotency-Key']);
       requests.push(JSON.parse(options.body));
       return new Promise((resolve, reject) => pending.push({ resolve, reject }));
@@ -968,6 +980,7 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
   }
   return {
     requests,
+    session,
     attemptKeys,
     navigations,
     quoteRequests,
@@ -1011,8 +1024,8 @@ function onboardingSubmissionHarness({ referral = null } = {}) {
   };
 }
 
-function readyOnboarding() {
-  const harness = onboardingSubmissionHarness();
+function readyOnboarding(options) {
+  const harness = onboardingSubmissionHarness(options);
   harness.render();
   harness.render();
   harness.props('Benefits').onNext();
@@ -1196,6 +1209,58 @@ test('ambiguous registration results retain the lock and offer account recovery,
     harness.props('button').onClick();
     assert.deepEqual(harness.navigations, ['/advertiser/login']);
   }
+});
+
+test('pending registration survives a same-tab reload before acknowledgement and after network loss', async () => {
+  const original = readyOnboarding();
+  const submit = original.props('Commitment').onSubmit();
+  assert.equal(original.requests.length, 1);
+  for (const phase of ['in-flight', 'lost response']) {
+    const reloaded = onboardingSubmissionHarness({ session: original.session });
+    reloaded.render();
+    reloaded.render();
+    assert.equal(reloaded.props('Wizard').navigationLocked, true, phase);
+    assert.equal(reloaded.props('section')['aria-labelledby'], 'uncertain-registration-title');
+    assert.throws(() => reloaded.props('Commitment'), /Missing onboarding component/);
+    reloaded.props('Wizard').onNext();
+    reloaded.render();
+    assert.equal(reloaded.requests.length, 0);
+    if (phase === 'in-flight') {
+      original.loseResponse();
+      await submit;
+    }
+  }
+  assert.deepEqual([...original.session.values()], ['pending']);
+});
+
+test('denies submission when the reload containment marker cannot be persisted', async () => {
+  const harness = readyOnboarding({ storageDenied: true });
+  await harness.props('Commitment').onSubmit();
+  harness.render();
+  assert.equal(harness.requests.length, 0);
+  assert.equal(harness.session.size, 0);
+  assert.match(harness.props('Commitment').error, /almacenamiento de sesión/);
+});
+
+test('known success or explicit rejection clears the pending marker, not an ambiguous response', async () => {
+  for (const status of [201, 400, 429, 503]) {
+    const harness = readyOnboarding();
+    const pending = harness.props('Commitment').onSubmit();
+    harness.respond(status === 201, undefined, status);
+    await pending;
+    assert.equal(harness.session.size, status === 503 ? 1 : 0, String(status));
+  }
+});
+
+test('failed marker removal after explicit rejection retains conservative recovery lock', async () => {
+  const harness = readyOnboarding({ removalDenied: true });
+  const pending = harness.props('Commitment').onSubmit();
+  harness.respond(false);
+  await pending;
+  harness.render();
+  assert.equal(harness.props('Wizard').navigationLocked, true);
+  assert.equal(harness.props('section')['aria-labelledby'], 'uncertain-registration-title');
+  assert.equal(harness.session.size, 1);
 });
 
 test('explicit throttling keeps registration retryable with clear guidance', async () => {

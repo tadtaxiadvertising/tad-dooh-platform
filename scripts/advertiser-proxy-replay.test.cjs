@@ -10,12 +10,12 @@ const javascript = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 
-async function exercise(method, route, outcomes) {
+async function exercise(method, route, outcomes, headers = {}) {
   const attempts = [];
   const fixtureBody = Buffer.from('{"fixture":true}');
   const request = {
     method, query: { path: route.split('/') }, cookies: {},
-    headers: { host: 'advertiser.fixture.invalid' },
+    headers: { host: 'advertiser.fixture.invalid', ...headers },
   };
   const result = { status: null, body: null };
   const response = {
@@ -31,7 +31,7 @@ async function exercise(method, route, outcomes) {
     return async () => fixtureBody;
   };
   const fetchFixture = async (url, options) => {
-    attempts.push({ url, method: options.method, redirect: options.redirect, body: options.body });
+    attempts.push({ url, method: options.method, redirect: options.redirect, body: options.body, headers: options.headers });
     assert.ok(outcomes.length, 'Unexpected extra upstream request');
     const outcome = outcomes.shift();
     if (outcome instanceof Error) throw outcome;
@@ -85,5 +85,18 @@ test('successful writes and explicit upstream rejections are forwarded once', as
     assert.equal(result.attempts.length, 1);
     assert.equal(result.status, status);
     assert.equal(result.body.fixture, true);
+  }
+});
+
+test('onboarding idempotency header reaches the exact upstream route unchanged, without replay', async () => {
+  const key = '12345678-1234-4234-8234-123456789abc';
+  for (const outcome of [{ status: 201, body: { ok: true } }, new Error('fetch failed')]) {
+    const result = await exercise('POST', 'onboarding/advertiser', [outcome], { 'idempotency-key': key });
+    assert.equal(result.attempts.length, 1);
+    const forwarded = result.attempts[0];
+    assert.equal(forwarded.url, 'http://api:3000/api/v1/onboarding/advertiser');
+    assert.equal(new Headers(forwarded.headers).get('idempotency-key'), key);
+    assert.equal(forwarded.redirect, 'error');
+    assert.equal(result.status, outcome instanceof Error ? 503 : 201);
   }
 });

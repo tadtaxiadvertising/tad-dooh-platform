@@ -41,6 +41,7 @@ const EMPTY_FORM: CommitmentForm = {
 };
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
+const PENDING_REGISTRATION_KEY = "tad_advertiser_registration_pending_v1";
 
 export default function AdvertiserOnboarding() {
   const router = useRouter();
@@ -83,6 +84,17 @@ export default function AdvertiserOnboarding() {
   } | null>(null);
 
   useEffect(() => {
+    // Persist only an outcome-unknown marker, never credentials or form data.
+    // A reload/back navigation must not silently create a new attempt.
+    try {
+      if (window.sessionStorage.getItem(PENDING_REGISTRATION_KEY) !== null) {
+        submissionLocked.current = true;
+        setSubmissionUncertain(true);
+        return;
+      }
+    } catch {
+      // Storage can be blocked; submission independently fails closed below.
+    }
     setReferralCode(captureReferralCode() || "");
     const draft = campaignDraftFromSearch(window.location.search);
     if (draft) {
@@ -235,13 +247,24 @@ export default function AdvertiserOnboarding() {
       return;
     }
 
-    if (typeof window.crypto?.randomUUID !== "function") {
+    let attemptKey: string;
+    try {
+      // Check synchronously again, including a submission before mount effects.
+      if (window.sessionStorage.getItem(PENDING_REGISTRATION_KEY) !== null) {
+        submissionLocked.current = true;
+        setSubmissionUncertain(true);
+        return;
+      }
+      attemptKey = window.crypto.randomUUID();
+      // Persist before the first network side effect. If storage is denied,
+      // do not send an attempt that cannot be contained after a reload.
+      window.sessionStorage.setItem(PENDING_REGISTRATION_KEY, "pending");
+    } catch {
       setError(
-        "No pudimos iniciar un registro seguro. Utiliza un navegador actualizado y una conexión HTTPS.",
+        "No pudimos iniciar un registro seguro. Utiliza HTTPS y permite el almacenamiento de sesión en tu navegador.",
       );
       return;
     }
-    const attemptKey = window.crypto.randomUUID();
     submissionLocked.current = true;
     setLoading(true);
     setError("");
@@ -277,6 +300,8 @@ export default function AdvertiserOnboarding() {
         // Validation and throttling reject before provisioning. All other
         // outcomes may require reconciliation, including identity conflicts.
         if (res.status === 400 || res.status === 429) {
+          // Only known pre-provisioning rejection permits a new attempt.
+          window.sessionStorage.removeItem(PENDING_REGISTRATION_KEY);
           submissionLocked.current = false;
           setError(
             res.status === 429
@@ -291,6 +316,13 @@ export default function AdvertiserOnboarding() {
         return;
       }
 
+      // A confirmed HTTP success no longer needs an outcome-unknown marker.
+      // If removal fails, retain the conservative recovery state after reload.
+      try {
+        window.sessionStorage.removeItem(PENDING_REGISTRATION_KEY);
+      } catch {
+        // Do not turn a successful response into a new submission opportunity.
+      }
       clearReferralCode();
       // A successful registration must not be submitted again just because
       // its receipt is incomplete. Only display a contract-consistent amount.

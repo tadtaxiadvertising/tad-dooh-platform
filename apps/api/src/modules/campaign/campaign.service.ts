@@ -1,4 +1,3 @@
-import { advertiserSafeSelect } from "../advertisers/advertiser-safe-select";
 import { errorMessage } from "../../utils/error.util";
 import { CreateCampaignDto } from "./dto/create-campaign.dto";
 import { AddMediaAssetDto } from "./dto/add-media-asset.dto";
@@ -1049,7 +1048,7 @@ export class CampaignService {
       where,
       include: {
         campaign: {
-          select: { name: true, advertiser: { select: advertiserSafeSelect } },
+          select: { name: true, advertiser: true },
         },
       },
       orderBy: { date: "asc" },

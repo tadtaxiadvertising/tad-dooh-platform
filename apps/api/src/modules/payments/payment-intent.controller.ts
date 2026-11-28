@@ -78,6 +78,7 @@ const SubmitEvidenceSchema = z.object({
 });
 
 const ReviewEvidenceSchema = z.object({
+  expectedSubmittedAt: z.string().datetime({ precision: 3 }),
   status: z.enum(["PAYMENT_CONFIRMED", "REJECTED"]),
   reviewNote: z.string().max(1000).optional(),
   amountConfirmed: z.number().positive().optional(),
@@ -328,6 +329,7 @@ export class PaymentIntentController {
     @Req() req: AuthenticatedRequest,
     @Body() payload: unknown,
   ) {
+    this.requirePaymentOperator(req);
     const parsed = ReviewEvidenceSchema.safeParse(payload);
     if (!parsed.success) {
       throw new BadRequestException({
@@ -345,6 +347,7 @@ export class PaymentIntentController {
 
     return this.evidenceService.reviewEvidence({
       evidenceId,
+      expectedSubmittedAt: new Date(parsed.data.expectedSubmittedAt),
       reviewedBy,
       status: parsed.data.status,
       reviewNote: parsed.data.reviewNote,

@@ -85,9 +85,7 @@ describe("Billing advertiser data minimization", () => {
         select: { companyName: true, contactName: true, email: true },
       },
     };
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ include }),
-    );
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ include }));
     expect(subscriptionFindUnique).toHaveBeenCalledWith({
       where: { id: subscription.id },
       include,

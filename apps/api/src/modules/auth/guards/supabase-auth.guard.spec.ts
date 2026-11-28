@@ -20,6 +20,7 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
   const reflector = { getAllAndOverride: jest.fn() };
   const verifyAdvertiserSession = jest.fn();
   const advertisersService = { verifyAdvertiserSession };
+  const prisma = { idempotencyKey: { findUnique: jest.fn() } };
 
   let guard: SupabaseAuthGuard;
 
@@ -40,6 +41,7 @@ describe("SupabaseAuthGuard token purpose isolation", () => {
       supabase as never,
       config as never,
       advertisersService as never,
+      prisma as never,
     );
   });
 
